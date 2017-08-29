@@ -31,7 +31,7 @@ import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.hive.hcatalog.messaging.HCatEventMessage;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageFactory;
-import org.apache.sentry.hdfs.Updateable;
+import org.apache.sentry.hdfs.UniquePathsUpdate;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
 import org.junit.After;
@@ -97,7 +97,7 @@ public class TestNotificationProcessor {
     authorizable.setDb("db1");
     //noinspection unchecked
     verify(sentryStore, times(1)).addAuthzPathsMapping(Mockito.anyString(),
-        Mockito.anyCollection(), Mockito.any(Updateable.Update.class));
+        Mockito.anyCollection(), Mockito.any(UniquePathsUpdate.class));
 
     verify(sentryStore, times(1)).dropPrivilege(authorizable,
         NotificationProcessor.getPermUpdatableOnDrop(authorizable));
@@ -119,7 +119,7 @@ public class TestNotificationProcessor {
 
     //noinspection unchecked
     verify(sentryStore, times(1)).addAuthzPathsMapping(Mockito.anyString(),
-        Mockito.anyCollection(), Mockito.any(Updateable.Update.class));
+        Mockito.anyCollection(), Mockito.any(UniquePathsUpdate.class));
     //making sure that privileges are not dropped
     verify(sentryStore, times(0)).dropPrivilege(authorizable,
         NotificationProcessor.getPermUpdatableOnDrop(authorizable));
@@ -153,7 +153,7 @@ public class TestNotificationProcessor {
 
     //noinspection unchecked
     verify(sentryStore, times(1)).deleteAuthzPathsMapping(Mockito.anyString(),
-        Mockito.anyCollection(), Mockito.any(Updateable.Update.class));
+        Mockito.anyCollection(), Mockito.any(UniquePathsUpdate.class));
     verify(sentryStore, times(1)).dropPrivilege(authorizable,
         NotificationProcessor.getPermUpdatableOnDrop(authorizable));
     reset(sentryStore);
@@ -175,7 +175,7 @@ public class TestNotificationProcessor {
 
     //noinspection unchecked
     verify(sentryStore, times(1)).deleteAuthzPathsMapping(Mockito.anyString(),
-        Mockito.anyCollection(), Mockito.any(Updateable.Update.class));
+        Mockito.anyCollection(), Mockito.any(UniquePathsUpdate.class));
     verify(sentryStore, times(0)).dropPrivilege(authorizable,
         NotificationProcessor.getPermUpdatableOnDrop(authorizable));
   }
@@ -211,7 +211,7 @@ public class TestNotificationProcessor {
 
     //noinspection unchecked
     verify(sentryStore, times(1)).addAuthzPathsMapping(Mockito.anyString(),
-        Mockito.anyCollection(), Mockito.any(Updateable.Update.class));
+        Mockito.anyCollection(), Mockito.any(UniquePathsUpdate.class));
 
     verify(sentryStore, times(1)).dropPrivilege(authorizable,
         NotificationProcessor.getPermUpdatableOnDrop(authorizable));
@@ -239,7 +239,7 @@ public class TestNotificationProcessor {
 
     //noinspection unchecked
     verify(sentryStore, times(1)).addAuthzPathsMapping(Mockito.anyString(),
-        Mockito.anyCollection(), Mockito.any(Updateable.Update.class));
+        Mockito.anyCollection(), Mockito.any(UniquePathsUpdate.class));
     // Making sure that privileges are not dropped
     verify(sentryStore, times(0)).dropPrivilege(authorizable,
         NotificationProcessor.getPermUpdatableOnDrop(authorizable));
@@ -280,7 +280,7 @@ public class TestNotificationProcessor {
     authorizable.setTable(tableName);
 
     verify(sentryStore, times(1)).deleteAllAuthzPathsMapping(Mockito.anyString(),
-        Mockito.any(Updateable.Update.class));
+        Mockito.any(UniquePathsUpdate.class));
 
     verify(sentryStore, times(1)).dropPrivilege(authorizable,
         NotificationProcessor.getPermUpdatableOnDrop(authorizable));
@@ -331,7 +331,7 @@ public class TestNotificationProcessor {
     newAuthorizable.setTable(newTableName);
 
     verify(sentryStore, times(1)).renameAuthzObj(Mockito.anyString(), Mockito.anyString(),
-        Mockito.any(Updateable.Update.class));
+        Mockito.any(UniquePathsUpdate.class));
 
     verify(sentryStore, times(1)).renamePrivilege(authorizable, newAuthorizable,
         NotificationProcessor.getPermUpdatableOnRename(authorizable, newAuthorizable));
@@ -384,7 +384,7 @@ public class TestNotificationProcessor {
     newAuthorizable.setTable(newTableName);
 
     verify(sentryStore, times(1)).renameAuthzPathsMapping(Mockito.anyString(), Mockito.anyString(),
-        Mockito.anyString(), Mockito.anyString(), Mockito.any(Updateable.Update.class));
+        Mockito.anyString(), Mockito.anyString(), Mockito.any(UniquePathsUpdate.class));
 
     verify(sentryStore, times(1)).renamePrivilege(authorizable, newAuthorizable,
         NotificationProcessor.getPermUpdatableOnRename(authorizable, newAuthorizable));
@@ -406,7 +406,7 @@ public class TestNotificationProcessor {
     Mockito.doNothing().when(sentryStore).persistLastProcessedNotificationID(Mockito.anyLong());
     //noinspection unchecked
     Mockito.doNothing().when(sentryStore).addAuthzPathsMapping(Mockito.anyString(),
-        Mockito.anyCollection(), Mockito.any(Updateable.Update.class));
+        Mockito.anyCollection(), Mockito.any(UniquePathsUpdate.class));
 
     Configuration authConf = new Configuration();
     // enable HDFS sync, so perm and path changes will be saved into DB
@@ -435,7 +435,7 @@ public class TestNotificationProcessor {
     // and persistLastProcessedNotificationID was not invoked.
     //noinspection unchecked
     verify(sentryStore, times(1)).addAuthzPathsMapping(Mockito.anyString(),
-        Mockito.anyCollection(), Mockito.any(Updateable.Update.class));
+        Mockito.anyCollection(), Mockito.any(UniquePathsUpdate.class));
     reset(sentryStore);
 
     // Create alter table notification with out actually changing anything.
@@ -456,10 +456,10 @@ public class TestNotificationProcessor {
     // to handle CREATE_TABLE notification
     // and persistLastProcessedNotificationID is explicitly invoked
     verify(sentryStore, times(0)).renameAuthzObj(Mockito.anyString(), Mockito.anyString(),
-        Mockito.any(Updateable.Update.class));
+        Mockito.any(UniquePathsUpdate.class));
     //noinspection unchecked
     verify(sentryStore, times(0)).deleteAuthzPathsMapping(Mockito.anyString(),
-        Mockito.anyCollection(), Mockito.any(Updateable.Update.class));
+        Mockito.anyCollection(), Mockito.any(UniquePathsUpdate.class));
     reset(sentryStore);
 
     // Create a table
@@ -480,6 +480,6 @@ public class TestNotificationProcessor {
     // and persistLastProcessedNotificationID was not invoked.
     //noinspection unchecked
     verify(sentryStore, times(1)).addAuthzPathsMapping(Mockito.anyString(),
-        Mockito.anyCollection(), Mockito.any(Updateable.Update.class));
+        Mockito.anyCollection(), Mockito.any(UniquePathsUpdate.class));
   }
 }

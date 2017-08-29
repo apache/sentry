@@ -37,32 +37,32 @@ public class TestMSentryUtil {
     List<MSentryPathChange> changes = new ArrayList<>();
     PathsUpdate update = new PathsUpdate(1, false);
 
-    changes.add(new MSentryPathChange(1, update));
+    changes.add(new MSentryPathChange(1, "u1", update));
     assertEquals("Collapsed string should match", "[1]",
         MSentryUtil.collapseChangeIDsToString(changes));
     assertTrue("List of changes should be consecutive", MSentryUtil.isConsecutive(changes));
 
-    changes.add(new MSentryPathChange(2, update));
+    changes.add(new MSentryPathChange(2, "u2",update));
     assertEquals("Collapsed string should match", "[1, 2]",
         MSentryUtil.collapseChangeIDsToString(changes));
     assertTrue("List of changes should be consecutive", MSentryUtil.isConsecutive(changes));
 
-    changes.add(new MSentryPathChange(4, update));
+    changes.add(new MSentryPathChange(4, "u4",update));
     assertEquals("Collapsed string should match", "[1, 2, 4]",
         MSentryUtil.collapseChangeIDsToString(changes));
     assertFalse("List of changes should not be consecutive", MSentryUtil.isConsecutive(changes));
 
-    changes.add(new MSentryPathChange(5, update));
+    changes.add(new MSentryPathChange(5, "u5",update));
     assertEquals("Collapsed string should match", "[1, 2, 4, 5]",
         MSentryUtil.collapseChangeIDsToString(changes));
     assertFalse("List of changes should not be consecutive", MSentryUtil.isConsecutive(changes));
 
-    changes.add(new MSentryPathChange(6, update));
+    changes.add(new MSentryPathChange(6, "u6",update));
     assertEquals("Collapsed string should match", "[1, 2, 4-6]",
         MSentryUtil.collapseChangeIDsToString(changes));
     assertFalse("List of changes should not be consecutive", MSentryUtil.isConsecutive(changes));
 
-    changes.add(new MSentryPathChange(8, update));
+    changes.add(new MSentryPathChange(8, "u8",update));
     assertEquals("Collapsed string should match", "[1, 2, 4-6, 8]",
         MSentryUtil.collapseChangeIDsToString(changes));
     assertFalse("List of changes should not be consecutive", MSentryUtil.isConsecutive(changes));

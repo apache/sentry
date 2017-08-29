@@ -106,7 +106,7 @@ public class TestSentryHDFSServiceProcessor {
     Mockito.when(sentryStoreMock.pathChangeExists(2))
         .thenReturn(true);
     Mockito.when(sentryStoreMock.getMSentryPathChanges(2))
-        .thenReturn(Arrays.asList(new MSentryPathChange(3, new PathsUpdate(3, 1, false))));
+        .thenReturn(Arrays.asList(new MSentryPathChange(3, "u3", new PathsUpdate(3, 1, false))));
 
     Mockito.when(sentryStoreMock.getLastProcessedPermChangeID())
         .thenReturn(3L);

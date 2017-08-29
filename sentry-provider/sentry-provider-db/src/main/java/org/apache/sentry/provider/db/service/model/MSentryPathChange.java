@@ -66,15 +66,24 @@ public class MSentryPathChange implements MSentryChange {
   // Path change in JSON format.
   private String pathChange;
   private long createTimeMs;
-  private long notificationID;
+  private String notificationHash;
 
-  public MSentryPathChange(long changeID, PathsUpdate pathChange) throws TException {
+  public MSentryPathChange(long changeID, String notificationHash, PathsUpdate pathChange) throws TException {
     // Each PathsUpdate maps to a MSentryPathChange object.
     // The PathsUpdate is generated from a HMS notification log,
     // the notification ID is stored as seqNum and
     // the notification update is serialized as JSON string.
     this.changeID = changeID;
-    this.notificationID = pathChange.getSeqNum();
+
+    /*
+     * notificationHash is a unique identifier for the HMS notification used to prevent
+     * the same HMS notification message to be processed twice.
+     * The current HMS code may send different notifications messages with the same ID. To
+     * keep this ID unique, we calculate the SHA-1 hash of the full message received.
+     * TODO: This is a temporary fix until HIVE-16886 fixes the issue with duplicated IDs
+     */
+    this.notificationHash = notificationHash;
+
     this.pathChange = pathChange.JSONSerialize();
     this.createTimeMs = System.currentTimeMillis();
   }
@@ -91,14 +100,14 @@ public class MSentryPathChange implements MSentryChange {
     return changeID;
   }
 
-  public long getNotificationID() {
-    return notificationID;
+  public String getNotificationHash() {
+    return notificationHash;
   }
 
   @Override
   public String toString() {
-    return "MSentryChange [changeID=" + changeID + " , notificationID= "
-        + notificationID +" , pathChange= " + pathChange +
+    return "MSentryChange [changeID=" + changeID + " , notificationHash= "
+        + notificationHash +" , pathChange= " + pathChange +
         ", createTime=" + createTimeMs +  "]";
   }
 
@@ -107,7 +116,7 @@ public class MSentryPathChange implements MSentryChange {
     final int prime = 31;
     int result = 1;
     result = prime * result + Long.valueOf(changeID).hashCode();
-    result = prime * result + Long.valueOf(notificationID).hashCode();
+    result = prime * result + notificationHash.hashCode();
     result = prime * result + ((pathChange == null) ? 0 : pathChange.hashCode());
     return result;
   }
@@ -131,7 +140,7 @@ public class MSentryPathChange implements MSentryChange {
       return false;
     }
 
-    if (notificationID != other.notificationID) {
+    if (!notificationHash.equals(other.notificationHash)) {
       return false;
     }
 

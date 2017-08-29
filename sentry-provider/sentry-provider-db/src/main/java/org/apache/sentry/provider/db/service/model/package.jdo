@@ -295,8 +295,16 @@
        <field name="changeID" primary-key="true">
          <column name="CHANGE_ID" jdbc-type="BIGINT" allows-null="false"/>
        </field>
-       <field name="notificationID">
-         <column name="NOTIFICATION_ID" jdbc-type="BIGINT" allows-null="false"/>
+       <!--
+         notificationHash is a unique identifier for the HMS notification used to prevent
+         the same HMS notification message to be processed twice.
+         The current HMS code may send different notifications messages with the same ID. To
+         keep this ID unique, we calculate the SHA-1 hash of the full message received.
+         (This is a temporary fix until HIVE-16886 fixes the issue with duplicated IDs)
+       -->
+       <field name="notificationHash">
+         <column name="NOTIFICATION_HASH" jdbc-type="CHAR(40)" allows-null="false"/>
+         <index name="NOTIFICATION_HASH_INDEX" unique="true"/>
        </field>
        <field name ="pathChange">
          <column name="PATH_CHANGE" jdbc-type="LONGVARCHAR" allows-null="false"/>
@@ -305,9 +313,11 @@
          <column name="CREATE_TIME_MS" jdbc-type="BIGINT"/>
        </field>
      </class>
+
      <class name="MSentryHmsNotification" table="SENTRY_HMS_NOTIFICATION_ID" identity-type="nondurable" detachable="true">
         <field name="notificationId">
           <column name="NOTIFICATION_ID" jdbc-type="BIGINT" allows-null="false"/>
+          <index name="SENTRY_HMS_NOTIFICATION_ID_INDEX"/>
         </field>
      </class>
   </package>

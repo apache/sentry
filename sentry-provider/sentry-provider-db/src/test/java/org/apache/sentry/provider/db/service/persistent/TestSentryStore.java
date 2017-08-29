@@ -47,6 +47,7 @@ import org.apache.sentry.core.common.exception.SentryGrantDeniedException;
 import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
 import org.apache.sentry.hdfs.PathsUpdate;
 import org.apache.sentry.hdfs.PermissionsUpdate;
+import org.apache.sentry.hdfs.UniquePathsUpdate;
 import org.apache.sentry.hdfs.Updateable;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
 import org.apache.sentry.hdfs.service.thrift.TRoleChanges;
@@ -2485,8 +2486,8 @@ public class TestSentryStore extends org.junit.Assert {
     sentryStore.persistFullPathsImage(new HashMap<String, Set<String>>(), 0);
 
     // Create two path updates with the same sequence ID
-    PathsUpdate update1 = new PathsUpdate(notificationID, false);
-    PathsUpdate update2 = new PathsUpdate(notificationID, false);
+    UniquePathsUpdate update1 = new UniquePathsUpdate("u1", notificationID, false);
+    UniquePathsUpdate update2 = new UniquePathsUpdate("u2", notificationID, false);
 
     // Populate the path updates with different objects and paths
     update1.newPathChange("db1").addToAddPaths(Arrays.asList("/hive/db1"));
@@ -2513,11 +2514,13 @@ public class TestSentryStore extends org.junit.Assert {
     List<MSentryPathChange> pathsChanges = sentryStore.getMSentryPathChanges();
     assertEquals(2, pathsChanges.size());
     assertEquals(1, pathsChanges.get(0).getChangeID()); // changeID = 1
-    assertEquals(notificationID, pathsChanges.get(0).getNotificationID());
     assertTrue(pathsChanges.get(0).getPathChange().contains("/hive/db1"));
     assertEquals(2, pathsChanges.get(1).getChangeID()); // changeID = 2
-    assertEquals(notificationID, pathsChanges.get(1).getNotificationID());
     assertTrue(pathsChanges.get(1).getPathChange().contains("/hive/db2"));
+
+    // Check that the SHA1 hash calculated for unique notifications is correct
+    assertEquals("u1", pathsChanges.get(0).getNotificationHash());
+    assertEquals("u2", pathsChanges.get(1).getNotificationHash());
   }
 
   @Test
@@ -2542,7 +2545,7 @@ public class TestSentryStore extends org.junit.Assert {
 
     // Add "db1.table1" authzObj
     Long lastNotificationId = sentryStore.getLastProcessedNotificationID();
-    PathsUpdate addUpdate = new PathsUpdate(1, false);
+    UniquePathsUpdate addUpdate = new UniquePathsUpdate("u1", 1, false);
     addUpdate.newPathChange("db1.table").
           addToAddPaths(Arrays.asList("db1", "tbl1"));
     addUpdate.newPathChange("db1.table").
@@ -2564,7 +2567,7 @@ public class TestSentryStore extends org.junit.Assert {
     assertEquals(1, lastNotificationId.longValue());
 
     // Delete path 'db1.db/tbl1' from "db1.table1" authzObj.
-    PathsUpdate delUpdate = new PathsUpdate(2, false);
+    UniquePathsUpdate delUpdate = new UniquePathsUpdate("u2",2, false);
     delUpdate.newPathChange("db1.table")
           .addToDelPaths(Arrays.asList("db1", "tbl1"));
     sentryStore.deleteAuthzPathsMapping("db1.table", Sets.newHashSet("db1/tbl1"), delUpdate);
@@ -2581,7 +2584,7 @@ public class TestSentryStore extends org.junit.Assert {
     assertEquals(2, lastNotificationId.longValue());
 
     // Delete "db1.table" authzObj from the authzObj -> [Paths] mapping.
-    PathsUpdate delAllupdate = new PathsUpdate(3, false);
+    UniquePathsUpdate delAllupdate = new UniquePathsUpdate("u3",3, false);
     delAllupdate.newPathChange("db1.table")
         .addToDelPaths(Lists.newArrayList(PathsUpdate.ALL_PATHS));
     sentryStore.deleteAllAuthzPathsMapping("db1.table", delAllupdate);
@@ -2612,7 +2615,7 @@ public class TestSentryStore extends org.junit.Assert {
 
 
     // Rename path of 'db1.table1' from 'db1.table1' to 'db1.newTable1'
-    PathsUpdate renameUpdate = new PathsUpdate(1, false);
+    UniquePathsUpdate renameUpdate = new UniquePathsUpdate("u1",1, false);
     renameUpdate.newPathChange("db1.table1")
         .addToDelPaths(Arrays.asList("user", "hive", "warehouse", "db1.db", "table1"));
     renameUpdate.newPathChange("db1.newTable1")
@@ -2634,7 +2637,7 @@ public class TestSentryStore extends org.junit.Assert {
     lastNotificationId = sentryStore.getLastProcessedNotificationID();
     assertEquals(1, lastNotificationId.longValue());
     // Rename 'db1.table1' to "db1.table2" but did not change its location.
-    renameUpdate = new PathsUpdate(2, false);
+    renameUpdate = new UniquePathsUpdate("u2",2, false);
     renameUpdate.newPathChange("db1.newTable1")
         .addToDelPaths(Arrays.asList("user", "hive", "warehouse", "db1.db", "newTable1"));
     renameUpdate.newPathChange("db1.newTable2")
@@ -2656,7 +2659,7 @@ public class TestSentryStore extends org.junit.Assert {
     assertEquals(renameUpdate.JSONSerialize(), renamePathChange.getPathChange());
 
     // Update path of 'db1.newTable2' from 'db1.newTable1' to 'db1.newTable2'
-    PathsUpdate update = new PathsUpdate(3, false);
+    UniquePathsUpdate update = new UniquePathsUpdate("u3",3, false);
     update.newPathChange("db1.newTable1")
         .addToDelPaths(Arrays.asList("user", "hive", "warehouse", "db1.db", "newTable1"));
     update.newPathChange("db1.newTable1")
@@ -2735,7 +2738,7 @@ public class TestSentryStore extends org.junit.Assert {
     long notificationID = 1;
 
     // Add some paths first (these should be replaced)
-    PathsUpdate addUpdate = new PathsUpdate(notificationID, false);
+    UniquePathsUpdate addUpdate = new UniquePathsUpdate("u1", notificationID, false);
     addUpdate.newPathChange("db1.table").addToAddPaths(Arrays.asList("db1", "tbl1"));
     addUpdate.newPathChange("db1.table").addToAddPaths(Arrays.asList("db1", "tbl2"));
     sentryStore.addAuthzPathsMapping("db1.table", Sets.newHashSet("db1/tbl1", "db1/tbl2"), addUpdate);
@@ -2749,7 +2752,7 @@ public class TestSentryStore extends org.junit.Assert {
 
     // Add new paths
     notificationID ++;
-    PathsUpdate newAddUpdate = new PathsUpdate(notificationID, false);
+    UniquePathsUpdate newAddUpdate = new UniquePathsUpdate("u2", notificationID, false);
     newAddUpdate.newPathChange("db2.table").addToAddPaths(Arrays.asList("db2", "tbl1"));
     newAddUpdate.newPathChange("db2.table").addToAddPaths(Arrays.asList("db2", "tbl2"));
     sentryStore.addAuthzPathsMapping("db2.table", Sets.newHashSet("db2/tbl1", "db2/tbl2"), newAddUpdate);
@@ -2761,7 +2764,7 @@ public class TestSentryStore extends org.junit.Assert {
 
     // Delete one path
     notificationID ++;
-    PathsUpdate delUpdate = new PathsUpdate(notificationID, false);
+    UniquePathsUpdate delUpdate = new UniquePathsUpdate("u3", notificationID, false);
     delUpdate.newPathChange("db2.table").addToDelPaths(Arrays.asList("db2", "tbl1"));
     sentryStore.deleteAuthzPathsMapping("db2.table", Sets.newHashSet("db2/tbl1"), delUpdate);
     pathsImage = sentryStore.retrieveFullPathsImage();
@@ -2797,7 +2800,7 @@ public class TestSentryStore extends org.junit.Assert {
 
     // Rename path of 'db1.table1' from 'db1.table1' to 'db1.newTable1'
     notificationID ++;
-    PathsUpdate renameUpdate = new PathsUpdate(notificationID, false);
+    UniquePathsUpdate renameUpdate = new UniquePathsUpdate("u1", notificationID, false);
     renameUpdate.newPathChange("db3.table1")
         .addToDelPaths(Arrays.asList("another-warehouse", "db3.db", "table1.1"));
     renameUpdate.newPathChange("db1.newTable1")
@@ -2814,7 +2817,7 @@ public class TestSentryStore extends org.junit.Assert {
 
     // Update path of 'db1.newTable2' from 'db1.newTable1' to 'db1.newTable2'
     notificationID++;
-    PathsUpdate update = new PathsUpdate(notificationID, false);
+    UniquePathsUpdate update = new UniquePathsUpdate("u2", notificationID, false);
     update.newPathChange("db1.newTable1")
         .addToDelPaths(Arrays.asList("user", "hive", "warehouse", "db1.db", "newTable1"));
     update.newPathChange("db1.newTable1")
@@ -3273,7 +3276,7 @@ public class TestSentryStore extends org.junit.Assert {
 
     // Rename path of 'db1.table1' from 'db1.table1' to 'db1.newTable1'
     lastNotificationId ++;
-    PathsUpdate renameUpdate = new PathsUpdate(lastNotificationId, false);
+    UniquePathsUpdate renameUpdate = new UniquePathsUpdate("u1", lastNotificationId, false);
     renameUpdate.newPathChange("db1.table1")
       .addToDelPaths(Arrays.asList("user", "hive", "warehouse", "db1.db", "table1"));
     renameUpdate.newPathChange("db1.newTable1")
@@ -3310,7 +3313,7 @@ public class TestSentryStore extends org.junit.Assert {
   @Test
   public void testIsAuthzPathsMappingEmpty() throws Exception {
     // Add "db1.table1" authzObj
-    PathsUpdate addUpdate = new PathsUpdate(1, false);
+    UniquePathsUpdate addUpdate = new UniquePathsUpdate("u1",1, false);
     addUpdate.newPathChange("db1.table").
       addToAddPaths(Arrays.asList("db1", "tbl1"));
     addUpdate.newPathChange("db1.table").
@@ -3345,7 +3348,7 @@ public class TestSentryStore extends org.junit.Assert {
 
     // Add "db1.table1" authzObj
     Long lastNotificationId = sentryStore.getLastProcessedNotificationID();
-    PathsUpdate addUpdate = new PathsUpdate(1, false);
+    UniquePathsUpdate addUpdate = new UniquePathsUpdate("u1",1, false);
     addUpdate.newPathChange("db1.table").
         addToAddPaths(Arrays.asList("db1", "tbl1"));
     addUpdate.newPathChange("db1.table").
@@ -3364,7 +3367,7 @@ public class TestSentryStore extends org.junit.Assert {
     assertEquals(0, lastChangeID);
 
     // Delete path 'db1.db/tbl1' from "db1.table1" authzObj.
-    PathsUpdate delUpdate = new PathsUpdate(2, false);
+    UniquePathsUpdate delUpdate = new UniquePathsUpdate("u2",2, false);
     delUpdate.newPathChange("db1.table")
         .addToDelPaths(Arrays.asList("db1", "tbl1"));
     localSentryStore.deleteAuthzPathsMapping("db1.table", Sets.newHashSet("db1/tbl1"), delUpdate);
@@ -3378,7 +3381,7 @@ public class TestSentryStore extends org.junit.Assert {
     assertEquals(0, lastChangeID);
 
     // Delete "db1.table" authzObj from the authzObj -> [Paths] mapping.
-    PathsUpdate delAllupdate = new PathsUpdate(3, false);
+    UniquePathsUpdate delAllupdate = new UniquePathsUpdate("u3",3, false);
     delAllupdate.newPathChange("db1.table")
         .addToDelPaths(Lists.newArrayList(PathsUpdate.ALL_PATHS));
     localSentryStore.deleteAllAuthzPathsMapping("db1.table", delAllupdate);

@@ -41,6 +41,7 @@ import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
 import org.apache.sentry.hdfs.PathsUpdate;
 import org.apache.sentry.hdfs.PermissionsUpdate;
 import org.apache.sentry.hdfs.SentryMalformedPathException;
+import org.apache.sentry.hdfs.UniquePathsUpdate;
 import org.apache.sentry.hdfs.Updateable.Update;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
@@ -250,7 +251,7 @@ final class NotificationProcessor {
 
     if (hdfsSyncEnabled) {
       List<String> locations = Collections.singletonList(location);
-      addPaths(dbName, locations, event.getEventId());
+      addPaths(dbName, locations, event);
 
       return true;
     }
@@ -280,7 +281,7 @@ final class NotificationProcessor {
 
     if (hdfsSyncEnabled) {
       List<String> locations = Collections.singletonList(location);
-      removePaths(dbName, locations, event.getEventId());
+      removePaths(dbName, locations, event);
       return true;
     }
     return false;
@@ -315,7 +316,7 @@ final class NotificationProcessor {
     if (hdfsSyncEnabled) {
       String authzObj = SentryServiceUtil.getAuthzObj(dbName, tableName);
       List<String> locations = Collections.singletonList(location);
-      addPaths(authzObj, locations, event.getEventId());
+      addPaths(authzObj, locations, event);
       return true;
     }
 
@@ -348,7 +349,7 @@ final class NotificationProcessor {
 
     if (hdfsSyncEnabled) {
       String authzObj = SentryServiceUtil.getAuthzObj(dbName, tableName);
-      removeAllPaths(authzObj, event.getEventId());
+      removeAllPaths(authzObj, event);
       return true;
     }
 
@@ -419,7 +420,7 @@ final class NotificationProcessor {
     }
     String oldAuthzObj = oldDbName + "." + oldTableName;
     String newAuthzObj = newDbName + "." + newTableName;
-    renameAuthzPath(oldAuthzObj, newAuthzObj, oldLocation, newLocation, event.getEventId());
+    renameAuthzPath(oldAuthzObj, newAuthzObj, oldLocation, newLocation, event);
     return true;
   }
 
@@ -450,7 +451,7 @@ final class NotificationProcessor {
       return false;
     }
     String authzObj = SentryServiceUtil.getAuthzObj(dbName, tableName);
-    addPaths(authzObj, locations, event.getEventId());
+    addPaths(authzObj, locations, event);
     return true;
   }
 
@@ -481,7 +482,7 @@ final class NotificationProcessor {
       return false;
     }
     String authzObj = SentryServiceUtil.getAuthzObj(dbName, tableName);
-    removePaths(authzObj, locations, event.getEventId());
+    removePaths(authzObj, locations, event);
     return true;
   }
 
@@ -526,7 +527,7 @@ final class NotificationProcessor {
     }
 
     String oldAuthzObj = dbName + "." + tableName;
-    renameAuthzPath(oldAuthzObj, oldAuthzObj, oldLocation, newLocation, event.getEventId());
+    renameAuthzPath(oldAuthzObj, oldAuthzObj, oldLocation, newLocation, event);
     return true;
   }
 
@@ -536,14 +537,14 @@ final class NotificationProcessor {
    *
    * @param authzObj the given authzObj
    * @param locations a set of paths need to be added
-   * @param seqNum notification event ID
+   * @param event the NotificationEvent object from where authzObj and locations were obtained
    */
-  private void addPaths(String authzObj, Collection<String> locations, long seqNum)
+  private void addPaths(String authzObj, Collection<String> locations, NotificationEvent event)
       throws Exception {
     // AuthzObj is case insensitive
     authzObj = authzObj.toLowerCase();
 
-    PathsUpdate update = new PathsUpdate(seqNum, false);
+    UniquePathsUpdate update = new UniquePathsUpdate(event, false);
     Collection<String> paths = new HashSet<>(locations.size());
     // addPath and persist into Sentry DB.
     // Skip update if encounter malformed path.
@@ -554,13 +555,13 @@ final class NotificationProcessor {
             + "OP : addPath, "
             + "authzObj : " + authzObj + ", "
             + "path : " + location + "] - nothing to add" + ", "
-            + "notification event ID: " + seqNum + "]");
+            + "notification event ID: " + event.getEventId() + "]");
       } else {
         LOGGER.debug("HMS Path Update ["
             + "OP : addPath, " + "authzObj : "
             + authzObj + ", "
             + "path : " + location + ", "
-            + "notification event ID: " + seqNum + "]");
+            + "notification event ID: " + event.getEventId() + "]");
         update.newPathChange(authzObj).addToAddPaths(splitPath(pathTree));
         paths.add(pathTree);
       }
@@ -574,14 +575,14 @@ final class NotificationProcessor {
    *
    * @param authzObj the given authzObj
    * @param locations a set of paths need to be removed
-   * @param seqNum notification event ID
+   * @param event the NotificationEvent object from where authzObj and locations were obtained
    */
-  private void removePaths(String authzObj, Collection<String> locations, long seqNum)
+  private void removePaths(String authzObj, Collection<String> locations, NotificationEvent event)
       throws Exception {
     // AuthzObj is case insensitive
     authzObj = authzObj.toLowerCase();
 
-    PathsUpdate update = new PathsUpdate(seqNum, false);
+    UniquePathsUpdate update = new UniquePathsUpdate(event, false);
     Collection<String> paths = new HashSet<>(locations.size());
     for (String location : locations) {
       String pathTree = getPath(location);
@@ -590,13 +591,13 @@ final class NotificationProcessor {
             + "OP : removePath, "
             + "authzObj : " + authzObj + ", "
             + "path : " + location + "] - nothing to remove" + ", "
-            + "notification event ID: " + seqNum + "]");
+            + "notification event ID: " + event.getEventId() + "]");
       } else {
         LOGGER.debug("HMS Path Update ["
             + "OP : removePath, "
             + "authzObj : " + authzObj + ", "
             + "path : " + location + ", "
-            + "notification event ID: " + seqNum + "]");
+            + "notification event ID: " + event.getEventId() + "]");
         update.newPathChange(authzObj).addToDelPaths(splitPath(pathTree));
         paths.add(pathTree);
       }
@@ -610,9 +611,9 @@ final class NotificationProcessor {
    * delta path change to Sentry DB.
    *
    * @param authzObj the given authzObj to be deleted
-   * @param seqNum notification event ID
+   * @param event the NotificationEvent object from where authzObj and locations were obtained
    */
-  private void removeAllPaths(String authzObj, long seqNum)
+  private void removeAllPaths(String authzObj, NotificationEvent event)
       throws Exception {
     // AuthzObj is case insensitive
     authzObj = authzObj.toLowerCase();
@@ -620,8 +621,8 @@ final class NotificationProcessor {
     LOGGER.debug("HMS Path Update ["
         + "OP : removeAllPaths, "
         + "authzObj : " + authzObj + ", "
-        + "notification event ID: " + seqNum + "]");
-    PathsUpdate update = new PathsUpdate(seqNum, false);
+        + "notification event ID: " + event.getEventId() + "]");
+    UniquePathsUpdate update = new UniquePathsUpdate(event, false);
     update.newPathChange(authzObj).addToDelPaths(
         Lists.newArrayList(PathsUpdate.ALL_PATHS));
     sentryStore.deleteAllAuthzPathsMapping(authzObj, update);
@@ -636,9 +637,10 @@ final class NotificationProcessor {
    * @param newAuthzObj the new name to be changed to
    * @param oldLocation a existing path of the given authzObj
    * @param newLocation a new path to be changed to
+   * @param event the NotificationEvent object from where authzObj and locations were obtained
    */
   private void renameAuthzPath(String oldAuthzObj, String newAuthzObj, String oldLocation,
-      String newLocation, long seqNum) throws Exception {
+      String newLocation, NotificationEvent event) throws Exception {
     // AuthzObj is case insensitive
     oldAuthzObj = oldAuthzObj.toLowerCase();
     newAuthzObj = newAuthzObj.toLowerCase();
@@ -651,13 +653,13 @@ final class NotificationProcessor {
         + "newAuthzObj : " + newAuthzObj + ", "
         + "oldLocation : " + oldLocation + ", "
         + "newLocation : " + newLocation + ", "
-        + "notification event ID: " + seqNum + "]");
+        + "notification event ID: " + event.getEventId() + "]");
 
     // In the case of HiveObj name has changed
     if (!oldAuthzObj.equalsIgnoreCase(newAuthzObj)) {
       // Skip update if encounter malformed path for both oldLocation and newLocation.
       if ((oldPathTree != null) && (newPathTree != null)) {
-        PathsUpdate update = new PathsUpdate(seqNum, false);
+        UniquePathsUpdate update = new UniquePathsUpdate(event, false);
         update.newPathChange(oldAuthzObj).addToDelPaths(splitPath(oldPathTree));
         update.newPathChange(newAuthzObj).addToAddPaths(splitPath(newPathTree));
         if (oldLocation.equals(newLocation)) {
@@ -671,18 +673,18 @@ final class NotificationProcessor {
               newPathTree, update);
         }
       } else {
-        updateAuthzPathsMapping(oldAuthzObj, oldPathTree, newAuthzObj, newPathTree, seqNum);
+        updateAuthzPathsMapping(oldAuthzObj, oldPathTree, newAuthzObj, newPathTree, event);
       }
     } else if (!oldLocation.equals(newLocation)) {
       // Only Location has changed, e.g. Alter table set location
       if ((oldPathTree != null) && (newPathTree != null)) {
-        PathsUpdate update = new PathsUpdate(seqNum, false);
+        UniquePathsUpdate update = new UniquePathsUpdate(event, false);
         update.newPathChange(oldAuthzObj).addToDelPaths(splitPath(oldPathTree));
         update.newPathChange(oldAuthzObj).addToAddPaths(splitPath(newPathTree));
         sentryStore.updateAuthzPathsMapping(oldAuthzObj, oldPathTree,
             newPathTree, update);
       } else {
-        updateAuthzPathsMapping(oldAuthzObj, oldPathTree, newAuthzObj, newPathTree, seqNum);
+        updateAuthzPathsMapping(oldAuthzObj, oldPathTree, newAuthzObj, newPathTree,event);
       }
     } else {
       LOGGER.error("Update Notification for Auhorizable object {}, with no change, skipping",
@@ -693,15 +695,15 @@ final class NotificationProcessor {
   }
 
   private void updateAuthzPathsMapping(String oldAuthzObj, String oldPathTree,
-      String newAuthzObj, String newPathTree, long seqNum) throws Exception {
+      String newAuthzObj, String newPathTree, NotificationEvent event) throws Exception {
     if (oldPathTree != null) {
-      PathsUpdate update = new PathsUpdate(seqNum, false);
+      UniquePathsUpdate update = new UniquePathsUpdate(event, false);
       update.newPathChange(oldAuthzObj).addToDelPaths(splitPath(oldPathTree));
       sentryStore.deleteAuthzPathsMapping(oldAuthzObj,
           Collections.singleton(oldPathTree),
           update);
     } else if (newPathTree != null) {
-      PathsUpdate update = new PathsUpdate(seqNum, false);
+      UniquePathsUpdate update = new UniquePathsUpdate(event, false);
       update.newPathChange(newAuthzObj).addToAddPaths(splitPath(newPathTree));
       sentryStore.addAuthzPathsMapping(newAuthzObj,
           Collections.singleton(newPathTree),

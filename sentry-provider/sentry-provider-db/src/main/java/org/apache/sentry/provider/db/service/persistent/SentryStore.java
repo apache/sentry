@@ -51,6 +51,7 @@ import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
+import org.apache.sentry.hdfs.UniquePathsUpdate;
 import org.apache.sentry.provider.db.service.model.MAuthzPathsMapping;
 import org.apache.sentry.provider.db.service.model.MAuthzPathsSnapshotId;
 import org.apache.sentry.provider.db.service.model.MSentryChange;
@@ -2765,7 +2766,7 @@ public class SentryStore {
    * @throws Exception
    */
   public void addAuthzPathsMapping(final String authzObj, final Collection<String> paths,
-      final Update update) throws Exception {
+      final UniquePathsUpdate update) throws Exception {
     execute(update, new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
         pm.setDetachAllOnCommit(false); // No need to detach objects
@@ -2812,7 +2813,7 @@ public class SentryStore {
    * @param update the corresponding path delta update
    */
   public void deleteAuthzPathsMapping(final String authzObj, final Iterable<String> paths,
-      final Update update) throws Exception {
+      final UniquePathsUpdate update) throws Exception {
     execute(update, new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
         pm.setDetachAllOnCommit(false); // No need to detach objects
@@ -2863,7 +2864,7 @@ public class SentryStore {
    * @param authzObj an authzObj to be deleted
    * @param update the corresponding path delta update
    */
-  public void deleteAllAuthzPathsMapping(final String authzObj, final Update update)
+  public void deleteAllAuthzPathsMapping(final String authzObj, final UniquePathsUpdate update)
         throws Exception {
     execute(update, new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
@@ -2913,7 +2914,7 @@ public class SentryStore {
    * @param update the corresponding path delta update
    */
   public void renameAuthzPathsMapping(final String oldObj, final String newObj,
-      final String oldPath, final String newPath, final Update update) throws Exception {
+      final String oldPath, final String newPath, final UniquePathsUpdate update) throws Exception {
     execute(update, new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
         pm.setDetachAllOnCommit(false); // No need to detach objects
@@ -2970,7 +2971,7 @@ public class SentryStore {
    * @param update the corresponding path delta update
    */
   public void renameAuthzObj(final String oldObj, final String newObj,
-      final Update update) throws Exception {
+      final UniquePathsUpdate update) throws Exception {
     execute(update, new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
         pm.setDetachAllOnCommit(false); // No need to detach objects
@@ -3052,7 +3053,7 @@ public class SentryStore {
    * @throws Exception
    */
   public void updateAuthzPathsMapping(final String authzObj, final String oldPath,
-        final String newPath, final Update update) throws Exception {
+        final String newPath, final UniquePathsUpdate update) throws Exception {
     execute(update, new TransactionBlock<Object>() {
       public Object execute(PersistenceManager pm) throws Exception {
         pm.setDetachAllOnCommit(false); // No need to detach objects

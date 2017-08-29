@@ -55,8 +55,8 @@ public class TestDeltaRetriever {
     List<PathsUpdate> pathsUpdates;
 
     List<MSentryPathChange> deltaPathChanges = Arrays.asList(
-        new MSentryPathChange(1, new PathsUpdate(1, true)),
-        new MSentryPathChange(2, new PathsUpdate(2, false))
+        new MSentryPathChange(1, "u1", new PathsUpdate(1, true)),
+        new MSentryPathChange(2, "u2", new PathsUpdate(2, false))
     );
 
     Mockito.when(sentryStoreMock.getMSentryPathChanges(Mockito.anyLong()))
