@@ -228,11 +228,12 @@ public final class TransactionManager {
       Exception ex = null;
       long sleepTime = retryWaitTimeMills;
 
-      for (int retryNum = 0; retryNum < transactionRetryMax; retryNum++) {
+      for (int retryNum = 1; retryNum <= transactionRetryMax; retryNum++) {
         try {
           return arg.call();
         } catch (SentryUserException e) {
           // throw the sentry exception without retry
+          LOGGER.warn("Transaction manager encountered non-retriable exception", e);
           throw e;
         } catch (Exception e) {
           ex = e;
@@ -241,6 +242,7 @@ public final class TransactionManager {
           LOGGER.warn("Retrying transaction {}/{} times",
                   retryNum, transactionRetryMax);
           // Introduce some randomness in the backoff time.
+          LOGGER.warn("Sleeping for {} milliseconds before retrying", sleepTime);
           Thread.sleep(sleepTime);
           int fuzz = random.nextInt((int)sleepTime / 2);
           sleepTime *= 3;
