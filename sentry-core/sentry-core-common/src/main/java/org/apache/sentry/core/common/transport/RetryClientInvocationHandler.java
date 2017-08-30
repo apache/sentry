@@ -50,6 +50,7 @@ public final class RetryClientInvocationHandler extends SentryClientInvocationHa
     LoggerFactory.getLogger(RetryClientInvocationHandler.class);
   private SentryConnection client = null;
   private final int maxRetryCount;
+  private final long connRetryDelayInMs;
 
   /**
    * Initialize the sentry configurations, including rpc retry count and client connection
@@ -61,6 +62,7 @@ public final class RetryClientInvocationHandler extends SentryClientInvocationHa
     Preconditions.checkNotNull(clientObject, "Client Object cannot be null");
     client = clientObject;
     maxRetryCount = transportConfig.getSentryRpcRetryTotal(conf);
+    connRetryDelayInMs = transportConfig.getSentryRpcConnRetryDelayInMs(conf);
   }
 
   /**
@@ -149,6 +151,15 @@ public final class RetryClientInvocationHandler extends SentryClientInvocationHa
           throw new SentryUserException(failure.getMessage(), causeException);
         }
         lastExc = causeException;
+      }
+
+      // Sleep until connection retry delay
+      try {
+        Thread.sleep(connRetryDelayInMs);
+      } catch (InterruptedException ex) {
+        // Resetting the interrupt flag
+        Thread.currentThread().interrupt();
+        throw ex;
       }
     }
     assert lastExc != null;

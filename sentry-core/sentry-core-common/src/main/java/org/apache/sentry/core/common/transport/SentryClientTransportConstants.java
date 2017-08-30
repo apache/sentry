@@ -36,7 +36,12 @@ public final class SentryClientTransportConstants {
    * {link RetryClientInvocationHandler#invokeImpl(Object, Method, Object[])}
    */
   static final String SENTRY_RPC_RETRY_TOTAL = "sentry.service.client.rpc.retry-total";
-  static final int SENTRY_RPC_RETRY_TOTAL_DEFAULT = 3;
+  static final int SENTRY_RPC_RETRY_TOTAL_DEFAULT = 5;
+
+  static final String SERVER_RPC_CONN_RETRY_DELAY_MS = "sentry.service.client.rpc.retry.interval.msec";
+  // Default of 3 seconds time for retry
+  static final long SERVER_RPC_CONN_RETRY_DELAY_MS_DEFAULT =
+      TimeUnit.MILLISECONDS.convert(3, TimeUnit.SECONDS);
 
   /**
    * full retry num for getting the connection in non-pool model
@@ -97,7 +102,14 @@ public final class SentryClientTransportConstants {
      * {link RetryClientInvocationHandler#invokeImpl(Object, Method, Object[])}
      */
     static final String SENTRY_RPC_RETRY_TOTAL = "sentry.service.client.rpc.retry-total";
-    static final int SENTRY_RPC_RETRY_TOTAL_DEFAULT = 3;
+    static final int SENTRY_RPC_RETRY_TOTAL_DEFAULT =
+        SentryClientTransportConstants.SENTRY_RPC_RETRY_TOTAL_DEFAULT;
+
+    // Wait interval before retrying connections
+    static final String SERVER_RPC_CONN_RETRY_DELAY_MS =
+        SentryClientTransportConstants.SERVER_RPC_CONN_RETRY_DELAY_MS;
+    static final long SERVER_RPC_CONN_RETRY_DELAY_MS_DEFAULT =
+        SentryClientTransportConstants.SERVER_RPC_CONN_RETRY_DELAY_MS_DEFAULT;
 
     // commons-pool configuration
     static final String SENTRY_POOL_ENABLE = "sentry.service.client.connection.pool.enabled";
@@ -174,7 +186,14 @@ public final class SentryClientTransportConstants {
     static final String SENTRY_RPC_RETRY_TOTAL =
       SentryClientTransportConstants.SENTRY_RPC_RETRY_TOTAL;
 
-    static final int SENTRY_RPC_RETRY_TOTAL_DEFAULT = 3;
+    static final int SENTRY_RPC_RETRY_TOTAL_DEFAULT =
+        SentryClientTransportConstants.SENTRY_RPC_RETRY_TOTAL_DEFAULT;
+
+    // Wait interval before retrying connections
+    static final String SERVER_RPC_CONN_RETRY_DELAY_MS =
+        SentryClientTransportConstants.SERVER_RPC_CONN_RETRY_DELAY_MS;
+    static final long SERVER_RPC_CONN_RETRY_DELAY_MS_DEFAULT =
+        SentryClientTransportConstants.SERVER_RPC_CONN_RETRY_DELAY_MS_DEFAULT;
 
     // commons-pool configuration - disable pool for HDFS clients
     static final String SENTRY_POOL_ENABLE = "sentry.hdfs.service.client.connection.pool.enable";

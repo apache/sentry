@@ -39,6 +39,13 @@ interface SentryClientTransportConfigInterface {
 
   /**
    * @param conf configuration
+   * @return time interval in milli-secs that the client should wait before
+   * retrying to establish connection to the server.
+   */
+  long getSentryRpcConnRetryDelayInMs(Configuration conf);
+
+  /**
+   * @param conf configuration
    * @return True, if kerberos should be enabled.
    * False, Iff kerberos is enabled.
    */

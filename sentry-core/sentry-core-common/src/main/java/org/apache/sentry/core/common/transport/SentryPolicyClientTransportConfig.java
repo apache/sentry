@@ -46,6 +46,11 @@ public final class SentryPolicyClientTransportConfig
   }
 
   @Override
+  public long getSentryRpcConnRetryDelayInMs(Configuration conf) {
+    return conf.getLong(SERVER_RPC_CONN_RETRY_DELAY_MS, SERVER_RPC_CONN_RETRY_DELAY_MS_DEFAULT);
+  }
+
+  @Override
   public boolean useUserGroupInformation(Configuration conf) {
     return Boolean.valueOf(conf.get(SECURITY_USE_UGI_TRANSPORT, "true"));
   }
