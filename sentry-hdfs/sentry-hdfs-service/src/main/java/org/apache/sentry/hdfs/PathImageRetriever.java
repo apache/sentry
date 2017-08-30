@@ -18,14 +18,14 @@
 package org.apache.sentry.hdfs;
 
 import com.codahale.metrics.Timer;
-import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import org.apache.sentry.hdfs.service.thrift.TPathChanges;
 import org.apache.sentry.provider.db.service.persistent.PathsImage;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 
 import javax.annotation.concurrent.ThreadSafe;
-
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -69,7 +69,15 @@ class PathImageRetriever implements ImageRetriever<PathsUpdate> {
         TPathChanges pathChange = pathsUpdate.newPathChange(pathEnt.getKey());
 
         for (String path : pathEnt.getValue()) {
-          pathChange.addToAddPaths(Lists.newArrayList(Splitter.on("/").split(path)));
+          // Convert each path to a list, so a/b/c becomes {a, b, c}
+          // Since these are partition names they may have a lot of duplicate strings.
+          // To save space for big snapshots we intern each path component.
+          String[] pathComponents = path.split("/");
+          List<String> paths = new ArrayList<>(pathComponents.length);
+          for (String pathElement: pathComponents) {
+            paths.add(pathElement.intern());
+          }
+          pathChange.addToAddPaths(paths);
         }
       }
 

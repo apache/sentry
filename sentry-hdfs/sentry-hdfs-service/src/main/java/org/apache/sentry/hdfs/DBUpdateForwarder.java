@@ -83,7 +83,7 @@ class DBUpdateForwarder<K extends Updateable.Update> {
         return Collections.emptyList();
       } else if (curImgNum > imgNum) {
         // In case a new HMS snapshot has been processed, then return a full paths image.
-        LOGGER.info("A newer full update is found with image number: ", curImgNum);
+        LOGGER.info("A newer full update is found with image number: {}", curImgNum);
         return Collections.singletonList(imageRetriever.retrieveFullImage());
       }
     }
@@ -105,14 +105,14 @@ class DBUpdateForwarder<K extends Updateable.Update> {
     if (seqNum > SEQUENCE_NUMBER_UPDATE_UNINITIALIZED && deltaRetriever.isDeltaAvailable(seqNum)) {
       List<K> deltas = deltaRetriever.retrieveDelta(seqNum);
       if (!deltas.isEmpty()) {
-        LOGGER.info("Newer delta updates are found up to sequence number: ", curSeqNum);
+        LOGGER.info("Newer delta updates are found up to sequence number: {}", curSeqNum);
         return deltas;
       }
     }
 
     // If the sequence number is < 0 or the requested delta is not available, then we
     // return a full update.
-    LOGGER.info("A full update is returned due to an unavailable sequence number: ", seqNum);
+    LOGGER.info("A full update is returned due to an unavailable sequence number: {}", seqNum);
     return Collections.singletonList(imageRetriever.retrieveFullImage());
   }
 }
