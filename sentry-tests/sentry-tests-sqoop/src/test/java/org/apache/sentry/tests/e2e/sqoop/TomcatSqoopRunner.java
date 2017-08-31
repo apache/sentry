@@ -165,8 +165,8 @@ public class TomcatSqoopRunner {
   }
 
   private static class SqoopServerEnableSentry extends SqoopMiniCluster {
-    private static final String WAR_PATH = "thirdparty/sqoop.war";
-    private static final String TOMCAT_PATH = "thirdparty/apache-tomcat-6.0.36.zip";
+    private static final String WAR_PATH = "target/thirdparty/sqoop-server.war";
+    private static final String TOMCAT_PATH = "target/thirdparty/tomcat.zip";
 
     private InstalledLocalContainer container = null;
     private Integer port;
@@ -236,9 +236,9 @@ public class TomcatSqoopRunner {
       installer.install();
 
       LocalConfiguration configuration = (LocalConfiguration) new DefaultConfigurationFactory()
-          .createConfiguration("tomcat6x", ContainerType.INSTALLED, ConfigurationType.STANDALONE,
+          .createConfiguration("tomcat7x", ContainerType.INSTALLED, ConfigurationType.STANDALONE,
               confPath);
-      container = (InstalledLocalContainer) new DefaultContainerFactory().createContainer("tomcat6x",
+      container = (InstalledLocalContainer) new DefaultContainerFactory().createContainer("tomcat7x",
           ContainerType.INSTALLED, configuration);
 
       // Set home to our installed tomcat instance

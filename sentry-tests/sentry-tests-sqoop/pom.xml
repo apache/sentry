@@ -159,66 +159,55 @@ limitations under the License.
         </dependency>
       </dependencies>
     </profile>
-   <profile>
-     <id>download-sqoop2</id>
-     <activation>
-       <activeByDefault>true</activeByDefault>
-       <property><name>!skipTests</name></property>
-     </activation>
-     <build>
-     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <configuration>
-          <skipTests>true</skipTests>
-        </configuration>
-        <executions>
-          <execution>
-            <id>download-sqoop2</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <target>
-                <echo file="target/download.sh">
-                  set -e
-                  set -x
-                  /bin/pwd
-                  BASE_DIR=./target
-                  DOWNLOAD_DIR=./thirdparty
-                  if which wget >/dev/null; then
-                    DOWNLOAD_CMD="wget --no-check-certificate -nv -O"
-                  elif which curl >/dev/null; then
-                    DOWNLOAD_CMD="curl -sS -o"
-                  fi
-                  if [ -z $DOWNLOAD_CMD ]; then
-                    echo "Can't find command 'wget' or 'curl'"
-                    exit 1
-                  fi
-                  download() {
-                    url=$1;
-                    packageName=$2
-                    if [[ ! -f $DOWNLOAD_DIR/$packageName ]]
-                    then
-                      $DOWNLOAD_CMD $DOWNLOAD_DIR/$packageName $url
-                    fi
-                  }
-                  mkdir -p $DOWNLOAD_DIR
-                  download "https://repository.apache.org/content/repositories/snapshots/org/apache/sqoop/sqoop-server/2.0.0-SNAPSHOT/sqoop-server-2.0.0-20150530.005523-4.war" sqoop.war
-                  download "http://archive.apache.org/dist/tomcat/tomcat-6/v6.0.36/bin/apache-tomcat-6.0.36.zip" apache-tomcat-6.0.36.zip
-                </echo>
-                <exec executable="bash" dir="${basedir}" failonerror="true">
-                  <arg line="target/download.sh"/>
-                </exec>
-              </target>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-     </plugins>
-    </build>
-   </profile>
+    <profile>
+      <id>download-sqoop2</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+        <property>
+          <name>!skipTests</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>download-deps</id>
+                <phase>generate-resources</phase>
+                <goals>
+                  <goal>copy</goal>
+                </goals>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.apache.tomcat</groupId>
+                      <artifactId>tomcat</artifactId>
+                      <version>7.0.81</version>
+                      <type>zip</type>
+                      <overWrite>true</overWrite>
+                      <outputDirectory>target/thirdparty</outputDirectory>
+                    </artifactItem>
+                    <artifactItem>
+                      <groupId>org.apache.sqoop</groupId>
+                      <artifactId>sqoop-server</artifactId>
+                      <version>2.0.0-SNAPSHOT</version>
+                      <type>war</type>
+                      <overWrite>true</overWrite>
+                      <outputDirectory>target/thirdparty</outputDirectory>
+                    </artifactItem>
+                  </artifactItems>
+                  <outputAbsoluteArtifactFilename>true</outputAbsoluteArtifactFilename>
+                  <overWriteSnapshots>true</overWriteSnapshots>
+                  <overWriteIfNewer>true</overWriteIfNewer>
+                  <stripVersion>true</stripVersion>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 </project>
