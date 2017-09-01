@@ -2,14 +2,14 @@
 CREATE TABLE "AUTHZ_PATHS_MAPPING"
 (
     "AUTHZ_OBJ_ID" SERIAL,
-    "AUTHZ_OBJ_NAME" varchar(384) NULL,
+    "AUTHZ_OBJ_NAME" varchar(384) NOT NULL,
     "CREATE_TIME_MS" int8 NOT NULL,
     "AUTHZ_SNAPSHOT_ID" bigint NOT NULL,
     CONSTRAINT "AUTHZ_PATHS_MAPPING_PK" PRIMARY KEY ("AUTHZ_OBJ_ID")
 );
 
 -- Constraints for table "AUTHZ_PATHS_MAPPING" for class(es) [org.apache.sentry.provider.db.service.model.MAuthzPathsMapping]
-CREATE UNIQUE INDEX "AUTHZOBJNAME" ON "AUTHZ_PATHS_MAPPING" ("AUTHZ_OBJ_NAME");
+CREATE UNIQUE INDEX "AUTHZOBJNAMEID" ON "AUTHZ_PATHS_MAPPING" ("AUTHZ_OBJ_NAME", "AUTHZ_SNAPSHOT_ID");
 
 -- Table `AUTHZ_PATH` for classes [org.apache.sentry.provider.db.service.model.MPath]
 CREATE TABLE "AUTHZ_PATH"

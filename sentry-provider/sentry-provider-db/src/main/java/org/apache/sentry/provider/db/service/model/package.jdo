@@ -247,14 +247,17 @@
        <datastore-identity>
          <column name="AUTHZ_OBJ_ID"/>
        </datastore-identity>
+       <index name="AuthzObjNameID" unique="true">
+         <field name="authzObjName"/>
+         <field name="authzSnapshotID"/>
+       </index>
        <!--
          authzObjName is composed by hive database name, and table name. e.g. "default.tb1". Since
          both hive database name, and table name have restrictions to be at most 128 characters long,
          384 characters length should be enough for AUTHZ_OBJ_NAM.
        -->
        <field name="authzObjName">
-         <column name="AUTHZ_OBJ_NAME" length="384" jdbc-type="VARCHAR"/>
-         <index name="AuthzObjName" unique="true"/>
+         <column name="AUTHZ_OBJ_NAME" length="384" jdbc-type="VARCHAR" allows-null="false"/>
        </field>
        <field name="createTimeMs">
          <column name="CREATE_TIME_MS" jdbc-type="BIGINT"/>

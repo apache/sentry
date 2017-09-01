@@ -9,7 +9,7 @@ CREATE TABLE `AUTHZ_PATHS_MAPPING`
 ) ENGINE=INNODB;
 
 -- Constraints for table `AUTHZ_PATHS_MAPPING` for class(es) [org.apache.sentry.provider.db.service.model.MAuthzPathsMapping]
-CREATE UNIQUE INDEX `AUTHZOBJNAME` ON `AUTHZ_PATHS_MAPPING` (`AUTHZ_OBJ_NAME`);
+CREATE UNIQUE INDEX `AUTHZOBJNAMEID` ON `AUTHZ_PATHS_MAPPING` (`AUTHZ_OBJ_NAME`, `AUTHZ_SNAPSHOT_ID`);
 
 -- Table `AUTHZ_PATH` for classes [org.apache.sentry.provider.db.service.model.MPath]
 CREATE TABLE `AUTHZ_PATH` (
