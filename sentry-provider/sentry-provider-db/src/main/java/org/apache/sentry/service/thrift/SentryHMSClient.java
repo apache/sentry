@@ -29,7 +29,6 @@ import com.google.common.annotations.VisibleForTesting;
 
 import java.io.IOException;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -241,63 +240,5 @@ class SentryHMSClient implements AutoCloseable {
       LOGGER.error("Snapshot created failed ", ignored);
       return emptyMap();
     }
-  }
-
-  /**
-   * Returns all HMS notifications with ID greater than the specified one
-   *
-   * @param notificationId ID of the last notification that was processed.
-   * @return Collection of new events to be synced
-   */
-  Collection<NotificationEvent> getNotifications(long notificationId) throws Exception {
-    if (client == null) {
-      LOGGER.error(NOT_CONNECTED_MSG);
-      return Collections.emptyList();
-    }
-
-    LOGGER.debug("Checking for notifications beyond {}", notificationId);
-
-    // A bug HIVE-15761 (fixed on Hive 2.4.0) should allow requesting notifications using
-    // an unprocessed notification ID without causing an exception. For now, we just
-    // leave this workaround and log debug messages.
-    CurrentNotificationEventId eventId = client.getCurrentNotificationEventId();
-    LOGGER.debug("ID of Last HMS notifications is: {}", eventId.getEventId());
-    if (eventId != null && eventId.getEventId() < notificationId) {
-      LOGGER.debug("Last notification of HMS is smaller than what sentry processed, Something is"
-          + "wrong. Sentry will request a full Snapshot");
-      return Collections.emptyList();
-    }
-
-    if (eventId != null && eventId.getEventId() == notificationId) {
-      return Collections.emptyList();
-    }
-
-    NotificationEventResponse response =
-        client.getNextNotification(notificationId, Integer.MAX_VALUE, null);
-    if (response != null && response.isSetEvents()) {
-      LOGGER.debug("Last Id processed:{}. Received collection of notifications, Size:{}",
-          notificationId, response.getEvents().size());
-      return response.getEvents();
-    }
-
-    return Collections.emptyList();
-  }
-
-  /**
-   * @return the latest notification Id logged by the HMS
-   * @throws Exception when an error occurs when talking to the HMS client
-   */
-  long getCurrentNotificationId() throws Exception {
-    if (client == null) {
-      LOGGER.error(NOT_CONNECTED_MSG);
-      return SentryStore.EMPTY_NOTIFICATION_ID;
-    }
-
-    CurrentNotificationEventId eventId = client.getCurrentNotificationEventId();
-    if (eventId.isSetEventId()) {
-      return eventId.getEventId();
-    }
-
-    return SentryStore.EMPTY_NOTIFICATION_ID;
   }
 }

@@ -25,20 +25,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Random;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
-import org.apache.hadoop.hive.metastore.IMetaStoreClient.NotificationFilter;
 import org.apache.hadoop.hive.metastore.api.CurrentNotificationEventId;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.MetaException;
-import org.apache.hadoop.hive.metastore.api.NotificationEvent;
-import org.apache.hadoop.hive.metastore.api.NotificationEventResponse;
 import org.apache.hadoop.hive.metastore.api.Partition;
 import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.metastore.api.Table;
-import org.apache.hive.hcatalog.messaging.HCatEventMessage;
-import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageFactory;
 import org.apache.sentry.provider.db.service.persistent.PathsImage;
 import org.apache.thrift.TException;
 import org.junit.Assert;
@@ -56,7 +50,6 @@ import javax.security.auth.login.LoginException;
 public class TestSentryHMSClient {
 
   private static final Configuration conf = new Configuration();
-  private static final SentryJSONMessageFactory messageFactory = new SentryJSONMessageFactory();
   private static SentryHMSClient client;
   private static MockHMSClientFactory hiveConnectionFactory;
 
@@ -106,36 +99,6 @@ public class TestSentryHMSClient {
         String.format("hdfs:///%s/%s/%s", dbName, tableName, partName));
     Mockito.when(partition.getSd()).thenReturn(sd);
     return partition;
-  }
-
-  /**
-   * Creates create database notification
-   *
-   * @return NotificationEvent
-   */
-  private static NotificationEvent getCreateDatabaseNotification(long id) {
-    Random rand = new Random();
-    int n = rand.nextInt(100) + 1;
-    String dbName = "db" + n;
-    return new NotificationEvent(id, 0, HCatEventMessage.EventType.CREATE_DATABASE.toString(),
-        messageFactory
-            .buildCreateDatabaseMessage(new Database(dbName, null, "hdfs:///" + dbName, null))
-            .toString());
-  }
-
-  /**
-   * Creates drop database notification
-   *
-   * @return NotificationEvent
-   */
-  private static NotificationEvent getDropDatabaseNotification(long id) {
-    Random rand = new Random();
-    int n = rand.nextInt(100) + 1;
-    String dbName = "db" + n;
-    return new NotificationEvent(id, 0, HCatEventMessage.EventType.DROP_DATABASE.toString(),
-        messageFactory
-            .buildDropDatabaseMessage(new Database(dbName, null, "hdfs:///" + dbName, null))
-            .toString());
   }
 
   @BeforeClass
@@ -232,94 +195,6 @@ public class TestSentryHMSClient {
     Assert.assertEquals(Sets.newHashSet("db3/tab31"), snapshotInfo.getPathImage().get("db3.tab31"));
     Assert.assertEquals(snapshotInfo.getId(), mockClient.eventId);
 
-  }
-
-  /**
-   * Test scenario when there is no HMS connection
-   * Getting new notifications
-   */
-  @Test
-  public void testGetNewNotificationsWithOutClientConnected() throws Exception {
-    HiveTable tab21 = new HiveTable("tab21");
-    HiveTable tab31 = new HiveTable("tab31");
-    HiveDb db3 = new HiveDb("db3", Lists.newArrayList(tab31));
-    HiveDb db2 = new HiveDb("db2", Lists.newArrayList(tab21));
-    HiveDb db1 = new HiveDb("db1");
-    client.setClient(null);
-    HiveSnapshot snap = new HiveSnapshot().add(db1).add(db2).add(db3);
-    MockClient mockClient = new MockClient(snap, 100);
-    Mockito.when(mockClient.client.getCurrentNotificationEventId()).
-        thenReturn(new CurrentNotificationEventId(mockClient.eventId));
-    // Make sure that client is not connected
-    Assert.assertTrue(!client.isConnected());
-    Collection<NotificationEvent> events = client.getNotifications(100);
-    Assert.assertTrue(events.isEmpty());
-
-  }
-
-  /**
-   * Test scenario where there are no notifications
-   * Getting new notifications
-   */
-  @Test
-  public void testGetNewNotificationsWithNoHmsUpdates() throws Exception {
-    HiveTable tab21 = new HiveTable("tab21");
-    HiveTable tab31 = new HiveTable("tab31");
-    HiveDb db3 = new HiveDb("db3", Lists.newArrayList(tab31));
-    HiveDb db2 = new HiveDb("db2", Lists.newArrayList(tab21));
-    HiveDb db1 = new HiveDb("db1");
-    HiveSnapshot snap = new HiveSnapshot().add(db1).add(db2).add(db3);
-    MockClient mockClient = new MockClient(snap, 100);
-    Mockito.when(mockClient.client.getCurrentNotificationEventId()).
-        thenReturn(new CurrentNotificationEventId(mockClient.eventId));
-    client.setClient(mockClient.client);
-    hiveConnectionFactory.setClient(mockClient);
-    // Make sure that client is connected
-    Assert.assertTrue(client.isConnected());
-    Collection<NotificationEvent> events = client.getNotifications(100);
-    Assert.assertTrue(events.isEmpty());
-  }
-
-  /**
-   * Test scenario where there are notifications
-   * Getting new notifications
-   */
-  @Test
-  public void testGetNewNotificationsSuccess() throws Exception {
-    final MockClient mockClient = new MockClient(new HiveSnapshot(), 100);
-    client.setClient(mockClient.client);
-    hiveConnectionFactory.setClient(mockClient);
-    // Make sure that client is connected
-    Assert.assertTrue(client.isConnected());
-
-    Mockito.when(mockClient.client.getCurrentNotificationEventId()).
-        thenAnswer(new Answer<CurrentNotificationEventId>() {
-          @Override
-          public CurrentNotificationEventId answer(InvocationOnMock invocation)
-              throws Throwable {
-            return new CurrentNotificationEventId(mockClient.incrementNotificationEventId());
-          }
-        });
-    Mockito.when(mockClient.client.getNextNotification(Mockito.anyLong(), Mockito.anyInt(),
-        Mockito.any(NotificationFilter.class))).
-        thenAnswer(new Answer<NotificationEventResponse>() {
-          @Override
-          public NotificationEventResponse answer(InvocationOnMock invocation)
-              throws Throwable {
-            long id = 1;
-            List<NotificationEvent> events = new ArrayList<>();
-            events.add(getCreateDatabaseNotification(id++));
-            events.add(getDropDatabaseNotification(id++));
-            return new NotificationEventResponse(events);
-          }
-        });
-
-    Collection<NotificationEvent> events = client.getNotifications(100);
-    long id = 1;
-    for (NotificationEvent event : events) {
-      Assert.assertEquals(event.getEventId(), id++);
-    }
-    Assert.assertTrue(events.size() == 2);
   }
 
   /**

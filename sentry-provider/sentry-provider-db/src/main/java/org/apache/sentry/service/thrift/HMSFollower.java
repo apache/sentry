@@ -48,6 +48,7 @@ public class HMSFollower implements Runnable, AutoCloseable {
   private final Configuration authzConf;
   private final SentryStore sentryStore;
   private final NotificationProcessor notificationProcessor;
+  private final HiveNotificationFetcher notificationFetcher;
   private final boolean hdfsSyncEnabled;
 
   private final LeaderStatusMonitor leaderMonitor;
@@ -60,7 +61,7 @@ public class HMSFollower implements Runnable, AutoCloseable {
    * @param leaderMonitor singleton instance of LeaderStatusMonitor
    */
   HMSFollower(Configuration conf, SentryStore store, LeaderStatusMonitor leaderMonitor,
-              HiveSimpleConnectionFactory hiveConnectionFactory) {
+              HiveConnectionFactory hiveConnectionFactory) {
     this(conf, store, leaderMonitor, hiveConnectionFactory, null);
   }
 
@@ -74,7 +75,7 @@ public class HMSFollower implements Runnable, AutoCloseable {
    */
   @VisibleForTesting
   public HMSFollower(Configuration conf, SentryStore store, LeaderStatusMonitor leaderMonitor,
-              HiveSimpleConnectionFactory hiveConnectionFactory, String authServerName) {
+              HiveConnectionFactory hiveConnectionFactory, String authServerName) {
     LOGGER.info("HMSFollower is being initialized");
     authzConf = conf;
     this.leaderMonitor = leaderMonitor;
@@ -88,6 +89,7 @@ public class HMSFollower implements Runnable, AutoCloseable {
     notificationProcessor = new NotificationProcessor(sentryStore, authServerName, authzConf);
     client = new SentryHMSClient(authzConf, hiveConnectionFactory);
     hdfsSyncEnabled = SentryServiceUtil.isHDFSSyncEnabledNoCache(authzConf); // no cache to test different settings for hdfs sync
+    notificationFetcher = new HiveNotificationFetcher(sentryStore, hiveConnectionFactory);
   }
 
   @VisibleForTesting
@@ -110,6 +112,8 @@ public class HMSFollower implements Runnable, AutoCloseable {
         LOGGER.error("Failed to close the Sentry Hms Client", failure);
       }
     }
+
+    notificationFetcher.close();
   }
 
   @Override
@@ -169,7 +173,8 @@ public class HMSFollower implements Runnable, AutoCloseable {
         return;
       }
 
-      Collection<NotificationEvent> notifications = client.getNotifications(notificationId);
+      Collection<NotificationEvent> notifications =
+          notificationFetcher.fetchNotifications(notificationId);
 
       // After getting notifications, it checks if the HMS did some clean-up and notifications
       // are out-of-sync with Sentry.
@@ -214,7 +219,7 @@ public class HMSFollower implements Runnable, AutoCloseable {
       return true;
     }
 
-    long currentHmsNotificationId = client.getCurrentNotificationId();
+    long currentHmsNotificationId = notificationFetcher.getCurrentNotificationId();
     if (currentHmsNotificationId < latestSentryNotificationId) {
       LOGGER.info("The latest notification ID on HMS is less than the latest notification ID "
           + "processed by Sentry. Need to request a full HMS snapshot.");
@@ -240,28 +245,31 @@ public class HMSFollower implements Runnable, AutoCloseable {
       return false;
     }
 
+    /*
+     * If the sequence of notifications has a gap, then an out-of-sync might
+     * have happened due to the following issue:
+     *
+     * - HDFS sync was disabled or Sentry was shutdown for a time period longer than
+     * the HMS notification clean-up thread causing old notifications to be deleted.
+     *
+     * HMS notifications may contain both gaps in the sequence and duplicates
+     * (the same ID repeated more then once for different events).
+     *
+     * To accept duplicates (see NotificationFetcher for more info), then a gap is found
+     * if the 1st notification received is higher than the current ID processed + 1.
+     * i.e.
+     *   1st ID = 3, latest ID = 3 (duplicate found but no gap detected)
+     *   1st ID = 4, latest ID = 3 (consecutive ID found but no gap detected)
+     *   1st ID = 5, latest ID = 3 (a gap is detected)
+     */
+
     List<NotificationEvent> eventList = (List<NotificationEvent>) events;
     long firstNotificationId = eventList.get(0).getEventId();
-    long lastNotificationId = eventList.get(eventList.size() - 1).getEventId();
 
-    //
-    // If the next expected notification is not available, then an out-of-sync might
-    // have happened due to the following issue:
-    //
-    // - HDFS sync was disabled or Sentry was shutdown for a time period longer than
-    // the HMS notification clean-up thread causing old notifications to be deleted.
-    //
-    if ((latestProcessedId + 1) != firstNotificationId) {
+    if (firstNotificationId > (latestProcessedId + 1)) {
       LOGGER.info("Current HMS notifications are out-of-sync with latest Sentry processed"
           + "notifications. Need to request a full HMS snapshot.");
       return true;
-    }
-
-    long expectedSize = lastNotificationId - latestProcessedId;
-    if (expectedSize < eventList.size()) {
-      LOGGER.info("The HMS notifications fetched has some gaps in the # of events received. These"
-          + "should not cause an out-of-sync issue. (expected = {}, fetched = {})",
-          expectedSize, eventList.size());
     }
 
     return false;

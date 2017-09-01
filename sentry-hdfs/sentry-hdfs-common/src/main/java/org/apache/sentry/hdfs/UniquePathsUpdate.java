@@ -47,7 +47,7 @@ public class UniquePathsUpdate extends PathsUpdate {
     return eventHash;
   }
 
-  private String sha1(NotificationEvent event) {
+  public static String sha1(NotificationEvent event) {
     StringBuilder sb = new StringBuilder();
 
     sb.append(event.getEventId());

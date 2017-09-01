@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.Sets;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -32,9 +33,13 @@ import java.util.Set;
 import junit.framework.Assert;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
+import org.apache.hadoop.hive.metastore.IMetaStoreClient.NotificationFilter;
+import org.apache.hadoop.hive.metastore.api.CurrentNotificationEventId;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.NotificationEvent;
+import org.apache.hadoop.hive.metastore.api.NotificationEventResponse;
 import org.apache.hadoop.hive.metastore.api.Partition;
 import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.metastore.api.Table;
@@ -47,6 +52,7 @@ import org.apache.sentry.hdfs.UniquePathsUpdate;
 import org.apache.sentry.provider.db.service.persistent.PathsImage;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -62,6 +68,11 @@ public class TestHMSFollower {
   private final SentryStore sentryStore = Mockito.mock(SentryStore.class);
   private static HiveSimpleConnectionFactory hiveConnectionFactory;
 
+  private final static HiveConnectionFactory hmsConnectionMock
+      = Mockito.mock(HiveConnectionFactory.class);
+  private final static HiveMetaStoreClient hmsClientMock
+      = Mockito.mock(HiveMetaStoreClient.class);
+
   @BeforeClass
   public static void setup() throws IOException, LoginException {
     hiveConnectionFactory = new HiveSimpleConnectionFactory(configuration, new HiveConf());
@@ -71,6 +82,12 @@ public class TestHMSFollower {
     // enable HDFS sync, so perm and path changes will be saved into DB
     configuration.set(ServiceConstants.ServerConfig.PROCESSOR_FACTORIES, "org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
     configuration.set(ServiceConstants.ServerConfig.SENTRY_POLICY_STORE_PLUGINS, "org.apache.sentry.hdfs.SentryPlugin");
+  }
+
+  @Before
+  public void setupMocks() throws Exception {
+    reset(hmsConnectionMock, hmsClientMock);
+    when(hmsConnectionMock.connect()).thenReturn(new HMSClient(hmsClientMock));
   }
 
   @Test
@@ -91,12 +108,15 @@ public class TestHMSFollower {
     snapshotObjects.put("db.table", Sets.newHashSet("/db/table"));
     PathsImage fullSnapshot = new PathsImage(snapshotObjects, HMS_PROCESSED_EVENT_ID, 1);
 
+    // Mock that returns the current HMS notification ID
+    when(hmsClientMock.getCurrentNotificationEventId())
+        .thenReturn(new CurrentNotificationEventId(fullSnapshot.getId()));
+
     SentryHMSClient sentryHmsClient = Mockito.mock(SentryHMSClient.class);
     when(sentryHmsClient.getFullSnapshot()).thenReturn(fullSnapshot);
-    when(sentryHmsClient.getCurrentNotificationId()).thenReturn(fullSnapshot.getId());
 
     HMSFollower hmsFollower = new HMSFollower(configuration, sentryStore, null,
-        hiveConnectionFactory, hiveInstance);
+        hmsConnectionMock, hiveInstance);
     hmsFollower.setSentryHmsClient(sentryHmsClient);
 
     // 1st run should get a full snapshot because AuthzPathsMapping is empty
@@ -140,12 +160,15 @@ public class TestHMSFollower {
     snapshotObjects.put("db.table", Sets.newHashSet("/db/table"));
     PathsImage fullSnapshot = new PathsImage(snapshotObjects, HMS_PROCESSED_EVENT_ID, 1);
 
+    // Mock that returns the current HMS notification ID
+    when(hmsClientMock.getCurrentNotificationEventId())
+        .thenReturn(new CurrentNotificationEventId(fullSnapshot.getId()));
+
     SentryHMSClient sentryHmsClient = Mockito.mock(SentryHMSClient.class);
     when(sentryHmsClient.getFullSnapshot()).thenReturn(fullSnapshot);
-    when(sentryHmsClient.getCurrentNotificationId()).thenReturn(fullSnapshot.getId());
 
     HMSFollower hmsFollower = new HMSFollower(configuration, sentryStore, null,
-        hiveConnectionFactory, hiveInstance);
+        hmsConnectionMock, hiveInstance);
     hmsFollower.setSentryHmsClient(sentryHmsClient);
 
     // 1st run should get a full snapshot
@@ -189,21 +212,29 @@ public class TestHMSFollower {
     snapshotObjects.put("db.table", Sets.newHashSet("/db/table"));
     PathsImage fullSnapshot = new PathsImage(snapshotObjects, HMS_PROCESSED_EVENT_ID, 1);
 
+    // Mock that returns the current HMS notification ID
+    when(hmsClientMock.getCurrentNotificationEventId())
+        .thenReturn(new CurrentNotificationEventId(fullSnapshot.getId()));
+
     SentryHMSClient sentryHmsClient = Mockito.mock(SentryHMSClient.class);
     when(sentryHmsClient.getFullSnapshot()).thenReturn(fullSnapshot);
-    when(sentryHmsClient.getCurrentNotificationId()).thenReturn(fullSnapshot.getId());
-    when(sentryHmsClient.getNotifications(SENTRY_PROCESSED_EVENT_ID))
-        .thenReturn(Collections.singletonList(
-            new NotificationEvent(fullSnapshot.getId(), 0, "", "")));
+
+    when(hmsClientMock.getNextNotification(Mockito.eq(SENTRY_PROCESSED_EVENT_ID - 1), Mockito.eq(Integer.MAX_VALUE),
+        (NotificationFilter) Mockito.notNull()))
+        .thenReturn(new NotificationEventResponse(
+            Arrays.<NotificationEvent>asList(
+                new NotificationEvent(fullSnapshot.getId(), 0, "", "")
+            )
+        ));
 
     HMSFollower hmsFollower = new HMSFollower(configuration, sentryStore, null,
-        hiveConnectionFactory, hiveInstance);
+        hmsConnectionMock, hiveInstance);
     hmsFollower.setSentryHmsClient(sentryHmsClient);
 
     // 1st run should get a full snapshot
     when(sentryStore.getLastProcessedNotificationID())
         .thenReturn(SENTRY_PROCESSED_EVENT_ID);
-    when(sentryStore.isAuthzPathsMappingEmpty()).thenReturn(false);
+    when(sentryStore.isHmsNotificationEmpty()).thenReturn(false);
     hmsFollower.run();
     verify(sentryStore, times(1)).persistFullPathsImage(Mockito.anyMap(), Mockito.anyLong());
     verify(sentryStore, times(0)).persistLastProcessedNotificationID(Mockito.anyLong());
@@ -771,13 +802,16 @@ public class TestHMSFollower {
     snapshotObjects.put("db.table", Sets.newHashSet("/db/table"));
     PathsImage fullSnapshot = new PathsImage(snapshotObjects, HMS_PROCESSED_EVENT_ID, 1);
 
+    // Mock that returns the current HMS notification ID
+    when(hmsClientMock.getCurrentNotificationEventId())
+        .thenReturn(new CurrentNotificationEventId(fullSnapshot.getId()));
+
     SentryHMSClient sentryHmsClient = Mockito.mock(SentryHMSClient.class);
     when(sentryHmsClient.getFullSnapshot()).thenReturn(fullSnapshot);
-    when(sentryHmsClient.getCurrentNotificationId()).thenReturn(fullSnapshot.getId());
 
     Configuration configuration = new Configuration();
     HMSFollower hmsFollower = new HMSFollower(configuration, sentryStore, null,
-        hiveConnectionFactory, hiveInstance);
+        hmsConnectionMock, hiveInstance);
     hmsFollower.setSentryHmsClient(sentryHmsClient);
 
     // 1st run should get a full snapshot because AuthzPathsMapping is empty

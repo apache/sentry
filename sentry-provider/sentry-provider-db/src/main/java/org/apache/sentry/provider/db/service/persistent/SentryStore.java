@@ -4120,4 +4120,27 @@ public class SentryStore {
     tbs.add(transactionBlock);
     tm.executeTransactionBlocksWithRetry(tbs);
   }
+
+  /**
+   * Checks if a notification was already processed by searching for the hash value
+   * on the MSentryPathChange table.
+   *
+   * @param hash A SHA-1 hex hash that represents a unique notification
+   * @return True if the notification was already processed; False otherwise
+   */
+  public boolean isNotificationProcessed(final String hash) throws Exception {
+    return tm.executeTransactionWithRetry(new TransactionBlock<Boolean>() {
+      @Override
+      public Boolean execute(PersistenceManager pm) throws Exception {
+        pm.setDetachAllOnCommit(false);
+        Query query = pm.newQuery(MSentryPathChange.class);
+        query.setFilter("this.notificationHash == hash");
+        query.setUnique(true);
+        query.declareParameters("java.lang.String hash");
+        MSentryPathChange changes = (MSentryPathChange) query.execute(hash);
+
+        return changes != null;
+      }
+    });
+  }
 }
