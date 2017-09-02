@@ -1,4 +1,3 @@
-RUN '006-SENTRY-711.derby.sql';
 RUN '007-SENTRY-1365.derby.sql';
 RUN '008-SENTRY-1569.derby.sql';
 RUN '009-SENTRY-1805.derby.sql';
