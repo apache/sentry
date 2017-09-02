@@ -18,21 +18,10 @@
 
 package org.apache.sentry.service.thrift;
 
-import static com.codahale.metrics.MetricRegistry.name;
-import static java.util.Collections.emptyMap;
-
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
-
 import com.google.common.annotations.VisibleForTesting;
-
-import java.io.IOException;
-
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.CurrentNotificationEventId;
@@ -43,11 +32,17 @@ import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageDeser
 import org.apache.sentry.provider.db.service.persistent.PathsImage;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
-
 import org.apache.thrift.TException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+
+import static com.codahale.metrics.MetricRegistry.name;
+import static java.util.Collections.emptyMap;
 
 /**
  * Wrapper class for <Code>HiveMetaStoreClient</Code>
@@ -145,13 +140,13 @@ class SentryHMSClient implements AutoCloseable {
   PathsImage getFullSnapshot() {
     if (client == null) {
       LOGGER.error(NOT_CONNECTED_MSG);
-      return new PathsImage(Collections.<String, Set<String>>emptyMap(),
+      return new PathsImage(Collections.<String, Collection<String>>emptyMap(),
           SentryStore.EMPTY_NOTIFICATION_ID, SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
     }
 
     try {
       CurrentNotificationEventId eventIdBefore = client.getCurrentNotificationEventId();
-      Map<String, Set<String>> pathsFullSnapshot = fetchFullUpdate();
+      Map<String, Collection<String>> pathsFullSnapshot = fetchFullUpdate();
       if (pathsFullSnapshot.isEmpty()) {
         return new PathsImage(pathsFullSnapshot, SentryStore.EMPTY_NOTIFICATION_ID,
             SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
@@ -184,7 +179,7 @@ class SentryHMSClient implements AutoCloseable {
         if (response == null || !response.isSetEvents() || response.getEvents().isEmpty()) {
           LOGGER.error("Snapshot discarded, updates to HMS data while shapshot is being taken."
                   + "ID Before: {}. ID After: {}", eventIdBefore.getEventId(), eventIdAfter.getEventId());
-          return new PathsImage(Collections.<String, Set<String>>emptyMap(),
+          return new PathsImage(Collections.<String, Collection<String>>emptyMap(),
                   SentryStore.EMPTY_NOTIFICATION_ID, SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
         }
 
@@ -216,7 +211,7 @@ class SentryHMSClient implements AutoCloseable {
     } catch (TException failure) {
       LOGGER.error("Fetching a new HMS snapshot cannot continue because an error occurred during "
           + "the HMS communication: ", failure.getMessage());
-      return new PathsImage(Collections.<String, Set<String>>emptyMap(),
+      return new PathsImage(Collections.<String, Collection<String>>emptyMap(),
           SentryStore.EMPTY_NOTIFICATION_ID, SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
     }
   }
@@ -227,12 +222,12 @@ class SentryHMSClient implements AutoCloseable {
    * @return HMS snapshot. Snapshot consists of a mapping from auth object name to the set of paths
    *     corresponding to that name.
    */
-  private Map<String, Set<String>> fetchFullUpdate() {
+  private Map<String, Collection<String>> fetchFullUpdate() {
     LOGGER.info("Request full HMS snapshot");
     try (FullUpdateInitializer updateInitializer =
              new FullUpdateInitializer(hiveConnectionFactory, conf);
          Context context = updateTimer.time()) {
-      Map<String, Set<String>> pathsUpdate = updateInitializer.getFullHMSSnapshot();
+      Map<String, Collection<String>> pathsUpdate = updateInitializer.getFullHMSSnapshot();
       LOGGER.info("Obtained full HMS snapshot");
       return pathsUpdate;
     } catch (Exception ignored) {

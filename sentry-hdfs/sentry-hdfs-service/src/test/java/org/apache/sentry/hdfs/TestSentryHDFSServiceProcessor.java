@@ -52,7 +52,7 @@ public class TestSentryHDFSServiceProcessor {
     Mockito.when(sentryStoreMock.getLastProcessedImageID())
         .thenReturn(1L);
     Mockito.when(sentryStoreMock.retrieveFullPathsImage())
-        .thenReturn(new PathsImage(new HashMap<String, Set<String>>(), 1, 1));
+        .thenReturn(new PathsImage(new HashMap<String, Collection<String>>(), 1, 1));
 
     Mockito.when(sentryStoreMock.getLastProcessedPermChangeID())
         .thenReturn(1L);
@@ -77,7 +77,7 @@ public class TestSentryHDFSServiceProcessor {
     Mockito.when(sentryStoreMock.getLastProcessedImageID())
         .thenReturn(2L);
     Mockito.when(sentryStoreMock.retrieveFullPathsImage())
-        .thenReturn(new PathsImage(new HashMap<String, Set<String>>(), 3, 2));
+        .thenReturn(new PathsImage(new HashMap<String, Collection<String>>(), 3, 2));
 
     Mockito.when(sentryStoreMock.getLastProcessedPermChangeID())
         .thenReturn(3L);

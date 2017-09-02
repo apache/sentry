@@ -449,7 +449,7 @@ public final class FullUpdateInitializer implements AutoCloseable {
    * @throws InterruptedException if processing was interrupted
    */
   @SuppressWarnings("squid:S00112")
-  Map<String, Set<String>> getFullHMSSnapshot() throws Exception {
+  Map<String, Collection<String>> getFullHMSSnapshot() throws Exception {
     // Get list of all HMS databases
     List<String> allDbStr;
     HMSClient c = null;
@@ -470,7 +470,7 @@ public final class FullUpdateInitializer implements AutoCloseable {
     }
 
     // Resulting full snapshot
-    Map<String, Set<String>> fullSnapshot = new HashMap<>();
+    Map<String, Collection<String>> fullSnapshot = new HashMap<>();
 
     // As async tasks complete, merge their results into full snapshot.
     while (!results.isEmpty()) {
@@ -491,7 +491,7 @@ public final class FullUpdateInitializer implements AutoCloseable {
       for (Map.Entry<String, Set<String>> entry: objectMapping.entrySet()) {
         String key = entry.getKey();
         Set<String> val = entry.getValue();
-        Set<String> existingSet = fullSnapshot.get(key);
+        Set<String> existingSet = (Set<String>)fullSnapshot.get(key);
         if (existingSet == null) {
           fullSnapshot.put(key, val);
           continue;

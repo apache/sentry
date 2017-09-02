@@ -32,6 +32,7 @@ import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageDeser
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -64,7 +65,7 @@ public class TestFullUpdateModifier {
    */
   @Test
   public void testCreateDatabase() throws Exception {
-    Map<String, Set<String>> update = new HashMap<>();
+    Map<String, Collection<String>> update = new HashMap<>();
     NotificationEvent event = new NotificationEvent(0, 0, CREATE_DATABASE.toString(), "");
     MessageDeserializer deserializer = Mockito.mock(SentryJSONMessageDeserializer.class);
 
@@ -83,7 +84,7 @@ public class TestFullUpdateModifier {
    */
   @Test
   public void testDropDatabase() throws Exception {
-    Map<String, Set<String>> update = new HashMap<>();
+    Map<String, Collection<String>> update = new HashMap<>();
     update.put(DB.toLowerCase(), Collections.singleton(PATH));
     NotificationEvent event = new NotificationEvent(0, 0, DROP_DATABASE.toString(), "");
     MessageDeserializer deserializer = Mockito.mock(SentryJSONMessageDeserializer.class);
@@ -102,7 +103,7 @@ public class TestFullUpdateModifier {
    */
   @Test
   public void testDropDatabaseWrongLocation() throws Exception {
-    Map<String, Set<String>> update = new HashMap<>();
+    Map<String, Collection<String>> update = new HashMap<>();
     update.put(DB.toLowerCase(), Collections.singleton(PATH));
 
     NotificationEvent event = new NotificationEvent(0, 0, DROP_DATABASE.toString(), "");
@@ -126,7 +127,7 @@ public class TestFullUpdateModifier {
    */
   @Test
   public void testDropDatabaseWithTables() throws Exception {
-    Map<String, Set<String>> update = new HashMap<>();
+    Map<String, Collection<String>> update = new HashMap<>();
     update.put(DB.toLowerCase(), Collections.singleton(PATH));
     update.put(AUTH, Collections.singleton(PATH));
     update.put("unrelated", Collections.singleton(PATH));
@@ -149,7 +150,7 @@ public class TestFullUpdateModifier {
    */
   @Test
   public void testCreateTable() throws Exception {
-    Map<String, Set<String>> update = new HashMap<>();
+    Map<String, Collection<String>> update = new HashMap<>();
     NotificationEvent event = new NotificationEvent(0, 0, CREATE_TABLE.toString(), "");
     MessageDeserializer deserializer = Mockito.mock(SentryJSONMessageDeserializer.class);
 
@@ -168,7 +169,7 @@ public class TestFullUpdateModifier {
    */
   @Test
   public void testDropTable() throws Exception {
-    Map<String, Set<String>> update = new HashMap<>();
+    Map<String, Collection<String>> update = new HashMap<>();
     update.put(AUTH, Collections.singleton(PATH));
     NotificationEvent event = new NotificationEvent(0, 0, DROP_TABLE.toString(), "");
     MessageDeserializer deserializer = Mockito.mock(SentryJSONMessageDeserializer.class);
@@ -186,7 +187,7 @@ public class TestFullUpdateModifier {
    */
   @Test
   public void testDropTableWrongLocation() throws Exception {
-    Map<String, Set<String>> update = new HashMap<>();
+    Map<String, Collection<String>> update = new HashMap<>();
     update.put(AUTH, Collections.singleton(PATH));
     NotificationEvent event = new NotificationEvent(0, 0, DROP_TABLE.toString(), "");
     MessageDeserializer deserializer = Mockito.mock(SentryJSONMessageDeserializer.class);
@@ -208,7 +209,7 @@ public class TestFullUpdateModifier {
    */
   @Test
   public void testAddPartition() throws Exception {
-    Map<String, Set<String>> update = new HashMap<>();
+    Map<String, Collection<String>> update = new HashMap<>();
     Set<String> locations = new HashSet<>();
     locations.add(PATH);
     update.put(AUTH, locations);
@@ -239,7 +240,7 @@ public class TestFullUpdateModifier {
   public void testDropPartitions() throws Exception {
     String partPath = "hello/world";
     String partLocation = uri(partPath);
-    Map<String, Set<String>> update = new HashMap<>();
+    Map<String, Collection<String>> update = new HashMap<>();
     Set<String> locations = new HashSet<>();
     locations.add(PATH);
     locations.add(partPath);
@@ -268,7 +269,7 @@ public class TestFullUpdateModifier {
     String newPath = "better/world";
     String newLocation = uri(newPath);
 
-    Map<String, Set<String>> update = new HashMap<>();
+    Map<String, Collection<String>> update = new HashMap<>();
     Set<String> locations = new HashSet<>();
     locations.add(PATH);
     locations.add(partPath);
@@ -297,7 +298,7 @@ public class TestFullUpdateModifier {
    */
   @Test
   public void testAlterTableChangeDbNameNoTables() throws Exception {
-    Map<String, Set<String>> update = new HashMap<>();
+    Map<String, Collection<String>> update = new HashMap<>();
     update.put(DB.toLowerCase(), Collections.singleton(PATH));
     String newDbName = "Db2";
 
@@ -324,7 +325,7 @@ public class TestFullUpdateModifier {
    * @throws Exception
    */
   public void testAlterTableChangeDbNameWithTables() throws Exception {
-    Map<String, Set<String>> update = new HashMap<>();
+    Map<String, Collection<String>> update = new HashMap<>();
     update.put(DB.toLowerCase(), Collections.singleton(PATH));
     Set<String> locations = new HashSet<>(1);
     locations.add(PATH);
@@ -357,7 +358,7 @@ public class TestFullUpdateModifier {
    */
   @Test
   public void testAlterTableChangeTableName() throws Exception {
-    Map<String, Set<String>> update = new HashMap<>();
+    Map<String, Collection<String>> update = new HashMap<>();
     update.put(DB.toLowerCase(), Collections.singleton(PATH));
     Set<String> locations = new HashSet<>(1);
     locations.add(PATH);
@@ -390,7 +391,7 @@ public class TestFullUpdateModifier {
    */
   @Test
   public void testAlterTableChangeLocation() throws Exception {
-    Map<String, Set<String>> update = new HashMap<>();
+    Map<String, Collection<String>> update = new HashMap<>();
     update.put(DB.toLowerCase(), Collections.singleton(PATH));
     Set<String> locations = new HashSet<>(1);
     locations.add(PATH);
@@ -427,7 +428,7 @@ public class TestFullUpdateModifier {
     String oldKey = "foo.";
     String newKey = "baz.";
     String postfix = "bar";
-    Map<String, Set<String>> update = new HashMap<>();
+    Map<String, Collection<String>> update = new HashMap<>();
     update.put(oldKey + postfix , Collections.<String>emptySet());
     FullUpdateModifier.renamePrefixKeys(update, oldKey, newKey);
     assertEquals(1, update.size());
@@ -442,10 +443,10 @@ public class TestFullUpdateModifier {
    */
   @Test
   public void testRenameKeysWithConflicts() throws Exception {
-    Map<String, Set<String>> update = new HashMap<>();
+    Map<String, Collection<String>> update = new HashMap<>();
     update.put("foo.bar", Collections.<String>emptySet());
     update.put("baz.bar", Collections.<String>emptySet());
-    Map<String, Set<String>> expected = new HashMap<>(update);
+    Map<String, Collection<String>> expected = new HashMap<>(update);
 
     FullUpdateModifier.renamePrefixKeys(update, "foo.", "baz.");
     assertEquals(update, expected);

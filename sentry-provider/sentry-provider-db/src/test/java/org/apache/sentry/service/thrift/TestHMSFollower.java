@@ -25,11 +25,12 @@ import com.google.common.collect.Sets;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+
 import junit.framework.Assert;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -103,7 +104,7 @@ public class TestHMSFollower {
     final long HMS_PROCESSED_EVENT_ID = 1L;
 
     // Mock that returns a full snapshot
-    Map<String, Set<String>> snapshotObjects = new HashMap<>();
+    Map<String, Collection<String>> snapshotObjects = new HashMap<>();
     snapshotObjects.put("db", Sets.newHashSet("/db"));
     snapshotObjects.put("db.table", Sets.newHashSet("/db/table"));
     PathsImage fullSnapshot = new PathsImage(snapshotObjects, HMS_PROCESSED_EVENT_ID, 1);
@@ -155,7 +156,7 @@ public class TestHMSFollower {
     final long HMS_PROCESSED_EVENT_ID = 1L;
 
     // Mock that returns a full snapshot
-    Map<String, Set<String>> snapshotObjects = new HashMap<>();
+    Map<String, Collection<String>> snapshotObjects = new HashMap<>();
     snapshotObjects.put("db", Sets.newHashSet("/db"));
     snapshotObjects.put("db.table", Sets.newHashSet("/db/table"));
     PathsImage fullSnapshot = new PathsImage(snapshotObjects, HMS_PROCESSED_EVENT_ID, 1);
@@ -207,7 +208,7 @@ public class TestHMSFollower {
     final long HMS_PROCESSED_EVENT_ID = 5L;
 
     // Mock that returns a full snapshot
-    Map<String, Set<String>> snapshotObjects = new HashMap<>();
+    Map<String, Collection<String>> snapshotObjects = new HashMap<>();
     snapshotObjects.put("db", Sets.newHashSet("/db"));
     snapshotObjects.put("db.table", Sets.newHashSet("/db/table"));
     PathsImage fullSnapshot = new PathsImage(snapshotObjects, HMS_PROCESSED_EVENT_ID, 1);
@@ -797,7 +798,7 @@ public class TestHMSFollower {
     final long HMS_PROCESSED_EVENT_ID = 1L;
 
     // Mock that returns a full snapshot
-    Map<String, Set<String>> snapshotObjects = new HashMap<>();
+    Map<String, Collection<String>> snapshotObjects = new HashMap<>();
     snapshotObjects.put("db", Sets.newHashSet("/db"));
     snapshotObjects.put("db.table", Sets.newHashSet("/db/table"));
     PathsImage fullSnapshot = new PathsImage(snapshotObjects, HMS_PROCESSED_EVENT_ID, 1);

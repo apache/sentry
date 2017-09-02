@@ -18,8 +18,8 @@
 
 package org.apache.sentry.provider.db.service.persistent;
 
+import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * A container for complete hive paths snapshot.
@@ -30,11 +30,11 @@ import java.util.Set;
 public class PathsImage {
 
   // A full image of hiveObj to Paths mapping.
-  private final Map<String, Set<String>> pathImage;
+  private final Map<String, Collection<String>> pathImage;
   private final long id;
   private final long curImgNum;
 
-  public PathsImage(Map<String, Set<String>> pathImage, long id, long curImgNum) {
+  public PathsImage(Map<String, Collection<String>> pathImage, long id, long curImgNum) {
     this.pathImage = pathImage;
     this.id = id;
     this.curImgNum = curImgNum;
@@ -48,7 +48,7 @@ public class PathsImage {
     return curImgNum;
   }
 
-  public Map<String, Set<String>> getPathImage() {
+  public Map<String, Collection<String>> getPathImage() {
     return pathImage;
   }
 }

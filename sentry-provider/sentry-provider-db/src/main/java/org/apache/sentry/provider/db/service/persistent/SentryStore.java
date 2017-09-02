@@ -2659,7 +2659,7 @@ public class SentryStore {
         pm.setDetachAllOnCommit(false); // No need to detach objects
         long curChangeID = getLastProcessedChangeIDCore(pm, MSentryPathChange.class);
         long curImageID = getCurrentAuthzPathsSnapshotID(pm);
-        Map<String, Set<String>> pathImage = retrieveFullPathsImageCore(pm, curImageID);
+        Map<String, Collection<String>> pathImage = retrieveFullPathsImageCore(pm, curImageID);
 
         return new PathsImage(pathImage, curChangeID, curImageID);
       }
@@ -2672,7 +2672,8 @@ public class SentryStore {
    *
    * @return a mapping of hiveObj to &lt Paths &gt.
    */
-  private Map<String, Set<String>> retrieveFullPathsImageCore(PersistenceManager pm, long currentSnapshotID) {
+  private Map<String, Collection<String>> retrieveFullPathsImageCore(PersistenceManager pm,
+                                                                     long currentSnapshotID) {
     if (currentSnapshotID <= EMPTY_PATHS_SNAPSHOT_ID) {
       return Collections.emptyMap();
     }
@@ -2687,7 +2688,7 @@ public class SentryStore {
       return Collections.emptyMap();
     }
 
-    Map<String, Set<String>> retVal = new HashMap<>(authzToPathsMappings.size());
+    Map<String, Collection<String>> retVal = new HashMap<>(authzToPathsMappings.size());
     for (MAuthzPathsMapping authzToPaths : authzToPathsMappings) {
       retVal.put(authzToPaths.getAuthzObjName(), authzToPaths.getPathStrings());
     }
@@ -2703,7 +2704,7 @@ public class SentryStore {
    * @param notificationID the latest notificationID associated with the snapshot
    * @throws Exception
    */
-  public void persistFullPathsImage(final Map<String, Set<String>> authzPaths,
+  public void persistFullPathsImage(final Map<String, Collection<String>> authzPaths,
       final long notificationID) throws Exception {
     tm.executeTransactionWithRetry(
       new TransactionBlock() {
@@ -2717,7 +2718,7 @@ public class SentryStore {
           long snapshotID = getCurrentAuthzPathsSnapshotID(pm);
           long nextSnapshotID = snapshotID + 1;
           pm.makePersistent(new MAuthzPathsSnapshotId(nextSnapshotID));
-          for (Map.Entry<String, Set<String>> authzPath : authzPaths.entrySet()) {
+          for (Map.Entry<String, Collection<String>> authzPath : authzPaths.entrySet()) {
             pm.makePersistent(new MAuthzPathsMapping(nextSnapshotID, authzPath.getKey(), authzPath.getValue()));
           }
           return null;

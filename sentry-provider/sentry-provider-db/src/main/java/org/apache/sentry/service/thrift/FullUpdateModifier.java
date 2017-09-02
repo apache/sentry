@@ -33,6 +33,7 @@ import org.apache.sentry.binding.metastore.messaging.json.SentryJSONDropTableMes
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -68,7 +69,7 @@ final class FullUpdateModifier {
    */
   // NOTE: we pass deserializer here instead of using built-in one to simplify testing.
   // Tests use mock serializers and thus we do not have to construct proper events.
-  static void applyEvent(Map<String, Set<String>> image, NotificationEvent event,
+  static void applyEvent(Map<String, Collection<String>> image, NotificationEvent event,
                          MessageDeserializer deserializer) {
     HCatEventMessage.EventType eventType =
             HCatEventMessage.EventType.valueOf(event.getEventType());
@@ -108,7 +109,7 @@ final class FullUpdateModifier {
   /**
    * Add mapping from the new database name to location {dbname: {location}}.
    */
-  private static void createDatabase(Map<String, Set<String>> image, NotificationEvent event,
+  private static void createDatabase(Map<String, Collection<String>> image, NotificationEvent event,
                                      MessageDeserializer deserializer) {
     SentryJSONCreateDatabaseMessage message =
             (SentryJSONCreateDatabaseMessage) deserializer
@@ -139,7 +140,7 @@ final class FullUpdateModifier {
     } else {
       // Sanity check the information and print warnings if database exists but
       // with a different location
-      Set<String> oldLocations = image.get(dbName);
+      Set<String> oldLocations = (Set<String>)image.get(dbName);
       LOGGER.debug("database {} already exists, ignored", dbName);
       if (!oldLocations.contains(location)) {
         LOGGER.warn("database {} exists but location is different from {}", dbName, location);
@@ -151,7 +152,7 @@ final class FullUpdateModifier {
    * Remove a mapping from database name and remove all mappings which look like dbName.tableName
    * where dbName matches database name.
    */
-  private static void dropDatabase(Map<String, Set<String>> image, NotificationEvent event,
+  private static void dropDatabase(Map<String, Collection<String>> image, NotificationEvent event,
                                    MessageDeserializer deserializer) {
     SentryJSONDropDatabaseMessage message =
             (SentryJSONDropDatabaseMessage) deserializer.getDropDatabaseMessage(event.getMessage());
@@ -174,7 +175,7 @@ final class FullUpdateModifier {
     }
 
     // If the database is alreday deleted, we have nothing to do
-    Set<String> locations = image.get(dbName);
+    Set<String> locations = (Set<String>)image.get(dbName);
     if (locations == null) {
       LOGGER.debug("database {} is already deleted", dbName);
       return;
@@ -193,9 +194,9 @@ final class FullUpdateModifier {
     String dbPrefix = dbName + ".";
 
     // Remove all objects for this database
-    for (Iterator<Map.Entry<String, Set<String>>> it = image.entrySet().iterator();
+    for (Iterator<Map.Entry<String, Collection<String>>> it = image.entrySet().iterator();
          it.hasNext(); ) {
-      Map.Entry<String, Set<String>> entry = it.next();
+      Map.Entry<String, Collection<String>> entry = it.next();
       String key = entry.getKey();
       if (key.startsWith(dbPrefix)) {
         LOGGER.debug("Removing {}", key);
@@ -207,7 +208,7 @@ final class FullUpdateModifier {
   /**
    * Add mapping for dbName.tableName.
    */
-  private static void createTable(Map<String, Set<String>> image, NotificationEvent event,
+  private static void createTable(Map<String, Collection<String>> image, NotificationEvent event,
                                   MessageDeserializer deserializer) {
     SentryJSONCreateTableMessage message = (SentryJSONCreateTableMessage) deserializer
             .getCreateTableMessage(event.getMessage());
@@ -244,7 +245,7 @@ final class FullUpdateModifier {
     } else {
       // Sanity check the information and print warnings if table exists but
       // with a different location
-      Set<String> oldLocations = image.get(authName);
+      Set<String> oldLocations = (Set<String>)image.get(authName);
       LOGGER.debug("Table {} already exists, ignored", authName);
       if (!oldLocations.contains(location)) {
         LOGGER.warn("Table {} exists but location is different from {}", authName, location);
@@ -255,7 +256,7 @@ final class FullUpdateModifier {
   /**
    * Drop mapping from dbName.tableName
    */
-  private static void dropTable(Map<String, Set<String>> image, NotificationEvent event,
+  private static void dropTable(Map<String, Collection<String>> image, NotificationEvent event,
                                 MessageDeserializer deserializer) {
     SentryJSONDropTableMessage message = (SentryJSONDropTableMessage) deserializer
             .getDropTableMessage(event.getMessage());
@@ -283,7 +284,7 @@ final class FullUpdateModifier {
     }
 
     String authName = dbName.toLowerCase() + "." + tableName.toLowerCase();
-    Set<String> locations = image.get(authName);
+    Set<String> locations = (Set<String>)image.get(authName);
     if (locations != null && locations.contains(path)) {
       LOGGER.debug("Removing {}", authName);
       image.remove(authName);
@@ -305,7 +306,7 @@ final class FullUpdateModifier {
    * </ul>
    *
    */
-  private static void alterTable(Map<String, Set<String>> image, NotificationEvent event,
+  private static void alterTable(Map<String, Collection<String>> image, NotificationEvent event,
                                  MessageDeserializer deserializer) {
     SentryJSONAlterTableMessage message =
             (SentryJSONAlterTableMessage) deserializer.getAlterTableMessage(event.getMessage());
@@ -362,7 +363,7 @@ final class FullUpdateModifier {
     if (!prevDbName.equals(newDbName)) {
       // Database name change
       LOGGER.debug("Changing database name: {} -> {}", prevDbName, newDbName);
-      Set<String> locations = image.get(prevDbName);
+      Set<String> locations = (Set<String>)image.get(prevDbName);
       if (locations != null) {
         // Rename database if it is not renamed yet
         if (!image.containsKey(newDbName)) {
@@ -383,7 +384,7 @@ final class FullUpdateModifier {
 
     if (!prevAuthName.equals(newAuthName)) {
       // Either the database name or table name changed, rename objects
-      Set<String> locations = image.get(prevAuthName);
+      Set<String> locations = (Set<String>)image.get(prevAuthName);
       if (locations != null) {
         // Rename if it is not renamed yet
         if (!image.containsKey(newAuthName)) {
@@ -401,7 +402,7 @@ final class FullUpdateModifier {
     if (!prevPath.equals(newPath)) {
       LOGGER.debug("Location change: {} -> {}", prevPath, newPath);
       // Location change
-      Set<String> locations = image.get(newAuthName);
+      Set<String> locations = (Set<String>) image.get(newAuthName);
       if (locations != null && locations.contains(prevPath) && !locations.contains(newPath)) {
         locations.remove(prevPath);
         locations.add(newPath);
@@ -415,7 +416,7 @@ final class FullUpdateModifier {
   /**
    * Add partition just adds a new location to the existing table.
    */
-  private static void addPartition(Map<String, Set<String>> image, NotificationEvent event,
+  private static void addPartition(Map<String, Collection<String>> image, NotificationEvent event,
                                    MessageDeserializer deserializer) {
     SentryJSONAddPartitionMessage message =
             (SentryJSONAddPartitionMessage) deserializer.getAddPartitionMessage(event.getMessage());
@@ -439,7 +440,7 @@ final class FullUpdateModifier {
       return;
     }
 
-    Set<String> oldLocations = image.get(authName);
+    Set<String> oldLocations = (Set<String>) image.get(authName);
     if (oldLocations == null) {
       LOGGER.warn("Add partition for {}: missing table locations",authName);
       return;
@@ -458,7 +459,7 @@ final class FullUpdateModifier {
   /**
    * Drop partition removes location from the existing table.
    */
-  private static void dropPartition(Map<String, Set<String>> image, NotificationEvent event,
+  private static void dropPartition(Map<String, Collection<String>> image, NotificationEvent event,
                                     MessageDeserializer deserializer) {
     SentryJSONDropPartitionMessage message =
             (SentryJSONDropPartitionMessage) deserializer
@@ -482,7 +483,7 @@ final class FullUpdateModifier {
       return;
     }
 
-    Set<String> oldLocations = image.get(authName);
+    Set<String> oldLocations = (Set<String>) image.get(authName);
     if (oldLocations == null) {
       LOGGER.warn("Add partition for {}: missing table locations",authName);
       return;
@@ -497,7 +498,7 @@ final class FullUpdateModifier {
     }
   }
 
-  private static void alterPartition(Map<String, Set<String>> image, NotificationEvent event,
+  private static void alterPartition(Map<String, Collection<String>> image, NotificationEvent event,
                                      MessageDeserializer deserializer) {
     SentryJSONAlterPartitionMessage message =
             (SentryJSONAlterPartitionMessage) deserializer
@@ -542,7 +543,7 @@ final class FullUpdateModifier {
       return;
     }
 
-    Set<String> locations = image.get(authName);
+    Set<String> locations = (Set<String>) image.get(authName);
     if (locations == null) {
       LOGGER.warn("Missing partition locations for {}", authName);
       return;
@@ -559,7 +560,7 @@ final class FullUpdateModifier {
    * Walk through the map and rename all instances of oldKey to newKey.
    */
   @VisibleForTesting
-  protected static void renamePrefixKeys(Map<String, Set<String>> image,
+  protected static void renamePrefixKeys(Map<String, Collection<String>> image,
                                          String oldKey, String newKey) {
     // The trick is that we can't just iterate through the map, remove old values and
     // insert new values. While we can remove old values with iterators,
@@ -567,15 +568,15 @@ final class FullUpdateModifier {
     // a new map and merge them in the end.
     Map<String, Set<String>> replacement = new HashMap<>();
 
-    for (Iterator<Map.Entry<String, Set<String>>> it = image.entrySet().iterator();
+    for (Iterator<Map.Entry<String, Collection<String>>> it = image.entrySet().iterator();
          it.hasNext(); ) {
-      Map.Entry<String, Set<String>> entry = it.next();
+      Map.Entry<String, Collection<String>> entry = it.next();
       String key = entry.getKey();
       if (key.startsWith(oldKey)) {
         String updatedKey = key.replaceAll("^" + oldKey + "(.*)", newKey + "$1");
         if (!image.containsKey(updatedKey)) {
           LOGGER.debug("Rename {} to {}", key, updatedKey);
-          replacement.put(updatedKey, entry.getValue());
+          replacement.put(updatedKey, (Set<String>) entry.getValue());
           it.remove();
         } else {
           LOGGER.warn("skipping key {} - already present", updatedKey);
@@ -593,7 +594,7 @@ final class FullUpdateModifier {
    * @param m1 source map
    * @param m2 map with replacement values
    */
-  private static void mergeMaps(Map<String, Set<String>> m1, Map<String, Set<String>> m2) {
+  private static void mergeMaps(Map<String, Collection<String>> m1, Map<String, Set<String>> m2) {
     // Merge replacement values into the original map but only if they are not
     // already there
     for (Map.Entry<String, Set<String>> entry : m2.entrySet()) {

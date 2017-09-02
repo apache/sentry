@@ -26,10 +26,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -45,7 +45,7 @@ public class TestImageRetriever {
   @Test
   public void testEmptyPathUpdatesRetrievedWhenNoImagesArePersisted() throws Exception {
     Mockito.when(sentryStoreMock.retrieveFullPathsImage())
-        .thenReturn(new PathsImage(new HashMap<String, Set<String>>(), 0, 0));
+        .thenReturn(new PathsImage(new HashMap<String, Collection<String>>(), 0, 0));
 
     PathImageRetriever imageRetriever = new PathImageRetriever(sentryStoreMock);
     PathsUpdate pathsUpdate = imageRetriever.retrieveFullImage();
@@ -60,7 +60,7 @@ public class TestImageRetriever {
     PathImageRetriever imageRetriever;
     PathsUpdate pathsUpdate;
 
-    Map<String, Set<String>> fullPathsImage = new HashMap<>();
+    Map<String, Collection<String>> fullPathsImage = new HashMap<>();
     fullPathsImage.put("db1", Sets.newHashSet("/user/db1"));
     fullPathsImage.put("db1.table1", Sets.newHashSet("/user/db1/table1"));
 
@@ -76,7 +76,7 @@ public class TestImageRetriever {
     assertTrue(comparePaths(fullPathsImage, pathsUpdate.getPathChanges()));
   }
 
-  private boolean comparePaths(Map<String, Set<String>> expected, List<TPathChanges> actual) {
+  private boolean comparePaths(Map<String, Collection<String>> expected, List<TPathChanges> actual) {
     if (expected.size() != actual.size()) {
       return false;
     }
@@ -86,7 +86,7 @@ public class TestImageRetriever {
         return false;
       }
 
-      Set<String> expectedPaths = expected.get(pathChanges.getAuthzObj());
+      Collection<String> expectedPaths = expected.get(pathChanges.getAuthzObj());
       for (List<String> path : pathChanges.getAddPaths()) {
         if (!expectedPaths.contains(StringUtils.join(path, "/"))) {
           return false;

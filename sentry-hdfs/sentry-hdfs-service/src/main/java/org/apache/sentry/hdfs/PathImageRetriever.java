@@ -25,9 +25,9 @@ import org.apache.sentry.provider.db.service.persistent.SentryStore;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -58,14 +58,14 @@ class PathImageRetriever implements ImageRetriever<PathsUpdate> {
       PathsImage pathsImage = sentryStore.retrieveFullPathsImage();
       long curImgNum = pathsImage.getCurImgNum();
       long curSeqNum = pathsImage.getId();
-      Map<String, Set<String>> pathImage = pathsImage.getPathImage();
+      Map<String, Collection<String>> pathImage = pathsImage.getPathImage();
 
       // Translates the complete Hive paths snapshot into a PathsUpdate.
       // Adds all <hiveObj, paths> mapping to be included in this paths update.
       // And label it with the latest delta change sequence number for consumer
       // to be aware of the next delta change it should continue with.
       PathsUpdate pathsUpdate = new PathsUpdate(curSeqNum, curImgNum, true);
-      for (Map.Entry<String, Set<String>> pathEnt : pathImage.entrySet()) {
+      for (Map.Entry<String, Collection<String>> pathEnt : pathImage.entrySet()) {
         TPathChanges pathChange = pathsUpdate.newPathChange(pathEnt.getKey());
 
         for (String path : pathEnt.getValue()) {

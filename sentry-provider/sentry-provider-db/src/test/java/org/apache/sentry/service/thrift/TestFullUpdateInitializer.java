@@ -244,7 +244,7 @@ public class TestFullUpdateInitializer {
     HiveSnapshot snap = new HiveSnapshot().add(db1).add(db2).add(db3);
     MockClient c = new MockClient(snap);
 
-    Map<String, Set<String>> update;
+    Map<String, Collection<String>> update;
     try(FullUpdateInitializer cacheInitializer =
                 new FullUpdateInitializer(new MockHMSClientFactory(c), conf)) {
       update = cacheInitializer.getFullHMSSnapshot();
@@ -288,7 +288,7 @@ public class TestFullUpdateInitializer {
             thenReturn(Lists.newArrayList("tab1", "tab12"));
 
 
-    Map<String, Set<String>> update;
+    Map<String, Collection<String>> update;
     try(FullUpdateInitializer cacheInitializer =
                 new FullUpdateInitializer(new MockHMSClientFactory(client), conf)) {
       update = cacheInitializer.getFullHMSSnapshot();
@@ -319,7 +319,7 @@ public class TestFullUpdateInitializer {
       snap.add(db);
     }
     MockClient c = new MockClient(snap);
-    Map<String, Set<String>> update;
+    Map<String, Collection<String>> update;
     try(FullUpdateInitializer cacheInitializer =
                 new FullUpdateInitializer(new MockHMSClientFactory(c), conf)) {
       update = cacheInitializer.getFullHMSSnapshot();
