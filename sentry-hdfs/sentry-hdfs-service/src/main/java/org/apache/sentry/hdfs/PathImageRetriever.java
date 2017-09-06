@@ -40,11 +40,13 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 @ThreadSafe
 class PathImageRetriever implements ImageRetriever<PathsUpdate> {
 
-  private static final String[] root = {"/"};
   private final SentryStore sentryStore;
+  /** List of prefixes managed by Sentry */
+  private final String[] prefixes;
 
-  PathImageRetriever(SentryStore sentryStore) {
+  PathImageRetriever(SentryStore sentryStore, String[] prefixes) {
     this.sentryStore = sentryStore;
+    this.prefixes = prefixes;
   }
 
   @Override
@@ -87,7 +89,7 @@ class PathImageRetriever implements ImageRetriever<PathsUpdate> {
       // Translate PathsUpdate that contains a full image to TPathsDump for
       // consumer (NN) to be able to quickly construct UpdateableAuthzPaths
       // from TPathsDump.
-      UpdateableAuthzPaths authzPaths = new UpdateableAuthzPaths(root);
+      UpdateableAuthzPaths authzPaths = new UpdateableAuthzPaths(prefixes);
       authzPaths.updatePartial(Lists.newArrayList(pathsUpdate),
           new ReentrantReadWriteLock());
       //Setting minimizeSize parameter to false based on interface description

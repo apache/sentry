@@ -46,6 +46,50 @@ public class TestHDFSIntegrationEnd2End extends TestHDFSIntegrationBase {
 
   private static String adminRole = "admin_role";
 
+
+  @Test
+  public void testEnd2EndManagedPaths() throws Throwable {
+    tmpHDFSDir = new Path("/tmp/external");
+    dbNames = new String[]{"db1"};
+    roles = new String[]{"admin_role", "db_role", "tab_role", "p1_admin"};
+    admin = "hive";
+
+    Connection conn;
+    Statement stmt;
+    conn = hiveServer2.createConnection("hive", "hive");
+    stmt = conn.createStatement();
+    stmt.execute("create role admin_role");
+    stmt.execute("grant role admin_role to group hive");
+    stmt.execute("grant all on server server1 to role admin_role");
+    stmt.execute("create role p1_admin");
+    stmt.execute("grant role p1_admin to group hbase");
+    stmt.execute("create role db_role");
+    stmt.execute("create role tab_role");
+    stmt.execute("grant role db_role to group hbase");
+    stmt.execute("grant role tab_role to group flume");
+
+    // Test DB case insensitivity
+    stmt.execute("create database extdb");
+    stmt.execute("grant all on database ExtDb to role p1_admin");
+    writeToPath("/tmp/external/ext100", 5, "foo", "bar");
+    writeToPath("/tmp/external/ext101", 5, "foo", "bar");
+    stmt.execute("use extdb");
+    stmt.execute(
+            "create table ext100 (s string) location \'/tmp/external/ext100\'");
+    stmt.execute(
+            "create table ext101 (s string) location \'/tmp/external/ext101\'");
+    verifyQuery(stmt, "ext100", 5);
+    verifyOnAllSubDirs("/tmp/external/ext100", FsAction.ALL, "hbase", true);
+    stmt.execute("drop table ext100");
+    stmt.execute("drop table ext101");
+    stmt.execute("use default");
+    stmt.execute("drop database extdb");
+
+    stmt.close();
+    conn.close();
+  }
+
+
   @Test
   public void testEnd2End() throws Throwable {
     tmpHDFSDir = new Path("/tmp/external");

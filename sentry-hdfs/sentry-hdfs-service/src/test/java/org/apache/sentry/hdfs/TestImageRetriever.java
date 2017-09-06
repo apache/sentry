@@ -36,6 +36,7 @@ import static org.junit.Assert.assertTrue;
 
 public class TestImageRetriever {
   SentryStore sentryStoreMock;
+  private static final String[] root = {"/"};
 
   @Before
   public void setUp() {
@@ -47,7 +48,7 @@ public class TestImageRetriever {
     Mockito.when(sentryStoreMock.retrieveFullPathsImage())
         .thenReturn(new PathsImage(new HashMap<String, Collection<String>>(), 0, 0));
 
-    PathImageRetriever imageRetriever = new PathImageRetriever(sentryStoreMock);
+    PathImageRetriever imageRetriever = new PathImageRetriever(sentryStoreMock, root);
     PathsUpdate pathsUpdate = imageRetriever.retrieveFullImage();
 
     assertEquals(0, pathsUpdate.getImgNum());
@@ -67,7 +68,7 @@ public class TestImageRetriever {
     Mockito.when(sentryStoreMock.retrieveFullPathsImage())
         .thenReturn(new PathsImage(fullPathsImage, 1, 1));
 
-    imageRetriever = new PathImageRetriever(sentryStoreMock);
+    imageRetriever = new PathImageRetriever(sentryStoreMock, root);
     pathsUpdate = imageRetriever.retrieveFullImage();
 
     assertEquals(1, pathsUpdate.getImgNum());

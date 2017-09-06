@@ -92,6 +92,8 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 
+import static org.apache.sentry.hdfs.ServiceConstants.ServerConfig.SENTRY_HDFS_INTEGRATION_PATH_PREFIXES;
+
 /**
  * Base abstract class for HDFS Sync integration
  * (both Non-HA and HA modes)
@@ -135,6 +137,8 @@ public abstract class TestHDFSIntegrationBase {
     }
 
   }
+
+  private static final String MANAGED_PREFIXES = "/user/hive/warehouse,/tmp/external";
 
   protected static final int NUM_RETRIES = 10;
   protected static final int RETRY_WAIT = 1000; //ms
@@ -687,7 +691,7 @@ public abstract class TestHDFSIntegrationBase {
             MiniDFS.PseudoGroupMappingService.class.getName());
         Configuration.addDefaultResource("test.xml");
 
-        hadoopConf.set("sentry.authorization-provider.hdfs-path-prefixes", "/user/hive/warehouse,/tmp/external");
+        hadoopConf.set("sentry.authorization-provider.hdfs-path-prefixes", MANAGED_PREFIXES);
         hadoopConf.set("sentry.authorization-provider.cache-refresh-retry-wait.ms", "5000");
         hadoopConf.set("sentry.authorization-provider.cache-refresh-interval.ms", String.valueOf(CACHE_REFRESH));
 
@@ -772,6 +776,7 @@ public abstract class TestHDFSIntegrationBase {
         @Override
         public Void run() throws Exception {
           Configuration sentryConf = new Configuration(false);
+          sentryConf.set(SENTRY_HDFS_INTEGRATION_PATH_PREFIXES, MANAGED_PREFIXES);
           Map<String, String> properties = Maps.newHashMap();
           properties.put(HiveServerFactory.AUTHZ_PROVIDER_BACKEND,
               SimpleDBProviderBackend.class.getName());

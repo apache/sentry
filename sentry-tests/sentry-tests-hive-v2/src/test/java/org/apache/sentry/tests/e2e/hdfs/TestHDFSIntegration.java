@@ -131,6 +131,8 @@ public class TestHDFSIntegration {
 
   }
 
+  private static final String MANAGED_PREFIXES = "/user/hive/warehouse,/tmp/external";
+
   private static final int NUM_RETRIES = 10;
   private static final int RETRY_WAIT = 1000;
   private static final String EXTERNAL_SENTRY_SERVICE = "sentry.e2etest.external.sentry";
@@ -322,7 +324,7 @@ public class TestHDFSIntegration {
             MiniDFS.PseudoGroupMappingService.class.getName());
         Configuration.addDefaultResource("test.xml");
 
-        hadoopConf.set("sentry.authorization-provider.hdfs-path-prefixes", "/user/hive/warehouse,/tmp/external");
+        hadoopConf.set("sentry.authorization-provider.hdfs-path-prefixes", MANAGED_PREFIXES);
         hadoopConf.set("sentry.authorization-provider.cache-refresh-retry-wait.ms", "5000");
         hadoopConf.set("sentry.authorization-provider.cache-refresh-interval.ms", String.valueOf(CACHE_REFRESH));
 
@@ -385,6 +387,7 @@ public class TestHDFSIntegration {
         @Override
         public Void run() throws Exception {
           Configuration sentryConf = new Configuration(false);
+          sentryConf.set(SENTRY_HDFS_INTEGRATION_PATH_PREFIXES, MANAGED_PREFIXES);
           Map<String, String> properties = Maps.newHashMap();
           properties.put(HiveServerFactory.AUTHZ_PROVIDER_BACKEND,
                   SimpleDBProviderBackend.class.getName());

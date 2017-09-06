@@ -46,6 +46,8 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.sentry.hdfs.ServiceConstants.IMAGE_NUMBER_UPDATE_UNINITIALIZED;
 import static org.apache.sentry.hdfs.ServiceConstants.SEQUENCE_NUMBER_UPDATE_UNINITIALIZED;
+import static org.apache.sentry.hdfs.ServiceConstants.ServerConfig.SENTRY_HDFS_INTEGRATION_PATH_PREFIXES;
+import static org.apache.sentry.hdfs.ServiceConstants.ServerConfig.SENTRY_HDFS_INTEGRATION_PATH_PREFIXES_DEFAULT;
 import static org.apache.sentry.hdfs.Updateable.Update;
 import static org.apache.sentry.hdfs.service.thrift.sentry_hdfs_serviceConstants.UNUSED_PATH_UPDATE_IMG_NUM;
 
@@ -103,8 +105,12 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
 
   @Override
   public void initialize(Configuration conf, SentryStore sentryStore) throws SentryPluginException {
+    // List of paths managed by Sentry
+    String[] prefixes =
+            conf.getStrings(SENTRY_HDFS_INTEGRATION_PATH_PREFIXES,
+                    SENTRY_HDFS_INTEGRATION_PATH_PREFIXES_DEFAULT);
     PermImageRetriever permImageRetriever = new PermImageRetriever(sentryStore);
-    PathImageRetriever pathImageRetriever = new PathImageRetriever(sentryStore);
+    PathImageRetriever pathImageRetriever = new PathImageRetriever(sentryStore, prefixes);
     PermDeltaRetriever permDeltaRetriever = new PermDeltaRetriever(sentryStore);
     PathDeltaRetriever pathDeltaRetriever = new PathDeltaRetriever(sentryStore);
     pathsUpdater = new DBUpdateForwarder<>(pathImageRetriever, pathDeltaRetriever);
