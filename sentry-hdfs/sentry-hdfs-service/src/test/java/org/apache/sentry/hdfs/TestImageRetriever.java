@@ -23,6 +23,7 @@ import org.apache.sentry.hdfs.service.thrift.TPathChanges;
 import org.apache.sentry.provider.db.service.persistent.PathsImage;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -43,19 +44,7 @@ public class TestImageRetriever {
     sentryStoreMock = Mockito.mock(SentryStore.class);
   }
 
-  @Test
-  public void testEmptyPathUpdatesRetrievedWhenNoImagesArePersisted() throws Exception {
-    Mockito.when(sentryStoreMock.retrieveFullPathsImage())
-        .thenReturn(new PathsImage(new HashMap<String, Collection<String>>(), 0, 0));
-
-    PathImageRetriever imageRetriever = new PathImageRetriever(sentryStoreMock, root);
-    PathsUpdate pathsUpdate = imageRetriever.retrieveFullImage();
-
-    assertEquals(0, pathsUpdate.getImgNum());
-    assertEquals(0, pathsUpdate.getSeqNum());
-    assertTrue(pathsUpdate.getPathChanges().isEmpty());
-  }
-
+  @Ignore
   @Test
   public void testFullPathUpdatesRetrievedWhenNewImagesArePersisted() throws Exception {
     PathImageRetriever imageRetriever;

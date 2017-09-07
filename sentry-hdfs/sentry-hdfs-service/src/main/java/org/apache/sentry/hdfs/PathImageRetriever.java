@@ -18,17 +18,9 @@
 package org.apache.sentry.hdfs;
 
 import com.codahale.metrics.Timer;
-import com.google.common.collect.Lists;
-import org.apache.sentry.hdfs.service.thrift.TPathChanges;
-import org.apache.sentry.provider.db.service.persistent.PathsImage;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 
 import javax.annotation.concurrent.ThreadSafe;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * PathImageRetriever obtains a complete snapshot of Hive Paths from a persistent
@@ -50,51 +42,14 @@ class PathImageRetriever implements ImageRetriever<PathsUpdate> {
   }
 
   @Override
+  /**
+   * Retrieve full image from SentryStore.
+   * The image only contains PathsDump and is only useful for sending to the NameNode.
+   */
   public PathsUpdate retrieveFullImage() throws Exception {
     try (final Timer.Context timerContext =
         SentryHdfsMetricsUtil.getRetrievePathFullImageTimer.time()) {
-
-      // Reads a up-to-date complete snapshot of Hive paths from the
-      // persistent storage, along with the sequence number of latest
-      // delta change the snapshot corresponds to.
-      PathsImage pathsImage = sentryStore.retrieveFullPathsImage();
-      long curImgNum = pathsImage.getCurImgNum();
-      long curSeqNum = pathsImage.getId();
-      Map<String, Collection<String>> pathImage = pathsImage.getPathImage();
-
-      // Translates the complete Hive paths snapshot into a PathsUpdate.
-      // Adds all <hiveObj, paths> mapping to be included in this paths update.
-      // And label it with the latest delta change sequence number for consumer
-      // to be aware of the next delta change it should continue with.
-      PathsUpdate pathsUpdate = new PathsUpdate(curSeqNum, curImgNum, true);
-      for (Map.Entry<String, Collection<String>> pathEnt : pathImage.entrySet()) {
-        TPathChanges pathChange = pathsUpdate.newPathChange(pathEnt.getKey());
-
-        for (String path : pathEnt.getValue()) {
-          // Convert each path to a list, so a/b/c becomes {a, b, c}
-          // Since these are partition names they may have a lot of duplicate strings.
-          // To save space for big snapshots we intern each path component.
-          String[] pathComponents = path.split("/");
-          List<String> paths = new ArrayList<>(pathComponents.length);
-          for (String pathElement: pathComponents) {
-            paths.add(pathElement.intern());
-          }
-          pathChange.addToAddPaths(paths);
-        }
-      }
-
-      SentryHdfsMetricsUtil.getPathChangesHistogram.update(pathsUpdate
-          .getPathChanges().size());
-
-      // Translate PathsUpdate that contains a full image to TPathsDump for
-      // consumer (NN) to be able to quickly construct UpdateableAuthzPaths
-      // from TPathsDump.
-      UpdateableAuthzPaths authzPaths = new UpdateableAuthzPaths(prefixes);
-      authzPaths.updatePartial(Lists.newArrayList(pathsUpdate),
-          new ReentrantReadWriteLock());
-      //Setting minimizeSize parameter to true to try to minimize the size of the serialized message
-      pathsUpdate.toThrift().setPathsDump(authzPaths.getPathsDump().createPathsDump(true));
-      return pathsUpdate;
+      return sentryStore.retrieveFullPathsImageUpdate(prefixes);
     }
   }
 

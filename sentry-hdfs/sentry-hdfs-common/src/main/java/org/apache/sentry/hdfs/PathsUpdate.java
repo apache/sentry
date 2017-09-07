@@ -100,7 +100,7 @@ public class PathsUpdate implements Updateable.Update {
     return tPathsUpdate.getImgNum();
   }
 
-  TPathsUpdate toThrift() {
+  public TPathsUpdate toThrift() {
     return tPathsUpdate;
   }
 

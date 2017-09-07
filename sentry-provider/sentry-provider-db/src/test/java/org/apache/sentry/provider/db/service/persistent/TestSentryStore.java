@@ -51,6 +51,9 @@ import org.apache.sentry.hdfs.PathsUpdate;
 import org.apache.sentry.hdfs.PermissionsUpdate;
 import org.apache.sentry.hdfs.UniquePathsUpdate;
 import org.apache.sentry.hdfs.Updateable;
+import org.apache.sentry.hdfs.service.thrift.TPathEntry;
+import org.apache.sentry.hdfs.service.thrift.TPathsDump;
+import org.apache.sentry.hdfs.service.thrift.TPathsUpdate;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
 import org.apache.sentry.hdfs.service.thrift.TRoleChanges;
 import org.apache.sentry.provider.db.service.model.MSentryPermChange;
@@ -2779,6 +2782,7 @@ public class TestSentryStore extends org.junit.Assert {
     assertEquals(notificationID, lastNotificationId.longValue());
   }
 
+
   @Test
   public void testRenameUpdateAfterReplacingANewPathsImage() throws Exception {
     long notificationID = 1;
@@ -3402,4 +3406,59 @@ public class TestSentryStore extends org.junit.Assert {
     conf.set(ServiceConstants.ServerConfig.PROCESSOR_FACTORIES, "org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
     conf.set(ServiceConstants.ServerConfig.SENTRY_POLICY_STORE_PLUGINS, "org.apache.sentry.hdfs.SentryPlugin");
   }
+
+  /**
+   * Test retrieveFullPathsImageUpdate() when no image is present.
+   * @throws Exception
+   */
+  @Test
+  public void testRetrieveEmptyPathImage() throws Exception {
+    String[] prefixes = {};
+
+    PathsUpdate pathsUpdate = sentryStore.retrieveFullPathsImageUpdate(prefixes);
+    TPathsUpdate tPathsUpdate = pathsUpdate.toThrift();
+    TPathsDump pathDump = tPathsUpdate.getPathsDump();
+    Map<Integer, TPathEntry> nodeMap = pathDump.getNodeMap();
+    assertEquals(1, nodeMap.size());
+    System.out.printf(nodeMap.toString());
+  }
+
+  /**
+   * Test retrieveFullPathsImageUpdate() when a single path is present.
+   * @throws Exception
+   */
+  @Test
+  public void testRetrievePathImageWithSingleEntry() throws Exception {
+    String prefix = "user/hive/warehouse";
+    String[] prefixes = {"/" + prefix};
+    Map<String, Collection<String>> authzPaths = new HashMap<>();
+    // Makes sure that authorizable object could be associated
+    // with different paths and can be properly persisted into database.
+    String tablePath = prefix + "/db2.db/table1.1";
+    authzPaths.put("db1.table1", Sets.newHashSet(tablePath));
+    long notificationID = 1;
+    sentryStore.persistFullPathsImage(authzPaths, notificationID);
+
+    PathsUpdate pathsUpdate = sentryStore.retrieveFullPathsImageUpdate(prefixes);
+    assertEquals(notificationID, pathsUpdate.getImgNum());
+    TPathsUpdate tPathsUpdate = pathsUpdate.toThrift();
+    TPathsDump pathDump = tPathsUpdate.getPathsDump();
+    Map<Integer, TPathEntry> nodeMap = pathDump.getNodeMap();
+    System.out.printf(nodeMap.toString());
+    assertEquals(6, nodeMap.size());
+    int rootId = pathDump.getRootId();
+    TPathEntry root = nodeMap.get(rootId);
+    assertEquals("/", root.getPathElement());
+    List<Integer> children;
+    TPathEntry child = root;
+
+    // Walk tree down and verify elements
+    for (String path: tablePath.split("/")) {
+      children = child.getChildren();
+      assertEquals(1, children.size());
+      child = nodeMap.get(children.get(0));
+      assertEquals(path, child.getPathElement());
+    }
+  }
+
 }

@@ -140,9 +140,12 @@ public class UpdateableAuthzPaths implements AuthzPaths, Updateable<PathsUpdate>
       }
     }
     for (TPathChanges pathChanges : addPathChanges) {
-      paths.addPathsToAuthzObject(pathChanges.getAuthzObj(), pathChanges
-          .getAddPaths(), true);
+      applyAddChanges(pathChanges.getAuthzObj(), pathChanges.getAddPaths());
     }
+  }
+
+  public void applyAddChanges(String objName, List<List<String>> changes) {
+    paths.addPathsToAuthzObject(objName, changes, true);
   }
 
   @Override

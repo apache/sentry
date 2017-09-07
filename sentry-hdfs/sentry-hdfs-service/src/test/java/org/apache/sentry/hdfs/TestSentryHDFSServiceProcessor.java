@@ -27,6 +27,7 @@ import org.apache.sentry.provider.db.service.persistent.PathsImage;
 import org.apache.sentry.provider.db.service.persistent.PermissionsImage;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -48,6 +49,7 @@ public class TestSentryHDFSServiceProcessor {
   }
 
   @Test
+  @Ignore
   public void testInitialHDFSSyncReturnsAFullImage() throws Exception {
     Mockito.when(sentryStoreMock.getLastProcessedImageID())
         .thenReturn(1L);
@@ -73,6 +75,7 @@ public class TestSentryHDFSServiceProcessor {
   }
 
   @Test
+  @Ignore
   public void testRequestSyncUpdatesWhenNewImagesArePersistedReturnsANewFullImage() throws Exception {
     Mockito.when(sentryStoreMock.getLastProcessedImageID())
         .thenReturn(2L);
