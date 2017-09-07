@@ -20,7 +20,6 @@ package org.apache.sentry.service.thrift;
 
 
 import com.google.common.annotations.VisibleForTesting;
-import java.net.SocketException;
 import java.util.Collection;
 import java.util.List;
 import javax.jdo.JDODataStoreException;
@@ -186,19 +185,13 @@ public class HMSFollower implements Runnable, AutoCloseable {
       // Continue with processing new notifications if no snapshots are done.
       processNotifications(notifications);
     } catch (TException e) {
-      // If the underlying exception is around socket exception,
-      // it is better to retry connection to HMS
-      if (e.getCause() instanceof SocketException) {
-        LOGGER.error("Encountered Socket Exception during fetching Notification entries,"
-            + " will attempt to reconnect to HMS after configured interval", e);
-        close();
-      } else {
-        LOGGER.error("ThriftException occurred communicating with HMS", e);
-      }
+      LOGGER.error("An error occurred while fetching HMS notifications: {}", e.getMessage());
+      close();
     } catch (Throwable t) {
       // catching errors to prevent the executor to halt.
-      LOGGER.error("Exception in HMSFollower! Caused by: " + t.getMessage(),
-          t);
+      LOGGER.error("Exception in HMSFollower! Caused by: " + t.getMessage(), t);
+
+      close();
     }
   }
 

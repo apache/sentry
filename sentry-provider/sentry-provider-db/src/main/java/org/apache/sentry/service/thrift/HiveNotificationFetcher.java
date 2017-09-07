@@ -90,8 +90,14 @@ public final class HiveNotificationFetcher implements AutoCloseable {
     }
 
     LOGGER.debug("Requesting HMS notifications since ID = {}", lastEventId);
-    NotificationEventResponse response =
-        getHmsClient().getNextNotification(lastEventId, maxEvents, filter);
+
+    NotificationEventResponse response;
+    try {
+      response = getHmsClient().getNextNotification(lastEventId, maxEvents, filter);
+    } catch (Exception e) {
+      close();
+      throw e;
+    }
 
     if (response != null && response.isSetEvents()) {
       LOGGER.debug("Fetched {} new HMS notification(s)", response.getEventsSize());
@@ -173,7 +179,14 @@ public final class HiveNotificationFetcher implements AutoCloseable {
    * @throws Exception when an error occurs when talking to the HMS client
    */
   long getCurrentNotificationId() throws Exception {
-    CurrentNotificationEventId eventId = getHmsClient().getCurrentNotificationEventId();
+    CurrentNotificationEventId eventId;
+    try {
+      eventId = getHmsClient().getCurrentNotificationEventId();
+    } catch (Exception e) {
+      close();
+      throw e;
+    }
+
     if (eventId != null && eventId.isSetEventId()) {
       return eventId.getEventId();
     }
