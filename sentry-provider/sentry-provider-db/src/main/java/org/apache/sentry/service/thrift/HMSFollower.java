@@ -294,8 +294,10 @@ public class HMSFollower implements Runnable, AutoCloseable {
         sentryStore.persistFullPathsImage(snapshotInfo.getPathImage(), snapshotInfo.getId());
       } else {
         // We need to persist latest notificationID for next poll
-        sentryStore.persistLastProcessedNotificationID(snapshotInfo.getId());
+        sentryStore.setLastProcessedNotificationID(snapshotInfo.getId());
       }
+      // Only reset the counter if the above operations succeeded
+      resetCounterWait(snapshotInfo.getId());
     } catch (Exception failure) {
       LOGGER.error("Received exception while persisting HMS path full snapshot ");
       throw failure;
@@ -376,6 +378,21 @@ public class HMSFollower implements Runnable, AutoCloseable {
     // doesn't have it.
     if (counterWait != null) {
       counterWait.update(eventId);
+    }
+  }
+
+  /**
+   * Reset CounterWait counter to the new value
+   * @param eventId new event id value, may be smaller then the old value.
+   */
+  private void resetCounterWait(long eventId) {
+    CounterWait counterWait = sentryStore.getCounterWait();
+
+    // Wake up any HMS waiters that are waiting for this ID.
+    // counterWait should never be null, but tests mock SentryStore and a mocked one
+    // doesn't have it.
+    if (counterWait != null) {
+      counterWait.reset(eventId);
     }
   }
 }

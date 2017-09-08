@@ -117,6 +117,28 @@ public final class CounterWait {
     wakeup(newValue);
   }
 
+  /**
+   * Explicitly reset the counter value to a new value, but allow setting to a
+   * smaller value.
+   * This should be used when we have some external event that resets the counter
+   * value space.
+   * @param newValue New counter value. If this is greater or equal then the current
+   *                value, this is equivalent to {@link #update(long)}. Otherwise
+   *                 sets the counter to the new smaller value.
+   */
+  public synchronized void reset(long newValue) {
+    long oldValue = currentId.get();
+
+    if (newValue > oldValue) {
+      update(newValue);
+    } else if (newValue < oldValue) {
+      LOGGER.warn("resetting counter from {} to smaller value {}",
+              oldValue, newValue);
+      currentId.set(newValue);
+      // No need to wakeup waiters since no one should wait on the smaller value
+    }
+  }
+
 
   /**
    * Wait for specified counter value.

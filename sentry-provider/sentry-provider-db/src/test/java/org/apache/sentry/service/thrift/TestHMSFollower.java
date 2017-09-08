@@ -821,7 +821,7 @@ public class TestHMSFollower {
     when(sentryStore.isHmsNotificationEmpty()).thenReturn(true);
     hmsFollower.run();
     verify(sentryStore, times(0)).persistFullPathsImage(fullSnapshot.getPathImage(), fullSnapshot.getId());
-    verify(sentryStore, times(1)).persistLastProcessedNotificationID(fullSnapshot.getId());
+    verify(sentryStore, times(1)).setLastProcessedNotificationID(fullSnapshot.getId());
     verify(sentryStore, times(1)).isHmsNotificationEmpty();
     verify(sentryStore, times(0)).isAuthzPathsMappingEmpty();
   }
