@@ -44,7 +44,7 @@ public class PathDeltaRetriever implements DeltaRetriever<PathsUpdate> {
   }
 
   @Override
-  public List<PathsUpdate> retrieveDelta(long seqNum) throws Exception {
+  public List<PathsUpdate> retrieveDelta(long seqNum, long imgNum) throws Exception {
     try (final Context timerContext =
                  SentryHdfsMetricsUtil.getDeltaPathChangesTimer.time()) {
       List<MSentryPathChange> mSentryPathChanges =
@@ -66,6 +66,7 @@ public class PathDeltaRetriever implements DeltaRetriever<PathsUpdate> {
         PathsUpdate pathsUpdate = new PathsUpdate();
         pathsUpdate.JSONDeserialize(mSentryPathChange.getPathChange());
         pathsUpdate.setSeqNum(changeID);
+        pathsUpdate.setImgNum(imgNum);
         updates.add(pathsUpdate);
       }
       return updates;

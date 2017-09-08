@@ -84,7 +84,11 @@ public class UpdateableAuthzPaths implements AuthzPaths, Updateable<PathsUpdate>
           lock.writeLock().lock();
         }
         seqNum.set(update.getSeqNum());
-        imgNum.set(update.getImgNum());
+
+        // Update the image ID only if the update has a new one
+        if (imgNum.get() < update.getImgNum()) {
+          imgNum.set(update.getImgNum());
+        }
         LOG.debug("##### Updated paths seq Num [{}] img Num [{}]", seqNum.get(), imgNum.get());
       }
     } finally {

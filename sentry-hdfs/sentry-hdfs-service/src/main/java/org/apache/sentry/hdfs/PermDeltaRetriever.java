@@ -44,7 +44,7 @@ public class PermDeltaRetriever implements DeltaRetriever<PermissionsUpdate> {
   }
 
   @Override
-  public List<PermissionsUpdate> retrieveDelta(long seqNum) throws Exception {
+  public List<PermissionsUpdate> retrieveDelta(long seqNum, long imgNum) throws Exception {
     try (final Context timerContext =
                  SentryHdfsMetricsUtil.getDeltaPermChangesTimer.time()) {
       Collection<MSentryPermChange> mSentryPermChanges =

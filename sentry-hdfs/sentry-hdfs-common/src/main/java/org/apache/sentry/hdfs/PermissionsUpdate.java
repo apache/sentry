@@ -68,6 +68,11 @@ public class PermissionsUpdate implements Updateable.Update {
   }
 
   @Override
+  public void setImgNum(long imgNum) {
+    throw new UnsupportedOperationException("setImgNum not used");
+  }
+
+  @Override
   public boolean hasFullImage() {
     return tPermUpdate.isHasfullImage();
   }

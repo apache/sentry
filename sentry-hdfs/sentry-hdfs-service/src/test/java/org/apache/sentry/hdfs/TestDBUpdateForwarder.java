@@ -117,7 +117,7 @@ public class TestDBUpdateForwarder {
     Mockito.when(imageRetriever.getLatestImageID()).thenReturn(1L);
     Mockito.when(deltaRetriever.getLatestDeltaID()).thenReturn(3L);
     Mockito.when(deltaRetriever.isDeltaAvailable(2L)).thenReturn(true);
-    Mockito.when(deltaRetriever.retrieveDelta(2L))
+    Mockito.when(deltaRetriever.retrieveDelta(2L, 1L))
         .thenReturn(Arrays.asList(new PathsUpdate(3, 1, false)));
 
     List<PathsUpdate> updates = updater.getAllUpdatesFrom(2, 1);

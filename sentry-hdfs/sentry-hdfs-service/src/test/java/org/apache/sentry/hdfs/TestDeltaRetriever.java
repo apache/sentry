@@ -44,7 +44,7 @@ public class TestDeltaRetriever {
         .thenReturn(Collections.<MSentryPathChange>emptyList());
 
     PathDeltaRetriever deltaRetriever = new PathDeltaRetriever(sentryStoreMock);
-    List<PathsUpdate> pathsUpdates = deltaRetriever.retrieveDelta(1);
+    List<PathsUpdate> pathsUpdates = deltaRetriever.retrieveDelta(1, 1);
 
     assertTrue(pathsUpdates.isEmpty());
   }
@@ -63,12 +63,14 @@ public class TestDeltaRetriever {
         .thenReturn(deltaPathChanges);
 
     deltaRetriever = new PathDeltaRetriever(sentryStoreMock);
-    pathsUpdates = deltaRetriever.retrieveDelta(1);
+    pathsUpdates = deltaRetriever.retrieveDelta(1, 3);
 
     assertEquals(2, pathsUpdates.size());
     assertEquals(1, pathsUpdates.get(0).getSeqNum());
     assertEquals(true, pathsUpdates.get(0).hasFullImage());
+    assertEquals(3, pathsUpdates.get(0).getImgNum());
     assertEquals(2, pathsUpdates.get(1).getSeqNum());
     assertEquals(false, pathsUpdates.get(1).hasFullImage());
+    assertEquals(3, pathsUpdates.get(1).getImgNum());
   }
 }

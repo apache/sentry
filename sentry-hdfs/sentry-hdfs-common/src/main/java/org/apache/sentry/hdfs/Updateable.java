@@ -40,6 +40,8 @@ public interface Updateable<K extends Updateable.Update> {
 
     long getImgNum();
 
+    void setImgNum(long imgNum);
+
     byte[] serialize() throws IOException;
 
     void deserialize(byte data[]) throws IOException;

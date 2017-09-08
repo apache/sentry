@@ -29,7 +29,7 @@ import static org.apache.sentry.hdfs.Updateable.Update;
  * Sentry permissions are represented as {@link PermissionsUpdate} and HMS Paths
  * are represented as {@link PathsUpdate}. The delta update contains change
  * from a state to another.
- * The {@link #retrieveDelta(long)} method obtains such delta update from a persistent storage.
+ * The {@link #retrieveDelta(long,long)} method obtains such delta update from a persistent storage.
  * Delta update is propagated to a consumer of Sentry, such as HDFS NameNode whenever
  * the consumer needs to synchronize the update.
  */
@@ -38,13 +38,15 @@ public interface DeltaRetriever<K extends Update> {
   /**
    * Retrieves all delta updates of type {@link Update} newer than or equal to
    * the given sequence number/change ID (inclusive) from a persistent storage.
+   * An image number may be used by the implementation to request deltas for a specific image.
    * An empty collection can be returned.
    *
    * @param seqNum the given seq number
+   * @param imgNum the given img number
    * @return delta updates of type K
    * @throws Exception when there is an error in operation on persistent storage
    */
-  List<K> retrieveDelta(long seqNum) throws Exception;
+  List<K> retrieveDelta(long seqNum, long imgNum) throws Exception;
 
   /**
    * Checks if there the delta update is available, given the sequence number/change
