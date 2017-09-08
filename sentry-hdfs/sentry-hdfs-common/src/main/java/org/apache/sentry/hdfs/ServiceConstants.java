@@ -26,6 +26,8 @@ public class ServiceConstants {
   // number used in authz paths and permissions to request initial syncs
   static final long IMAGE_NUMBER_UPDATE_UNINITIALIZED = 0L;
 
+  static final long SEQUENCE_NUMBER_FULL_UPDATE_REQUEST = SEQUENCE_NUMBER_UPDATE_UNINITIALIZED + 1;
+
   public static class ServerConfig {
     /**
      * This configuration parameter is only meant to be used for testing purposes.

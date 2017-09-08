@@ -19,14 +19,16 @@
 package org.apache.sentry.service.thrift;
 
 
+import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SERVER_NAME;
+import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SERVER_NAME_DEPRECATED;
+
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import java.util.Collection;
 import java.util.List;
 import javax.jdo.JDODataStoreException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.api.NotificationEvent;
-import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SERVER_NAME;
-import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SERVER_NAME_DEPRECATED;
 import org.apache.sentry.provider.db.service.persistent.PathsImage;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.thrift.TException;
@@ -107,6 +109,7 @@ public class HMSFollower implements Runnable, AutoCloseable {
       // Close any outstanding connections to HMS
       try {
         client.disconnect();
+        SentryStateBank.disableState(HMSFollowerState.COMPONENT,HMSFollowerState.CONNECTED);
       } catch (Exception failure) {
         LOGGER.error("Failed to close the Sentry Hms Client", failure);
       }
@@ -117,24 +120,29 @@ public class HMSFollower implements Runnable, AutoCloseable {
 
   @Override
   public void run() {
+    SentryStateBank.enableState(HMSFollowerState.COMPONENT,HMSFollowerState.STARTED);
     long lastProcessedNotificationId;
     try {
-      // Initializing lastProcessedNotificationId based on the latest persisted notification ID.
-      lastProcessedNotificationId = sentryStore.getLastProcessedNotificationID();
-    } catch (Exception e) {
-      LOGGER.error("Failed to get the last processed notification id from sentry store, "
-          + "Skipping the processing", e);
-      return;
+      try {
+        // Initializing lastProcessedNotificationId based on the latest persisted notification ID.
+        lastProcessedNotificationId = sentryStore.getLastProcessedNotificationID();
+      } catch (Exception e) {
+        LOGGER.error("Failed to get the last processed notification id from sentry store, "
+            + "Skipping the processing", e);
+        return;
+      }
+      // Wake any clients connected to this service waiting for HMS already processed notifications.
+      wakeUpWaitingClientsForSync(lastProcessedNotificationId);
+      // Only the leader should listen to HMS updates
+      if (!isLeader()) {
+        // Close any outstanding connections to HMS
+        close();
+        return;
+      }
+      syncupWithHms(lastProcessedNotificationId);
+    } finally {
+      SentryStateBank.disableState(HMSFollowerState.COMPONENT,HMSFollowerState.STARTED);
     }
-    // Wake any clients connected to this service waiting for HMS already processed notifications.
-    wakeUpWaitingClientsForSync(lastProcessedNotificationId);
-    // Only the leader should listen to HMS updates
-    if (!isLeader()) {
-      // Close any outstanding connections to HMS
-      close();
-      return;
-    }
-    syncupWithHms(lastProcessedNotificationId);
   }
 
   private boolean isLeader() {
@@ -160,6 +168,7 @@ public class HMSFollower implements Runnable, AutoCloseable {
     try {
       client.connect();
       connectedToHms = true;
+      SentryStateBank.enableState(HMSFollowerState.COMPONENT,HMSFollowerState.CONNECTED);
     } catch (Throwable e) {
       LOGGER.error("HMSFollower cannot connect to HMS!!", e);
       return;
@@ -269,46 +278,57 @@ public class HMSFollower implements Runnable, AutoCloseable {
   }
 
   /**
-   * Request for full snapshot and persists it if there is no snapshot available in the
-   * sentry store. Also, wakes-up any waiting clients.
+   * Request for full snapshot and persists it if there is no snapshot available in the sentry
+   * store. Also, wakes-up any waiting clients.
    *
    * @return ID of last notification processed.
    * @throws Exception if there are failures
    */
   private long createFullSnapshot() throws Exception {
     LOGGER.debug("Attempting to take full HMS snapshot");
-    PathsImage snapshotInfo = client.getFullSnapshot();
-    if (snapshotInfo.getPathImage().isEmpty()) {
-      return snapshotInfo.getId();
-    }
-
-    // Check we're still the leader before persisting the new snapshot
-    if (!isLeader()) {
-      return SentryStore.EMPTY_NOTIFICATION_ID;
-    }
-
+    Preconditions.checkState(!SentryStateBank.isEnabled(SentryServiceState.COMPONENT,
+        SentryServiceState.FULL_UPDATE_RUNNING),
+        "HMSFollower shown loading full snapshot when it should not be.");
     try {
-      LOGGER.debug("Persisting HMS path full snapshot");
+      // Set that the full update is running
+      SentryStateBank
+          .enableState(SentryServiceState.COMPONENT, SentryServiceState.FULL_UPDATE_RUNNING);
 
-      if (hdfsSyncEnabled) {
-        sentryStore.persistFullPathsImage(snapshotInfo.getPathImage(), snapshotInfo.getId());
-      } else {
-        // We need to persist latest notificationID for next poll
-        sentryStore.setLastProcessedNotificationID(snapshotInfo.getId());
+      PathsImage snapshotInfo = client.getFullSnapshot();
+      if (snapshotInfo.getPathImage().isEmpty()) {
+        return snapshotInfo.getId();
       }
-      // Only reset the counter if the above operations succeeded
-      resetCounterWait(snapshotInfo.getId());
-    } catch (Exception failure) {
-      LOGGER.error("Received exception while persisting HMS path full snapshot ");
-      throw failure;
+
+      // Check we're still the leader before persisting the new snapshot
+      if (!isLeader()) {
+        return SentryStore.EMPTY_NOTIFICATION_ID;
+      }
+      try {
+        LOGGER.debug("Persisting HMS path full snapshot");
+
+        if (hdfsSyncEnabled) {
+          sentryStore.persistFullPathsImage(snapshotInfo.getPathImage(), snapshotInfo.getId());
+        } else {
+          // We need to persist latest notificationID for next poll
+          sentryStore.setLastProcessedNotificationID(snapshotInfo.getId());
+        }
+        // Only reset the counter if the above operations succeeded
+        resetCounterWait(snapshotInfo.getId());
+      } catch (Exception failure) {
+        LOGGER.error("Received exception while persisting HMS path full snapshot ");
+        throw failure;
+      }
+      // Wake up any HMS waiters that could have been put on hold before getting the
+      // eventIDBefore value.
+      wakeUpWaitingClientsForSync(snapshotInfo.getId());
+      // HMSFollower connected to HMS and it finished full snapshot if that was required
+      // Log this message only once
+      LOGGER.info("Sentry HMS support is ready");
+      return snapshotInfo.getId();
+    } finally {
+      SentryStateBank
+          .disableState(SentryServiceState.COMPONENT, SentryServiceState.FULL_UPDATE_RUNNING);
     }
-    // Wake up any HMS waiters that could have been put on hold before getting the
-    // eventIDBefore value.
-    wakeUpWaitingClientsForSync(snapshotInfo.getId());
-    // HMSFollower connected to HMS and it finished full snapshot if that was required
-    // Log this message only once
-    LOGGER.info("Sentry HMS support is ready");
-    return snapshotInfo.getId();
   }
 
   /**

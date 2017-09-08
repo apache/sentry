@@ -18,6 +18,9 @@
 package org.apache.sentry.hdfs;
 
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
+import org.apache.sentry.service.thrift.SentryServiceState;
+import org.apache.sentry.service.thrift.SentryStateBank;
+import org.apache.sentry.service.thrift.SentryStateBankTestHelper;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -25,6 +28,7 @@ import org.mockito.Mockito;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.apache.sentry.hdfs.ServiceConstants.SEQUENCE_NUMBER_UPDATE_UNINITIALIZED;
 import static org.apache.sentry.hdfs.service.thrift.sentry_hdfs_serviceConstants.UNUSED_PATH_UPDATE_IMG_NUM;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -40,6 +44,7 @@ public class TestDBUpdateForwarder {
     imageRetriever = Mockito.mock(ImageRetriever.class);
     deltaRetriever = Mockito.mock(DeltaRetriever.class);
     updater = new DBUpdateForwarder<>(imageRetriever, deltaRetriever);
+    SentryStateBankTestHelper.clearAllStates();
   }
 
   @Test
@@ -47,6 +52,34 @@ public class TestDBUpdateForwarder {
     Mockito.when(imageRetriever.getLatestImageID()).thenReturn(SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
 
     List updates = updater.getAllUpdatesFrom(1, SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
+    assertTrue(updates.isEmpty());
+  }
+
+  /**
+   * Test if a empty list is returned when the Sentry Server is doing a Full update from
+   * HMS.
+   * @throws Exception
+   */
+  @Test
+  public void testEmptyListIsReturnedWhenFullUpdateRunningFromStart() throws Exception {
+    SentryStateBank.enableState(SentryServiceState.COMPONENT, SentryServiceState.FULL_UPDATE_RUNNING);
+    Mockito.when(imageRetriever.getLatestImageID()).thenReturn(1L);
+
+    List updates = updater.getAllUpdatesFrom(SEQUENCE_NUMBER_UPDATE_UNINITIALIZED,1);
+    assertTrue(updates.isEmpty());
+  }
+
+  /**
+   * Test if a empty list is returned when the Sentry Server is doing a Full update from
+   * HMS.
+   * @throws Exception
+   */
+  @Test
+  public void testEmptyListIsReturnedWhenFullUpdateRunning() throws Exception {
+    SentryStateBank.enableState(SentryServiceState.COMPONENT, SentryServiceState.FULL_UPDATE_RUNNING);
+    Mockito.when(imageRetriever.getLatestImageID()).thenReturn(2L);
+
+    List updates = updater.getAllUpdatesFrom(SEQUENCE_NUMBER_UPDATE_UNINITIALIZED,1);
     assertTrue(updates.isEmpty());
   }
 
@@ -70,6 +103,18 @@ public class TestDBUpdateForwarder {
     assertEquals(1, updates.get(0).getImgNum());
     assertTrue(updates.get(0).hasFullImage());
   }
+
+  @Test
+  public void testFirstImageSyncGetsEmptySetWhenImageNumIsZeroAndFullUpdateRunning() throws Exception {
+    Mockito.when(imageRetriever.getLatestImageID()).thenReturn(1L);
+    Mockito.when(imageRetriever.retrieveFullImage())
+        .thenReturn(new PathsUpdate(1, 1, true));
+    SentryStateBank.enableState(SentryServiceState.COMPONENT, SentryServiceState.FULL_UPDATE_RUNNING);
+
+    List<PathsUpdate> updates = updater.getAllUpdatesFrom(0, SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
+    assertTrue(updates.isEmpty());
+  }
+
 
   @Test
   public void testFirstImageSyncIsReturnedWhenImageNumIsUnusedButDeltasAreAvailable() throws Exception {

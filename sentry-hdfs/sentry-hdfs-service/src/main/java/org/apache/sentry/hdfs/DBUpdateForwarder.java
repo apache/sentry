@@ -17,16 +17,16 @@
  */
 package org.apache.sentry.hdfs;
 
+import static org.apache.sentry.hdfs.ServiceConstants.IMAGE_NUMBER_UPDATE_UNINITIALIZED;
+import static org.apache.sentry.hdfs.ServiceConstants.SEQUENCE_NUMBER_FULL_UPDATE_REQUEST;
+
 import java.util.Collections;
 import java.util.List;
-
+import javax.annotation.concurrent.ThreadSafe;
+import org.apache.sentry.service.thrift.SentryServiceState;
+import org.apache.sentry.service.thrift.SentryStateBank;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.annotation.concurrent.ThreadSafe;
-
-import static org.apache.sentry.hdfs.ServiceConstants.IMAGE_NUMBER_UPDATE_UNINITIALIZED;
-import static org.apache.sentry.hdfs.ServiceConstants.SEQUENCE_NUMBER_UPDATE_UNINITIALIZED;
 
 /**
  * DBUpdateForwarder propagates a complete snapshot or delta update of either
@@ -81,10 +81,12 @@ class DBUpdateForwarder<K extends Updateable.Update> {
       if (curImgNum == IMAGE_NUMBER_UPDATE_UNINITIALIZED) {
         // Sentry has not fetched a full HMS snapshot yet.
         return Collections.emptyList();
-      } else if (curImgNum > imgNum) {
+      }
+
+      if (curImgNum > imgNum) {
         // In case a new HMS snapshot has been processed, then return a full paths image.
         LOGGER.info("A newer full update is found with image number: {}", curImgNum);
-        return Collections.singletonList(imageRetriever.retrieveFullImage());
+        return retrieveFullImage();
       }
     }
 
@@ -102,7 +104,7 @@ class DBUpdateForwarder<K extends Updateable.Update> {
 
     // Checks if newer deltas exist in the persistent storage.
     // If there are, return the list of delta updates.
-    if (seqNum > SEQUENCE_NUMBER_UPDATE_UNINITIALIZED && deltaRetriever.isDeltaAvailable(seqNum)) {
+    if (seqNum > SEQUENCE_NUMBER_FULL_UPDATE_REQUEST && deltaRetriever.isDeltaAvailable(seqNum)) {
       List<K> deltas = deltaRetriever.retrieveDelta(seqNum, imgNum);
       if (!deltas.isEmpty()) {
         LOGGER.info("Newer delta updates are found up to sequence number: {}", curSeqNum);
@@ -113,6 +115,16 @@ class DBUpdateForwarder<K extends Updateable.Update> {
     // If the sequence number is < 0 or the requested delta is not available, then we
     // return a full update.
     LOGGER.info("A full update is returned due to an unavailable sequence number: {}", seqNum);
-    return Collections.singletonList(imageRetriever.retrieveFullImage());
+    return retrieveFullImage();
+  }
+
+  private List<K> retrieveFullImage() throws Exception {
+    if (SentryStateBank.isEnabled(SentryServiceState.COMPONENT, SentryServiceState.FULL_UPDATE_RUNNING)){
+      LOGGER.debug("A full update is being loaded. Delaying updating client with full image until its finished.");
+      return Collections.emptyList();
+    }
+    else {
+      return Collections.singletonList(imageRetriever.retrieveFullImage());
+    }
   }
 }
