@@ -55,6 +55,12 @@ public class HMSFollower implements Runnable, AutoCloseable {
   private final LeaderStatusMonitor leaderMonitor;
 
   /**
+   * Current generation of HMS snapshots. HMSFollower is single-threaded, so no need
+   * to protect against concurrent modification.
+   */
+  private long hmsImageId = SentryStore.EMPTY_PATHS_SNAPSHOT_ID;
+
+  /**
    * Configuring Hms Follower thread.
    *
    * @param conf sentry configuration
@@ -312,8 +318,6 @@ public class HMSFollower implements Runnable, AutoCloseable {
           // We need to persist latest notificationID for next poll
           sentryStore.setLastProcessedNotificationID(snapshotInfo.getId());
         }
-        // Only reset the counter if the above operations succeeded
-        resetCounterWait(snapshotInfo.getId());
       } catch (Exception failure) {
         LOGGER.error("Received exception while persisting HMS path full snapshot ");
         throw failure;
@@ -386,7 +390,11 @@ public class HMSFollower implements Runnable, AutoCloseable {
   }
 
   /**
-   * Wakes up HMS waiters waiting for a specific event notification.
+   * Wakes up HMS waiters waiting for a specific event notification.<p>
+   *
+   * Verify that HMS image id didn't change since the last time we looked.
+   * If id did, it is possible that notifications jumped backward, so reset
+   * the counter to the current value.
    *
    * @param eventId Id of a notification
    */
@@ -396,23 +404,26 @@ public class HMSFollower implements Runnable, AutoCloseable {
     // Wake up any HMS waiters that are waiting for this ID.
     // counterWait should never be null, but tests mock SentryStore and a mocked one
     // doesn't have it.
-    if (counterWait != null) {
+    if (counterWait == null) {
+      return;
+    }
+
+    long lastHMSSnapshotId = hmsImageId;
+    try {
+      // Read actual HMS image ID
+      lastHMSSnapshotId = sentryStore.getLastProcessedImageID();
+    } catch (Exception e) {
       counterWait.update(eventId);
+      LOGGER.error("Failed to get the last processed HMS image id from sentry store");
+      return;
     }
-  }
 
-  /**
-   * Reset CounterWait counter to the new value
-   * @param eventId new event id value, may be smaller then the old value.
-   */
-  private void resetCounterWait(long eventId) {
-    CounterWait counterWait = sentryStore.getCounterWait();
-
-    // Wake up any HMS waiters that are waiting for this ID.
-    // counterWait should never be null, but tests mock SentryStore and a mocked one
-    // doesn't have it.
-    if (counterWait != null) {
+    // Reset the counter if the persisted image ID is greater than current image ID
+    if (lastHMSSnapshotId > hmsImageId) {
       counterWait.reset(eventId);
+      hmsImageId = lastHMSSnapshotId;
     }
+
+    counterWait.update(eventId);
   }
 }
