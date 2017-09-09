@@ -280,8 +280,7 @@ public class TestFullUpdateModifier {
 
     SentryJSONAlterPartitionMessage message =
             new SentryJSONAlterPartitionMessage(SERVER, PRINCIPAL, DB, TABLE,
-                    Collections.<String>emptyList(), Collections.<String>emptyList(), 0L,
-                    partLocation, newLocation);
+                    0L, partLocation, newLocation);
 
     Mockito.when(deserializer.getAlterPartitionMessage("")).thenReturn(message);
     FullUpdateModifier.applyEvent(update, event, deserializer);

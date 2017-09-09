@@ -16,6 +16,8 @@
  */
 package org.apache.sentry.tests.e2e.hdfs;
 
+import static org.apache.sentry.hdfs.ServiceConstants.ServerConfig.SENTRY_HDFS_INTEGRATION_PATH_PREFIXES;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
