@@ -139,6 +139,12 @@ public class ServiceConstants {
     public static final String SERVER_HA_ZOOKEEPER_CLIENT_TICKET_CACHE = "sentry.zookeeper.client.ticketcache";
     public static final String SERVER_HA_ZOOKEEPER_CLIENT_TICKET_CACHE_DEFAULT = "false";
     public static final String SERVER_HA_STANDBY_SIG = "sentry.ha.standby.signal";
+
+    // Timeout value in seconds for HMS notificationID synchronization
+    // Should match the value for RPC timeout in HMS client config
+    public static final String SENTRY_NOTIFICATION_SYNC_TIMEOUT_MS = "sentry.notification.sync.timeout.ms";
+    public static final int SENTRY_NOTIFICATION_SYNC_TIMEOUT_DEFAULT = 200000;
+
     public static final ImmutableMap<String, String> SENTRY_STORE_DEFAULTS =
         ImmutableMap.<String, String>builder()
         .put("datanucleus.connectionPoolingType", "BoneCP")

@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import javax.jdo.FetchGroup;
 import javax.jdo.JDODataStoreException;
@@ -187,7 +188,7 @@ public class SentryStore {
    * <p>
    * Keeping it here isn't ideal but serves the purpose until we find a better home.
    */
-  private final CounterWait counterWait = new CounterWait();
+  private final CounterWait counterWait;
 
   public static Properties getDataNucleusProperties(Configuration conf)
           throws SentrySiteConfigurationException, IOException {
@@ -267,6 +268,9 @@ public class SentryStore {
     pmf = JDOHelper.getPersistenceManagerFactory(prop);
     tm = new TransactionManager(pmf, conf);
     verifySentryStoreSchema(checkSchemaVersion);
+    long notificationTimeout = conf.getInt(ServerConfig.SENTRY_NOTIFICATION_SYNC_TIMEOUT_MS,
+            ServerConfig.SENTRY_NOTIFICATION_SYNC_TIMEOUT_DEFAULT);
+    counterWait = new CounterWait(notificationTimeout, TimeUnit.MILLISECONDS);
   }
 
   public void setPersistUpdateDeltas(boolean persistUpdateDeltas) {

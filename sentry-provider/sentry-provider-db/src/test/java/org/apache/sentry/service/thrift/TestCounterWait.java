@@ -25,6 +25,8 @@ import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.junit.Test;
 
@@ -56,7 +58,7 @@ public class TestCounterWait {
                            long r = 0;
                            try {
                              r = waiter.waitFor(val); // blocks
-                           } catch (InterruptedException e) {
+                           } catch (InterruptedException | TimeoutException e) {
                              e.printStackTrace();
                            }
                            outSyncQueue.add(r); // Once we wake up, post result
@@ -87,6 +89,13 @@ public class TestCounterWait {
 
     // We are done
     executor.shutdown();
+  }
+
+  // Test for waitFor() timeout throwing TimeoutException
+  @Test(expected = TimeoutException.class)
+  public void testWaitForWithTimeout() throws Exception {
+    CounterWait waiter = new CounterWait(1, TimeUnit.MILLISECONDS);
+    waiter.waitFor(1); // Should throw exception
   }
 
   private void sleep(long ms) {

@@ -24,6 +24,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -33,7 +35,9 @@ import java.util.concurrent.atomic.AtomicLong;
  * counter reaches some value interesting to them.
  * Consumers call {@link #waitFor(long)} which may either return
  * immediately if the counter reached the specified value, or block
- * until this value is reached.
+ * until this value is reached. Consumers can also specify timeout for the
+ * {@link #waitFor(long)} in which case it may return {@link TimeoutException}
+ * when the wait was not successfull within the specified time limit.
  * <p>
  * All waiters should be waken up when the counter becomes equal or higher
  * then the value they are waiting for.
@@ -77,6 +81,9 @@ public final class CounterWait {
   /** Counter value. May only increase. */
   private final AtomicLong currentId = new AtomicLong(0);
 
+  private final long waitTimeout;
+  private final TimeUnit waitTimeUnit;
+
   /**
    * Waiters sorted by the value of the counter they are waiting for.
    * Note that {@link PriorityBlockingQueue} is thread-safe.
@@ -85,6 +92,31 @@ public final class CounterWait {
    */
   private final PriorityBlockingQueue<ValueEvent> waiters =
           new PriorityBlockingQueue<>();
+
+  /**
+   * Create an instance of CounterWait object that will not timeout during wait
+   */
+  public CounterWait() {
+    this(0, TimeUnit.SECONDS);
+  }
+
+  /**
+   * Create an instance of CounterWait object that will timeout during wait
+   * @param waitTimeout maximum time in seconds to wait for counter
+   */
+  public CounterWait(long waitTimeoutSec) {
+    this(waitTimeoutSec, TimeUnit.SECONDS);
+  }
+
+  /**
+   * Create an instance of CounterWait object that will timeout during wait
+   * @param waitTimeout maximum time to wait for counter
+   * @param waitTimeUnit time units for wait
+   */
+  public CounterWait(long waitTimeout, TimeUnit waitTimeUnit) {
+    this.waitTimeout = waitTimeout;
+    this.waitTimeUnit = waitTimeUnit;
+  }
 
   /**
    * Update the counter value and wake up all threads waiting for this
@@ -149,9 +181,10 @@ public final class CounterWait {
    * @param value requested counter value
    * @return current counter value that should be no smaller then the requested
    * value
-   * @throws InterruptedException if the wait was interrupted
+   * @throws InterruptedException if the wait was interrupted, TimeoutException if
+   * wait was not successfull within the timeout value specified at the construction time.
    */
-  public long waitFor(long value) throws InterruptedException {
+  public long waitFor(long value) throws InterruptedException, TimeoutException {
     // Fast path - counter value already reached, no need to block
     if (value <= currentId.get()) {
       return currentId.get();
@@ -235,7 +268,7 @@ public final class CounterWait {
    * ValueEvents are stored in priority queue sorted by value, so they should be
    * comparable by the value.
    */
-  private static class ValueEvent implements Comparable<ValueEvent> {
+  private class ValueEvent implements Comparable<ValueEvent> {
     /** Value waited for. */
     private final long value;
     /** Binary semaphore to synchronize waiters */
@@ -254,11 +287,17 @@ public final class CounterWait {
     }
 
     /** Wait until signaled or interrupted. May return immediately if already signalled. */
-    void waitFor() throws InterruptedException {
-      semaphore.acquire();
+    void waitFor() throws InterruptedException, TimeoutException {
+      if (waitTimeout == 0) {
+        semaphore.acquire();
+        return;
+      }
+      if (!semaphore.tryAcquire(waitTimeout, waitTimeUnit)) {
+        throw new TimeoutException();
+      }
     }
 
-    /** @return the value we are waiting for */
+    /** @return the value we are waiting for. */
     long getValue() {
       return value;
     }
@@ -269,7 +308,7 @@ public final class CounterWait {
     }
 
     /**
-     * Compare objects by value
+     * Compare objects by value.
      */
     @Override
     public int compareTo(final ValueEvent o) {
@@ -279,7 +318,7 @@ public final class CounterWait {
     }
 
     /**
-     * Use identity comparison of objects
+     * Use identity comparison of objects.
      */
     @Override
     public boolean equals(final Object o) {
