@@ -320,7 +320,7 @@
      <class name="MSentryHmsNotification" table="SENTRY_HMS_NOTIFICATION_ID" identity-type="nondurable" detachable="true">
         <field name="notificationId">
           <column name="NOTIFICATION_ID" jdbc-type="BIGINT" allows-null="false"/>
-          <index name="SENTRY_HMS_NOTIFICATION_ID_INDEX"/>
+          <index name="SENTRY_HMS_NOTIF_ID_INDEX"/>
         </field>
      </class>
   </package>
