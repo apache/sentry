@@ -140,7 +140,7 @@ public class AbstractKafkaSentryTestBase {
         ServerConfig.SENTRY_STORE_LOCAL_GROUP_MAPPING);
     conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE,
         policyFilePath.getPath());
-    sentryServer = new SentryServiceFactory().create(conf);
+    sentryServer = SentryServiceFactory.create(conf);
   }
 
   public static File createTempDir() {

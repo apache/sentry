@@ -136,7 +136,7 @@ public class AbstractSqoopSentryTestBase {
         ServerConfig.SENTRY_STORE_LOCAL_GROUP_MAPPING);
     conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE,
         policyFilePath.getPath());
-    server = new SentryServiceFactory().create(conf);
+    server = SentryServiceFactory.create(conf);
   }
 
   public static File createTempDir() {

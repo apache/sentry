@@ -132,7 +132,7 @@ public class AbstractSolrSentryTestWithDbProvider extends AbstractSolrSentryTest
     conf.set(ServerConfig.SENTRY_STORE_JDBC_PASS, "dummy");
     conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE,
         policyFilePath.getPath());
-    server = new SentryServiceFactory().create(conf);
+    server = SentryServiceFactory.create(conf);
 
     conf.set(ClientConfig.SERVER_RPC_ADDRESS, server.getAddress().getHostName());
     conf.set(ClientConfig.SERVER_RPC_PORT, String.valueOf(server.getAddress().getPort()));

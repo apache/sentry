@@ -111,7 +111,7 @@ public class InternalSentrySrv implements SentrySrv {
 
     for (int count = 0; count < numServers; count++) {
       Configuration servConf = new Configuration(sentryConf);
-      SentryService sentryServer = new SentryServiceFactory().create(servConf);
+      SentryService sentryServer = SentryServiceFactory.create(servConf);
       servConf.set(ClientConfig.SERVER_RPC_ADDRESS, sentryServer.getAddress()
           .getHostName());
       servConf.setInt(ClientConfig.SERVER_RPC_PORT, sentryServer.getAddress()

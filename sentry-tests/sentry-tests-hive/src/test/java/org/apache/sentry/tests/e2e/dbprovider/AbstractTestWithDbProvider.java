@@ -88,7 +88,7 @@ public abstract class AbstractTestWithDbProvider extends AbstractTestWithHiveSer
       conf.set(entry.getKey(), entry.getValue());
     }
     for (int i = 0; i < sentryServerCount; i++) {
-      SentryService server = new SentryServiceFactory().create(new Configuration(conf));
+      SentryService server = SentryServiceFactory.create(new Configuration(conf));
       servers.add(server);
       properties.put(ClientConfig.SERVER_RPC_ADDRESS, server.getAddress()
           .getHostName());
@@ -156,7 +156,7 @@ public abstract class AbstractTestWithDbProvider extends AbstractTestWithHiveSer
     Preconditions.checkArgument((serverCount > 0), "Server count should > 0.");
     servers = new ArrayList<SentryService>(serverCount);
     for (int i = 0; i < sentryServerCount; i++) {
-      SentryService server = new SentryServiceFactory().create(new Configuration(conf));
+      SentryService server = SentryServiceFactory.create(new Configuration(conf));
       servers.add(server);
     }
     startSentryService();

@@ -51,7 +51,7 @@ public class TestSentryGenericServiceClient extends SentryGenericServiceIntegrat
         client.dropRoleIfExists(requestorUserName, roleName, "solr");
         client.createRole(requestorUserName, roleName, "solr");
         stopSentryService();
-        server = new SentryServiceFactory().create(conf);
+        server = SentryServiceFactory.create(conf);
         startSentryService();
         client.dropRole(requestorUserName, roleName, "solr");
       }

@@ -54,7 +54,7 @@ public class TestSentryServiceClientPool extends SentryServiceIntegrationBase {
         client.createRole(requestorUserName, roleName);
         client.listRoles(requestorUserName);
         stopSentryService();
-        server = new SentryServiceFactory().create(conf);
+        server = SentryServiceFactory.create(conf);
         startSentryService();
         client.listRoles(requestorUserName);
         client.dropRole(requestorUserName, roleName);

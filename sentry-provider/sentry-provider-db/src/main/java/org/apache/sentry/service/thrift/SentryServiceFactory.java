@@ -17,12 +17,11 @@
  */
 
 package org.apache.sentry.service.thrift;
+
 import org.apache.hadoop.conf.Configuration;
 
 public class SentryServiceFactory {
-
-  public SentryService create(Configuration conf) throws Exception {
+  public static SentryService create(Configuration conf) throws Exception {
     return new SentryService(conf);
   }
-
 }

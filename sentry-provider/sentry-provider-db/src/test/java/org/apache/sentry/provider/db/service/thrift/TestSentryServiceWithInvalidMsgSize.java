@@ -90,7 +90,7 @@ public class TestSentryServiceWithInvalidMsgSize extends SentryServiceIntegratio
         stopSentryService();
 
         // create a server with a small max thrift message size
-        server = new SentryServiceFactory().create(confWithSmallMaxMsgSize);
+        server = SentryServiceFactory.create(confWithSmallMaxMsgSize);
         startSentryService();
 
         setLocalGroupMapping(ADMIN_USER, REQUESTER_USER_GROUP_NAMES);
