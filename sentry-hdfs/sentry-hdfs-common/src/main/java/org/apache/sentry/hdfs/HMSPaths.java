@@ -421,8 +421,7 @@ public class HMSPaths implements AuthzPaths {
         // we only create the entry if is under a prefix, else we ignore it
         entry = createChild(pathElements, EntryType.AUTHZ_OBJECT, authzObj);
       } else {
-        LOG.info("Skipping to create authzObjPath as it is outside of prefix. authObj = " + authzObj
-        + " pathElements=" + pathElements);
+        LOG.debug("Skipping to create authzObjPath as it is outside of prefix. authObj={} pathElements={}", authzObj, pathElements);
       }
       return entry;
     }
@@ -702,7 +701,7 @@ public class HMSPaths implements AuthzPaths {
         if (e != null) {
           newEntries.add(e);
         } else {
-          LOG.info("Path outside prefix");
+          LOG.debug("Cannot create authz obj path for {} because it is outside of prefix", authzObj);
         }
       }
       entries.addAll(newEntries);
