@@ -121,7 +121,7 @@ public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
 
     // If another paths updates request is in progress by another HDFS NameNode, then we
     // return an empty image for now to avoid a large memory consumption
-    if (pathsRetrieverBusy.compareAndSet(false, true)) {
+    if (!pathsRetrieverBusy.compareAndSet(false, true)) {
       LOGGER.debug("PATHS updates are not available because another request is in progress.");
       return Collections.emptyList();
     }
