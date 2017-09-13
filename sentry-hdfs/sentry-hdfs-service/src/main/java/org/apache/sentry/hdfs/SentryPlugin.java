@@ -140,6 +140,7 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
   public List<PathsUpdate> getAllPathsUpdatesFrom(long pathSeqNum, long pathImgNum) throws Exception {
     if (!fullUpdateNN.get()) {
       // Most common case - Sentry is NOT handling a full update.
+      LOGGER.debug("Sending partial PATH update to NameNode for pathSeqNum {} and pathImgNum {}", pathSeqNum, pathImgNum);
       return pathsUpdater.getAllUpdatesFrom(pathSeqNum, pathImgNum);
     }
 
@@ -147,7 +148,7 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
      * Sentry is in the middle of signal-triggered full update.
      * It already got a full update from HMS
      */
-    LOGGER.info("SIGNAL HANDLING: sending full update to NameNode");
+    LOGGER.info("SIGNAL HANDLING: sending full PATH update to NameNode");
     fullUpdateNN.set(false); // don't do full NN update till the next signal
     List<PathsUpdate> updates =
         pathsUpdater.getAllUpdatesFrom(SEQUENCE_NUMBER_UPDATE_UNINITIALIZED, IMAGE_NUMBER_UPDATE_UNINITIALIZED);
@@ -166,20 +167,21 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     if (updates != null) {
       if (!updates.isEmpty()) {
         if (updates.get(0).hasFullImage()) {
-          LOGGER.info("SIGNAL HANDLING: Confirmed full update to NameNode");
+          LOGGER.info("SIGNAL HANDLING: Confirmed full PATH update to NameNode for pathSeqNum {} and pathImgNum {}", pathSeqNum, pathImgNum);
         } else {
-          LOGGER.warn("SIGNAL HANDLING: Sending partial instead of full update to NameNode (???)");
+          LOGGER.warn("SIGNAL HANDLING: Sending partial instead of full PATH update to NameNode  for pathSeqNum {} and pathImgNum {} (???)", pathSeqNum, pathImgNum);
         }
       } else {
-        LOGGER.warn("SIGNAL HANDLING: Sending empty instead of full update to NameNode (???)");
+        LOGGER.warn("SIGNAL HANDLING: Sending empty instead of full PATH update to NameNode  for pathSeqNum {} and pathImgNum {} (???)", pathSeqNum, pathImgNum);
       }
     } else {
-      LOGGER.warn("SIGNAL HANDLING: returned NULL instead of full update to NameNode (???)");
+      LOGGER.warn("SIGNAL HANDLING: returned NULL instead of full PATH update to NameNode  for pathSeqNum {} and pathImgNum {} (???)", pathSeqNum, pathImgNum);
     }
     return updates;
   }
 
   public List<PermissionsUpdate> getAllPermsUpdatesFrom(long permSeqNum) throws Exception {
+    LOGGER.debug("Sending partial PERM update to NameNode for permSeqNum {}", permSeqNum);
     return permsUpdater.getAllUpdatesFrom(permSeqNum, UNUSED_PATH_UPDATE_IMG_NUM);
   }
 

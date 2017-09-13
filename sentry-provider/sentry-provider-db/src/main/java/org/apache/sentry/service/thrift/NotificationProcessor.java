@@ -520,7 +520,7 @@ final class NotificationProcessor {
     }
 
     if (oldLocation.equals(newLocation)) {
-      LOGGER.info(String.format("Alter partition notification ignored as"
+      LOGGER.debug(String.format("Alter partition notification ignored as"
           + "location has not changed: AuthzObj = %s, Location = %s", dbName + "."
           + "." + tableName, oldLocation));
       return false;
