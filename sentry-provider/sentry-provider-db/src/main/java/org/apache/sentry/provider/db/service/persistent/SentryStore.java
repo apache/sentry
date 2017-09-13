@@ -143,7 +143,7 @@ public class SentryStore {
   // is starting from 1.
   public static final long INIT_CHANGE_ID = 1L;
 
-  public static final long EMPTY_CHANGE_ID = 0L;
+  private static final long EMPTY_CHANGE_ID = 0L;
 
   public static final long EMPTY_NOTIFICATION_ID = 0L;
 
@@ -154,7 +154,10 @@ public class SentryStore {
   private static final long COUNT_VALUE_UNKNOWN = -1L;
 
   // Representation for unknown HMS notification ID
-  public static final long NOTIFICATION_UNKNOWN = -1L;
+  private static final long NOTIFICATION_UNKNOWN = -1L;
+
+  private static final String EMPTY_GRANTOR_PRINCIPAL = "--";
+
 
   private static final Set<String> ALL_ACTIONS = Sets.newHashSet(AccessConstants.ALL,
       AccessConstants.SELECT, AccessConstants.INSERT, AccessConstants.ALTER,
@@ -332,19 +335,6 @@ public class SentryStore {
     Query query = pm.newQuery(MSentryRole.class);
     query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
     return (List<MSentryRole>) query.execute();
-  }
-
-  /**
-   * Get a group with the given name. Should be called inside transaction.
-   * @param pm Persistence Manager instance
-   * @param groupName - group name
-   * @return Single group with the given name
-     */
-  private MSentryGroup getGroup(PersistenceManager pm, String groupName) {
-    Query query = pm.newQuery(MSentryGroup.class);
-    query.setFilter("this.groupName == :groupName");
-    query.setUnique(true);
-    return (MSentryGroup) query.execute(groupName);
   }
 
   /**
@@ -1767,53 +1757,82 @@ public class SentryStore {
     return convertToTSentryPrivileges(getMSentryPrivileges(roleNames, authHierarchy));
   }
 
-  private Set<MSentryRole> getMSentryRolesByGroupName(final String groupName)
-      throws Exception {
-    return tm.executeTransaction(
-        new TransactionBlock<Set<MSentryRole>>() {
-          public Set<MSentryRole> execute(PersistenceManager pm) throws Exception {
-            Set<MSentryRole> roles;
-
-            //If no group name was specified, return all roles
-            if (groupName == null) {
-              roles = new HashSet<>(getAllRoles(pm));
-            } else {
-              String trimmedGroupName = groupName.trim();
-              MSentryGroup sentryGroup = getGroup(pm, trimmedGroupName);
-              if (sentryGroup == null) {
-                throw noSuchGroup(trimmedGroupName);
-              }
-              roles = sentryGroup.getRoles();
-            }
-            for (MSentryRole role: roles) {
-              pm.retrieve(role);
-            }
-            return roles;
-          }
-        });
-  }
-
   /**
-   * Gets sentry role objects for a given groupName from the persistence layer
-   * @param groupNames : set of groupNames to look up (if null returns all
-   *                   roles for all groups)
-   * @return : Set of thrift sentry role objects
-   * @throws SentryNoSuchObjectException
+   * Return set of roles corresponding to the groups provided.<p>
+   *
+   * If groups contain a null group, return all available roles.<p>
+   *
+   * Everything is done in a single transaction so callers get a
+   * fully-consistent view of the roles, so this can be called at the same tie as
+   * some other method that modifies groups or roles.<p>
+   *
+   * <em><b>NOTE:</b> This function is performance-critical, so before you modify it, make
+   * sure to measure performance effect. It is called every time when PolicyClient
+   * (Hive or Impala) tries to get list of roles.
+   * </em>
+   *
+   * @param groupNames Set of Sentry groups. Can contain {@code null}
+   *                  in which case all roles should be returned
+   * @param checkAllGroups If false, raise SentryNoSuchObjectException
+   *                      if one of the groups is not available, otherwise
+   *                      ignore non-existent groups
+   * @return Set of TSentryRole toles corresponding to the given set of groups.
+   * @throws SentryNoSuchObjectException if one of the groups is not present and
+   * checkAllGroups is not set.
+   * @throws Exception if DataNucleus operation fails.
    */
-  public Set<TSentryRole> getTSentryRolesByGroupName(Set<String> groupNames,
-      boolean checkAllGroups) throws Exception {
-    Set<MSentryRole> roleSet = Sets.newHashSet();
-    for (String groupName : groupNames) {
-      try {
-        roleSet.addAll(getMSentryRolesByGroupName(groupName));
-      } catch (SentryNoSuchObjectException e) {
-        // if we are checking for all the given groups, then continue searching
-        if (!checkAllGroups) {
-          throw e;
-        }
-      }
+  public Set<TSentryRole> getTSentryRolesByGroupName(final Set<String> groupNames,
+                                                     final boolean checkAllGroups) throws Exception {
+    if (groupNames.isEmpty()) {
+      return Collections.emptySet();
     }
-    return convertToTSentryRoles(roleSet);
+
+    return tm.executeTransaction(
+            new TransactionBlock<Set<TSentryRole>>() {
+              @Override
+              public Set<TSentryRole> execute(PersistenceManager pm) throws Exception {
+
+                pm.setDetachAllOnCommit(false); // No need to detach objects
+
+                // Pre-allocate large sets for role names and results.
+                // roleNames is used to avoid adding the same role mutiple times into
+                // result. The result is set, but comparisons between TSentryRole objects
+                // is more expensive then String comparisons.
+                Set<String> roleNames = new HashSet<>(1024);
+                Set<TSentryRole> result = new HashSet<>(1024);
+
+                for(String group: groupNames) {
+                  if (group == null) {
+                    // Special case - return all roles
+                    List<MSentryRole> roles = getAllRoles(pm);
+                    for (MSentryRole role: roles) {
+                      result.add(convertToTSentryRole(role));
+                    }
+                    return result;
+                  }
+
+                  // Find group by name and all roles belonging to this group
+                  String trimmedGroup = group.trim();
+                  Query query = pm.newQuery(MSentryGroup.class);
+                  query.setFilter("this.groupName == :groupName");
+                  query.setUnique(true);
+                  MSentryGroup mGroup = (MSentryGroup) query.execute(trimmedGroup);
+                  if (mGroup != null) {
+                    // For each unique role found, add a new TSentryRole version of the role to result.
+                    for (MSentryRole role: mGroup.getRoles()) {
+                      String roleName = role.getRoleName();
+                      if (roleNames.add(roleName)) {
+                        result.add(convertToTSentryRole(role));
+                      }
+                    }
+                  } else if (!checkAllGroups) {
+                      throw noSuchGroup(trimmedGroup);
+                  }
+                  query.closeAll();
+                }
+                return result;
+              }
+            });
   }
 
   public Set<String> getRoleNamesForGroups(final Set<String> groups) throws Exception {
@@ -2024,9 +2043,7 @@ public class SentryStore {
   }
 
   private TSentryRole convertToTSentryRole(MSentryRole mSentryRole) {
-    TSentryRole role = new TSentryRole();
-    role.setRoleName(mSentryRole.getRoleName());
-    role.setGrantorPrincipal("--");
+    String roleName = mSentryRole.getRoleName().intern();
     Set<MSentryGroup> groups = mSentryRole.getGroups();
     Set<TSentryGroup> sentryGroups = new HashSet<>(groups.size());
     for(MSentryGroup mSentryGroup: groups) {
@@ -2034,14 +2051,11 @@ public class SentryStore {
       sentryGroups.add(group);
     }
 
-    role.setGroups(sentryGroups);
-    return role;
+    return new TSentryRole(roleName, sentryGroups, EMPTY_GRANTOR_PRINCIPAL);
   }
 
   private TSentryGroup convertToTSentryGroup(MSentryGroup mSentryGroup) {
-    TSentryGroup group = new TSentryGroup();
-    group.setGroupName(mSentryGroup.getGroupName());
-    return group;
+    return new TSentryGroup(mSentryGroup.getGroupName().intern());
   }
 
   TSentryPrivilege convertToTSentryPrivilege(MSentryPrivilege mSentryPrivilege) {
