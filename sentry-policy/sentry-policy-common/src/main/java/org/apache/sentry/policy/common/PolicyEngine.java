@@ -19,8 +19,8 @@ package org.apache.sentry.policy.common;
 
 import java.util.Set;
 
-import javax.annotation.concurrent.ThreadSafe;
 
+import org.apache.http.annotation.ThreadSafe;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.exception.SentryConfigurationException;
