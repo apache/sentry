@@ -57,7 +57,7 @@ limitations under the License.
     <failIfNoTests>false</failIfNoTests>
     <!-- versions are in alphabetical order -->
     <ant.contrib.version>1.0b3</ant.contrib.version>
-    <bonecp.version>0.7.1.RELEASE</bonecp.version>
+    <bonecp.version>0.8.0.RELEASE</bonecp.version>
     <build.helper.maven.plugin.version>1.8</build.helper.maven.plugin.version>
     <cglib.version>2.2</cglib.version>
     <commons-cli.version>1.2</commons-cli.version>
