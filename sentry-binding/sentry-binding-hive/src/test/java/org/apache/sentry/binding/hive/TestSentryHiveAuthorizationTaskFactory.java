@@ -83,6 +83,7 @@ public class TestSentryHiveAuthorizationTaskFactory {
   @Before
   public void setup() throws Exception {
     conf = new HiveConf();
+    conf.set("datanucleus.schema.autoCreateTables", "true");
     baseDir = Files.createTempDir();
     baseDir.setWritable(true, false);
     conf.setVar(HiveConf.ConfVars.SCRATCHDIR, baseDir.getAbsolutePath());

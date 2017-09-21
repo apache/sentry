@@ -35,6 +35,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.base.Preconditions;
@@ -63,6 +65,7 @@ import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.binding.hive.SentryHiveAuthorizationTaskFactoryImpl;
+import org.apache.sentry.binding.hive.authz.SentryHiveAuthorizerFactory;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.hdfs.SentryHDFSServiceClientFactory;
 import org.apache.sentry.hdfs.SentryINodeAttributesProvider;
@@ -559,6 +562,13 @@ public abstract class TestHDFSIntegrationBase {
         hiveConf.set("datanucleus.autoCreateSchema", "true");
         hiveConf.set("datanucleus.fixedDatastore", "false");
         hiveConf.set("datanucleus.autoStartMechanism", "SchemaTable");
+        hiveConf.set("datanucleus.schema.autoCreateTables", "true");
+
+        hiveConf.set(ConfVars.HIVE_AUTHORIZATION_ENABLED.varname, "false");
+        hiveConf.set(ConfVars.HIVE_AUTHORIZATION_MANAGER.varname, SentryHiveAuthorizerFactory.class.getName());
+        hiveConf.set(ConfVars.HIVE_CBO_ENABLED.varname, "false");
+        hiveConf.set(ConfVars.METASTORE_DISALLOW_INCOMPATIBLE_COL_TYPE_CHANGES.varname, "false");
+        hiveConf.set(ConfVars.HIVE_IN_TEST.varname, "true");
 
         // Sets hive.metastore.authorization.storage.checks to true, so that
         // disallow the operations such as drop-partition if the user in question
@@ -612,12 +622,15 @@ public abstract class TestHDFSIntegrationBase {
     hiveUgi.doAs(new PrivilegedExceptionAction<Void>() {
       @Override
       public Void run() throws Exception {
+        final CountDownLatch hmsStartedSignal = new CountDownLatch(1);
+
         metastore = new InternalMetastoreServer(hiveConf);
         new Thread() {
           @Override
           public void run() {
             try {
               metastore.start();
+              hmsStartedSignal.countDown();
               while (true) {
                 Thread.sleep(1000L);
               }
@@ -627,6 +640,7 @@ public abstract class TestHDFSIntegrationBase {
           }
         }.start();
 
+        hmsStartedSignal.await(30, TimeUnit.SECONDS);
         hmsClient = new HiveMetaStoreClient(hiveConf);
         startHiveServer2(retries, hiveConf);
         return null;

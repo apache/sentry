@@ -219,7 +219,10 @@ public class TestHDFSIntegrationEnd2End extends TestHDFSIntegrationBase {
     stmt.execute("grant all on table exT100 to role tab_role");
     verifyOnAllSubDirs("/tmp/external/ext100", FsAction.ALL, "flume", true);
 
+    stmt.execute("drop table ext100");
+    stmt.execute("drop table ext101");
     stmt.execute("use default");
+    stmt.execute("drop database extdb");
 
     //TODO: SENTRY-795: HDFS permissions do not sync when Sentry restarts in HA mode.
     if(!testSentryHA) {

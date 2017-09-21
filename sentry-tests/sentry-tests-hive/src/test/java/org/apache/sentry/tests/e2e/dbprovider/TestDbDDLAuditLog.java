@@ -44,8 +44,8 @@ public class TestDbDDLAuditLog extends AbstractTestWithStaticConfiguration {
   public static void setupTestStaticConfiguration() throws Exception {
     useSentryService = true;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
-    Logger logger = Logger.getLogger("sentry.hive.authorization.ddl.logger");
     AuditLoggerTestAppender testAppender = new AuditLoggerTestAppender();
+    Logger logger = Logger.getLogger(Constants.AUDIT_LOGGER_NAME);
     logger.addAppender(testAppender);
     logger.setLevel(Level.INFO);
   }

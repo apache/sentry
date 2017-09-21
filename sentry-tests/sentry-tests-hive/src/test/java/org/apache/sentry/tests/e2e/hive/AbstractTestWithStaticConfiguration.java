@@ -462,6 +462,7 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
     hiveConf.set("hive.metastore.authorization.storage.checks", "true");
     hiveConf.set("hive.metastore.uris", "thrift://localhost:" + hmsPort);
     hiveConf.set("sentry.metastore.service.users", "hive");// queries made by hive user (beeline) skip meta store check
+    hiveConf.set("datanucleus.schema.autoCreateTables", "true");
 
     File confDir = assertCreateDir(new File(baseDir, "etc"));
     File hiveSite = new File(confDir, "hive-site.xml");

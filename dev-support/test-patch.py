@@ -319,7 +319,7 @@ else:
   result.info("patch applied and built but tests did not execute")
 if hive_authz2:
   result.info("INFO: Test patch for Hive authz2")
-  mvn_profile="-P-hive-authz1,hive-authz2,-datanucleus3,datanucleus4"
+  mvn_profile="-P-hive-authz1,hive-authz2"
   output_dir_v2 = output_dir + "/v2"
   os.mkdir(output_dir_v2)
   mvn_clean(result, mvn_repo, output_dir_v2, mvn_profile)

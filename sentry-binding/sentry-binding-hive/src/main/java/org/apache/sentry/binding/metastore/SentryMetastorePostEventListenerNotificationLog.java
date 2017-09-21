@@ -275,7 +275,8 @@ public class SentryMetastorePostEventListenerNotificationLog extends MetaStoreEv
     // Any more?
 
     NotificationEvent event = new NotificationEvent(0L, now(), HCatConstants.HCAT_ALTER_PARTITION_EVENT,
-            messageFactory.buildAlterPartitionMessage(partitionEvent.getOldPartition(), partitionEvent.getNewPartition()).toString());
+            messageFactory.buildAlterPartitionMessage(partitionEvent.getTable(),
+                partitionEvent.getOldPartition(), partitionEvent.getNewPartition()).toString());
 
     event.setDbName(partitionEvent.getNewPartition().getDbName());
     event.setTableName(partitionEvent.getNewPartition().getTableName());
@@ -304,7 +305,7 @@ public class SentryMetastorePostEventListenerNotificationLog extends MetaStoreEv
     //TODO: Need more validations?
 
     NotificationEvent event = new NotificationEvent(0L, now(), HCatConstants.HCAT_ADD_PARTITION_EVENT,
-            messageFactory.buildAddPartitionMessage(partitionEvent.getTable(), partitionEvent.getPartitions()).toString());
+            messageFactory.buildAddPartitionMessage(partitionEvent.getTable(), partitionEvent.getPartitionIterator()).toString());
 
     event.setDbName(partitionEvent.getTable().getDbName());
     event.setTableName(partitionEvent.getTable().getTableName());
@@ -322,7 +323,7 @@ public class SentryMetastorePostEventListenerNotificationLog extends MetaStoreEv
     }
 
     NotificationEvent event = new NotificationEvent(0L, now(), HCatConstants.HCAT_DROP_PARTITION_EVENT,
-            messageFactory.buildDropPartitionMessage(partitionEvent.getTable(), partitionEvent.getPartition()).toString());
+            messageFactory.buildDropPartitionMessage(partitionEvent.getTable(), partitionEvent.getPartitionIterator()).toString());
     //TODO: Why is this asymmetric with add partitions(s)?
     // Seems like adding multiple partitions generate a single event
     // where as single partition drop generated an event?

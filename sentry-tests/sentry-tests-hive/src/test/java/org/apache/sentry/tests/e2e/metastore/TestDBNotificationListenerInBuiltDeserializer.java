@@ -348,7 +348,7 @@ public class TestDBNotificationListenerInBuiltDeserializer extends AbstractMetas
     assertEquals(HCatEventMessage.EventType.ALTER_PARTITION, alterPartitionMessage.getEventType());
     assertThat(alterPartitionMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB));// dbName
     assertThat(alterPartitionMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));// tableName
-    assertEquals(partVals1, alterPartitionMessage.getValues());
+    assertEquals(partVals1, alterPartitionMessage.getKeyValues());
     if (alterPartitionMessage instanceof SentryJSONAlterPartitionMessage) {
       SentryJSONAlterPartitionMessage sjAlterPartitionMessage = (SentryJSONAlterPartitionMessage) alterPartitionMessage;
       assertEquals(partVals1, sjAlterPartitionMessage.getNewValues());
@@ -364,7 +364,7 @@ public class TestDBNotificationListenerInBuiltDeserializer extends AbstractMetas
     assertEquals(HCatEventMessage.EventType.ALTER_PARTITION, alterPartitionMessage.getEventType());
     assertThat(alterPartitionMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB));// dbName
     assertThat(alterPartitionMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));// tableName
-    assertEquals(partVals1, alterPartitionMessage.getValues());
+    assertEquals(partVals1, alterPartitionMessage.getKeyValues());
     if (alterPartitionMessage instanceof SentryJSONAlterPartitionMessage) {
       SentryJSONAlterPartitionMessage sjAlterPartitionMessage = (SentryJSONAlterPartitionMessage) alterPartitionMessage;
       assertEquals(partVals2, sjAlterPartitionMessage.getNewValues());

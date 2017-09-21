@@ -59,8 +59,7 @@ import org.apache.sentry.service.thrift.ServiceConstants.ThriftConstants;
 import org.apache.sentry.service.thrift.Status;
 import org.apache.sentry.service.thrift.TSentryResponseStatus;
 import org.apache.thrift.TException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.Logger;
 
 import com.codahale.metrics.Timer;
 import static com.codahale.metrics.MetricRegistry.name;
@@ -77,8 +76,8 @@ import static org.apache.sentry.hdfs.Updateable.Update;
 
 @SuppressWarnings("unused")
 public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
-  private static final Logger LOGGER = LoggerFactory.getLogger(SentryPolicyStoreProcessor.class);
-  private static final Logger AUDIT_LOGGER = LoggerFactory.getLogger(Constants.AUDIT_LOGGER_NAME);
+  private static final Logger LOGGER = Logger.getLogger(SentryPolicyStoreProcessor.class);
+  private static final Logger AUDIT_LOGGER = Logger.getLogger(Constants.AUDIT_LOGGER_NAME);
 
   static final String SENTRY_POLICY_SERVICE_NAME = "SentryPolicyService";
 

@@ -40,6 +40,7 @@ public class TestURI {
   @BeforeClass
   public static void setupTestURI() {
     conf = new HiveConf();
+    conf.set("datanucleus.schema.autoCreateTables", "true");
     baseDir = Files.createTempDir();
     baseDir.setWritable(true, false);
     conf.setVar(HiveConf.ConfVars.SCRATCHDIR, baseDir.getAbsolutePath());

@@ -543,6 +543,7 @@ public class TestOperationsPart1 extends AbstractTestWithStaticConfiguration {
     statement = context.createStatement(connection);
     statement.execute("Use " + DB1);
     statement.execute("ALTER TABLE tb1 CLUSTERED BY (a) SORTED BY (a) INTO 1 BUCKETS");
+    statement.execute("ALTER TABLE tb1 ADD PARTITION (b = '1')");
 
     policyFile.addPermissionsToRole("alter_db1_tb1", privileges.get("alter_db1_tb1"))
         .addRolesToGroup(USERGROUP1, "alter_db1_tb1")
@@ -555,7 +556,7 @@ public class TestOperationsPart1 extends AbstractTestWithStaticConfiguration {
     statement = context.createStatement(connection);
     statement.execute("Use " + DB1);
     statement.execute("ALTER TABLE tb1 INTO 6 BUCKETS");
-    statement.execute("ALTER TABLE tb1 PARTITION (a = '1') INTO 6 BUCKETS");
+    statement.execute("ALTER TABLE tb1 PARTITION (b = '1') INTO 6 BUCKETS");
 
     statement.close();
     connection.close();
@@ -566,7 +567,7 @@ public class TestOperationsPart1 extends AbstractTestWithStaticConfiguration {
     statement.execute("Use " + DB1);
     context.assertSentrySemanticException(statement, "ALTER TABLE tb1 INTO 6 BUCKETS",
         semanticException);
-    context.assertSentrySemanticException(statement, "ALTER TABLE tb1 PARTITION (a = '1') INTO 6 BUCKETS",
+    context.assertSentrySemanticException(statement, "ALTER TABLE tb1 PARTITION (b = '1') INTO 6 BUCKETS",
         semanticException);
 
     statement.close();
@@ -689,21 +690,19 @@ public class TestOperationsPart1 extends AbstractTestWithStaticConfiguration {
   2. HiveOperation.ALTERTABLE_SERDEPROPERTIES
   3. HiveOperation.ALTERTABLE_CLUSTER_SORT
   4. HiveOperation.ALTERTABLE_TOUCH
-  5. HiveOperation.ALTERTABLE_PROTECTMODE
-  6. HiveOperation.ALTERTABLE_FILEFORMAT
-  7. HiveOperation.ALTERTABLE_RENAMEPART
-  8. HiveOperation.ALTERPARTITION_SERDEPROPERTIES
-  9. TODO: archive partition
-  10. TODO: unarchive partition
-  11. HiveOperation.ALTERPARTITION_FILEFORMAT
-  12. TODO: partition touch (is it same as  HiveOperation.ALTERTABLE_TOUCH?)
-  13. HiveOperation.ALTERPARTITION_PROTECTMODE
-  14. HiveOperation.ALTERTABLE_RENAMECOL
-  15. HiveOperation.ALTERTABLE_ADDCOLS
-  16. HiveOperation.ALTERTABLE_REPLACECOLS
-  17. TODO: HiveOperation.ALTERVIEW_PROPERTIES
-  18. TODO: HiveOperation.ALTERTABLE_SERIALIZER
-  19. TODO: HiveOperation.ALTERPARTITION_SERIALIZER
+  5. HiveOperation.ALTERTABLE_FILEFORMAT
+  6. HiveOperation.ALTERTABLE_RENAMEPART
+  7. HiveOperation.ALTERPARTITION_SERDEPROPERTIES
+  8. TODO: archive partition
+  9. TODO: unarchive partition
+  10. HiveOperation.ALTERPARTITION_FILEFORMAT
+  11. TODO: partition touch (is it same as  HiveOperation.ALTERTABLE_TOUCH?)
+  12. HiveOperation.ALTERTABLE_RENAMECOL
+  13. HiveOperation.ALTERTABLE_ADDCOLS
+  14. HiveOperation.ALTERTABLE_REPLACECOLS
+  15. TODO: HiveOperation.ALTERVIEW_PROPERTIES
+  16. TODO: HiveOperation.ALTERTABLE_SERIALIZER
+  17. TODO: HiveOperation.ALTERPARTITION_SERIALIZER
    */
   @Test
   public void testAlterTable() throws Exception {
@@ -736,8 +735,6 @@ public class TestOperationsPart1 extends AbstractTestWithStaticConfiguration {
     assertSemanticException(statement, "ALTER TABLE tb1 SET SERDEPROPERTIES ('field.delim' = ',')");
     assertSemanticException(statement, "ALTER TABLE tb1 CLUSTERED BY (a) SORTED BY (a) INTO 1 BUCKETS");
     assertSemanticException(statement, "ALTER TABLE tb1 TOUCH");
-    assertSemanticException(statement, "ALTER TABLE tb1 ENABLE NO_DROP");
-    assertSemanticException(statement, "ALTER TABLE tb1 DISABLE OFFLINE");
     assertSemanticException(statement, "ALTER TABLE tb1 SET FILEFORMAT RCFILE");
 
     assertSemanticException(statement, "ALTER TABLE tb1 PARTITION (b = 10) RENAME TO PARTITION (b = 2)");
@@ -746,8 +743,6 @@ public class TestOperationsPart1 extends AbstractTestWithStaticConfiguration {
     //assertSemanticException(statement, "ALTER TABLE tb1 UNARCHIVE PARTITION (b = 2)");
     assertSemanticException(statement, "ALTER TABLE tb1 PARTITION (b = 10) SET FILEFORMAT RCFILE");
     assertSemanticException(statement, "ALTER TABLE tb1 TOUCH PARTITION (b = 10)");
-    assertSemanticException(statement, "ALTER TABLE tb1 PARTITION (b = 10) DISABLE NO_DROP");
-    assertSemanticException(statement, "ALTER TABLE tb1 PARTITION (b = 10) DISABLE OFFLINE");
 
     assertSemanticException(statement, "ALTER TABLE tb1 CHANGE COLUMN a c int");
     assertSemanticException(statement, "ALTER TABLE tb1 ADD COLUMNS (a int)");
@@ -768,8 +763,6 @@ public class TestOperationsPart1 extends AbstractTestWithStaticConfiguration {
     statement.execute("ALTER TABLE tb1 SET SERDEPROPERTIES ('field.delim' = ',')");
     statement.execute("ALTER TABLE tb1 CLUSTERED BY (a) SORTED BY (a) INTO 1 BUCKETS");
     statement.execute("ALTER TABLE tb1 TOUCH");
-    statement.execute("ALTER TABLE tb1 ENABLE NO_DROP");
-    statement.execute("ALTER TABLE tb1 DISABLE OFFLINE");
     statement.execute("ALTER TABLE tb1 SET FILEFORMAT RCFILE");
 
     statement.execute("ALTER TABLE tb1 PARTITION (b = 1) RENAME TO PARTITION (b = 2)");
@@ -778,8 +771,6 @@ public class TestOperationsPart1 extends AbstractTestWithStaticConfiguration {
     //statement.execute("ALTER TABLE tb1 UNARCHIVE PARTITION (b = 2)");
     statement.execute("ALTER TABLE tb1 PARTITION (b = 2) SET FILEFORMAT RCFILE");
     statement.execute("ALTER TABLE tb1 TOUCH PARTITION (b = 2)");
-    statement.execute("ALTER TABLE tb1 PARTITION (b = 2) DISABLE NO_DROP");
-    statement.execute("ALTER TABLE tb1 PARTITION (b = 2) DISABLE OFFLINE");
 
     statement.execute("ALTER TABLE tb1 CHANGE COLUMN a c int");
     statement.execute("ALTER TABLE tb1 ADD COLUMNS (a int)");

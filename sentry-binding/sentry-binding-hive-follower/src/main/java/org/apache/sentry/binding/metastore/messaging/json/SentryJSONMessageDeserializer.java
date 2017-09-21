@@ -19,6 +19,7 @@
 package org.apache.sentry.binding.metastore.messaging.json;
 
 import org.apache.hive.hcatalog.messaging.*;
+import org.apache.hive.hcatalog.messaging.json.JSONInsertMessage;
 import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.ObjectMapper;
 
@@ -125,6 +126,21 @@ public class SentryJSONMessageDeserializer extends MessageDeserializer {
       return mapper.readValue(messageBody, SentryJSONDropPartitionMessage.class);
     } catch (Exception e) {
       throw new IllegalArgumentException("Could not construct SentryJSONDropPartitionMessage: ", e);
+    }
+  }
+
+  /**
+   * Method to de-serialize JSONInsertMessage instance.
+   */
+  @Override
+  public InsertMessage getInsertMessage(String messageBody) {
+    // Sentry would be not be interested in InsertMessage as these are generated when is data is
+    // added inserted. This method is implemented for completeness. This is reason why, new sentry
+    // JSON class is not defined for InsertMessage.
+    try {
+      return mapper.readValue(messageBody, JSONInsertMessage.class);
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Could not construct InsertMessage", e);
     }
   }
 

@@ -31,6 +31,7 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
+import org.apache.sentry.binding.hive.authz.SentryHiveAuthorizerFactory;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider;
@@ -129,8 +130,9 @@ public class HiveServerFactory {
     }
     if(!properties.containsKey(METASTORE_CONNECTION_URL)) {
       properties.put(METASTORE_CONNECTION_URL,
-          String.format("jdbc:derby:;databaseName=%s;create=true",
+          String.format("jdbc:derby:;databaseName=%s;create=true;createDatabaseIfNotExist=true",
               new File(baseDir, "metastore").getPath()));
+      properties.put("datanucleus.schema.autoCreateTables", "true");
     }
     if(!properties.containsKey(ACCESS_TESTING_MODE)) {
       properties.put(ACCESS_TESTING_MODE, "true");
@@ -180,11 +182,20 @@ public class HiveServerFactory {
       properties.put(ConfVars.METASTORESERVERMINTHREADS.varname, "5");
     }
 
-    // set the SentryMetaStoreFilterHook for HiveServer2 only, not for metastore
-    if (!HiveServer2Type.InternalMetastore.equals(type)) {
-      properties.put(ConfVars.METASTORE_FILTER_HOOK.varname,
-          org.apache.sentry.binding.metastore.SentryMetaStoreFilterHook.class.getName());
-    }
+    properties.put(ConfVars.HIVE_AUTHORIZATION_ENABLED.varname, "false");
+    properties.put(ConfVars.HIVE_AUTHORIZATION_MANAGER.varname, SentryHiveAuthorizerFactory.class.getName());
+
+    // CBO has a bug on Hive 2.0.0 with VIEWS because ReadIdentity objects are sent without
+    // parent information for partitioned columns
+    properties.put(ConfVars.HIVE_CBO_ENABLED.varname, "false");
+
+    // Hive 2.x set the following configuration to TRUE by default and it causes test issues on
+    // Sentry because we're trying to change columns with different column types
+    properties.put(ConfVars.METASTORE_DISALLOW_INCOMPATIBLE_COL_TYPE_CHANGES.varname, "false");
+
+    // This configuration will avoid starting the HS2 WebUI that was causing test failures when
+    // HS2 is configured for concurrency
+    properties.put(ConfVars.HIVE_IN_TEST.varname, "true");
 
     if (!properties.containsKey(METASTORE_BYPASS)) {
       properties.put(METASTORE_BYPASS, "hive,impala," + System.getProperty("user.name", ""));

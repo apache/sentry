@@ -47,4 +47,5 @@ public class SentryJSONDropPartitionMessage extends JSONDropPartitionMessage {
   public String toString() {
     return SentryJSONMessageDeserializer.serialize(this);
   }
+
 }

@@ -29,6 +29,7 @@ import org.hamcrest.text.IsEqualIgnoringCase;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.*;
 
@@ -374,7 +375,8 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     if(!useDbNotificationListener) {
       assertEquals(oldLocation.toLowerCase(), alterPartitionMessage.getOldLocation());
       assertEquals(newLocation.toLowerCase(), alterPartitionMessage.getNewLocation());
-      assertEquals(partVals1, alterPartitionMessage.getValues());
+      assertTrue(partVals1.containsAll(alterPartitionMessage.getKeyValues().values()) &&
+          alterPartitionMessage.getKeyValues().values().containsAll(partVals1));
       assertEquals(partVals1, alterPartitionMessage.getNewValues());
     }
 
@@ -389,9 +391,12 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
     assertThat(alterPartitionMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB));// dbName
     assertThat(alterPartitionMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));// tableName
     if(!useDbNotificationListener) {
-      assertEquals(partVals1, alterPartitionMessage.getValues());
+      assertTrue(partVals1.containsAll(alterPartitionMessage.getKeyValues().values()) &&
+          alterPartitionMessage.getKeyValues().values().containsAll(partVals1));
       assertEquals(partVals2, alterPartitionMessage.getNewValues());
     }
+
+    dropMetastoreDBIfExists(client, testDB);
   }
 }
 

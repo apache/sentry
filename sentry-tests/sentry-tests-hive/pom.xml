@@ -35,6 +35,15 @@ limitations under the License.
     <HIVE_CONF_DIR>${env.HIVE_CONF_DIR}</HIVE_CONF_DIR>
   </properties>
   <dependencies>
+    <!-- This dependency is just added to allow StringUtils.removePrefix() to work because
+         Hive 2.x was bringing a lower version of ant. We should figure out a different
+         API to remove the prefix instead of adding the ant dependency
+    -->
+    <dependency>
+      <groupId>org.apache.ant</groupId>
+      <artifactId>ant</artifactId>
+      <version>1.9.1</version>
+    </dependency>
     <dependency>
      <groupId>org.apache.thrift</groupId>
       <artifactId>libthrift</artifactId>
@@ -102,6 +111,10 @@ limitations under the License.
           <groupId>org.datanucleus</groupId>
           <artifactId>datanucleus-rdbms</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-1.2-api</artifactId>
+        </exclusion>
       </exclusions>
       <scope>test</scope>
     </dependency>
@@ -116,6 +129,12 @@ limitations under the License.
       <artifactId>hive-common</artifactId>
       <version>${hive.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-1.2-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>

@@ -233,7 +233,6 @@ public class HiveAuthzPrivilegesMap {
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_CLUSTER_SORT, alterTablePrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_FILEFORMAT, alterTablePrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_TOUCH, alterTablePrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_PROTECTMODE, alterTablePrivilege);
 
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_RENAMECOL, alterTablePrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_ADDCOLS, alterTablePrivilege);
@@ -246,7 +245,6 @@ public class HiveAuthzPrivilegesMap {
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_ARCHIVE, alterTablePrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_UNARCHIVE, alterTablePrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_FILEFORMAT, alterTablePrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_PROTECTMODE, alterTablePrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_SERDEPROPERTIES, alterTablePrivilege);
 
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_MERGEFILES, alterTablePrivilege);

@@ -268,7 +268,7 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
     stmt = conn.createStatement();
     stmt.execute("create database " + dbName);
     LOGGER.info("create external table in " + tmpHDFSPartitionStr);
-    stmt.execute("create external table tab1(a int) partitioned by (date string) location 'hdfs://" + tmpHDFSPartitionStr + "'");
+    stmt.execute("create external table tab1(a int) partitioned by (date1 string) location 'hdfs://" + tmpHDFSPartitionStr + "'");
 
     miniDFS.getFileSystem().setOwner(tmpHDFSDir, "hdfs", "hdfs");
     miniDFS.getFileSystem().setPermission(tmpHDFSDir, FsPermission.valueOf("drwxrwx---"));

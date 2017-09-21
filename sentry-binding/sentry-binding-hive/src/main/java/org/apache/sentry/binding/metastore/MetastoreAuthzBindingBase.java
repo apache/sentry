@@ -19,6 +19,7 @@ package org.apache.sentry.binding.metastore;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import java.util.Iterator;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -335,14 +336,21 @@ public abstract class MetastoreAuthzBindingBase extends MetaStorePreEventListene
 
   protected void authorizeDropPartition(PreDropPartitionEvent context)
       throws InvalidOperationException, MetaException {
+    Iterator<Partition> partitionIterator = context.getPartitionIterator();
+    HierarcyBuilder inputHierarchy = new HierarcyBuilder();
+    HierarcyBuilder outputHierarchy = new HierarcyBuilder();
+
+    Partition partition;
+    while(partitionIterator.hasNext()) {
+      partition = partitionIterator.next();
+      inputHierarchy.addTableToOutput(getAuthServer(), partition.getDbName(),
+          partition.getTableName());
+      outputHierarchy.addTableToOutput(getAuthServer(), partition.getDbName(),
+          partition.getTableName());
+    }
+
     authorizeMetastoreAccess(
-        HiveOperation.ALTERTABLE_DROPPARTS,
-        new HierarcyBuilder().addTableToOutput(getAuthServer(),
-            context.getPartition().getDbName(),
-            context.getPartition().getTableName()).build(),
-        new HierarcyBuilder().addTableToOutput(getAuthServer(),
-            context.getPartition().getDbName(),
-            context.getPartition().getTableName()).build());
+        HiveOperation.ALTERTABLE_DROPPARTS, inputHierarchy.build(), outputHierarchy.build());
   }
 
   private void authorizeAlterPartition(PreAlterPartitionEvent context)

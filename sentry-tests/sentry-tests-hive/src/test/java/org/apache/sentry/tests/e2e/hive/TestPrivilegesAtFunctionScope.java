@@ -192,21 +192,6 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     statement.close();
     connection.close();
 
-    connection = context.createConnection(USER3_1);
-    statement = context.createStatement(connection);
-    statement.execute("USE " + DB1);
-
-    // user3 only has db1_tab1 privilege but still should be able execute the temp function.
-    try {
-      verifyPrintFuncValues(statement, "SELECT printf_test('%s', value) FROM " + tableName1);
-    } catch (Exception ex) {
-      LOGGER.error("test temp func printf_test failed with reason: ", ex);
-      fail("fail to test temp func printf_test");
-    }
-
-    statement.close();
-    connection.close();
-
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
@@ -216,21 +201,6 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     try {
       statement.execute(
           "CREATE FUNCTION printf_test_perm AS 'org.apache.hadoop.hive.ql.udf.generic.GenericUDFPrintf' ");
-      verifyPrintFuncValues(statement, "SELECT printf_test_perm('%s', value) FROM " + tableName1);
-    } catch (Exception ex) {
-      LOGGER.error("test perm func printf_test_perm failed with reason: ", ex);
-      fail("Fail to test perm func printf_test_perm");
-    }
-
-    statement.close();
-    connection.close();
-
-    connection = context.createConnection(USER3_1);
-    statement = context.createStatement(connection);
-    statement.execute("USE " + DB1);
-
-    // user3 only has db1_tab1 privilege but still should be able execute the perm function.
-    try {
       verifyPrintFuncValues(statement, "SELECT printf_test_perm('%s', value) FROM " + tableName1);
     } catch (Exception ex) {
       LOGGER.error("test perm func printf_test_perm failed with reason: ", ex);
