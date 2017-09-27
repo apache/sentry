@@ -35,7 +35,7 @@ limitations under the License.
     <module>sentry-binding-solr</module>
     <module>sentry-binding-sqoop</module>
     <module>sentry-binding-hive-conf</module>
-
+    <module>sentry-binding-hive-follower</module>
   </modules>
 
   <profiles>
@@ -46,7 +46,6 @@ limitations under the License.
       </activation>
       <modules>
         <module>sentry-binding-hive</module>
-        <module>sentry-binding-hive-follower</module>
       </modules>
     </profile>
     <profile>
@@ -56,7 +55,6 @@ limitations under the License.
       </activation>
       <modules>
         <module>sentry-binding-hive-v2</module>
-        <module>sentry-binding-hive-follower-v2</module>
       </modules>
     </profile>
   </profiles>
