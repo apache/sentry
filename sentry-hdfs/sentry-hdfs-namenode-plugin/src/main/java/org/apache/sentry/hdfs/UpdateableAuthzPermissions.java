@@ -250,4 +250,13 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
     return UPDATABLE_TYPE_NAME;
   }
 
+  @Override
+  public String toString() {
+    return String.format("%s(%s, %s)", getClass().getSimpleName(), seqNum, perms);
+  }
+
+  public String dumpContent() {
+    return String.format("%s(%s) ", getClass().getSimpleName(), seqNum) + perms.dumpContent();
+  }
+
 }

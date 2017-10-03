@@ -191,4 +191,13 @@ public class UpdateableAuthzPaths implements AuthzPaths, Updateable<PathsUpdate>
   public String getUpdateableTypeName() {
     return UPDATABLE_TYPE_NAME;
   }
+
+  @Override
+  public String toString() {
+    return String.format("%s(%s, %s, %s)", getClass().getSimpleName(), seqNum, imgNum, paths);
+  }
+
+  public String dumpContent() {
+    return String.format("%s(%s, %s) ", getClass().getSimpleName(), seqNum, imgNum) + paths.dumpContent();
+  }
 }

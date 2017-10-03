@@ -38,4 +38,31 @@ public class SentryAuthzUpdate {
     return pathUpdates;
   }
 
+  public String dumpContent() {
+    StringBuffer sb = new StringBuffer(getClass().getSimpleName());
+    if (permUpdates != null && !permUpdates.isEmpty()) {
+      sb.append(", perms[").append(permUpdates.size()).append(']').append(permUpdates);
+    }
+    if (pathUpdates != null && !pathUpdates.isEmpty()) {
+      sb.append(", paths[").append(pathUpdates.size()).append(']').append(pathUpdates);
+    }
+    return sb.toString();
+  }
+    
+  public boolean isEmpty() {
+    return (permUpdates == null || permUpdates.isEmpty()) &&
+           (pathUpdates == null || pathUpdates.isEmpty());
+  }
+
+  @Override
+  public String toString() {
+    StringBuffer sb = new StringBuffer(getClass().getSimpleName());
+    if (permUpdates != null && !permUpdates.isEmpty()) {
+      sb.append(", perms[").append(permUpdates.size()).append(']');
+    }
+    if (pathUpdates != null && !pathUpdates.isEmpty()) {
+      sb.append(", paths[").append(pathUpdates.size()).append(']');
+    }
+    return sb.toString();
+  }
 }

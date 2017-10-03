@@ -37,6 +37,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static org.apache.sentry.hdfs.service.thrift.sentry_hdfs_serviceConstants.UNUSED_PATH_UPDATE_IMG_NUM;
 
 /**
@@ -46,6 +49,9 @@ import static org.apache.sentry.hdfs.service.thrift.sentry_hdfs_serviceConstants
  */
 public class SentryHDFSServiceClientDefaultImpl
         implements SentryHDFSServiceClient, SentryConnection {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(SentryHDFSServiceClientDefaultImpl.class);
+
   private final boolean useCompactTransport;
   private Client client;
   private final SentryTransportPool transportPool;
@@ -97,6 +103,7 @@ public class SentryHDFSServiceClientDefaultImpl
     try {
       TAuthzUpdateRequest updateRequest = new TAuthzUpdateRequest(permSeqNum, pathSeqNum, pathImgNum);
       TAuthzUpdateResponse sentryUpdates = client.get_authz_updates(updateRequest);
+
       List<PathsUpdate> pathsUpdates = Collections.emptyList();
       if (sentryUpdates.getAuthzPathUpdate() != null) {
         pathsUpdates = new ArrayList<>(sentryUpdates.getAuthzPathUpdate().size());
@@ -110,6 +117,19 @@ public class SentryHDFSServiceClientDefaultImpl
         permsUpdates = new ArrayList<>(sentryUpdates.getAuthzPermUpdate().size());
         for (TPermissionsUpdate permsUpdate : sentryUpdates.getAuthzPermUpdate()) {
           permsUpdates.add(new PermissionsUpdate(permsUpdate));
+        }
+      }
+
+      if (LOGGER.isDebugEnabled() && !(permsUpdates.isEmpty() && pathsUpdates.isEmpty()) ) {
+        LOGGER.debug("getAllUpdatesFrom({},{},{}): permsUpdates[{}], pathsUpdates[{}]",
+          new Object[] { permSeqNum, pathSeqNum, pathImgNum, permsUpdates.size(), pathsUpdates.size() });
+        if (LOGGER.isTraceEnabled()) {
+          if (!permsUpdates.isEmpty()) {
+            LOGGER.trace("permsUpdates{}", permsUpdates);
+          }
+          if (!pathsUpdates.isEmpty()) {
+            LOGGER.trace("pathsUpdates{}", pathsUpdates);
+          }
         }
       }
 
@@ -136,6 +156,9 @@ public class SentryHDFSServiceClientDefaultImpl
   public void invalidate() {
     if (transport != null) {
       transportPool.invalidateTransport(transport);
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug("invalidate: " + transport);
+      }
       transport = null;
     }
   }

@@ -49,6 +49,10 @@ public class SentryPermissions implements AuthzPermissions {
     public String getAuthzObj() {
       return authzObj;
     }
+    @Override
+    public String toString() {
+      return "PrivilegeInfo(" + authzObj + " --> " + roleToPermission + ")";
+    }
   }
 
   public static class RoleInfo {
@@ -70,6 +74,10 @@ public class SentryPermissions implements AuthzPermissions {
     }
     public Set<String> getAllGroups() {
       return groups;
+    }
+    @Override
+    public String toString() {
+      return "RoleInfo(" + role + " --> " + groups + ")";
     }
   }
 
@@ -202,5 +210,22 @@ public class SentryPermissions implements AuthzPermissions {
 
   public void addRoleInfo(RoleInfo roleInfo) {
     roles.put(roleInfo.role, roleInfo);
+  }
+
+  public String dumpContent() {
+    return new StringBuffer(getClass().getSimpleName())
+      .append(": Privileges: ").append(privileges)
+      .append(", Roles: ").append(roles)
+      .append(", AuthzObjChildren: ").append(authzObjChildren)
+      .toString();
+  }
+
+  @Override
+  public String toString() {
+    return new StringBuffer(getClass().getSimpleName())
+      .append(": Privileges: ").append(privileges.size())
+      .append(", Roles: ").append(roles.size())
+      .append(", AuthzObjChildren: ").append(authzObjChildren.size())
+      .toString();
   }
 }
