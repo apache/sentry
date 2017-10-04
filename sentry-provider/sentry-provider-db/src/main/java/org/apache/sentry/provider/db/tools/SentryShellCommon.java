@@ -36,33 +36,36 @@ import org.apache.commons.lang.StringUtils;
  */
 abstract public class SentryShellCommon {
 
+  public enum TYPE { kafka, hive, solr };
+
+  public static final String OPTION_DESC_HELP = "Shell usage";
+  public static final String OPTION_DESC_CONF = "sentry-site file path";
+  public static final String OPTION_DESC_ROLE_NAME = "Role name";
+  public static final String OPTION_DESC_GROUP_NAME = "Group name";
+  public static final String OPTION_DESC_PRIVILEGE = "Privilege string";
+  public static final String PREFIX_MESSAGE_MISSING_OPTION = "Missing required option: ";
+
+  public static final String GROUP_SPLIT_CHAR = ",";
+
   protected String roleName;
   protected String groupName;
   protected String privilegeStr;
   protected String confPath;
   // flag for the command
-  protected boolean isCreateRole = false;
-  protected boolean isDropRole = false;
-  protected boolean isAddRoleGroup = false;
-  protected boolean isDeleteRoleGroup = false;
-  protected boolean isGrantPrivilegeRole = false;
-  protected boolean isRevokePrivilegeRole = false;
-  protected boolean isListRole = false;
-  protected boolean isListPrivilege = false;
-  protected boolean isPrintHelp = false;
+  protected boolean isCreateRole;
+  protected boolean isDropRole;
+  protected boolean isAddRoleGroup;
+  protected boolean isDeleteRoleGroup;
+  protected boolean isGrantPrivilegeRole;
+  protected boolean isRevokePrivilegeRole;
+  protected boolean isListRole;
+  protected boolean isListPrivilege;
+  protected boolean isPrintHelp;
   // flag for the parameter check
-  protected boolean roleNameRequired = false;
-  protected boolean groupNameRequired = false;
-  protected boolean privilegeStrRequired = false;
-
-  public final static String OPTION_DESC_HELP = "Shell usage";
-  public final static String OPTION_DESC_CONF = "sentry-site file path";
-  public final static String OPTION_DESC_ROLE_NAME = "Role name";
-  public final static String OPTION_DESC_GROUP_NAME = "Group name";
-  public final static String OPTION_DESC_PRIVILEGE = "Privilege string";
-  public final static String PREFIX_MESSAGE_MISSING_OPTION = "Missing required option: ";
-
-  public final static String GROUP_SPLIT_CHAR = ",";
+  protected boolean roleNameRequired;
+  protected boolean groupNameRequired;
+  protected boolean privilegeStrRequired;
+  protected TYPE type;
 
   /**
    * parse arguments
@@ -77,7 +80,7 @@ abstract public class SentryShellCommon {
    *   -rpr,--revoke_privilege_role -r <rolename>  -p <privilege> revoke privilege from role
    *   -lr,--list_role              -g <groupname>                list roles for group
    *   -lp,--list_privilege         -r <rolename>                 list privilege for role
-   *   -t,--type                    <typeame>                     the shell for hive model or generic model
+   *   -t,--type                    <typename>                    the shell for hive model or generic model
    * </pre>
    *
    * @param args
@@ -135,7 +138,7 @@ abstract public class SentryShellCommon {
     rOpt.setRequired(false);
     simpleShellOptions.addOption(rOpt);
 
-    // this argument should be parsed in the bin/sentryShell
+    // this argument should also be parsed in the bin/sentryShell
     Option tOpt = new Option("t", "type", true, "[hive|solr|sqoop|.....]");
     tOpt.setRequired(false);
     simpleShellOptions.addOption(tOpt);
@@ -206,6 +209,8 @@ abstract public class SentryShellCommon {
           roleNameRequired = true;
         } else if (opt.getOpt().equals("conf")) {
           confPath = opt.getValue();
+        } else if (opt.getOpt().equals("t")) {
+          type = TYPE.valueOf(opt.getValue());
         }
       }
       checkRequiredParameter(roleNameRequired, roleName, OPTION_DESC_ROLE_NAME);

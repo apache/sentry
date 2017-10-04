@@ -80,32 +80,32 @@ public class TestSentryShellKafka extends SentryGenericServiceIntegrationBase {
       @Override
       public void runTestAsSubject() throws Exception {
         // test: create role with -cr
-        String[] args = { "-cr", "-r", TEST_ROLE_NAME_1, "-conf", confPath.getAbsolutePath() };
-        SentryShellKafka.main(args);
+        String[] args = { "-cr", "-r", TEST_ROLE_NAME_1, "-conf", confPath.getAbsolutePath(), "-t", "kafka" };
+        SentryShellGeneric.main(args);
         // test: create role with --create_role
         args = new String[] { "--create_role", "-r", TEST_ROLE_NAME_2, "-conf",
-            confPath.getAbsolutePath() };
-        SentryShellKafka.main(args);
+            confPath.getAbsolutePath(), "-t", "kafka" };
+        SentryShellGeneric.main(args);
 
         // validate the result, list roles with -lr
-        args = new String[] { "-lr", "-conf", confPath.getAbsolutePath() };
-        SentryShellKafka sentryShell = new SentryShellKafka();
+        args = new String[] { "-lr", "-conf", confPath.getAbsolutePath(), "-t", "kafka" };
+        SentryShellGeneric sentryShell = new SentryShellGeneric();
         Set<String> roleNames = getShellResultWithOSRedirect(sentryShell, args, true);
         validateRoleNames(roleNames, TEST_ROLE_NAME_1, TEST_ROLE_NAME_2);
 
         // validate the result, list roles with --list_role
-        args = new String[] { "--list_role", "-conf", confPath.getAbsolutePath() };
-        sentryShell = new SentryShellKafka();
+        args = new String[] { "--list_role", "-conf", confPath.getAbsolutePath(), "-t", "kafka" };
+        sentryShell = new SentryShellGeneric();
         roleNames = getShellResultWithOSRedirect(sentryShell, args, true);
         validateRoleNames(roleNames, TEST_ROLE_NAME_1, TEST_ROLE_NAME_2);
 
         // test: drop role with -dr
-        args = new String[] { "-dr", "-r", TEST_ROLE_NAME_1, "-conf", confPath.getAbsolutePath() };
-        SentryShellKafka.main(args);
+        args = new String[] { "-dr", "-r", TEST_ROLE_NAME_1, "-conf", confPath.getAbsolutePath(), "-t", "kafka" };
+        SentryShellGeneric.main(args);
         // test: drop role with --drop_role
         args = new String[] { "--drop_role", "-r", TEST_ROLE_NAME_2, "-conf",
-            confPath.getAbsolutePath() };
-        SentryShellKafka.main(args);
+            confPath.getAbsolutePath(), "-t", "kafka" };
+        SentryShellGeneric.main(args);
 
         // validate the result
         Set<TSentryRole> roles = client.listAllRoles(requestorName, KAFKA);
@@ -129,51 +129,51 @@ public class TestSentryShellKafka extends SentryGenericServiceIntegrationBase {
         client.createRole(requestorName, TEST_ROLE_NAME_2, KAFKA);
         // test: add role to group with -arg
         String[] args = { "-arg", "-r", TEST_ROLE_NAME_1, "-g", TEST_GROUP_1, "-conf",
-            confPath.getAbsolutePath() };
-        SentryShellKafka.main(args);
+            confPath.getAbsolutePath(), "-t", "kafka" };
+        SentryShellGeneric.main(args);
         // test: add role to multiple groups
         args = new String[] { "-arg", "-r", TEST_ROLE_NAME_1, "-g", TEST_GROUP_2 + "," + TEST_GROUP_3,
             "-conf",
-            confPath.getAbsolutePath() };
-        SentryShellKafka.main(args);
+            confPath.getAbsolutePath(), "-t", "kafka" };
+        SentryShellGeneric.main(args);
         // test: add role to group with --add_role_group
         args = new String[] { "--add_role_group", "-r", TEST_ROLE_NAME_2, "-g", TEST_GROUP_1,
             "-conf",
-            confPath.getAbsolutePath() };
-        SentryShellKafka.main(args);
+            confPath.getAbsolutePath(), "-t", "kafka" };
+        SentryShellGeneric.main(args);
 
         // validate the result list roles with -lr and -g
-        args = new String[] { "-lr", "-g", TEST_GROUP_1, "-conf", confPath.getAbsolutePath() };
-        SentryShellKafka sentryShell = new SentryShellKafka();
+        args = new String[] { "-lr", "-g", TEST_GROUP_1, "-conf", confPath.getAbsolutePath(), "-t", "kafka" };
+        SentryShellGeneric sentryShell = new SentryShellGeneric();
         Set<String> roleNames = getShellResultWithOSRedirect(sentryShell, args, true);
         validateRoleNames(roleNames, TEST_ROLE_NAME_1, TEST_ROLE_NAME_2);
 
         // list roles with --list_role and -g
         args = new String[] { "--list_role", "-g", TEST_GROUP_2, "-conf",
-            confPath.getAbsolutePath() };
-        sentryShell = new SentryShellKafka();
+            confPath.getAbsolutePath(), "-t", "kafka" };
+        sentryShell = new SentryShellGeneric();
         roleNames = getShellResultWithOSRedirect(sentryShell, args, true);
         validateRoleNames(roleNames, TEST_ROLE_NAME_1);
 
         args = new String[] { "--list_role", "-g", TEST_GROUP_3, "-conf",
-            confPath.getAbsolutePath() };
-        sentryShell = new SentryShellKafka();
+            confPath.getAbsolutePath(), "-t", "kafka" };
+        sentryShell = new SentryShellGeneric();
         roleNames = getShellResultWithOSRedirect(sentryShell, args, true);
         validateRoleNames(roleNames, TEST_ROLE_NAME_1);
 
         // test: delete role from group with -drg
         args = new String[] { "-drg", "-r", TEST_ROLE_NAME_1, "-g", TEST_GROUP_1, "-conf",
-            confPath.getAbsolutePath() };
-        SentryShellKafka.main(args);
+            confPath.getAbsolutePath(), "-t", "kafka" };
+        SentryShellGeneric.main(args);
         // test: delete role to multiple groups
         args = new String[] { "-drg", "-r", TEST_ROLE_NAME_1, "-g", TEST_GROUP_2 + "," + TEST_GROUP_3,
             "-conf",
-            confPath.getAbsolutePath() };
-        SentryShellKafka.main(args);
+            confPath.getAbsolutePath(), "-t", "kafka" };
+        SentryShellGeneric.main(args);
         // test: delete role from group with --delete_role_group
         args = new String[] { "--delete_role_group", "-r", TEST_ROLE_NAME_2, "-g", TEST_GROUP_1,
-            "-conf", confPath.getAbsolutePath() };
-        SentryShellKafka.main(args);
+            "-conf", confPath.getAbsolutePath(), "-t", "kafka" };
+        SentryShellGeneric.main(args);
 
         // validate the result
         Set<TSentryRole> roles = client.listRolesByGroupName(requestorName, TEST_GROUP_1, KAFKA);
@@ -199,17 +199,17 @@ public class TestSentryShellKafka extends SentryGenericServiceIntegrationBase {
         client.createRole(requestorName, TEST_ROLE_NAME_1, KAFKA);
         // add role to a group (lower case)
         String[] args = {"-arg", "-r", TEST_ROLE_NAME_1, "-g", "group1", "-conf",
-            confPath.getAbsolutePath()};
-        SentryShellKafka.main(args);
+            confPath.getAbsolutePath(), "-t", "kafka"};
+        SentryShellGeneric.main(args);
 
         // validate the roles when group name is same case as above
-        args = new String[]{"-lr", "-g", "group1", "-conf", confPath.getAbsolutePath()};
-        SentryShellKafka sentryShell = new SentryShellKafka();
+        args = new String[]{"-lr", "-g", "group1", "-conf", confPath.getAbsolutePath(), "-t", "kafka"};
+        SentryShellGeneric sentryShell = new SentryShellGeneric();
         Set<String> roleNames = getShellResultWithOSRedirect(sentryShell, args, true);
         validateRoleNames(roleNames, TEST_ROLE_NAME_1);
 
         // roles should be empty when group name is different case than above
-        args = new String[]{"-lr", "-g", "GROUP1", "-conf", confPath.getAbsolutePath()};
+        args = new String[]{"-lr", "-g", "GROUP1", "-conf", confPath.getAbsolutePath(), "-t", "kafka"};
         roleNames = getShellResultWithOSRedirect(sentryShell, args, true);
         validateRoleNames(roleNames);
       }
@@ -247,13 +247,13 @@ public class TestSentryShellKafka extends SentryGenericServiceIntegrationBase {
           // test: grant privilege to role
           String [] args = new String [] { grant(shortOption), "-r", TEST_ROLE_NAME_1, "-p",
             privs[ i ],
-            "-conf", confPath.getAbsolutePath() };
-          SentryShellKafka.main(args);
+            "-conf", confPath.getAbsolutePath(), "-t", "kafka" };
+          SentryShellGeneric.main(args);
         }
 
         // test the list privilege
-        String [] args = new String[] { list(shortOption), "-r", TEST_ROLE_NAME_1, "-conf", confPath.getAbsolutePath() };
-        SentryShellKafka sentryShell = new SentryShellKafka();
+        String [] args = new String[] { list(shortOption), "-r", TEST_ROLE_NAME_1, "-conf", confPath.getAbsolutePath(), "-t", "kafka" };
+        SentryShellGeneric sentryShell = new SentryShellGeneric();
         Set<String> privilegeStrs = getShellResultWithOSRedirect(sentryShell, args, true);
 
         assertEquals("Incorrect number of privileges", privs.length, privilegeStrs.size());
@@ -264,8 +264,8 @@ public class TestSentryShellKafka extends SentryGenericServiceIntegrationBase {
         for (int i = 0; i < privs.length; ++i) {
           args = new String[] { revoke(shortOption), "-r", TEST_ROLE_NAME_1, "-p",
             privs[ i ], "-conf",
-            confPath.getAbsolutePath() };
-          SentryShellKafka.main(args);
+            confPath.getAbsolutePath(), "-t", "kafka" };
+          SentryShellGeneric.main(args);
           Set<TSentryPrivilege> privileges = client.listPrivilegesByRoleName(requestorName,
             TEST_ROLE_NAME_1, KAFKA, service);
           assertEquals("Incorrect number of privileges. Received privileges: " + Arrays.toString(privileges.toArray()), privs.length - (i + 1), privileges.size());
@@ -297,8 +297,8 @@ public class TestSentryShellKafka extends SentryGenericServiceIntegrationBase {
       public void runTestAsSubject() throws Exception {
         client.createRole(requestorName, TEST_ROLE_NAME_1, KAFKA);
         // test: create duplicate role with -cr
-        String[] args = { "-cr", "-r", TEST_ROLE_NAME_1, "-conf", confPath.getAbsolutePath() };
-        SentryShellKafka sentryShell = new SentryShellKafka();
+        String[] args = { "-cr", "-r", TEST_ROLE_NAME_1, "-conf", confPath.getAbsolutePath(), "-t", "kafka" };
+        SentryShellGeneric sentryShell = new SentryShellGeneric();
         try {
           sentryShell.executeShell(args);
           fail("Exception should be thrown for creating duplicate role");
@@ -309,8 +309,8 @@ public class TestSentryShellKafka extends SentryGenericServiceIntegrationBase {
         }
 
         // test: drop non-exist role with -dr
-        args = new String[] { "-dr", "-r", TEST_ROLE_NAME_2, "-conf", confPath.getAbsolutePath() };
-        sentryShell = new SentryShellKafka();
+        args = new String[] { "-dr", "-r", TEST_ROLE_NAME_2, "-conf", confPath.getAbsolutePath(), "-t", "kafka" };
+        sentryShell = new SentryShellGeneric();
         try {
           sentryShell.executeShell(args);
           fail("Exception should be thrown for dropping non-exist role");
@@ -322,8 +322,8 @@ public class TestSentryShellKafka extends SentryGenericServiceIntegrationBase {
 
         // test: add non-exist role to group with -arg
         args = new String[] { "-arg", "-r", TEST_ROLE_NAME_2, "-g", "testGroup1", "-conf",
-            confPath.getAbsolutePath() };
-        sentryShell = new SentryShellKafka();
+            confPath.getAbsolutePath(), "-t", "kafka" };
+        sentryShell = new SentryShellGeneric();
         try {
           sentryShell.executeShell(args);
           fail("Exception should be thrown for granting non-exist role to group");
@@ -335,8 +335,8 @@ public class TestSentryShellKafka extends SentryGenericServiceIntegrationBase {
 
         // test: drop group from non-exist role with -drg
         args = new String[] { "-drg", "-r", TEST_ROLE_NAME_2, "-g", "testGroup1", "-conf",
-            confPath.getAbsolutePath() };
-        sentryShell = new SentryShellKafka();
+            confPath.getAbsolutePath(), "-t", "kafka" };
+        sentryShell = new SentryShellGeneric();
         try {
           sentryShell.executeShell(args);
           fail("Exception should be thrown for drop group from non-exist role");
@@ -348,8 +348,8 @@ public class TestSentryShellKafka extends SentryGenericServiceIntegrationBase {
 
         // test: grant privilege to role with the error privilege format
         args = new String[] { "-gpr", "-r", TEST_ROLE_NAME_1, "-p", "serverserver1->action=all",
-            "-conf", confPath.getAbsolutePath() };
-        sentryShell = new SentryShellKafka();
+            "-conf", confPath.getAbsolutePath(), "-t", "kafka" };
+        sentryShell = new SentryShellGeneric();
         try {
           sentryShell.executeShell(args);
           fail("Exception should be thrown for the error privilege format, invalid key value.");
@@ -362,8 +362,8 @@ public class TestSentryShellKafka extends SentryGenericServiceIntegrationBase {
         // test: grant privilege to role with the error privilege hierarchy
         args = new String[] { "-gpr", "-r", TEST_ROLE_NAME_1, "-p",
             "consumergroup=cg1->host=h1->action=create", "-conf",
-            confPath.getAbsolutePath() };
-        sentryShell = new SentryShellKafka();
+            confPath.getAbsolutePath(), "-t", "kafka" };
+        sentryShell = new SentryShellGeneric();
         try {
           sentryShell.executeShell(args);
           fail("Exception should be thrown for the error privilege format, invalid key value.");
@@ -387,62 +387,62 @@ public class TestSentryShellKafka extends SentryGenericServiceIntegrationBase {
         String strOptionConf = "conf";
         client.createRole(requestorName, TEST_ROLE_NAME_1, KAFKA);
         // test: the conf is required argument
-        String[] args = { "-cr", "-r", TEST_ROLE_NAME_1 };
-        SentryShellKafka sentryShell = new SentryShellKafka();
+        String[] args = { "-cr", "-r", TEST_ROLE_NAME_1, "-t", "kafka" };
+        SentryShellGeneric sentryShell = new SentryShellGeneric();
         validateMissingParameterMsg(sentryShell, args,
                 SentryShellCommon.PREFIX_MESSAGE_MISSING_OPTION + strOptionConf);
 
         // test: -r is required when create role
-        args = new String[] { "-cr", "-conf", confPath.getAbsolutePath() };
-        sentryShell = new SentryShellKafka();
+        args = new String[] { "-cr", "-conf", confPath.getAbsolutePath(), "-t", "kafka" };
+        sentryShell = new SentryShellGeneric();
         validateMissingParameterMsg(sentryShell, args,
                 SentryShellCommon.PREFIX_MESSAGE_MISSING_OPTION + SentryShellCommon.OPTION_DESC_ROLE_NAME);
 
         // test: -r is required when drop role
-        args = new String[] { "-dr", "-conf", confPath.getAbsolutePath() };
-        sentryShell = new SentryShellKafka();
+        args = new String[] { "-dr", "-conf", confPath.getAbsolutePath(), "-t", "kafka" };
+        sentryShell = new SentryShellGeneric();
         validateMissingParameterMsg(sentryShell, args,
                 SentryShellCommon.PREFIX_MESSAGE_MISSING_OPTION + SentryShellCommon.OPTION_DESC_ROLE_NAME);
 
         // test: -r is required when add role to group
-        args = new String[] { "-arg", "-g", "testGroup1", "-conf", confPath.getAbsolutePath() };
-        sentryShell = new SentryShellKafka();
+        args = new String[] { "-arg", "-g", "testGroup1", "-conf", confPath.getAbsolutePath(), "-t", "kafka" };
+        sentryShell = new SentryShellGeneric();
         validateMissingParameterMsg(sentryShell, args,
                 SentryShellCommon.PREFIX_MESSAGE_MISSING_OPTION + SentryShellCommon.OPTION_DESC_ROLE_NAME);
 
         // test: -g is required when add role to group
-        args = new String[] { "-arg", "-r", TEST_ROLE_NAME_2, "-conf", confPath.getAbsolutePath() };
-        sentryShell = new SentryShellKafka();
+        args = new String[] { "-arg", "-r", TEST_ROLE_NAME_2, "-conf", confPath.getAbsolutePath(), "-t", "kafka" };
+        sentryShell = new SentryShellGeneric();
         validateMissingParameterMsg(sentryShell, args,
                 SentryShellCommon.PREFIX_MESSAGE_MISSING_OPTION + SentryShellCommon.OPTION_DESC_GROUP_NAME);
 
         // test: -r is required when delete role from group
-        args = new String[] { "-drg", "-g", "testGroup1", "-conf", confPath.getAbsolutePath() };
-        sentryShell = new SentryShellKafka();
+        args = new String[] { "-drg", "-g", "testGroup1", "-conf", confPath.getAbsolutePath(), "-t", "kafka" };
+        sentryShell = new SentryShellGeneric();
         validateMissingParameterMsg(sentryShell, args,
                 SentryShellCommon.PREFIX_MESSAGE_MISSING_OPTION + SentryShellCommon.OPTION_DESC_ROLE_NAME);
 
         // test: -g is required when delete role from group
-        args = new String[] { "-drg", "-r", TEST_ROLE_NAME_2, "-conf", confPath.getAbsolutePath() };
-        sentryShell = new SentryShellKafka();
+        args = new String[] { "-drg", "-r", TEST_ROLE_NAME_2, "-conf", confPath.getAbsolutePath(), "-t", "kafka" };
+        sentryShell = new SentryShellGeneric();
         validateMissingParameterMsg(sentryShell, args,
                 SentryShellCommon.PREFIX_MESSAGE_MISSING_OPTION + SentryShellCommon.OPTION_DESC_GROUP_NAME);
 
         // test: -r is required when grant privilege to role
-        args = new String[] { "-gpr", "-p", "server=server1", "-conf", confPath.getAbsolutePath() };
-        sentryShell = new SentryShellKafka();
+        args = new String[] { "-gpr", "-p", "server=server1", "-conf", confPath.getAbsolutePath(), "-t", "kafka" };
+        sentryShell = new SentryShellGeneric();
         validateMissingParameterMsg(sentryShell, args,
                 SentryShellCommon.PREFIX_MESSAGE_MISSING_OPTION + SentryShellCommon.OPTION_DESC_ROLE_NAME);
 
         // test: -p is required when grant privilege to role
-        args = new String[] { "-gpr", "-r", TEST_ROLE_NAME_1, "-conf", confPath.getAbsolutePath() };
-        sentryShell = new SentryShellKafka();
+        args = new String[] { "-gpr", "-r", TEST_ROLE_NAME_1, "-conf", confPath.getAbsolutePath(), "-t", "kafka" };
+        sentryShell = new SentryShellGeneric();
         validateMissingParameterMsg(sentryShell, args,
                 SentryShellCommon.PREFIX_MESSAGE_MISSING_OPTION + SentryShellCommon.OPTION_DESC_PRIVILEGE);
 
         // test: action is required in privilege
-        args = new String[] { "-gpr", "-r", TEST_ROLE_NAME_1, "-conf", confPath.getAbsolutePath(), "-p", "host=*->topic=t1" };
-        sentryShell = new SentryShellKafka();
+        args = new String[] { "-gpr", "-r", TEST_ROLE_NAME_1, "-conf", confPath.getAbsolutePath(), "-p", "host=*->topic=t1", "-t", "kafka" };
+        sentryShell = new SentryShellGeneric();
          try {
           getShellResultWithOSRedirect(sentryShell, args, false);
           fail("Expected IllegalArgumentException");
@@ -453,20 +453,20 @@ public class TestSentryShellKafka extends SentryGenericServiceIntegrationBase {
          }
 
         // test: -r is required when revoke privilege from role
-        args = new String[] { "-rpr", "-p", "host=h1", "-conf", confPath.getAbsolutePath() };
-        sentryShell = new SentryShellKafka();
+        args = new String[] { "-rpr", "-p", "host=h1", "-conf", confPath.getAbsolutePath(), "-t", "kafka" };
+        sentryShell = new SentryShellGeneric();
         validateMissingParameterMsg(sentryShell, args,
                 SentryShellCommon.PREFIX_MESSAGE_MISSING_OPTION + SentryShellCommon.OPTION_DESC_ROLE_NAME);
 
         // test: -p is required when revoke privilege from role
-        args = new String[] { "-rpr", "-r", TEST_ROLE_NAME_1, "-conf", confPath.getAbsolutePath() };
-        sentryShell = new SentryShellKafka();
+        args = new String[] { "-rpr", "-r", TEST_ROLE_NAME_1, "-conf", confPath.getAbsolutePath(), "-t", "kafka" };
+        sentryShell = new SentryShellGeneric();
         validateMissingParameterMsg(sentryShell, args,
                 SentryShellCommon.PREFIX_MESSAGE_MISSING_OPTION + SentryShellCommon.OPTION_DESC_PRIVILEGE);
 
         // test: command option is required for shell
-        args = new String[] {"-conf", confPath.getAbsolutePath() };
-        sentryShell = new SentryShellKafka();
+        args = new String[] {"-conf", confPath.getAbsolutePath(), "-t", "kafka" };
+        sentryShell = new SentryShellGeneric();
         validateMissingParameterMsgsContains(sentryShell, args,
                 SentryShellCommon.PREFIX_MESSAGE_MISSING_OPTION + "[",
                 "-arg Add role to group",
@@ -485,7 +485,7 @@ public class TestSentryShellKafka extends SentryGenericServiceIntegrationBase {
   }
 
   // redirect the System.out to ByteArrayOutputStream, then execute the command and parse the result.
-  private Set<String> getShellResultWithOSRedirect(SentryShellKafka sentryShell,
+  private Set<String> getShellResultWithOSRedirect(SentryShellGeneric sentryShell,
       String[] args, boolean expectedExecuteResult) throws Exception {
     PrintStream oldOut = System.out;
     ByteArrayOutputStream outContent = new ByteArrayOutputStream();
@@ -512,13 +512,13 @@ public class TestSentryShellKafka extends SentryGenericServiceIntegrationBase {
     }
   }
 
-  private void validateMissingParameterMsg(SentryShellKafka sentryShell, String[] args,
+  private void validateMissingParameterMsg(SentryShellGeneric sentryShell, String[] args,
       String expectedErrorMsg) throws Exception {
     Set<String> errorMsgs = getShellResultWithOSRedirect(sentryShell, args, false);
     assertTrue("Expected error message: " + expectedErrorMsg, errorMsgs.contains(expectedErrorMsg));
   }
 
-  private void validateMissingParameterMsgsContains(SentryShellKafka sentryShell, String[] args,
+  private void validateMissingParameterMsgsContains(SentryShellGeneric sentryShell, String[] args,
       String ... expectedErrorMsgsContains) throws Exception {
     Set<String> errorMsgs = getShellResultWithOSRedirect(sentryShell, args, false);
     boolean foundAllMessages = false;

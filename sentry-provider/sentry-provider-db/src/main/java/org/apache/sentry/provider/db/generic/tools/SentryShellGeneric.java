@@ -22,32 +22,43 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.sentry.provider.common.AuthorizationComponent;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
-import org.apache.sentry.provider.db.generic.tools.command.*;
+import org.apache.sentry.provider.db.generic.tools.command.AddRoleToGroupCmd;
+import org.apache.sentry.provider.db.generic.tools.command.Command;
+import org.apache.sentry.provider.db.generic.tools.command.CreateRoleCmd;
+import org.apache.sentry.provider.db.generic.tools.command.DeleteRoleFromGroupCmd;
+import org.apache.sentry.provider.db.generic.tools.command.DropRoleCmd;
+import org.apache.sentry.provider.db.generic.tools.command.GrantPrivilegeToRoleCmd;
+import org.apache.sentry.provider.db.generic.tools.command.ListPrivilegesByRoleCmd;
+import org.apache.sentry.provider.db.generic.tools.command.ListRolesCmd;
+import org.apache.sentry.provider.db.generic.tools.command.RevokePrivilegeFromRoleCmd;
+import org.apache.sentry.provider.db.generic.tools.command.TSentryPrivilegeConverter;
 import org.apache.sentry.provider.db.tools.SentryShellCommon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * SentryShellSolr is an admin tool, and responsible for the management of repository.
+ * SentryShellGeneric is an admin tool, and responsible for the management of repository.
  * The following commands are supported:
  * create role, drop role, add group to role, grant privilege to role,
  * revoke privilege from role, list roles, list privilege for role.
  */
-public class SentryShellSolr extends SentryShellCommon {
+public class SentryShellGeneric extends SentryShellCommon {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(SentryShellSolr.class);
-  public static final String SOLR_SERVICE_NAME = "sentry.service.client.solr.service.name";
+  private static final Logger LOGGER = LoggerFactory.getLogger(SentryShellGeneric.class);
+  private static final String KAFKA_SERVICE_NAME = "sentry.service.client.kafka.service.name";
+  private static final String SOLR_SERVICE_NAME = "sentry.service.client.solr.service.name";
 
   @Override
   public void run() throws Exception {
     Command command = null;
-    String component = "SOLR";
+    String component = getComponent();
     Configuration conf = getSentryConf();
 
-    String service = conf.get(SOLR_SERVICE_NAME, "service1");
-    try(SentryGenericServiceClient client =
+    String service = getService(conf);
+    try (SentryGenericServiceClient client =
                 SentryGenericServiceClientFactory.create(conf)) {
       UserGroupInformation ugi = UserGroupInformation.getLoginUser();
       String requestorName = ugi.getShortUserName();
@@ -62,15 +73,15 @@ public class SentryShellSolr extends SentryShellCommon {
         command = new DeleteRoleFromGroupCmd(roleName, groupName, component);
       } else if (isGrantPrivilegeRole) {
         command = new GrantPrivilegeToRoleCmd(roleName, component,
-                privilegeStr, new SolrTSentryPrivilegeConverter(component, service));
+                privilegeStr, getPrivilegeConverter(component, service));
       } else if (isRevokePrivilegeRole) {
         command = new RevokePrivilegeFromRoleCmd(roleName, component,
-                privilegeStr, new SolrTSentryPrivilegeConverter(component, service));
+                privilegeStr, getPrivilegeConverter(component, service));
       } else if (isListRole) {
         command = new ListRolesCmd(groupName, component);
       } else if (isListPrivilege) {
         command = new ListPrivilegesByRoleCmd(roleName, component,
-                service, new SolrTSentryPrivilegeConverter(component, service));
+                service, getPrivilegeConverter(component, service));
       }
 
       // check the requestor name
@@ -85,6 +96,36 @@ public class SentryShellSolr extends SentryShellCommon {
     }
   }
 
+  private String getComponent() throws Exception {
+    if (type == TYPE.kafka) {
+      return AuthorizationComponent.KAFKA;
+    } else if (type == TYPE.solr) {
+      return "SOLR";
+    }
+
+    throw new Exception("Invalid type specified for SentryShellGeneric: " + type);
+  }
+
+  private String getService(Configuration conf) throws Exception {
+    if (type == TYPE.kafka) {
+      return conf.get(KAFKA_SERVICE_NAME, "kafka1");
+    } else if (type == TYPE.solr) {
+      return conf.get(SOLR_SERVICE_NAME, "service1");
+    }
+
+    throw new Exception("Invalid type specified for SentryShellGeneric: " + type);
+  }
+
+  private TSentryPrivilegeConverter getPrivilegeConverter(String component, String service) throws Exception {
+    if (type == TYPE.kafka) {
+      return new KafkaTSentryPrivilegeConverter(component, service);
+    } else if (type == TYPE.solr) {
+      return new SolrTSentryPrivilegeConverter(component, service);
+    }
+
+    throw new Exception("Invalid type specified for SentryShellGeneric: " + type);
+  }
+
   private Configuration getSentryConf() {
     Configuration conf = new Configuration();
     conf.addResource(new Path(confPath));
@@ -92,7 +133,7 @@ public class SentryShellSolr extends SentryShellCommon {
   }
 
   public static void main(String[] args) throws Exception {
-    SentryShellSolr sentryShell = new SentryShellSolr();
+    SentryShellGeneric sentryShell = new SentryShellGeneric();
     try {
       sentryShell.executeShell(args);
     } catch (Exception e) {
