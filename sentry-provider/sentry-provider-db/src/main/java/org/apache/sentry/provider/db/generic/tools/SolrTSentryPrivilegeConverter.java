@@ -123,7 +123,7 @@ public  class SolrTSentryPrivilegeConverter implements TSentryPrivilegeConverter
     return SentryConstants.AUTHORIZABLE_JOINER.join(privileges);
   }
 
-  private static void validatePrivilegeHierarchy(String privilegeStr) throws Exception {
+  private static void validatePrivilegeHierarchy(String privilegeStr) {
     List<PrivilegeValidator> validators = SearchPrivilegeModel.getInstance().getPrivilegeValidators();
     PrivilegeValidatorContext context = new PrivilegeValidatorContext(null, privilegeStr);
     for (PrivilegeValidator validator : validators) {

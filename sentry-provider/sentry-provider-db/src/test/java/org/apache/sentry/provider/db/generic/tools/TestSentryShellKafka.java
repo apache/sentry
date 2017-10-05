@@ -27,7 +27,6 @@ import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericService
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryRole;
 import org.apache.sentry.provider.db.tools.SentryShellCommon;
-import org.apache.shiro.config.ConfigurationException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -367,7 +366,7 @@ public class TestSentryShellKafka extends SentryGenericServiceIntegrationBase {
         try {
           sentryShell.executeShell(args);
           fail("Exception should be thrown for the error privilege format, invalid key value.");
-        } catch (ConfigurationException e) {
+        } catch (IllegalArgumentException e) {
           // expected exception
         } catch (Exception e) {
           fail ("Unexpected exception received. " + e);
@@ -446,8 +445,8 @@ public class TestSentryShellKafka extends SentryGenericServiceIntegrationBase {
          try {
           getShellResultWithOSRedirect(sentryShell, args, false);
           fail("Expected IllegalArgumentException");
-        } catch (ConfigurationException e) {
-           assert(("Kafka privilege must end with a valid action.\n" + KafkaPrivilegeValidator.KafkaPrivilegeHelpMsg).equals(e.getMessage()));
+        } catch (IllegalArgumentException e) {
+           assert(("Kafka privilege must end with a valid action.\n" + KafkaPrivilegeValidator.KafkaPrivilegeHelpMsg).equals(e.getCause().getMessage()));
         } catch (Exception e) {
            fail ("Unexpected exception received. " + e);
          }

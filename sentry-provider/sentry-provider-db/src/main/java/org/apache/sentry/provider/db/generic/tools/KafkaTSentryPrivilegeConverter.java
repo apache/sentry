@@ -21,15 +21,17 @@ package org.apache.sentry.provider.db.generic.tools;
 import com.google.common.collect.Lists;
 import org.apache.sentry.core.common.utils.KeyValue;
 import org.apache.sentry.core.common.utils.SentryConstants;
+import org.apache.sentry.core.common.validator.PrivilegeValidator;
 import org.apache.sentry.core.common.validator.PrivilegeValidatorContext;
 import org.apache.sentry.core.model.kafka.KafkaAuthorizable;
 import org.apache.sentry.core.model.kafka.KafkaModelAuthorizables;
-import org.apache.sentry.core.model.kafka.validator.KafkaPrivilegeValidator;
+import org.apache.sentry.core.model.kafka.KafkaPrivilegeModel;
 import org.apache.sentry.core.common.utils.PolicyFileConstants;
 import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryGrantOption;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.generic.tools.command.TSentryPrivilegeConverter;
+import org.apache.shiro.config.ConfigurationException;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -112,7 +114,15 @@ public  class KafkaTSentryPrivilegeConverter implements TSentryPrivilegeConverte
     return SentryConstants.AUTHORIZABLE_JOINER.join(privileges);
   }
 
-  private static void validatePrivilegeHierarchy(String privilegeStr) throws Exception {
-    new KafkaPrivilegeValidator().validate(new PrivilegeValidatorContext(privilegeStr));
+  private static void validatePrivilegeHierarchy(String privilegeStr) {
+    List<PrivilegeValidator> validators = KafkaPrivilegeModel.getInstance().getPrivilegeValidators();
+    PrivilegeValidatorContext context = new PrivilegeValidatorContext(null, privilegeStr);
+    for (PrivilegeValidator validator : validators) {
+      try {
+        validator.validate(context);
+      } catch (ConfigurationException e) {
+        throw new IllegalArgumentException(e);
+      }
+    }
   }
 }
