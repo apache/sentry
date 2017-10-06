@@ -34,7 +34,6 @@ import org.apache.sentry.provider.db.generic.tools.command.GrantPrivilegeToRoleC
 import org.apache.sentry.provider.db.generic.tools.command.ListPrivilegesByRoleCmd;
 import org.apache.sentry.provider.db.generic.tools.command.ListRolesCmd;
 import org.apache.sentry.provider.db.generic.tools.command.RevokePrivilegeFromRoleCmd;
-import org.apache.sentry.provider.db.generic.tools.command.TSentryPrivilegeConverter;
 import org.apache.sentry.provider.db.tools.SentryShellCommon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,15 +72,15 @@ public class SentryShellGeneric extends SentryShellCommon {
         command = new DeleteRoleFromGroupCmd(roleName, groupName, component);
       } else if (isGrantPrivilegeRole) {
         command = new GrantPrivilegeToRoleCmd(roleName, component,
-                privilegeStr, getPrivilegeConverter(component, service));
+                privilegeStr, new GenericPrivilegeConverter(component, service));
       } else if (isRevokePrivilegeRole) {
         command = new RevokePrivilegeFromRoleCmd(roleName, component,
-                privilegeStr, getPrivilegeConverter(component, service));
+                privilegeStr, new GenericPrivilegeConverter(component, service));
       } else if (isListRole) {
         command = new ListRolesCmd(groupName, component);
       } else if (isListPrivilege) {
         command = new ListPrivilegesByRoleCmd(roleName, component,
-                service, getPrivilegeConverter(component, service));
+                service, new GenericPrivilegeConverter(component, service));
       }
 
       // check the requestor name
@@ -111,16 +110,6 @@ public class SentryShellGeneric extends SentryShellCommon {
       return conf.get(KAFKA_SERVICE_NAME, "kafka1");
     } else if (type == TYPE.solr) {
       return conf.get(SOLR_SERVICE_NAME, "service1");
-    }
-
-    throw new Exception("Invalid type specified for SentryShellGeneric: " + type);
-  }
-
-  private TSentryPrivilegeConverter getPrivilegeConverter(String component, String service) throws Exception {
-    if (type == TYPE.kafka) {
-      return new KafkaTSentryPrivilegeConverter(component, service);
-    } else if (type == TYPE.solr) {
-      return new SolrTSentryPrivilegeConverter(component, service);
     }
 
     throw new Exception("Invalid type specified for SentryShellGeneric: " + type);

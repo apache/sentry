@@ -18,45 +18,62 @@
 
 package org.apache.sentry.provider.db.generic.tools;
 
+import static org.apache.sentry.core.common.utils.SentryConstants.AUTHORIZABLE_SEPARATOR;
+import static org.apache.sentry.core.common.utils.SentryConstants.KV_SEPARATOR;
+import static org.apache.sentry.core.common.utils.SentryConstants.RESOURCE_WILDCARD_VALUE;
+
 import com.google.common.collect.Lists;
+
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+
+import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.utils.KeyValue;
+import org.apache.sentry.core.common.utils.PolicyFileConstants;
 import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.common.validator.PrivilegeValidator;
 import org.apache.sentry.core.common.validator.PrivilegeValidatorContext;
 import org.apache.sentry.core.model.kafka.KafkaAuthorizable;
 import org.apache.sentry.core.model.kafka.KafkaModelAuthorizables;
 import org.apache.sentry.core.model.kafka.KafkaPrivilegeModel;
-import org.apache.sentry.core.common.utils.PolicyFileConstants;
+import org.apache.sentry.core.model.search.SearchModelAuthorizables;
+import org.apache.sentry.core.model.search.SearchPrivilegeModel;
+import org.apache.sentry.provider.common.AuthorizationComponent;
 import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryGrantOption;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.generic.tools.command.TSentryPrivilegeConverter;
 import org.apache.shiro.config.ConfigurationException;
 
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-
-import static org.apache.sentry.core.common.utils.SentryConstants.AUTHORIZABLE_SEPARATOR;
-import static org.apache.sentry.core.common.utils.SentryConstants.KV_SEPARATOR;
-import static org.apache.sentry.core.common.utils.SentryConstants.RESOURCE_WILDCARD_VALUE;
-
-public  class KafkaTSentryPrivilegeConverter implements TSentryPrivilegeConverter {
+/**
+ * A TSentryPrivilegeConverter implementation for "Generic" privileges, covering Apache Kafka and Apache Solr.
+ * It converts privilege Strings to TSentryPrivilege Objects, and vice versa, for Generic clients.
+ *
+ * When a privilege String is converted to a TSentryPrivilege in "fromString", the validators associated with the
+ * given privilege model are also called on the privilege String.
+ */
+public class GenericPrivilegeConverter implements TSentryPrivilegeConverter {
   private String component;
   private String service;
+  private boolean validate;
 
-  public KafkaTSentryPrivilegeConverter(String component, String service) {
+  public GenericPrivilegeConverter(String component, String service) {
+    this(component, service, true);
+  }
+
+  public GenericPrivilegeConverter(String component, String service, boolean validate) {
     this.component = component;
     this.service = service;
+    this.validate = validate;
   }
 
   public TSentryPrivilege fromString(String privilegeStr) throws Exception {
-    final String hostPrefix = KafkaAuthorizable.AuthorizableType.HOST.name() + KV_SEPARATOR;
-    final String hostPrefixLowerCase = hostPrefix.toLowerCase();
-    if (!privilegeStr.toLowerCase().startsWith(hostPrefixLowerCase)) {
-      privilegeStr =  hostPrefix + RESOURCE_WILDCARD_VALUE + AUTHORIZABLE_SEPARATOR + privilegeStr;
+    privilegeStr = parsePrivilegeString(privilegeStr);
+    if (validate) {
+      validatePrivilegeHierarchy(privilegeStr);
     }
-    validatePrivilegeHierarchy(privilegeStr);
+
     TSentryPrivilege tSentryPrivilege = new TSentryPrivilege();
     List<TAuthorizable> authorizables = new LinkedList<TAuthorizable>();
     for (String authorizable : SentryConstants.AUTHORIZABLE_SPLITTER.split(privilegeStr)) {
@@ -64,13 +81,13 @@ public  class KafkaTSentryPrivilegeConverter implements TSentryPrivilegeConverte
       String key = keyValue.getKey();
       String value = keyValue.getValue();
 
-      // is it an authorizable?
-      KafkaAuthorizable authz = KafkaModelAuthorizables.from(keyValue);
+      Authorizable authz = getAuthorizable(keyValue);
       if (authz != null) {
         authorizables.add(new TAuthorizable(authz.getTypeName(), authz.getName()));
-
       } else if (PolicyFileConstants.PRIVILEGE_ACTION_NAME.equalsIgnoreCase(key)) {
         tSentryPrivilege.setAction(value);
+      } else {
+        throw new IllegalArgumentException("Unknown key: " + key);
       }
     }
 
@@ -114,8 +131,20 @@ public  class KafkaTSentryPrivilegeConverter implements TSentryPrivilegeConverte
     return SentryConstants.AUTHORIZABLE_JOINER.join(privileges);
   }
 
-  private static void validatePrivilegeHierarchy(String privilegeStr) {
-    List<PrivilegeValidator> validators = KafkaPrivilegeModel.getInstance().getPrivilegeValidators();
+  private String parsePrivilegeString(String privilegeStr) {
+    if (AuthorizationComponent.KAFKA.equals(component)) {
+      final String hostPrefix = KafkaAuthorizable.AuthorizableType.HOST.name() + KV_SEPARATOR;
+      final String hostPrefixLowerCase = hostPrefix.toLowerCase();
+      if (!privilegeStr.toLowerCase().startsWith(hostPrefixLowerCase)) {
+        return hostPrefix + RESOURCE_WILDCARD_VALUE + AUTHORIZABLE_SEPARATOR + privilegeStr;
+      }
+    }
+
+    return privilegeStr;
+  }
+
+  private void validatePrivilegeHierarchy(String privilegeStr) throws Exception {
+    List<PrivilegeValidator> validators = getPrivilegeValidators();
     PrivilegeValidatorContext context = new PrivilegeValidatorContext(null, privilegeStr);
     for (PrivilegeValidator validator : validators) {
       try {
@@ -125,4 +154,25 @@ public  class KafkaTSentryPrivilegeConverter implements TSentryPrivilegeConverte
       }
     }
   }
+
+  private List<PrivilegeValidator> getPrivilegeValidators() throws Exception {
+    if (AuthorizationComponent.KAFKA.equals(component)) {
+      return KafkaPrivilegeModel.getInstance().getPrivilegeValidators();
+    } else if ("SOLR".equals(component)) {
+      return SearchPrivilegeModel.getInstance().getPrivilegeValidators();
+    }
+
+    throw new Exception("Invalid component specified for GenericPrivilegeCoverter: " + component);
+  }
+
+  private Authorizable getAuthorizable(KeyValue keyValue) throws Exception {
+    if (AuthorizationComponent.KAFKA.equals(component)) {
+      return KafkaModelAuthorizables.from(keyValue);
+    } else if ("SOLR".equals(component)) {
+      return SearchModelAuthorizables.from(keyValue);
+    }
+
+    throw new Exception("Invalid component specified for GenericPrivilegeCoverter: " + component);
+  }
+
 }

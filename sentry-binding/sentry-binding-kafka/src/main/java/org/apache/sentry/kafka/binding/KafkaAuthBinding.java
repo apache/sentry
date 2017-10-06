@@ -61,7 +61,7 @@ import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericService
 import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryRole;
-import org.apache.sentry.provider.db.generic.tools.KafkaTSentryPrivilegeConverter;
+import org.apache.sentry.provider.db.generic.tools.GenericPrivilegeConverter;
 import org.apache.sentry.service.thrift.ServiceConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -156,7 +156,7 @@ public class KafkaAuthBinding {
 
     // for convenience, set the PrivilegeConverter.
     if (authConf.get(ServiceConstants.ClientConfig.PRIVILEGE_CONVERTER) == null) {
-      authConf.set(ServiceConstants.ClientConfig.PRIVILEGE_CONVERTER, KafkaTSentryPrivilegeConverter.class.getName());
+      authConf.set(ServiceConstants.ClientConfig.PRIVILEGE_CONVERTER, GenericPrivilegeConverter.class.getName());
     }
 
     // Instantiate the configured providerBackend
