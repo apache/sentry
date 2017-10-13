@@ -49,7 +49,7 @@ public class TestSentryShellKafka extends SentryGenericServiceIntegrationBase {
   private static String TEST_ROLE_NAME_2 = "testRole2";
   private static String KAFKA = "kafka";
   private String requestorName = "";
-  private String service = "kafka1";
+  private String service = "kafka";
 
   @Before
   public void prepareForTest() throws Exception {

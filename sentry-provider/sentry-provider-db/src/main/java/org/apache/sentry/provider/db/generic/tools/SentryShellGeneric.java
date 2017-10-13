@@ -107,7 +107,7 @@ public class SentryShellGeneric extends SentryShellCommon {
 
   private String getService(Configuration conf) throws Exception {
     if (type == TYPE.kafka) {
-      return conf.get(KAFKA_SERVICE_NAME, "kafka1");
+      return conf.get(KAFKA_SERVICE_NAME, AuthorizationComponent.KAFKA);
     } else if (type == TYPE.solr) {
       return conf.get(SOLR_SERVICE_NAME, "service1");
     }
