@@ -89,7 +89,7 @@ limitations under the License.
     <objenesis.version>1.2</objenesis.version>
     <pig.version>0.12.0</pig.version>
     <shiro.version>1.2.3</shiro.version>
-    <slf4j.version>1.6.1</slf4j.version>
+    <slf4j.version>1.7.25</slf4j.version>
     <solr.version>4.10.2</solr.version>
     <sqoop.version>1.99.6</sqoop.version>
     <test.sentry.hadoop.classpath>${maven.test.classpath}</test.sentry.hadoop.classpath>
