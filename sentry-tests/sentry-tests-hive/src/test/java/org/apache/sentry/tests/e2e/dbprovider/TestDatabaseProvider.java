@@ -1566,7 +1566,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(1), equalToIgnoringCase("default"));
       assertThat(resultSet.getString(2), equalToIgnoringCase("t1"));
       assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
-      assertThat(resultSet.getString(4), equalToIgnoringCase("c1"));//column
+      assertThat(resultSet.getString(4), equalToIgnoringCase("[c1]"));//column
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("select"));
@@ -1583,7 +1583,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(1), equalToIgnoringCase("default"));
       assertThat(resultSet.getString(2), equalToIgnoringCase("t2"));
       assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
-      assertThat(resultSet.getString(4), equalToIgnoringCase("c2"));//column
+      assertThat(resultSet.getString(4), equalToIgnoringCase("[c2]"));//column
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("select"));
@@ -1600,7 +1600,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(1), equalToIgnoringCase("default"));
       assertThat(resultSet.getString(2), equalToIgnoringCase("t3"));
       assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
-      assertThat(resultSet.getString(4), equalToIgnoringCase("c1"));//column
+      assertThat(resultSet.getString(4), equalToIgnoringCase("[c1]"));//column
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("select"));
@@ -1617,7 +1617,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(1), equalToIgnoringCase("default"));
       assertThat(resultSet.getString(2), equalToIgnoringCase("t3"));
       assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
-      assertThat(resultSet.getString(4), equalToIgnoringCase("c2"));//column
+      assertThat(resultSet.getString(4), equalToIgnoringCase("[c2]"));//column
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("select"));
@@ -1634,7 +1634,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(1), equalToIgnoringCase("default"));
       assertThat(resultSet.getString(2), equalToIgnoringCase("t4"));
       assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
-      assertThat(resultSet.getString(4), equalToIgnoringCase("c1"));//column
+      assertThat(resultSet.getString(4), equalToIgnoringCase("[c1]"));//column
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("select"));
@@ -1651,7 +1651,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(1), equalToIgnoringCase("default"));
       assertThat(resultSet.getString(2), equalToIgnoringCase("t4"));
       assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
-      assertThat(resultSet.getString(4), equalToIgnoringCase("c2"));//column
+      assertThat(resultSet.getString(4), equalToIgnoringCase("[c2]"));//column
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
       assertThat(resultSet.getString(7), equalToIgnoringCase("select"));

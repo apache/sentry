@@ -564,7 +564,7 @@ public abstract class TestHDFSIntegrationBase {
         hiveConf.set("datanucleus.autoStartMechanism", "SchemaTable");
         hiveConf.set("datanucleus.schema.autoCreateTables", "true");
 
-        hiveConf.set(ConfVars.HIVE_AUTHORIZATION_ENABLED.varname, "false");
+        hiveConf.set(ConfVars.HIVE_AUTHORIZATION_ENABLED.varname, "true");
         hiveConf.set(ConfVars.HIVE_AUTHORIZATION_MANAGER.varname, SentryHiveAuthorizerFactory.class.getName());
         hiveConf.set(ConfVars.HIVE_CBO_ENABLED.varname, "false");
         hiveConf.set(ConfVars.METASTORE_DISALLOW_INCOMPATIBLE_COL_TYPE_CHANGES.varname, "false");

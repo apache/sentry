@@ -25,7 +25,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.SentryHiveConstants;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.api.PrincipalType;
-import org.apache.hadoop.hive.ql.exec.SentryGrantRevokeTask;
 import org.apache.hadoop.hive.ql.exec.SentryHivePrivilegeObjectDesc;
 import org.apache.hadoop.hive.ql.exec.Task;
 import org.apache.hadoop.hive.ql.exec.TaskFactory;
@@ -60,8 +59,10 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
 
   private static final Logger LOG = LoggerFactory.getLogger(SentryHiveAuthorizationTaskFactoryImpl.class);
 
-  public SentryHiveAuthorizationTaskFactoryImpl(HiveConf conf, Hive db) { //NOPMD
+  private final HiveConf conf;
 
+  public SentryHiveAuthorizationTaskFactoryImpl(HiveConf conf, Hive db) { //NOPMD
+    this.conf = conf;
   }
 
   @Override
@@ -377,11 +378,8 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
     return ret;
   }
 
-  private static Task<? extends Serializable> createTask(DDLWork work) {
-    SentryGrantRevokeTask task = new SentryGrantRevokeTask();
-    task.setId("Stage-" + Integer.toString(TaskFactory.getAndIncrementId()));
-    task.setWork(work);
-    return task;
+  private Task<? extends Serializable> createTask(DDLWork work) {
+    return TaskFactory.get(work, conf);
   }
 
   //TODO temp workaround and copied from HiveAuthorizationTaskFactoryImpl and modified

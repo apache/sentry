@@ -48,7 +48,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
 
-public class TestMetastoreEndToEnd extends
+public class  TestMetastoreEndToEnd extends
     AbstractMetastoreTestWithStaticConfiguration {
 
   private PolicyFile policyFile;
