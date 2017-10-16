@@ -49,6 +49,7 @@ public class SentryShellGeneric extends SentryShellCommon {
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryShellGeneric.class);
   private static final String KAFKA_SERVICE_NAME = "sentry.service.client.kafka.service.name";
   private static final String SOLR_SERVICE_NAME = "sentry.service.client.solr.service.name";
+  private static final String SQOOP_SERVICE_NAME = "sentry.service.client.sqoop.service.name";
 
   @Override
   public void run() throws Exception {
@@ -100,6 +101,8 @@ public class SentryShellGeneric extends SentryShellCommon {
       return AuthorizationComponent.KAFKA;
     } else if (type == TYPE.solr) {
       return "SOLR";
+    } else if (type == TYPE.sqoop) {
+      return AuthorizationComponent.SQOOP;
     }
 
     throw new Exception("Invalid type specified for SentryShellGeneric: " + type);
@@ -110,6 +113,8 @@ public class SentryShellGeneric extends SentryShellCommon {
       return conf.get(KAFKA_SERVICE_NAME, AuthorizationComponent.KAFKA);
     } else if (type == TYPE.solr) {
       return conf.get(SOLR_SERVICE_NAME, "service1");
+    } else if (type == TYPE.sqoop) {
+      return conf.get(SQOOP_SERVICE_NAME, "sqoopServer1");
     }
 
     throw new Exception("Invalid type specified for SentryShellGeneric: " + type);

@@ -36,7 +36,7 @@ import org.apache.commons.lang.StringUtils;
  */
 abstract public class SentryShellCommon {
 
-  public enum TYPE { kafka, hive, solr };
+  public enum TYPE { kafka, hive, solr, sqoop };
 
   public static final String OPTION_DESC_HELP = "Shell usage";
   public static final String OPTION_DESC_CONF = "sentry-site file path";

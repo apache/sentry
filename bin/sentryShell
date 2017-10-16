@@ -62,6 +62,7 @@ while [ $# -gt 0 ]; do    # Until you run out of parameters . . .
       "hive") shell=org.apache.sentry.provider.db.tools.SentryShellHive ;;
       "kafka") shell=org.apache.sentry.provider.db.generic.tools.SentryShellGeneric ;;
       "solr") shell=org.apache.sentry.provider.db.generic.tools.SentryShellGeneric ;;
+      "sqoop") shell=org.apache.sentry.provider.db.generic.tools.SentryShellGeneric ;;
       *) echo "Doesn't support the type $2!"; exit 1 ;;
     esac
   fi

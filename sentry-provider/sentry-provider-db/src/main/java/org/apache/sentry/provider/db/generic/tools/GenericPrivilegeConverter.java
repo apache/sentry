@@ -39,6 +39,8 @@ import org.apache.sentry.core.model.kafka.KafkaModelAuthorizables;
 import org.apache.sentry.core.model.kafka.KafkaPrivilegeModel;
 import org.apache.sentry.core.model.search.SearchModelAuthorizables;
 import org.apache.sentry.core.model.search.SearchPrivilegeModel;
+import org.apache.sentry.core.model.sqoop.SqoopModelAuthorizables;
+import org.apache.sentry.core.model.sqoop.SqoopPrivilegeModel;
 import org.apache.sentry.provider.common.AuthorizationComponent;
 import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryGrantOption;
@@ -47,7 +49,7 @@ import org.apache.sentry.provider.db.generic.tools.command.TSentryPrivilegeConve
 import org.apache.shiro.config.ConfigurationException;
 
 /**
- * A TSentryPrivilegeConverter implementation for "Generic" privileges, covering Apache Kafka and Apache Solr.
+ * A TSentryPrivilegeConverter implementation for "Generic" privileges, covering Apache Kafka, Apache Solr and Apache Sqoop.
  * It converts privilege Strings to TSentryPrivilege Objects, and vice versa, for Generic clients.
  *
  * When a privilege String is converted to a TSentryPrivilege in "fromString", the validators associated with the
@@ -160,6 +162,8 @@ public class GenericPrivilegeConverter implements TSentryPrivilegeConverter {
       return KafkaPrivilegeModel.getInstance().getPrivilegeValidators();
     } else if ("SOLR".equals(component)) {
       return SearchPrivilegeModel.getInstance().getPrivilegeValidators();
+    } else if (AuthorizationComponent.SQOOP.equals(component)) {
+      return SqoopPrivilegeModel.getInstance().getPrivilegeValidators(service);
     }
 
     throw new Exception("Invalid component specified for GenericPrivilegeCoverter: " + component);
@@ -170,6 +174,8 @@ public class GenericPrivilegeConverter implements TSentryPrivilegeConverter {
       return KafkaModelAuthorizables.from(keyValue);
     } else if ("SOLR".equals(component)) {
       return SearchModelAuthorizables.from(keyValue);
+    } else if (AuthorizationComponent.SQOOP.equals(component)) {
+      return SqoopModelAuthorizables.from(keyValue);
     }
 
     throw new Exception("Invalid component specified for GenericPrivilegeCoverter: " + component);
