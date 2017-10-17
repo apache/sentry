@@ -88,7 +88,7 @@ limitations under the License.
     <mockito.version>1.8.5</mockito.version>
     <objenesis.version>1.2</objenesis.version>
     <pig.version>0.12.0</pig.version>
-    <shiro.version>1.2.3</shiro.version>
+    <shiro.version>1.4.0</shiro.version>
     <slf4j.version>1.7.25</slf4j.version>
     <solr.version>4.10.2</solr.version>
     <sqoop.version>1.99.6</sqoop.version>
