@@ -65,7 +65,7 @@ limitations under the License.
     <commons.lang.version>2.6</commons.lang.version>
     <commons.logging.version>1.2</commons.logging.version>
     <curator.version>2.11.1</curator.version>
-    <derby.version>10.10.2.0</derby.version>
+    <derby.version>10.13.1.1</derby.version>
     <easymock.version>3.0</easymock.version>
     <fest.reflect.version>1.4.1</fest.reflect.version>
     <guava.version>14.0.1</guava.version>
