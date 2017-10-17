@@ -148,6 +148,7 @@ public class HiveAuthzBindingHook extends HiveAuthzBindingHookBase {
       case HiveParser.TOK_UNLOCKTABLE:
         currTab = extractTable((ASTNode)ast.getFirstChildWithType(HiveParser.TOK_TABNAME));
         currDB = extractDatabase((ASTNode) ast.getChild(0));
+        indexURI = extractTableLocation(ast);//As index location is captured using token HiveParser.TOK_TABLELOCATION
         break;
       case HiveParser.TOK_ALTERINDEX_REBUILD:
         currTab = extractTable((ASTNode)ast.getChild(0)); //type is not TOK_TABNAME
