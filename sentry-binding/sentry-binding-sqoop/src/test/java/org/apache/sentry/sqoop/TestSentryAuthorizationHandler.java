@@ -32,7 +32,7 @@ import org.junit.Test;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 
-public class TestSentryAuthorizationHander {
+public class TestSentryAuthorizationHandler {
   private static final String RESOURCE_PATH = "test-authz-provider.ini";
   private SqoopAuthConf authzConf;
   private File baseDir;

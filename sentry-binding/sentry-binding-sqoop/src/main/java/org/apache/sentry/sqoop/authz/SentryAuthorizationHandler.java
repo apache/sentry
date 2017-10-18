@@ -26,7 +26,7 @@ import org.apache.sqoop.model.MRole;
 import org.apache.sqoop.security.AuthenticationProvider;
 import org.apache.sqoop.security.authorization.DefaultAuthorizationHandler;
 
-public class SentryAuthorizationHander extends DefaultAuthorizationHandler {
+public class SentryAuthorizationHandler extends DefaultAuthorizationHandler {
   private static AuthenticationProvider authenticator;
 
   public static AuthenticationProvider getAuthenticator() {

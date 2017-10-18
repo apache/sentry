@@ -81,7 +81,7 @@ public final class SqoopAuthBindingSingleton {
                             .getString(SecurityConstants.AUTHENTICATION_TYPE, SecurityConstants.TYPE.SIMPLE.name());
     String kerberos = SecurityConstants.TYPE.KERBEROS.name();
     if(!isTestingMode && !kerberos.equalsIgnoreCase(authentication)) {
-      throw new IllegalArgumentException(SecurityConstants.AUTHENTICATION_TYPE + "can't be set simple mode in non-testing mode");
+      throw new IllegalArgumentException(SecurityConstants.AUTHENTICATION_TYPE + " can't be set to simple mode in non-testing mode");
     }
   }
 

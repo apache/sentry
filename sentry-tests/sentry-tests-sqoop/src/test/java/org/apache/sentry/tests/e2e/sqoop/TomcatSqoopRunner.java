@@ -201,7 +201,7 @@ public class TomcatSqoopRunner {
 
     private void configureSentryAuthorization(Map<String, String> properties) {
       properties.put("org.apache.sqoop.security.authorization.handler",
-          "org.apache.sentry.sqoop.authz.SentryAuthorizationHander");
+          "org.apache.sentry.sqoop.authz.SentryAuthorizationHandler");
       properties.put("org.apache.sqoop.security.authorization.access_controller",
           "org.apache.sentry.sqoop.authz.SentryAccessController");
       properties.put("org.apache.sqoop.security.authorization.validator",
