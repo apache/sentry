@@ -56,11 +56,11 @@ public class RolesShell implements ShellDependent {
         tools.createRoles(roles);
     }
 
-    @Command(description = "remove Sentry role(s).")
-    public void remove(
+    @Command(description = "drop Sentry role(s).")
+    public void drop(
             @Param(name = "roleName ...", description = "role names to remove")
             String ...roles) {
-        tools.removeRoles(roles);
+        tools.dropRoles(roles);
     }
 
     @Override

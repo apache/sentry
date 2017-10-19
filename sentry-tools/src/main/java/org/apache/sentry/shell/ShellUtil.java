@@ -82,12 +82,12 @@ class ShellUtil {
         }
     }
 
-    void removeRoles(String ...roles) {
+    void dropRoles(String ...roles) {
         for (String role: roles) {
             try {
                 sentryClient.dropRole(authUser, role);
             } catch (SentryUserException e) {
-                System.out.printf("failed to remove role %s: %s\n",
+                System.out.printf("failed to drop role %s: %s\n",
                         role, e.toString());
             }
         }

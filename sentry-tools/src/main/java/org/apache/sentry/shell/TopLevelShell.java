@@ -108,11 +108,11 @@ public class TopLevelShell implements ShellDependent, Runnable {
         tools.createRoles(roles);
     }
 
-    @Command(abbrev = "rm", description = "remove Sentry role(s).")
-    public void removeRole(
-            @Param(name = "roleName ...", description = "role names to remove")
+    @Command(abbrev = "dr", description = "drop Sentry role(s).")
+    public void dropRole(
+            @Param(name = "roleName ...", description = "role names to drop")
                     String ...roles) {
-        tools.removeRoles(roles);
+        tools.dropRoles(roles);
     }
 
     @Command(description = "list Sentry privileges")
