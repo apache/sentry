@@ -98,6 +98,10 @@ limitations under the License.
       <groupId>org.apache.sentry</groupId>
       <artifactId>sentry-hdfs-dist</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.apache.sentry</groupId>
+      <artifactId>sentry-tools</artifactId>
+    </dependency>
   </dependencies>
   <profiles>
     <profile>
