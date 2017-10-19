@@ -42,7 +42,7 @@ public class SentryAccessController extends AuthorizationAccessController {
   }
 
   private Subject getSubject() {
-    return new Subject(SentryAuthorizationHander.getAuthenticator().getUserName());
+    return new Subject(SentryAuthorizationHandler.getAuthenticator().getUserName());
   }
 
   @Override

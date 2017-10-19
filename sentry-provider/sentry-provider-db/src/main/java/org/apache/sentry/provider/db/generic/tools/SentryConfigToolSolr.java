@@ -106,7 +106,7 @@ public class SentryConfigToolSolr extends SentryConfigToolCommon {
     Set<String> roles = Sets.newHashSet();
     Table<String, String, Set<String>> groupRolePrivilegeTable =
         policyFileBackend.getGroupRolePrivilegeTable();
-    SolrTSentryPrivilegeConverter converter = new SolrTSentryPrivilegeConverter(component, service, false);
+    GenericPrivilegeConverter converter = new GenericPrivilegeConverter(component, service, false);
 
     for (String groupName : groupRolePrivilegeTable.rowKeySet()) {
       for (String roleName : groupRolePrivilegeTable.columnKeySet()) {

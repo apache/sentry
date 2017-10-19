@@ -182,7 +182,7 @@ public class HiveServerFactory {
       properties.put(ConfVars.METASTORESERVERMINTHREADS.varname, "5");
     }
 
-    properties.put(ConfVars.HIVE_AUTHORIZATION_ENABLED.varname, "false");
+    properties.put(ConfVars.HIVE_AUTHORIZATION_ENABLED.varname, "true");
     properties.put(ConfVars.HIVE_AUTHORIZATION_MANAGER.varname, SentryHiveAuthorizerFactory.class.getName());
 
     // CBO has a bug on Hive 2.0.0 with VIEWS because ReadIdentity objects are sent without
@@ -196,6 +196,10 @@ public class HiveServerFactory {
     // This configuration will avoid starting the HS2 WebUI that was causing test failures when
     // HS2 is configured for concurrency
     properties.put(ConfVars.HIVE_IN_TEST.varname, "true");
+
+    // This configuration is used by SentryHiveAuthorizerFactory to change the client type
+    // to HIVESERVER2 if we're using the authorization V2 in test mode.
+    properties.put(ConfVars.HIVE_TEST_AUTHORIZATION_SQLSTD_HS2_MODE.varname, "true");
 
     if (!properties.containsKey(METASTORE_BYPASS)) {
       properties.put(METASTORE_BYPASS, "hive,impala," + System.getProperty("user.name", ""));

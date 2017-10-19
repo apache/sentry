@@ -74,8 +74,8 @@ public class AbstractKafkaSentryTestBase {
 
   protected static String bootstrapServers = null;
   protected static KafkaTestServer kafkaServer = null;
-  
-  private static final long CACHE_TTL_MS = 1;
+
+  private static final int CACHE_TTL_MS = 1;
   private static final int SAFETY_FACTOR = 2; // Sleep for specified times of expected time for an operation to complete.
 
   @BeforeClass
@@ -216,8 +216,6 @@ public class AbstractKafkaSentryTestBase {
     conf.set(KafkaAuthConf.AuthzConfVars.AUTHZ_PROVIDER_BACKEND.getVar(),
         SentryGenericProviderBackend.class.getName());
     conf.set(KafkaAuthConf.AuthzConfVars.AUTHZ_PROVIDER_RESOURCE.getVar(), policyFilePath.getPath());
-    conf.setBoolean(ClientConfig.ENABLE_CACHING, true);
-    conf.setLong(ClientConfig.CACHE_TTL_MS, CACHE_TTL_MS);
     return conf;
   }
 

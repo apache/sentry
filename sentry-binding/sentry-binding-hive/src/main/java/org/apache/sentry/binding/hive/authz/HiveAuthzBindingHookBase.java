@@ -90,6 +90,7 @@ public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerH
   protected List<AccessURI> udfURIs;
   protected AccessURI serdeURI;
   protected AccessURI partitionURI;
+  protected AccessURI indexURI;
   protected Table currOutTab = null;
   protected Database currOutDB = null;
   protected final List<String> serdeWhiteList;
@@ -290,6 +291,24 @@ public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerH
     }
   }
 
+  protected static AccessURI extractTableLocation(ASTNode ast) throws SemanticException {
+    ASTNode locationChild = (ASTNode)ast.getFirstChildWithType(HiveParser.TOK_TABLELOCATION);
+    if (locationChild == null) {
+      LOG.debug("Token HiveParser.TOK_TABLELOCATION not found in ast. "
+          + "This means command does not have a location clause");
+      return null;
+    }
+
+    if (locationChild.getChildCount() != 1) {
+      LOG.error("Found Token HiveParser.TOK_TABLELOCATION, but was expecting the URI as its only "
+          + "child. This means it is possible that permissions on the URI are not checked for this "
+          + "command ");
+      return null;
+    }
+
+    return parseURI(BaseSemanticAnalyzer.unescapeSQLString(locationChild.getChild(0).getText()));
+  }
+
   public static void runFailureHook(SentryOnFailureHookContext hookContext,
       String csHooks) {
     try {
@@ -369,6 +388,10 @@ public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerH
       // workaround for add partitions
       if(partitionURI != null) {
         inputHierarchy.add(ImmutableList.of(hiveAuthzBinding.getAuthServer(), partitionURI));
+      }
+
+      if(indexURI != null) {
+        outputHierarchy.add(ImmutableList.of(hiveAuthzBinding.getAuthServer(), indexURI));
       }
 
       getInputHierarchyFromInputs(inputHierarchy, inputs);

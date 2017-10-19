@@ -119,7 +119,7 @@ public final class SentryClientTransportConstants {
     static final String SENTRY_POOL_MAX_TOTAL = "sentry.service.client.connection.pool.max-total";
     static final int SENTRY_POOL_MAX_TOTAL_DEFAULT = -1;
     static final String SENTRY_POOL_MAX_IDLE = "sentry.service.client.connection.pool.max-idle";
-    static final int SENTRY_POOL_MAX_IDLE_DEFAULT = 400;
+    static final int SENTRY_POOL_MAX_IDLE_DEFAULT = 100;
     static final String SENTRY_POOL_MIN_IDLE = "sentry.service.client.connection.pool.min-idle";
     static final int SENTRY_POOL_MIN_IDLE_DEFAULT = 10;
     static final String SENTRY_POOL_MIN_EVICTION_TIME_SEC =

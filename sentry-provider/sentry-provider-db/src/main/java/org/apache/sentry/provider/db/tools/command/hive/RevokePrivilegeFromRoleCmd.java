@@ -19,6 +19,7 @@ package org.apache.sentry.provider.db.tools.command.hive;
 
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
+import org.apache.sentry.service.thrift.SentryServiceUtil;
 
 /**
  * The class for admin command to revoke privileges from role.
@@ -35,8 +36,9 @@ public class RevokePrivilegeFromRoleCmd implements Command {
 
   @Override
   public void execute(SentryPolicyServiceClient client, String requestorName) throws Exception {
-    TSentryPrivilege tSentryPrivilege = CommandUtil.convertToTSentryPrivilege(privilegeStr);
-   client.revokePrivilege(requestorName, roleName, tSentryPrivilege);
+    TSentryPrivilege tSentryPrivilege = SentryServiceUtil.convertToTSentryPrivilege(privilegeStr);
+    CommandUtil.validatePrivilegeHierarchy(tSentryPrivilege);
+    client.revokePrivilege(requestorName, roleName, tSentryPrivilege);
   }
 
 }

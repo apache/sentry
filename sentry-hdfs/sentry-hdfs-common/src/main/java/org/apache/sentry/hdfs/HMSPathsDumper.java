@@ -129,7 +129,8 @@ public class HMSPathsDumper implements AuthzPathsDumper<HMSPaths> {
       TPathEntry tChild = idMap.get(id);
 
       String tChildPathElement = tChild.getPathElement();
-      if (tChildPathElement.charAt(0) == DupDetector.REPLACEMENT_STRING_PREFIX) {
+      if (!tChildPathElement.isEmpty() &&
+          tChildPathElement.charAt(0) == DupDetector.REPLACEMENT_STRING_PREFIX) {
         int dupStrIdx = Integer.parseInt(tChildPathElement.substring(1), 16);
         tChildPathElement = dupStringValues.get(dupStrIdx);
       }

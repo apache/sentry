@@ -52,8 +52,8 @@ limitations under the License.
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <buildtools.dir>${basedir}/build-tools</buildtools.dir>
-    <maven.compile.source>1.7</maven.compile.source>
-    <maven.compile.target>1.7</maven.compile.target>
+    <maven.compile.source>1.8</maven.compile.source>
+    <maven.compile.target>1.8</maven.compile.target>
     <failIfNoTests>false</failIfNoTests>
     <!-- versions are in alphabetical order -->
     <ant.contrib.version>1.0b3</ant.contrib.version>
@@ -65,7 +65,7 @@ limitations under the License.
     <commons.lang.version>2.6</commons.lang.version>
     <commons.logging.version>1.2</commons.logging.version>
     <curator.version>2.11.1</curator.version>
-    <derby.version>10.10.2.0</derby.version>
+    <derby.version>10.13.1.1</derby.version>
     <easymock.version>3.0</easymock.version>
     <fest.reflect.version>1.4.1</fest.reflect.version>
     <guava.version>14.0.1</guava.version>
@@ -84,17 +84,16 @@ limitations under the License.
     <maven.antrun.plugin.version>1.7</maven.antrun.plugin.version>
     <maven.eclipse.plugin.version>2.9</maven.eclipse.plugin.version>
     <maven.enforcer.plugin.version>1.3.1</maven.enforcer.plugin.version>
-    <metrics.version>3.0.1</metrics.version>
+    <metrics.version>3.0.2</metrics.version>
     <mockito.version>1.8.5</mockito.version>
     <objenesis.version>1.2</objenesis.version>
     <pig.version>0.12.0</pig.version>
-    <shiro.version>1.2.3</shiro.version>
-    <slf4j.version>1.6.1</slf4j.version>
+    <shiro.version>1.4.0</shiro.version>
+    <slf4j.version>1.7.25</slf4j.version>
     <solr.version>4.10.2</solr.version>
     <sqoop.version>1.99.6</sqoop.version>
     <test.sentry.hadoop.classpath>${maven.test.classpath}</test.sentry.hadoop.classpath>
     <zookeeper.version>3.4.5</zookeeper.version>
-    <hadoop-aws.version>2.7.0</hadoop-aws.version>
     <maven.jar.plugin.version>3.0.2</maven.jar.plugin.version>
 
     <!-- Datanucleus package versions -->
@@ -265,6 +264,99 @@ limitations under the License.
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-log4j12</artifactId>
         <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hive</groupId>
+        <artifactId>hive-common</artifactId>
+        <version>${hive.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hive.hcatalog</groupId>
+        <artifactId>hive-hcatalog-core</artifactId>
+        <version>${hive.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hive.hcatalog</groupId>
+        <artifactId>hive-hcatalog-pig-adapter</artifactId>
+        <version>${hive.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hive</groupId>
+        <artifactId>hive-metastore</artifactId>
+        <version>${hive.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hive</groupId>
+        <artifactId>hive-beeline</artifactId>
+        <version>${hive.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-metastore</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-serde</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-common</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-serde</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-shims</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hive</groupId>
+        <artifactId>hive-jdbc</artifactId>
+        <version>${hive.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hive</groupId>
+        <artifactId>hive-shims</artifactId>
+        <version>${hive.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hive</groupId>
+        <artifactId>hive-serde</artifactId>
+        <version>${hive.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hive</groupId>
+        <artifactId>hive-exec</artifactId>
+        <version>${hive.version}</version>
+        <exclusions>
+          <exclusion>
+            <artifactId>apache-curator</artifactId>
+            <groupId>org.apache.curator</groupId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hive</groupId>
+        <artifactId>hive-service</artifactId>
+        <version>${hive.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hive</groupId>
+        <artifactId>hive-hbase-handler</artifactId>
+        <version>${hive.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hive</groupId>
+        <artifactId>hive-contrib</artifactId>
+        <version>${hive.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hive</groupId>
+        <artifactId>hive-cli</artifactId>
+        <version>${hive.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.sentry</groupId>
@@ -563,7 +655,7 @@ limitations under the License.
           <linkXRef>false</linkXRef>
           <includeTests>true</includeTests>
           <verbose>true</verbose>
-          <targetJdk>1.7</targetJdk>
+          <targetJdk>${maven.compile.target}</targetJdk>
           <excludeRoots>
             <excludeRoot>${basedir}/src/main/generated</excludeRoot>
           </excludeRoots>
@@ -670,30 +762,7 @@ limitations under the License.
           <configuration>
             <source>${maven.compile.source}</source>
             <target>${maven.compile.target}</target>
-            <!-- Enable errorprone compiler - see
-                 http://errorprone.info
-            -->
-            <compilerId>javac-with-errorprone</compilerId>
-            <forceJavacCompilerUse>true</forceJavacCompilerUse>
           </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>org.codehaus.plexus</groupId>
-              <artifactId>plexus-compiler-javac-errorprone</artifactId>
-              <version>2.8</version>
-            </dependency>
-            <!-- override plexus-compiler-javac-errorprone's dependency on
-                 Error Prone version 2.05.
-                 NOTE: We can only use version 2.05 - subsequent versions
-                       use Java 8. Once Sentry build switches to Java 8, we
-                       can update this to a newer version.
-            -->
-            <dependency>
-              <groupId>com.google.errorprone</groupId>
-              <artifactId>error_prone_core</artifactId>
-              <version>2.0.5</version>
-            </dependency>
-          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -805,214 +874,6 @@ limitations under the License.
   </build>
 
   <profiles>
-    <profile>
-      <id>hive-authz1</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <properties>
-        <hive.version>2.0.0</hive.version>
-      </properties>
-      <dependencies>
-        <dependency>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-common</artifactId>
-          <version>${hive.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hive.hcatalog</groupId>
-          <artifactId>hive-hcatalog-core</artifactId>
-          <version>${hive.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hive.hcatalog</groupId>
-          <artifactId>hive-hcatalog-pig-adapter</artifactId>
-          <version>${hive.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-metastore</artifactId>
-          <version>${hive.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-beeline</artifactId>
-          <version>${hive.version}</version>
-          <exclusions>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-metastore</artifactId>
-            </exclusion>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-serde</artifactId>
-            </exclusion>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-common</artifactId>
-            </exclusion>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-serde</artifactId>
-            </exclusion>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-shims</artifactId>
-            </exclusion>
-          </exclusions>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-jdbc</artifactId>
-          <version>${hive.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-shims</artifactId>
-          <version>${hive.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-serde</artifactId>
-          <version>${hive.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-exec</artifactId>
-          <version>${hive.version}</version>
-          <exclusions>
-            <exclusion>
-              <artifactId>apache-curator</artifactId>
-              <groupId>org.apache.curator</groupId>
-            </exclusion>
-          </exclusions>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-service</artifactId>
-          <version>${hive.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-hbase-handler</artifactId>
-          <version>${hive.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-contrib</artifactId>
-          <version>${hive.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-cli</artifactId>
-          <version>${hive.version}</version>
-        </dependency>
-      </dependencies>
-    </profile>
-    <profile>
-      <id>hive-authz2</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-      </activation>
-      <properties>
-        <hive.version>2.0.0</hive.version>
-      </properties>
-      <dependencies>
-        <dependency>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-common</artifactId>
-          <version>${hive.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hive.hcatalog</groupId>
-          <artifactId>hive-hcatalog-core</artifactId>
-          <version>${hive.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hive.hcatalog</groupId>
-          <artifactId>hive-hcatalog-pig-adapter</artifactId>
-          <version>${hive.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-metastore</artifactId>
-          <version>${hive.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-beeline</artifactId>
-          <version>${hive.version}</version>
-          <exclusions>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-metastore</artifactId>
-            </exclusion>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-serde</artifactId>
-            </exclusion>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-common</artifactId>
-            </exclusion>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-serde</artifactId>
-            </exclusion>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-shims</artifactId>
-            </exclusion>
-          </exclusions>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-jdbc</artifactId>
-          <version>${hive.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-shims</artifactId>
-          <version>${hive.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-serde</artifactId>
-          <version>${hive.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-exec</artifactId>
-          <version>${hive.version}</version>
-          <exclusions>
-            <exclusion>
-              <artifactId>apache-curator</artifactId>
-              <groupId>org.apache.curator</groupId>
-            </exclusion>
-          </exclusions>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-service</artifactId>
-          <version>${hive.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-hbase-handler</artifactId>
-          <version>${hive.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-contrib</artifactId>
-          <version>${hive.version}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-cli</artifactId>
-          <version>${hive.version}</version>
-        </dependency>
-      </dependencies>
-    </profile>
     <profile>
       <id>nochecks</id>
       <properties>

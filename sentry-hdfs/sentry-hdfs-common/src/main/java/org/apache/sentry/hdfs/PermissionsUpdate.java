@@ -155,4 +155,10 @@ public class PermissionsUpdate implements Updateable.Update {
     return tPermUpdate.equals(other.tPermUpdate);
   }
 
+  @Override
+  public String toString() {
+    // TPermissionsUpdate implements toString() perfectly; null tPermUpdate is ok
+    return getClass().getSimpleName() + "(" + tPermUpdate + ")";
+  }
+
 }

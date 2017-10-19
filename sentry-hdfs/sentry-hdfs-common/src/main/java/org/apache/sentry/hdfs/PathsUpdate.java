@@ -216,4 +216,10 @@ public class PathsUpdate implements Updateable.Update {
     return tPathsUpdate.equals(other.tPathsUpdate);
   }
 
+  @Override
+  public String toString() {
+    // TPathsUpdate implements toString() perfectly; null tPathsUpdate is ok
+    return getClass().getSimpleName() + "(" + tPathsUpdate + ")";
+  }
+
 }

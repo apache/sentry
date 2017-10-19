@@ -21,12 +21,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.CodeSource;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.exec.DDLTask;
 import org.apache.hadoop.hive.ql.exec.SentryFilterDDLTask;
-import org.apache.hadoop.hive.ql.exec.SentryGrantRevokeTask;
 import org.apache.hadoop.hive.ql.exec.Task;
 import org.apache.hadoop.hive.ql.exec.Utilities;
 import org.apache.hadoop.hive.ql.lib.Node;
@@ -150,6 +148,7 @@ public class HiveAuthzBindingHook extends HiveAuthzBindingHookBase {
       case HiveParser.TOK_UNLOCKTABLE:
         currTab = extractTable((ASTNode)ast.getFirstChildWithType(HiveParser.TOK_TABNAME));
         currDB = extractDatabase((ASTNode) ast.getChild(0));
+        indexURI = extractTableLocation(ast);//As index location is captured using token HiveParser.TOK_TABLELOCATION
         break;
       case HiveParser.TOK_ALTERINDEX_REBUILD:
         currTab = extractTable((ASTNode)ast.getChild(0)); //type is not TOK_TABNAME
@@ -297,21 +296,7 @@ public class HiveAuthzBindingHook extends HiveAuthzBindingHookBase {
 
     stmtAuthObject = HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(stmtOperation);
 
-    // must occur above the null check on stmtAuthObject
-    // since GRANT/REVOKE/etc are not authorized by binding layer at present
     Subject subject = getCurrentSubject(context);
-    Set<String> subjectGroups = hiveAuthzBinding.getGroups(subject);
-    for (Task<? extends Serializable> task : rootTasks) {
-      if (task instanceof SentryGrantRevokeTask) {
-        SentryGrantRevokeTask sentryTask = (SentryGrantRevokeTask)task;
-        sentryTask.setHiveAuthzBinding(hiveAuthzBinding);
-        sentryTask.setAuthzConf(authzConf);
-        sentryTask.setSubject(subject);
-        sentryTask.setSubjectGroups(subjectGroups);
-        sentryTask.setIpAddress(context.getIpAddress());
-        sentryTask.setOperation(stmtOperation);
-      }
-    }
 
     try {
       if (stmtAuthObject == null) {

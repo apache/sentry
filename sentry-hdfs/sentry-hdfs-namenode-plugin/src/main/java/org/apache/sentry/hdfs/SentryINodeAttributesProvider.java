@@ -323,7 +323,7 @@ public class SentryINodeAttributesProvider extends INodeAttributeProvider
 
   @Override
   public void stop() {
-    LOG.debug("Stopping");
+    LOG.debug(getClass().getSimpleName() + ": Stopping");
     authzInfo.stop();
   }
 

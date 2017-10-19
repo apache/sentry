@@ -87,15 +87,13 @@ public class SentryAuthorizationInfo implements Runnable {
           SentryAuthorizationConstants.CACHE_REFRESH_RETRY_WAIT_KEY,
           SentryAuthorizationConstants.CACHE_REFRESH_RETRY_WAIT_DEFAULT);
 
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(
-            "Sentry authorization will enforced in the following HDFS locations: [{}]",
+      LOG.info("Sentry authorization will enforced in the following HDFS locations: [{}]",
             StringUtils.arrayToString(newPathPrefixes));
-      }
+
       setPrefixPaths(newPathPrefixes);
-      LOG.debug("Refresh interval [{}]ms, retry wait [{}]",
+      LOG.info("Refresh interval [{}]ms, retry wait [{}]",
           refreshIntervalMillisec, retryWaitMillisec);
-      LOG.debug("stale threshold [{}]ms", staleThresholdMillisec);
+      LOG.info("stale threshold [{}]ms", staleThresholdMillisec);
 
       authzPaths = new UpdateableAuthzPaths(newPathPrefixes);
       authzPermissions = new UpdateableAuthzPermissions();
@@ -134,6 +132,10 @@ public class SentryAuthorizationInfo implements Runnable {
     SentryAuthzUpdate updates = updater.getUpdates();
     // Updates can be null if Sentry Service is un-reachable
     if (updates != null) {
+      if (updates.isEmpty()) {
+        return true; // no updates is a norm, it's still success
+      }
+
       UpdateableAuthzPaths newAuthzPaths = processUpdates(
           updates.getPathUpdates(), authzPaths);
       UpdateableAuthzPermissions newAuthzPerms = processUpdates(
@@ -145,15 +147,40 @@ public class SentryAuthorizationInfo implements Runnable {
       if (newAuthzPaths != authzPaths || newAuthzPerms != authzPermissions) {
         lock.writeLock().lock();
         try {
-          LOG.debug(String.format("FULL Updated paths seq Num [old=%d], [new=%d] img Num [old=%d], [new=%d]",
-              authzPaths.getLastUpdatedSeqNum(), newAuthzPaths.getLastUpdatedSeqNum(),
-              authzPaths.getLastUpdatedImgNum(), newAuthzPaths.getLastUpdatedImgNum()));
-          authzPaths = newAuthzPaths;
-          LOG.debug(String.format("FULL Updated perms seq Num [old=%d], [new=%d]",
+          if (LOG.isDebugEnabled()) {
+            LOG.debug(updates.dumpContent());
+          }
+          if (newAuthzPaths != authzPaths) {
+            LOG.info(String.format("FULL Updated paths seq Num [old=%d], [new=%d]",
+              authzPaths.getLastUpdatedSeqNum(), newAuthzPaths.getLastUpdatedSeqNum()));
+            authzPaths = newAuthzPaths;
+            if (LOG.isTraceEnabled()) {
+              LOG.trace(authzPaths.dumpContent());
+            }
+          }
+          if (newAuthzPerms != authzPermissions) {
+            LOG.info(String.format("FULL Updated perms seq Num [old=%d], [new=%d]",
               authzPermissions.getLastUpdatedSeqNum(), newAuthzPerms.getLastUpdatedSeqNum()));
-          authzPermissions = newAuthzPerms;
+            authzPermissions = newAuthzPerms;
+            if (LOG.isTraceEnabled()) {
+              LOG.trace(authzPermissions.dumpContent());
+            }
+          }
         } finally {
           lock.writeLock().unlock();
+        }
+      } else {
+        if (LOG.isDebugEnabled()) {
+          lock.writeLock().lock();
+          try {
+            LOG.debug(updates.dumpContent());
+            if (LOG.isTraceEnabled()) {
+              LOG.trace(newAuthzPaths.dumpContent());
+              LOG.trace(newAuthzPerms.dumpContent());
+            }
+          } finally {
+            lock.writeLock().unlock();
+          }
         }
       }
       return true;
@@ -169,7 +196,7 @@ public class SentryAuthorizationInfo implements Runnable {
     if (!updates.isEmpty()) {
       if (updates.get(0).hasFullImage()) {
         LOG.debug(String.format("Process Update : FULL IMAGE [%s][%d][%d]",
-            newUpdateable.getClass().getName(),
+            newUpdateable.getClass().getSimpleName(),
             updates.get(0).getSeqNum(),
             updates.get(0).getImgNum()));
         newUpdateable = (V)newUpdateable.updateFull(updates.remove(0));
@@ -177,20 +204,21 @@ public class SentryAuthorizationInfo implements Runnable {
       // Any more elements ?
       if (!updates.isEmpty()) {
         LOG.debug(String.format("Process Update : More updates.. [%s][%d][%d][%d]",
-            newUpdateable.getClass().getName(),
+            newUpdateable.getClass().getSimpleName(),
             newUpdateable.getLastUpdatedSeqNum(),
             newUpdateable.getLastUpdatedImgNum(),
             updates.size()));
         newUpdateable.updatePartial(updates, lock);
       }
       LOG.debug(String.format("Process Update : Finished updates.. [%s][%d][%d]",
-          newUpdateable.getClass().getName(),
+          newUpdateable.getClass().getSimpleName(),
           newUpdateable.getLastUpdatedSeqNum(),
           newUpdateable.getLastUpdatedImgNum()));
     }
     return newUpdateable;
   }
 
+  @Override
   public void run() {
     boolean success = false;
     try {
@@ -241,6 +269,7 @@ public class SentryAuthorizationInfo implements Runnable {
 
   public void stop() {
     if (authzPaths != null) {
+      LOG.info(getClass().getSimpleName() + ": Stopping");
       executor.shutdownNow();
     }
   }

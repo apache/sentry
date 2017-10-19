@@ -17,12 +17,15 @@
 package org.apache.sentry.binding.hive.authz;
 
 import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.ql.security.HiveAuthenticationProvider;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAuthorizer;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAuthorizerFactory;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAuthzPluginException;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAuthzSessionContext;
+import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAuthzSessionContext.CLIENT_TYPE;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveMetastoreClientFactory;
+import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 
 /**
  * Factory class that creates a HiveAuthorizer implementation for the Hive authorization V2
@@ -40,6 +43,28 @@ public class SentryHiveAuthorizerFactory implements HiveAuthorizerFactory {
   public HiveAuthorizer createHiveAuthorizer(HiveMetastoreClientFactory metastoreClientFactory,
       HiveConf conf, HiveAuthenticationProvider hiveAuthenticator, HiveAuthzSessionContext ctx)
       throws HiveAuthzPluginException {
-    return new SentryHiveAuthorizerImpl();
+    HiveAuthzConf authzConf = HiveAuthzBindingHookBase.loadAuthzConf(conf);
+    HiveAuthzSessionContext sessionContext = applyTestSettings(ctx, conf);
+
+    SentryHiveAccessController accessController;
+    try {
+      accessController =
+          new DefaultSentryAccessController(conf, authzConf, hiveAuthenticator, sessionContext);
+    } catch (Exception e) {
+      throw new HiveAuthzPluginException(e);
+    }
+
+    return new SentryHiveAuthorizerImpl(accessController);
+  }
+
+  private HiveAuthzSessionContext applyTestSettings(HiveAuthzSessionContext ctx, HiveConf conf) {
+    if (conf.getBoolVar(ConfVars.HIVE_TEST_AUTHORIZATION_SQLSTD_HS2_MODE)
+        && ctx.getClientType() == CLIENT_TYPE.HIVECLI) {
+      // create new session ctx object with HS2 as client type
+      HiveAuthzSessionContext.Builder ctxBuilder = new HiveAuthzSessionContext.Builder(ctx);
+      ctxBuilder.setClientType(CLIENT_TYPE.HIVESERVER2);
+      return ctxBuilder.build();
+    }
+    return ctx;
   }
 }

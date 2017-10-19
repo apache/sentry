@@ -112,9 +112,13 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
   @Test
   public void testIndexTable() throws Exception {
     adminCreate(DB1, tableName, true);
+    String indexLocation = dfs.getBaseDir() + "/" + Math.random();
     policyFile
         .addPermissionsToRole("index_db1_tb1", privileges.get("index_db1_tb1"))
         .addRolesToGroup(USERGROUP1, "index_db1_tb1")
+        .addRolesToGroup(USERGROUP3, "index_db1_tb1")
+        .addPermissionsToRole("uri_role", "server=server1->uri=" + indexLocation)
+        .addRolesToGroup(USERGROUP3, "uri_role")
         .addPermissionsToRole("insert_db1_tb1", privileges.get("insert_db1_tb1"))
         .addRolesToGroup(USERGROUP2, "insert_db1_tb1");
     writePolicyFile(policyFile);
@@ -146,6 +150,26 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
     statement = context.createStatement(connection);
     exec(statement, "Use " + DB1);
     exec(statement, "DROP INDEX table01_index ON tb1");
+    statement.close();
+    connection.close();
+
+    //Positive case for location
+    connection = context.createConnection(USER3_1);
+    statement = context.createStatement(connection);
+    exec(statement, "Use " + DB1);
+    exec(statement, "CREATE INDEX table01_index ON TABLE tb1 (a) AS 'COMPACT' WITH DEFERRED REBUILD LOCATION '"
+        + indexLocation + "'");
+    exec(statement, "ALTER INDEX table01_index ON tb1 REBUILD");
+    exec(statement, "DROP INDEX table01_index ON tb1");
+    statement.close();
+    connection.close();
+
+    //Negative case
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    exec(statement, "Use " + DB1);
+    assertSemanticException(statement, "CREATE INDEX table01_index ON TABLE tb1 (a) AS 'COMPACT' WITH DEFERRED REBUILD " +
+            "LOCATION '" + indexLocation + "'");
     statement.close();
     connection.close();
   }
