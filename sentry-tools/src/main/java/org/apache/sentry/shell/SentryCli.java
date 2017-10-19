@@ -51,7 +51,6 @@ public class SentryCli {
     private static final String localhost = "localhost";
     private static final String defaultPort = "8038";
 
-
     private static final String configOpt = "config";
     private static final String userOpt = "user";
     private static final String hostOpt = "host";

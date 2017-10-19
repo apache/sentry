@@ -30,6 +30,10 @@ public class PrivsShell implements ShellDependent {
     private final ShellUtil tools;
     Shell shell;
 
+    public PrivsShell(SentryPolicyServiceClient sentryClient, String authUser) {
+        this.tools = new ShellUtil(sentryClient, authUser);
+    }
+
     @Command(description = "Grant privilege to role")
     public void grant(
             @Param(name = "roleName")
@@ -60,10 +64,6 @@ public class PrivsShell implements ShellDependent {
                     description = "privilege string, e.g. server=s1->db=foo")
             String privilege) {
         tools.revokePrivilegeFromRole(roleName, privilege);
-    }
-
-    public PrivsShell(SentryPolicyServiceClient sentryClient, String authUser) {
-        this.tools = new ShellUtil(sentryClient, authUser);
     }
 
     @Override

@@ -30,6 +30,13 @@ import java.util.List;
  * Sentry roles manipulation for CLI.
  */
 public class RolesShell implements ShellDependent {
+    private final ShellUtil tools;
+    Shell shell;
+
+    public RolesShell(SentryPolicyServiceClient sentryClient, String authUser) {
+        this.tools = new ShellUtil(sentryClient, authUser);
+    }
+
     @Command(description = "List sentry roles. shows all available roles.")
     public List<String> list() {
         return tools.listRoles();
@@ -56,17 +63,9 @@ public class RolesShell implements ShellDependent {
         tools.removeRoles(roles);
     }
 
-
     @Override
     public void cliSetShell(Shell theShell) {
         this.shell = theShell;
-    }
-
-    private final ShellUtil tools;
-    Shell shell;
-
-    public RolesShell(SentryPolicyServiceClient sentryClient, String authUser) {
-        this.tools = new ShellUtil(sentryClient, authUser);
     }
 
 }

@@ -29,6 +29,14 @@ import java.util.List;
  * Sentry group manipulation for CLI
  */
 public class GroupShell implements ShellDependent {
+
+    private final ShellUtil tools;
+    Shell shell;
+
+    public GroupShell(SentryPolicyServiceClient sentryClient, String authUser) {
+        this.tools = new ShellUtil(sentryClient, authUser);
+    }
+
     @Command
     public List<String> list() {
         return tools.listGroups();
@@ -48,14 +56,6 @@ public class GroupShell implements ShellDependent {
     @Command(description = "Revoke role from groups")
     public void revoke(String roleName, String ...groups) {
         tools.revokeGroupsFromRole(roleName, groups);
-    }
-
-    private final ShellUtil tools;
-    Shell shell;
-
-
-    public GroupShell(SentryPolicyServiceClient sentryClient, String authUser) {
-        this.tools = new ShellUtil(sentryClient, authUser);
     }
 
     @Override

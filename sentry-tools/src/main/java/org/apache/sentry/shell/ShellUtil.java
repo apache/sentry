@@ -34,8 +34,15 @@ import static org.apache.sentry.service.thrift.SentryServiceUtil.convertToTSentr
  */
 class ShellUtil {
 
+    private final SentryPolicyServiceClient sentryClient;
+    private final String authUser;
+
+    ShellUtil(SentryPolicyServiceClient sentryClient, String authUser) {
+        this.sentryClient = sentryClient;
+        this.authUser = authUser;
+    }
+
     List<String> listRoles() {
-        List<String> roles = null;
         try {
             return getRoles();
         } catch (SentryUserException e) {
@@ -323,13 +330,5 @@ class ShellUtil {
         Collections.sort(roleNames);
         return roleNames;
     }
-
-    ShellUtil(SentryPolicyServiceClient sentryClient, String authUser) {
-        this.sentryClient = sentryClient;
-        this.authUser = authUser;
-    }
-
-    private final SentryPolicyServiceClient sentryClient;
-    private final String authUser;
 
 }
