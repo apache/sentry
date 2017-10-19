@@ -627,6 +627,7 @@ limitations under the License.
     <module>sentry-tests</module>
     <module>sentry-hdfs</module>
     <module>sentry-solr</module>
+    <module>sentry-tools</module>
     <module>sentry-dist</module>
   </modules>
 
