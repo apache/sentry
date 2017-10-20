@@ -47,14 +47,20 @@ public class SentryHiveAuthorizerFactory implements HiveAuthorizerFactory {
     HiveAuthzSessionContext sessionContext = applyTestSettings(ctx, conf);
 
     SentryHiveAccessController accessController;
+    SentryHiveAuthorizationValidator authValidator;
     try {
       accessController =
           new DefaultSentryAccessController(conf, authzConf, hiveAuthenticator, sessionContext);
+
+      authValidator =
+          new DefaultSentryValidator(conf, authzConf, hiveAuthenticator);
     } catch (Exception e) {
       throw new HiveAuthzPluginException(e);
     }
 
-    return new SentryHiveAuthorizerImpl(accessController);
+
+
+    return new SentryHiveAuthorizerImpl(accessController, authValidator);
   }
 
   private HiveAuthzSessionContext applyTestSettings(HiveAuthzSessionContext ctx, HiveConf conf) {
