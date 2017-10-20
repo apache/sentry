@@ -116,10 +116,15 @@ public class TestAclsCrud extends AbstractKafkaSentryTestBase {
 
     final String role1 = "role1";
     Set<Acl> acls = new HashSet<>();
-    final Acl acl = new Acl(new KafkaPrincipal("role", role1),
+    Acl acl = new Acl(new KafkaPrincipal("role", role1),
         Allow$.MODULE$,
         "127.0.0.1",
         Operation$.MODULE$.fromString("READ"));
+    acls.add(acl);
+    acl = new Acl(new KafkaPrincipal("role", role1),
+            Allow$.MODULE$,
+            "127.0.0.1",
+            Operation$.MODULE$.fromString("WRITE"));
     acls.add(acl);
     scala.collection.immutable.Set<Acl> aclsScala = scala.collection.JavaConversions.asScalaSet(acls).toSet();
     Resource resource = new Resource(ResourceType$.MODULE$.fromString("TOPIC"), "test-Topic");
