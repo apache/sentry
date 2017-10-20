@@ -16,7 +16,6 @@
  */
 package org.apache.sentry.binding.hive.authz;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.exec.SentryHivePrivilegeObjectDesc;
@@ -36,7 +35,6 @@ import org.apache.hadoop.hive.ql.security.authorization.plugin.HivePrivilegeObje
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HivePrivilegeObject.HivePrivilegeObjectType;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveRoleGrant;
 import org.apache.sentry.binding.hive.SentryHivePrivilegeObject;
-import org.apache.sentry.binding.metastore.SentryMetaStoreFilterHook;
 
 /**
  * This is a HiveAuthorizer implementation, and it is used by HiveServer2 to check privileges
@@ -49,14 +47,14 @@ import org.apache.sentry.binding.metastore.SentryMetaStoreFilterHook;
  */
 public class SentryHiveAuthorizerImpl extends AbstractHiveAuthorizer {
   private SentryHiveAccessController accessController;
+  private SentryHiveAuthorizationValidator authValidator;
   static private HiveAuthorizationTranslator hiveTranslator =
       new SentryHiveAuthorizationTranslator();
 
-  private SentryMetaStoreFilterHook filterHook;
-
-  public SentryHiveAuthorizerImpl(SentryHiveAccessController accessController) {
+  public SentryHiveAuthorizerImpl(SentryHiveAccessController accessController,
+      SentryHiveAuthorizationValidator authValidator) {
     this.accessController = accessController;
-    this.filterHook = new SentryMetaStoreFilterHook(null);
+    this.authValidator = authValidator;
   }
 
   @Override
@@ -123,24 +121,16 @@ public class SentryHiveAuthorizerImpl extends AbstractHiveAuthorizer {
   public void checkPrivileges(HiveOperationType hiveOpType, List<HivePrivilegeObject> inputsHObjs,
       List<HivePrivilegeObject> outputHObjs, HiveAuthzContext context)
       throws HiveAuthzPluginException, HiveAccessControlException {
-    // Nothing to do there. Privileges are checked on the Semantic hooks
+    // The privileges for a query are checked on the Semantic hooks (HiveAuthzBindingHook) instead
+    // because of lack of information that Hive pass as parameters on this method.
+    // TODO: This will be fixed as part of SENTRY-1957
+    // authValidator.checkPrivileges(hiveOpType, inputsHObjs, outputHObjs, context);
   }
 
   @Override
   public List<HivePrivilegeObject> filterListCmdObjects(List<HivePrivilegeObject> listObjs,
       HiveAuthzContext context) throws HiveAuthzPluginException, HiveAccessControlException {
-    if (listObjs == null || listObjs.size() == 0) {
-      return listObjs;
-    }
-
-    switch (listObjs.get(0).getType()) {
-      case DATABASE:
-        return filterDbs(listObjs);
-      case TABLE_OR_VIEW:
-        return filterTables(listObjs);
-      default:
-        return listObjs;
-    }
+    return authValidator.filterListCmdObjects(listObjs, context);
   }
 
   @Override
@@ -173,44 +163,6 @@ public class SentryHiveAuthorizerImpl extends AbstractHiveAuthorizer {
   @Override
   public HiveAuthorizationTranslator getHiveAuthorizationTranslator() throws HiveAuthzPluginException {
     return hiveTranslator;
-  }
-
-  private List<HivePrivilegeObject> filterDbs(List<HivePrivilegeObject> listObjs) {
-    List<String> dbList = new ArrayList<>(listObjs.size());
-    for (HivePrivilegeObject o : listObjs) {
-      dbList.add(o.getDbname());
-    }
-
-    List<String> filterDbList = filterHook.filterDatabases(dbList);
-    List<HivePrivilegeObject> filterObjs = new ArrayList<>(filterDbList.size());
-    for (String db : filterDbList) {
-      filterObjs.add(new HivePrivilegeObject(HivePrivilegeObjectType.DATABASE, db, db));
-    }
-
-    return filterObjs;
-  }
-
-  private List<HivePrivilegeObject> filterTables(List<HivePrivilegeObject> listObjs) {
-    if (listObjs == null || listObjs.size() == 0) {
-      return listObjs;
-    }
-
-    List<String> tableList = new ArrayList<>(listObjs.size());
-    for (HivePrivilegeObject o : listObjs) {
-      tableList.add(o.getObjectName());
-    }
-
-    String db = listObjs.get(0).getDbname();
-
-    List<String> filterTableList =
-        filterHook.filterTableNames(db, tableList);
-
-    List<HivePrivilegeObject> filterObjs = new ArrayList<>(filterTableList.size());
-    for (String table : filterTableList) {
-      filterObjs.add(new HivePrivilegeObject(HivePrivilegeObjectType.TABLE_OR_VIEW, db, table));
-    }
-
-    return filterObjs;
   }
 
   protected static HivePrivilegeObjectType getPrivObjectType(
