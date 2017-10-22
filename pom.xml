@@ -74,7 +74,7 @@ limitations under the License.
     <hive.version>2.0.0</hive.version>
     <jackson.version>1.8.8</jackson.version>
     <jdo-api.version>3.0.1</jdo-api.version>
-    <jettyVersion>8.1.19.v20160209</jettyVersion>
+    <jetty.version>9.3.21.v20170918</jetty.version>
     <joda-time.version>2.5</joda-time.version>
     <junit.version>4.10</junit.version>
     <kafka.version>0.11.0.1</kafka.version>
@@ -270,6 +270,12 @@ limitations under the License.
         <groupId>org.apache.hive</groupId>
         <artifactId>hive-common</artifactId>
         <version>${hive.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.eclipse.jetty.aggregate</groupId>
+            <artifactId>jetty-all</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.apache.hive.hcatalog</groupId>
@@ -285,6 +291,12 @@ limitations under the License.
         <groupId>org.apache.hive</groupId>
         <artifactId>hive-metastore</artifactId>
         <version>${hive.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.eclipse.jetty.aggregate</groupId>
+            <artifactId>jetty-all</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.apache.hive</groupId>
@@ -343,6 +355,12 @@ limitations under the License.
         <groupId>org.apache.hive</groupId>
         <artifactId>hive-service</artifactId>
         <version>${hive.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.eclipse.jetty.aggregate</groupId>
+            <artifactId>jetty-all</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.apache.hive</groupId>
@@ -610,12 +628,12 @@ limitations under the License.
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-server</artifactId>
-        <version>${jettyVersion}</version>
+        <version>${jetty.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-servlet</artifactId>
-        <version>${jettyVersion}</version>
+        <version>${jetty.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

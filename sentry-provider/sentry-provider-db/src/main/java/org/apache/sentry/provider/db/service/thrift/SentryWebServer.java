@@ -33,19 +33,23 @@ import java.util.Set;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
+import javax.servlet.DispatcherType;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authentication.server.AuthenticationFilter;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
-import org.eclipse.jetty.server.DispatcherType;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -66,7 +70,7 @@ public class SentryWebServer {
     server = new Server();
 
     // Create a channel connector for "http/https" requests
-    SelectChannelConnector connector = new SelectChannelConnector();
+    ServerConnector connector;
     if (conf.getBoolean(ServerConfig.SENTRY_WEB_USE_SSL, false)) {
       SslContextFactory sslContextFactory = new SslContextFactory();
       sslContextFactory.setKeyStorePath(conf.get(ServerConfig.SENTRY_WEB_SSL_KEYSTORE_PATH, ""));
@@ -79,12 +83,24 @@ public class SentryWebServer {
           .split(Strings.nullToEmpty(conf.get(ServerConfig.SENTRY_SSL_PROTOCOL_BLACKLIST))));
       sslContextFactory.addExcludeProtocols(moreExcludedSSLProtocols.toArray(
           new String[moreExcludedSSLProtocols.size()]));
-      connector = new SslSelectChannelConnector(sslContextFactory);
+
+      HttpConfiguration httpConfiguration = new HttpConfiguration();
+      httpConfiguration.setSecurePort(port);
+      httpConfiguration.setSecureScheme("https");
+      httpConfiguration.addCustomizer(new SecureRequestCustomizer());
+
+      connector = new ServerConnector(
+          server,
+          new SslConnectionFactory(sslContextFactory, "http/1.1"),
+          new HttpConnectionFactory(httpConfiguration));
+
       LOGGER.info("Now using SSL mode.");
+    } else {
+      connector = new ServerConnector(server, new HttpConnectionFactory());
     }
 
     connector.setPort(port);
-    server.addConnector(connector);
+    server.setConnectors(new Connector[] { connector });
 
     ServletContextHandler servletContextHandler = new ServletContextHandler();
     ServletHolder servletHolder = new ServletHolder(AdminServlet.class);
