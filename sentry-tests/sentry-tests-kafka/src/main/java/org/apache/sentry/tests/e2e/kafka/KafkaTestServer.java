@@ -92,6 +92,7 @@ public class KafkaTestServer {
         props.put("delete.topic.enable", false);
         props.put("controlled.shutdown.retry.backoff.ms", "100");
         props.put("port", kafkaPort);
+        props.put("offsets.topic.replication.factor", "1");
         props.put("authorizer.class.name", "org.apache.sentry.kafka.authorizer.SentryKafkaAuthorizer");
         props.put("sentry.kafka.site.url", "file://" + sentrySitePath.getAbsolutePath());
         props.put("allow.everyone.if.no.acl.found", "true");

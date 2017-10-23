@@ -66,12 +66,12 @@ limitations under the License.
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-servlet</artifactId>
-      <version>8.1.10.v20130312</version>
+      <version>${jetty.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
-       <version>8.1.10.v20130312</version>
+       <version>${jetty.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.sentry</groupId>
