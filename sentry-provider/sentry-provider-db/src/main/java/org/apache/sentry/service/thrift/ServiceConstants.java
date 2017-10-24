@@ -289,6 +289,9 @@ public class ServiceConstants {
     public static final String CACHE_UPDATE_FAILURES_BEFORE_PRIV_REVOKE = "sentry.provider.backend.generic.cache.update.failures.count";
     public static final int CACHE_UPDATE_FAILURES_BEFORE_PRIV_REVOKE_DEFAULT = 3;
     public static final String PRIVILEGE_CONVERTER = "sentry.provider.backend.generic.privilege.converter";
+
+    public static final String COMPONENT_TYPE = "sentry.provider.backend.generic.component-type";
+    public static final String SERVICE_NAME = "sentry.provider.backend.generic.service-name";
   }
 
   /**

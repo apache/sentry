@@ -22,6 +22,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Set;
 
+import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.core.common.exception.SentryUserException;
@@ -61,6 +62,8 @@ public class SentryGenericProviderBackend extends CacheProvider implements Provi
     this.conf = conf;
     this.enableCaching = conf.getBoolean(ServiceConstants.ClientConfig.ENABLE_CACHING, ServiceConstants.ClientConfig.ENABLE_CACHING_DEFAULT);
     this.privilegeConverter = conf.get(ServiceConstants.ClientConfig.PRIVILEGE_CONVERTER);
+    this.setServiceName(conf.get(ServiceConstants.ClientConfig.SERVICE_NAME));
+    this.setComponentType(conf.get(ServiceConstants.ClientConfig.COMPONENT_TYPE));
   }
 
   @Override
@@ -68,6 +71,10 @@ public class SentryGenericProviderBackend extends CacheProvider implements Provi
     if (initialized) {
       throw new IllegalStateException("SentryGenericProviderBackend has already been initialized, cannot be initialized twice");
     }
+
+    Preconditions.checkNotNull(serviceName, "Service name is not defined. Use configuration parameter: " + conf.get(ServiceConstants.ClientConfig.SERVICE_NAME));
+    Preconditions.checkNotNull(componentType, "Component type is not defined. Use configuration parameter: " + conf.get(ServiceConstants.ClientConfig.COMPONENT_TYPE));
+
     if (enableCaching) {
       if (privilegeConverter == null) {
         throw new SentryConfigurationException(ServiceConstants.ClientConfig.PRIVILEGE_CONVERTER + " not configured.");
