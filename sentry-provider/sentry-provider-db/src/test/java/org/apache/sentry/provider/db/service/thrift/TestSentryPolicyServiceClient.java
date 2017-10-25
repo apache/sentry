@@ -51,11 +51,11 @@ public class TestSentryPolicyServiceClient extends SentryServiceIntegrationBase 
 
         client.dropRoleIfExists(requestorUserName, roleName);
         client.createRole(requestorUserName, roleName);
-        client.listRoles(requestorUserName);
+        client.listAllRoles(requestorUserName);
         stopSentryService();
         server = SentryServiceFactory.create(conf);
         startSentryService();
-        client.listRoles(requestorUserName);
+        client.listAllRoles(requestorUserName);
         client.dropRole(requestorUserName, roleName);
       }
     });

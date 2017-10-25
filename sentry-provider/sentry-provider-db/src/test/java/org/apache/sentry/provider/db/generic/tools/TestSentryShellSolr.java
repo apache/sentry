@@ -263,7 +263,7 @@ public class TestSentryShellSolr extends SentryGenericServiceIntegrationBase {
             privs[ i ], "-conf",
             confPath.getAbsolutePath(), "-t", "solr" };
           SentryShellGeneric.main(args);
-          Set<TSentryPrivilege> privileges = client.listPrivilegesByRoleName(requestorName,
+          Set<TSentryPrivilege> privileges = client.listAllPrivilegesByRoleName(requestorName,
             TEST_ROLE_NAME_1, SOLR, service);
           assertEquals("Incorrect number of privileges", privs.length - (i + 1), privileges.size());
         }

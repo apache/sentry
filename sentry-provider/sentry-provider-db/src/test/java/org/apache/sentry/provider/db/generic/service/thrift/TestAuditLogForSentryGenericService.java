@@ -139,7 +139,7 @@ public class TestAuditLogForSentryGenericService extends SentryServiceIntegratio
         }
 
         // test the audit log for add role to group, success
-        client.addRoleToGroups(requestorUserName, roleName, COMPONENT,
+        client.grantRoleToGroups(requestorUserName, roleName, COMPONENT,
             Sets.newHashSet(testGroupName));
         fieldValueMap.clear();
         fieldValueMap.put(Constants.LOG_FIELD_OPERATION, Constants.OPERATION_ADD_ROLE);
@@ -152,7 +152,7 @@ public class TestAuditLogForSentryGenericService extends SentryServiceIntegratio
 
         // test the audit log for add role to group, failed
         try {
-          client.addRoleToGroups(requestorUserName, "invalidRole", COMPONENT,
+          client.grantRoleToGroups(requestorUserName, "invalidRole", COMPONENT,
               Sets.newHashSet(testGroupName));
           fail("Exception should have been thrown");
         } catch (Exception e) {
@@ -228,7 +228,7 @@ public class TestAuditLogForSentryGenericService extends SentryServiceIntegratio
         }
 
         // test the audit log for delete role from group, success
-        client.deleteRoleToGroups(requestorUserName, roleName, COMPONENT,
+        client.revokeRoleFromGroups(requestorUserName, roleName, COMPONENT,
             Sets.newHashSet(testGroupName));
         fieldValueMap.clear();
         fieldValueMap.put(Constants.LOG_FIELD_OPERATION, Constants.OPERATION_DELETE_ROLE);
@@ -240,7 +240,7 @@ public class TestAuditLogForSentryGenericService extends SentryServiceIntegratio
         assertAuditLog(fieldValueMap);
         // test the audit log for delete role from group, failed
         try {
-          client.deleteRoleToGroups(requestorUserName, "invalidRole", COMPONENT,
+          client.revokeRoleFromGroups(requestorUserName, "invalidRole", COMPONENT,
               Sets.newHashSet(testGroupName));
           fail("Exception should have been thrown");
         } catch (Exception e) {

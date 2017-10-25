@@ -106,7 +106,7 @@ public class TestSentryShellHive extends SentryServiceIntegrationBase {
         SentryShellHive.main(args);
 
         // validate the result
-        Set<TSentryRole> roles = client.listRoles(requestorName);
+        Set<TSentryRole> roles = client.listAllRoles(requestorName);
         assertEquals("Incorrect number of roles", 0, roles.size());
       }
     });

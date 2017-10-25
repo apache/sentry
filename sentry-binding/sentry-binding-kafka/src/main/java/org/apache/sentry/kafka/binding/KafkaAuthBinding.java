@@ -291,7 +291,7 @@ public class KafkaAuthBinding {
     execute(new Command<Void>() {
       @Override
       public Void run(SentryGenericServiceClient client) throws Exception {
-        client.addRoleToGroups(
+        client.grantRoleToGroups(
             requestorName, role, COMPONENT_NAME, groups);
         return null;
       }
@@ -432,7 +432,7 @@ public class KafkaAuthBinding {
       @Override
       public Void run(SentryGenericServiceClient client) throws Exception {
         for (String role : roles) {
-          tSentryPrivileges.addAll(client.listPrivilegesByRoleName(
+          tSentryPrivileges.addAll(client.listAllPrivilegesByRoleName(
                 requestorName, role, COMPONENT_NAME, instanceName));
         }
         return null;
@@ -501,7 +501,7 @@ public class KafkaAuthBinding {
       @Override
       public Void run(SentryGenericServiceClient client) throws Exception {
         for (String role : roles) {
-          final Set<TSentryPrivilege> rolePrivileges = client.listPrivilegesByRoleName(
+          final Set<TSentryPrivilege> rolePrivileges = client.listAllPrivilegesByRoleName(
               requestorName, role, COMPONENT_NAME, instanceName);
           final scala.collection.immutable.Set<TSentryPrivilege> rolePrivilegesScala =
               scala.collection.JavaConverters.asScalaSetConverter(rolePrivileges).asScala().toSet();

@@ -318,7 +318,7 @@ public class TestConcurrentClients extends AbstractTestWithStaticConfiguration {
             while (Long.compare(elapsedTime, SENTRY_CLIENT_TEST_DURATION_MS) <= 0) {
               LOGGER.info("Test role " + test_role + " runs " + elapsedTime + " ms.");
               client.createRole(ADMIN1, test_role);
-              client.listRoles(ADMIN1);
+              client.listAllRoles(ADMIN1);
               client.grantServerPrivilege(ADMIN1, test_role, "server1", false);
               client.listAllPrivilegesByRoleName(ADMIN1, test_role);
               client.dropRole(ADMIN1, test_role);

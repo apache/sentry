@@ -180,7 +180,7 @@ public class AbstractKafkaSentryTestBase {
     try (SentryGenericServiceClient sentryClient = getSentryClient()){
       // grant all privilege to admin user
       sentryClient.createRoleIfNotExist(ADMIN_USER, ADMIN_ROLE, COMPONENT);
-      sentryClient.addRoleToGroups(ADMIN_USER, ADMIN_ROLE, COMPONENT, Sets.newHashSet(ADMIN_GROUP));
+      sentryClient.grantRoleToGroups(ADMIN_USER, ADMIN_ROLE, COMPONENT, Sets.newHashSet(ADMIN_GROUP));
       final ArrayList<TAuthorizable> authorizables = new ArrayList<TAuthorizable>();
       Host host = new Host(InetAddress.getLocalHost().getHostName());
       authorizables.add(new TAuthorizable(host.getTypeName(), host.getName()));

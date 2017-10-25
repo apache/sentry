@@ -201,7 +201,7 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
         @Override
         public void runTestAsSubject() throws Exception {
           if (client != null) {
-            Set<TSentryRole> tRoles = client.listRoles(ADMIN_USER);
+            Set<TSentryRole> tRoles = client.listAllRoles(ADMIN_USER);
             if (tRoles != null) {
               for (TSentryRole tRole : tRoles) {
                 client.dropRole(ADMIN_USER, tRole.getRoleName());

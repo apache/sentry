@@ -52,11 +52,11 @@ public class TestSentryServiceClientPool extends SentryServiceIntegrationBase {
 
         client.dropRoleIfExists(requestorUserName, roleName);
         client.createRole(requestorUserName, roleName);
-        client.listRoles(requestorUserName);
+        client.listAllRoles(requestorUserName);
         stopSentryService();
         server = SentryServiceFactory.create(conf);
         startSentryService();
-        client.listRoles(requestorUserName);
+        client.listAllRoles(requestorUserName);
         client.dropRole(requestorUserName, roleName);
       }
     });
@@ -85,7 +85,7 @@ public class TestSentryServiceClientPool extends SentryServiceIntegrationBase {
               @Override
               public Boolean run() throws Exception {
                 try {
-                  client.listRoles(ADMIN_USER);
+                  client.listAllRoles(ADMIN_USER);
                   return true;
                 } catch (SentryUserException sue) {
                   return false;

@@ -311,7 +311,7 @@ public class TestAuthorize extends AbstractKafkaSentryTestBase {
     SentryGenericServiceClient sentryClient = getSentryClient();
     try {
       sentryClient.createRoleIfNotExist(ADMIN_USER, role, COMPONENT);
-      sentryClient.addRoleToGroups(ADMIN_USER, role, COMPONENT, Sets.newHashSet(group));
+      sentryClient.grantRoleToGroups(ADMIN_USER, role, COMPONENT, Sets.newHashSet(group));
 
       sentryClient.grantPrivilege(ADMIN_USER, role, COMPONENT,
               new TSentryPrivilege(COMPONENT, "kafka", authorizables,

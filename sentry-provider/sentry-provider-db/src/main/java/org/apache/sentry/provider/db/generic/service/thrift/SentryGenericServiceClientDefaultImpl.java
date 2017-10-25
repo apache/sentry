@@ -182,7 +182,7 @@ public class SentryGenericServiceClientDefaultImpl
   }
 
   /**
-   * add a sentry role to groups.
+   * Grant a sentry role to groups.
    *
    * @param requestorUserName: user on whose behalf the request is issued
    * @param roleName:          Name of the role
@@ -191,7 +191,7 @@ public class SentryGenericServiceClientDefaultImpl
    * @throws SentryUserException
    */
   @Override
-  public void addRoleToGroups(String requestorUserName, String roleName,
+  public void grantRoleToGroups(String requestorUserName, String roleName,
                               String component, Set<String> groups) throws SentryUserException {
     TAlterSentryRoleAddGroupsRequest request = new TAlterSentryRoleAddGroupsRequest();
     request.setProtocol_version(sentry_common_serviceConstants.TSENTRY_SERVICE_V2);
@@ -209,7 +209,7 @@ public class SentryGenericServiceClientDefaultImpl
   }
 
   /**
-   * delete a sentry role from groups.
+   * revoke a sentry role from groups.
    *
    * @param requestorUserName: user on whose behalf the request is issued
    * @param roleName:          Name of the role
@@ -218,7 +218,7 @@ public class SentryGenericServiceClientDefaultImpl
    * @throws SentryUserException
    */
   @Override
-  public void deleteRoleToGroups(String requestorUserName, String roleName,
+  public void revokeRoleFromGroups(String requestorUserName, String roleName,
                                  String component, Set<String> groups) throws SentryUserException {
     TAlterSentryRoleDeleteGroupsRequest request = new TAlterSentryRoleDeleteGroupsRequest();
     request.setProtocol_version(sentry_common_serviceConstants.TSENTRY_SERVICE_V2);
@@ -441,7 +441,7 @@ public class SentryGenericServiceClientDefaultImpl
   }
 
   @Override
-  public Set<TSentryPrivilege> listPrivilegesByRoleName(
+  public Set<TSentryPrivilege> listAllPrivilegesByRoleName(
     String requestorUserName, String roleName, String component,
     String serviceName) throws SentryUserException {
     return listPrivilegesByRoleName(requestorUserName, roleName, component, serviceName, null);
@@ -505,7 +505,7 @@ public class SentryGenericServiceClientDefaultImpl
    * @returns The mapping of authorize objects and TSentryPrivilegeMap(<role, set<privileges>).
    */
   @Override
-  public Map<String, TSentryPrivilegeMap> listPrivilegsbyAuthorizable(String component,
+  public Map<String, TSentryPrivilegeMap> listPrivilegesbyAuthorizable(String component,
                                                                       String serviceName, String requestorUserName, Set<String> authorizablesSet,
                                                                       Set<String> groups, ActiveRoleSet roleSet) throws SentryUserException {
 

@@ -106,7 +106,7 @@ public final class UpdatableCache implements TableCache, AutoCloseable {
       for (TSentryRole tSentryRole : tSentryRoles) {
         final String roleName = tSentryRole.getRoleName();
         final Set<TSentryPrivilege> tSentryPrivileges =
-                client.listPrivilegesByRoleName(requestor, roleName, componentType, serviceName);
+                client.listAllPrivilegesByRoleName(requestor, roleName, componentType, serviceName);
         for (String group : tSentryRole.getGroups()) {
           Set<String> currentPrivileges = tempCache.get(group, roleName);
           if (currentPrivileges == null) {

@@ -238,7 +238,7 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
   }
 
   @Override
-  public Set<TSentryRole> listRoles(String requestorUserName)
+  public Set<TSentryRole> listAllRoles(String requestorUserName)
     throws SentryUserException {
     return listRolesByGroupName(requestorUserName, null);
   }

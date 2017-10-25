@@ -156,7 +156,7 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
     List<String> roles = new ArrayList<String>();
     try {
       sentryClient = getSentryClient();
-      roles = convert2RoleList(sentryClient.listRoles(authenticator.getUserName()));
+      roles = convert2RoleList(sentryClient.listAllRoles(authenticator.getUserName()));
     } catch (SentryAccessDeniedException e) {
       HiveOperation hiveOp = HiveOperation.SHOW_ROLES;
       executeOnFailureHooks(hiveOp, e);

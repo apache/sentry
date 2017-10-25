@@ -76,7 +76,7 @@ public class HiveShellCommand implements ShellCommand {
   public List<String> listRoles(String requestorName, String roleName, String group) throws SentryUserException {
     Set<TSentryRole> roles;
     if (StringUtils.isEmpty(group)) {
-      roles = client.listRoles(requestorName);
+      roles = client.listAllRoles(requestorName);
     } else {
       roles = client.listRolesByGroupName(requestorName, group);
     }

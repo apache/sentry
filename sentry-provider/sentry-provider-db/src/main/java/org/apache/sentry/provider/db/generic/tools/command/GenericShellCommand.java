@@ -64,7 +64,7 @@ public class GenericShellCommand implements ShellCommand {
 
   public void grantRoleToGroups(String requestorName, String roleName, String groups) throws SentryUserException {
     Set<String> groupSet = Sets.newHashSet(groups.split(SentryShellCommon.GROUP_SPLIT_CHAR));
-    client.addRoleToGroups(requestorName, roleName, component, groupSet);
+    client.grantRoleToGroups(requestorName, roleName, component, groupSet);
   }
 
   public void revokePrivilegeFromRole(String requestorName, String roleName, String privilege) throws SentryUserException {
@@ -74,7 +74,7 @@ public class GenericShellCommand implements ShellCommand {
 
   public void revokeRoleFromGroups(String requestorName, String roleName, String groups) throws SentryUserException {
     Set<String> groupSet = Sets.newHashSet(groups.split(SentryShellCommon.GROUP_SPLIT_CHAR));
-    client.deleteRoleToGroups(requestorName, roleName, component, groupSet);
+    client.revokeRoleFromGroups(requestorName, roleName, component, groupSet);
   }
 
   public List<String> listRoles(String requestorName, String roleName, String group) throws SentryUserException {
@@ -97,7 +97,7 @@ public class GenericShellCommand implements ShellCommand {
 
   public List<String> listPrivileges(String requestorName, String roleName) throws SentryUserException {
     Set<TSentryPrivilege> privileges = client
-        .listPrivilegesByRoleName(requestorName, roleName, component, serviceName);
+        .listAllPrivilegesByRoleName(requestorName, roleName, component, serviceName);
 
     List<String> result = new ArrayList<>();
     if (privileges != null) {
