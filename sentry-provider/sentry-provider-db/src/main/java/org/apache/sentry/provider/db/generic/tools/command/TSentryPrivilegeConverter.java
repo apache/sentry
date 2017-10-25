@@ -17,6 +17,7 @@
  */
 package org.apache.sentry.provider.db.generic.tools.command;
 
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
 
 public interface TSentryPrivilegeConverter {
@@ -24,7 +25,7 @@ public interface TSentryPrivilegeConverter {
   /**
    * Convert string to privilege
    */
-  TSentryPrivilege fromString(String privilegeStr) throws Exception;
+  TSentryPrivilege fromString(String privilegeStr) throws SentryUserException;
 
   /**
    * Convert privilege to string
