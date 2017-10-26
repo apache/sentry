@@ -204,6 +204,18 @@ public class AbstractKafkaSentryTestBase {
     }
   }
 
+  public static void assertCausedMessages(Exception e, String message1, String message2) {
+    if (e.getCause() != null) {
+      assertTrue("Expected message: " + message1 + " OR " + message2 ,
+              (e.getCause().getMessage().contains(message1) ||
+                      e.getCause().getMessage().contains(message2)));
+    } else {
+      assertTrue("Expected message: " + message1 + " OR " + message2 + ", but got: " + e.getMessage(),
+              (e.getMessage().contains(message1) ||
+                      e.getMessage().contains(message2)));
+    }
+  }
+
   private static Configuration getClientConfig() {
     Configuration conf = new Configuration();
     /** set the Sentry client configuration for Kafka Service integration */

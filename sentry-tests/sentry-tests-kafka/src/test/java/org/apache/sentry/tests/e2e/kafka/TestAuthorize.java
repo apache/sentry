@@ -281,7 +281,8 @@ public class TestAuthorize extends AbstractKafkaSentryTestBase {
       testConsume(TOPIC_NAME, StaticUserGroupRole.USER_1);
       Assert.fail("user1 must not have been authorized to read consumer group sentrykafkaconsumer.");
     } catch (Exception ex) {
-      assertCausedMessage(ex, "Not authorized to access topics: [" + TOPIC_NAME + "]");
+      assertCausedMessages(ex, "Not authorized to access group: sentrykafkaconsumer",
+              "Not authorized to access topics: [" + TOPIC_NAME + "]");
     }
 
   /*
