@@ -279,7 +279,7 @@ public class AbstractSolrSentryTestWithDbProvider extends AbstractSolrSentryTest
 
     for (int i = 0; i < roles.length; i++) {
       client.createRole(ADMIN_USER, roles[i], COMPONENT_SOLR);
-      client.addRoleToGroups(ADMIN_USER, roles[i], COMPONENT_SOLR, Sets.newHashSet(groups[i]));
+      client.grantRoleToGroups(ADMIN_USER, roles[i], COMPONENT_SOLR, Sets.newHashSet(groups[i]));
     }
 
     /**
@@ -287,7 +287,7 @@ public class AbstractSolrSentryTestWithDbProvider extends AbstractSolrSentryTest
      * grant ALL privilege on collection ALL to role admin
      */
     client.createRole(ADMIN_USER, ADMIN_ROLE, COMPONENT_SOLR);
-    client.addRoleToGroups(ADMIN_USER, ADMIN_ROLE, COMPONENT_SOLR, Sets.newHashSet(ADMIN_GROUP));
+    client.grantRoleToGroups(ADMIN_USER, ADMIN_ROLE, COMPONENT_SOLR, Sets.newHashSet(ADMIN_GROUP));
     grantCollectionPrivilege(SearchConstants.ALL, ADMIN_USER, ADMIN_ROLE, SearchConstants.ALL);
   }
 

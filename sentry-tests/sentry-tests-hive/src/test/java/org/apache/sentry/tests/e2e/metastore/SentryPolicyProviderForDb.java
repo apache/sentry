@@ -73,7 +73,7 @@ public class SentryPolicyProviderForDb extends PolicyFile {
     }
 
     // remove existing metadata
-    for (TSentryRole tRole : sentryClient.listRoles(StaticUserGroup.ADMIN1)) {
+    for (TSentryRole tRole : sentryClient.listAllRoles(StaticUserGroup.ADMIN1)) {
       sentryClient.dropRole(StaticUserGroup.ADMIN1, tRole.getRoleName());
     }
 

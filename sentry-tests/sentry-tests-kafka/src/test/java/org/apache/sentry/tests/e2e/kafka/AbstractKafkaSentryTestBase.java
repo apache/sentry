@@ -180,7 +180,7 @@ public class AbstractKafkaSentryTestBase {
     try (SentryGenericServiceClient sentryClient = getSentryClient()){
       // grant all privilege to admin user
       sentryClient.createRoleIfNotExist(ADMIN_USER, ADMIN_ROLE, COMPONENT);
-      sentryClient.addRoleToGroups(ADMIN_USER, ADMIN_ROLE, COMPONENT, Sets.newHashSet(ADMIN_GROUP));
+      sentryClient.grantRoleToGroups(ADMIN_USER, ADMIN_ROLE, COMPONENT, Sets.newHashSet(ADMIN_GROUP));
       final ArrayList<TAuthorizable> authorizables = new ArrayList<TAuthorizable>();
       Host host = new Host(InetAddress.getLocalHost().getHostName());
       authorizables.add(new TAuthorizable(host.getTypeName(), host.getName()));
@@ -201,6 +201,18 @@ public class AbstractKafkaSentryTestBase {
       assertTrue("Expected message: " + message + ", but got: " + e.getCause().getMessage(), e.getCause().getMessage().contains(message));
     } else {
       assertTrue("Expected message: " + message + ", but got: " + e.getMessage(), e.getMessage().contains(message));
+    }
+  }
+
+  public static void assertCausedMessages(Exception e, String message1, String message2) {
+    if (e.getCause() != null) {
+      assertTrue("Expected message: " + message1 + " OR " + message2 ,
+              (e.getCause().getMessage().contains(message1) ||
+                      e.getCause().getMessage().contains(message2)));
+    } else {
+      assertTrue("Expected message: " + message1 + " OR " + message2 + ", but got: " + e.getMessage(),
+              (e.getMessage().contains(message1) ||
+                      e.getMessage().contains(message2)));
     }
   }
 

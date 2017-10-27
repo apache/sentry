@@ -38,6 +38,7 @@ import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageDeser
 import org.apache.sentry.core.common.exception.SentryInvalidHMSEventException;
 import org.apache.sentry.core.common.exception.SentryInvalidInputException;
 import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
+import org.apache.sentry.core.common.utils.PathUtils;
 import org.apache.sentry.hdfs.PathsUpdate;
 import org.apache.sentry.hdfs.PermissionsUpdate;
 import org.apache.sentry.hdfs.SentryMalformedPathException;
@@ -111,7 +112,7 @@ final class NotificationProcessor {
    * @return list of components, e.g. [foo, bar]
    */
   private static List<String> splitPath(String path) {
-    return (Lists.newArrayList(path.split("/")));
+    return Lists.newArrayList(PathUtils.splitPath(path));
   }
 
   /**

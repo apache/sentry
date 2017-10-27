@@ -265,7 +265,7 @@ public class TestSentryShellKafka extends SentryGenericServiceIntegrationBase {
             privs[ i ], "-conf",
             confPath.getAbsolutePath(), "-t", "kafka" };
           SentryShellGeneric.main(args);
-          Set<TSentryPrivilege> privileges = client.listPrivilegesByRoleName(requestorName,
+          Set<TSentryPrivilege> privileges = client.listAllPrivilegesByRoleName(requestorName,
             TEST_ROLE_NAME_1, KAFKA, service);
           assertEquals("Incorrect number of privileges. Received privileges: " + Arrays.toString(privileges.toArray()), privs.length - (i + 1), privileges.size());
         }

@@ -42,14 +42,30 @@ public class TestPathsUpdate {
 
   @Test
   public void testPositiveParsePath() throws SentryMalformedPathException {
-    String result = PathsUpdate.parsePath("hdfs://hostname.test.com:8020/path");
-    Assert.assertTrue("Parsed path is unexpected", result.equals("path"));
-
-    result = PathsUpdate.parsePath("hdfs://hostname.test.com/path");
-    Assert.assertTrue("Parsed path is unexpected", result.equals("path"));
-
-    result = PathsUpdate.parsePath("hdfs:///path");
-    Assert.assertTrue("Parsed path is unexpected", result.equals("path"));
+    String urls[] = {
+      "hdfs://hostname.test.com:8020/path1/path2/path3",
+      // double slashes
+      "hdfs://hostname.test.com:8020//path1/path2/path3",
+      "hdfs://hostname.test.com:8020/path1//path2/path3",
+      "hdfs://hostname.test.com:8020/path1/path2//path3",
+      "hdfs://hostname.test.com:8020/path1/path2//path3",
+      "hdfs://hostname.test.com:8020/path1/path2//path3//",
+      // triple slashes
+      "hdfs://hostname.test.com:8020///path1/path2/path3",
+      "hdfs://hostname.test.com:8020/path1///path2/path3",
+      "hdfs://hostname.test.com:8020/path1/path2///path3",
+      "hdfs://hostname.test.com:8020/path1/path2/path3///",
+      // no port
+      "hdfs://hostname.test.com/path1/path2/path3",
+      // no host
+      "hdfs:///path1/path2/path3"
+    };
+    String path = "path1/path2/path3";
+      
+    for (String url : urls) {
+      String result = PathsUpdate.parsePath(url);
+      Assert.assertEquals("Unexpected path in " + url, path, result);
+    }
   }
 
   @Test(expected = SentryMalformedPathException.class)

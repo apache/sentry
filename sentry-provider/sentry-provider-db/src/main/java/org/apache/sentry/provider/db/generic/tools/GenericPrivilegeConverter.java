@@ -29,6 +29,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.sentry.core.common.Authorizable;
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.utils.KeyValue;
 import org.apache.sentry.core.common.utils.PolicyFileConstants;
 import org.apache.sentry.core.common.utils.SentryConstants;
@@ -70,7 +71,7 @@ public class GenericPrivilegeConverter implements TSentryPrivilegeConverter {
     this.validate = validate;
   }
 
-  public TSentryPrivilege fromString(String privilegeStr) throws Exception {
+  public TSentryPrivilege fromString(String privilegeStr) throws SentryUserException {
     privilegeStr = parsePrivilegeString(privilegeStr);
     if (validate) {
       validatePrivilegeHierarchy(privilegeStr);
@@ -145,7 +146,7 @@ public class GenericPrivilegeConverter implements TSentryPrivilegeConverter {
     return privilegeStr;
   }
 
-  private void validatePrivilegeHierarchy(String privilegeStr) throws Exception {
+  private void validatePrivilegeHierarchy(String privilegeStr) throws SentryUserException {
     List<PrivilegeValidator> validators = getPrivilegeValidators();
     PrivilegeValidatorContext context = new PrivilegeValidatorContext(null, privilegeStr);
     for (PrivilegeValidator validator : validators) {
@@ -157,7 +158,7 @@ public class GenericPrivilegeConverter implements TSentryPrivilegeConverter {
     }
   }
 
-  private List<PrivilegeValidator> getPrivilegeValidators() throws Exception {
+  private List<PrivilegeValidator> getPrivilegeValidators() throws SentryUserException {
     if (AuthorizationComponent.KAFKA.equals(component)) {
       return KafkaPrivilegeModel.getInstance().getPrivilegeValidators();
     } else if ("SOLR".equals(component)) {
@@ -166,10 +167,10 @@ public class GenericPrivilegeConverter implements TSentryPrivilegeConverter {
       return SqoopPrivilegeModel.getInstance().getPrivilegeValidators(service);
     }
 
-    throw new Exception("Invalid component specified for GenericPrivilegeCoverter: " + component);
+    throw new SentryUserException("Invalid component specified for GenericPrivilegeCoverter: " + component);
   }
 
-  private Authorizable getAuthorizable(KeyValue keyValue) throws Exception {
+  private Authorizable getAuthorizable(KeyValue keyValue) throws SentryUserException {
     if (AuthorizationComponent.KAFKA.equals(component)) {
       return KafkaModelAuthorizables.from(keyValue);
     } else if ("SOLR".equals(component)) {
@@ -178,7 +179,7 @@ public class GenericPrivilegeConverter implements TSentryPrivilegeConverter {
       return SqoopModelAuthorizables.from(keyValue);
     }
 
-    throw new Exception("Invalid component specified for GenericPrivilegeCoverter: " + component);
+    throw new SentryUserException("Invalid component specified for GenericPrivilegeCoverter: " + component);
   }
 
 }

@@ -211,4 +211,13 @@ public class PathUtils {
     return uriPath.toUri().toString();
   }
 
+  /**
+   * Split path into elements.
+   * May evolve to do something smarter, e.g. path canonicalization,
+   * but for now simple split on "/" is sufficient.
+   */
+  public static String[] splitPath(String path) {
+    return (path != null) ? path.split("/+") : null;
+  }
+
 }

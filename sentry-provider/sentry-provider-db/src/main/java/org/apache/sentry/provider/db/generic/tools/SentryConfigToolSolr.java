@@ -124,7 +124,7 @@ public class SentryConfigToolSolr extends SentryConfigToolCommon {
         }
         LOGGER.info(dryRunMessage(importPolicy) + "Adding role: " + roleName.toLowerCase(Locale.US) + " to group: " + groupName);
         if (importPolicy) {
-          client.addRoleToGroups(requestorName, roleName, component, Sets.newHashSet(groupName));
+          client.grantRoleToGroups(requestorName, roleName, component, Sets.newHashSet(groupName));
         }
 
         for (String permission : privileges) {

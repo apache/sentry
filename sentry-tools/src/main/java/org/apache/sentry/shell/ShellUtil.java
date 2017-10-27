@@ -50,7 +50,7 @@ class ShellUtil {
         Set<TSentryRole> roles = null;
         try {
             if (StringUtils.isEmpty(group)) {
-                roles = sentryClient.listRoles(authUser);
+                roles = sentryClient.listAllRoles(authUser);
             } else {
                 roles = sentryClient.listRolesByGroupName(authUser, group);
             }
@@ -96,7 +96,7 @@ class ShellUtil {
         Set<TSentryRole> roles = null;
 
         try {
-            roles = sentryClient.listRoles(authUser);
+            roles = sentryClient.listAllRoles(authUser);
         } catch (SentryUserException e) {
             System.out.println("Error reading roles: " + e.toString());
         }
@@ -125,7 +125,7 @@ class ShellUtil {
         Set<TSentryRole> roles = null;
 
         try {
-            roles = sentryClient.listRoles(authUser);
+            roles = sentryClient.listAllRoles(authUser);
         } catch (SentryUserException e) {
             System.out.println("Error reading roles: " + e.toString());
         }

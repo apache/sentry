@@ -62,7 +62,7 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
 
         client.createRole(requestorUserName, roleName);
 
-        Set<TSentryRole> roles = client.listRoles(requestorUserName);
+        Set<TSentryRole> roles = client.listAllRoles(requestorUserName);
         assertEquals("Incorrect number of roles", 1, roles.size());
 
         for (TSentryRole role:roles) {
@@ -403,7 +403,7 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
         client.dropRoleIfExists(requestorUserName, roleName);
         client.createRole(requestorUserName, roleName);
 
-        Set<TSentryRole> roles = client.listRoles(requestorUserName);
+        Set<TSentryRole> roles = client.listAllRoles(requestorUserName);
         assertEquals("Incorrect number of roles", 1, roles.size());
 
         client.grantRoleToGroup(requestorUserName, groupName, roleName);
@@ -437,7 +437,7 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
         client.dropRoleIfExists(requestorUserName, roleName);
         client.createRole(requestorUserName, roleName);
 
-        Set<TSentryRole> roles = client.listRoles(requestorUserName);
+        Set<TSentryRole> roles = client.listAllRoles(requestorUserName);
         assertEquals("Incorrect number of roles", 1, roles.size());
 
         client.grantDatabasePrivilege(requestorUserName, roleName, server, db, AccessConstants.ALL);
@@ -466,7 +466,7 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
         // Creating associated role
         client.dropRoleIfExists(requestorUserName, roleName);
         client.createRole(requestorUserName, roleName);
-        Set<TSentryRole> roles = client.listRoles(requestorUserName);
+        Set<TSentryRole> roles = client.listAllRoles(requestorUserName);
         assertEquals("Incorrect number of roles", 1, roles.size());
 
         client.grantURIPrivilege(requestorUserName, roleName, server, uri);

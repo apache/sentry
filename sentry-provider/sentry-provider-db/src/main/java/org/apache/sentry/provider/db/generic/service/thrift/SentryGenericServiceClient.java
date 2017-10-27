@@ -54,25 +54,25 @@ public interface SentryGenericServiceClient extends AutoCloseable {
       String component) throws SentryUserException;
 
   /**
-   * add a sentry role to groups.
+   * Grant a sentry role to groups.
    * @param requestorUserName: user on whose behalf the request is issued
    * @param roleName: Name of the role
    * @param component: The request is issued to which component
    * @param groups: The name of groups
    * @throws SentryUserException
    */
-  void addRoleToGroups(String requestorUserName, String roleName,
+  void grantRoleToGroups(String requestorUserName, String roleName,
       String component, Set<String> groups) throws SentryUserException;
 
   /**
-   * delete a sentry role from groups.
+   * revoke a sentry role from groups.
    * @param requestorUserName: user on whose behalf the request is issued
    * @param roleName: Name of the role
    * @param component: The request is issued to which component
    * @param groups: The name of groups
    * @throws SentryUserException
    */
-  void deleteRoleToGroups(String requestorUserName, String roleName,
+  void revokeRoleFromGroups(String requestorUserName, String roleName,
       String component, Set<String> groups) throws SentryUserException;
 
   /**
@@ -104,7 +104,7 @@ public interface SentryGenericServiceClient extends AutoCloseable {
    * @param privilege
    * @throws SentryUserException
    */
-  void dropPrivilege(String requestorUserName,String component,
+  void dropPrivilege(String requestorUserName, String component,
       TSentryPrivilege privilege) throws SentryUserException;
 
   /**
@@ -155,7 +155,7 @@ public interface SentryGenericServiceClient extends AutoCloseable {
       String serviceName, List<? extends Authorizable> authorizables)
       throws SentryUserException;
 
-  Set<TSentryPrivilege> listPrivilegesByRoleName(
+  Set<TSentryPrivilege> listAllPrivilegesByRoleName(
       String requestorUserName, String roleName, String component,
       String serviceName) throws SentryUserException;
 
@@ -188,7 +188,7 @@ public interface SentryGenericServiceClient extends AutoCloseable {
    * @returns The mapping of authorize objects and TSentryPrivilegeMap(<role, set<privileges>).
    * @throws SentryUserException
    */
-  Map<String, TSentryPrivilegeMap> listPrivilegsbyAuthorizable(String component,
+  Map<String, TSentryPrivilegeMap> listPrivilegesbyAuthorizable(String component,
       String serviceName, String requestorUserName, Set<String> authorizablesSet,
       Set<String> groups, ActiveRoleSet roleSet) throws SentryUserException;
 }

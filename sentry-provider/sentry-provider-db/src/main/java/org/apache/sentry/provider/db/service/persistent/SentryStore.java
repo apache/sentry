@@ -49,6 +49,7 @@ import org.apache.sentry.core.common.exception.SentryInvalidInputException;
 import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
 import org.apache.sentry.core.common.exception.SentrySiteConfigurationException;
 import org.apache.sentry.core.common.exception.SentryUserException;
+import org.apache.sentry.core.common.utils.PathUtils;
 import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
@@ -2777,7 +2778,7 @@ public class SentryStore {
       String  objName = authzToPaths.getAuthzObjName();
       // Convert path strings to list of components
       for (String path: authzToPaths.getPathStrings()) {
-        String[] pathComponents = path.split("/");
+        String[] pathComponents = PathUtils.splitPath(path);
         List<String> paths = new ArrayList<>(pathComponents.length);
         Collections.addAll(paths, pathComponents);
         pathUpdate.applyAddChanges(objName, Collections.singletonList(paths));

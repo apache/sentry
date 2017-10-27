@@ -54,7 +54,7 @@ public class TestSentryGenericServiceIntegration extends SentryGenericServiceInt
 
         client.createRole(requestorUserName, roleName, SOLR);
 
-        client.addRoleToGroups(requestorUserName, roleName, SOLR, Sets.newHashSet(requestorUserGroupNames));
+        client.grantRoleToGroups(requestorUserName, roleName, SOLR, Sets.newHashSet(requestorUserGroupNames));
 
         Set<TSentryRole> roles = client.listUserRoles(requestorUserName,SOLR);
         assertEquals("Incorrect number of roles", 1, roles.size());
@@ -82,7 +82,7 @@ public class TestSentryGenericServiceIntegration extends SentryGenericServiceInt
 
         client.createRole(requestorUserName, roleName, SOLR);
 
-        client.addRoleToGroups(requestorUserName, roleName, SOLR, Sets.newHashSet(testGroupName));
+        client.grantRoleToGroups(requestorUserName, roleName, SOLR, Sets.newHashSet(testGroupName));
 
         Set<TSentryRole> roles = client.listUserRoles(requestorUserName,SOLR);
         assertEquals("Incorrect number of roles", 1, roles.size());
@@ -94,7 +94,7 @@ public class TestSentryGenericServiceIntegration extends SentryGenericServiceInt
           }
         }
 
-        client.deleteRoleToGroups(requestorUserName, roleName, SOLR, Sets.newHashSet(testGroupName));
+        client.revokeRoleFromGroups(requestorUserName, roleName, SOLR, Sets.newHashSet(testGroupName));
         roles = client.listUserRoles(requestorUserName,SOLR);
         assertEquals("Incorrect number of roles", 0, roles.size());
 
@@ -159,11 +159,11 @@ public class TestSentryGenericServiceIntegration extends SentryGenericServiceInt
             SearchConstants.QUERY);
 
         client.grantPrivilege(requestorUserName, roleName1, SOLR, queryPrivilege);
-        Set<TSentryPrivilege> listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, roleName1, SOLR, "service1");
+        Set<TSentryPrivilege> listPrivilegesByRoleName = client.listAllPrivilegesByRoleName(requestorUserName, roleName1, SOLR, "service1");
         assertTrue("Privilege not assigned to role1 !!", listPrivilegesByRoleName.size() == 1);
 
         client.grantPrivilege(requestorUserName, roleName2, SOLR, queryPrivilege);
-        listPrivilegesByRoleName = client.listPrivilegesByRoleName(requestorUserName, roleName2, SOLR, "service1");
+        listPrivilegesByRoleName = client.listAllPrivilegesByRoleName(requestorUserName, roleName2, SOLR, "service1");
         assertTrue("Privilege not assigned to role2 !!", listPrivilegesByRoleName.size() == 1);
       }});
   }
@@ -183,7 +183,7 @@ public class TestSentryGenericServiceIntegration extends SentryGenericServiceInt
 
         client.dropRoleIfExists(requestorUserName, roleName, SOLR);
         client.createRole(requestorUserName, roleName, SOLR);
-        client.addRoleToGroups(requestorUserName, roleName, SOLR, Sets.newHashSet(groupName));
+        client.grantRoleToGroups(requestorUserName, roleName, SOLR, Sets.newHashSet(groupName));
 
         Set<TSentryRole> groupRoles = client.listRolesByGroupName(requestorUserName, groupName,SOLR);
         assertTrue(groupRoles.size() == 1);
@@ -223,11 +223,11 @@ public class TestSentryGenericServiceIntegration extends SentryGenericServiceInt
 
         client.grantPrivilege(requestorUserName, roleName, SOLR, updatePrivilege);
         client.grantPrivilege(requestorUserName, roleName, SOLR, queryPrivilege);
-        Set<TSentryPrivilege> privileges = client.listPrivilegesByRoleName(requestorUserName, roleName, SOLR, "service1");
+        Set<TSentryPrivilege> privileges = client.listAllPrivilegesByRoleName(requestorUserName, roleName, SOLR, "service1");
         assertTrue(privileges.size() == 2);
 
         client.revokePrivilege(requestorUserName, roleName, SOLR, updatePrivilege);
-        privileges = client.listPrivilegesByRoleName(requestorUserName, roleName, SOLR, "service1");
+        privileges = client.listAllPrivilegesByRoleName(requestorUserName, roleName, SOLR, "service1");
         assertTrue(privileges.size() == 1);
       }});
   }
@@ -250,7 +250,7 @@ public class TestSentryGenericServiceIntegration extends SentryGenericServiceInt
             SearchConstants.QUERY);
 
         client.grantPrivilege(requestorUserName, roleName, SOLR, queryPrivilege);
-        assertEquals(1, client.listPrivilegesByRoleName(requestorUserName, roleName, SOLR, "service1").size());
+        assertEquals(1, client.listAllPrivilegesByRoleName(requestorUserName, roleName, SOLR, "service1").size());
       }});
   }
 
@@ -297,8 +297,8 @@ public class TestSentryGenericServiceIntegration extends SentryGenericServiceInt
         client.grantPrivilege(adminUser, grantRole, SOLR, grantPrivilege);
         client.grantPrivilege(adminUser, noGrantRole, SOLR, noGrantPrivilege);
 
-        client.addRoleToGroups(adminUser, grantRole, SOLR, grantOptionGroup);
-        client.addRoleToGroups(adminUser, noGrantRole, SOLR, noGrantOptionGroup);
+        client.grantRoleToGroups(adminUser, grantRole, SOLR, grantOptionGroup);
+        client.grantRoleToGroups(adminUser, noGrantRole, SOLR, noGrantOptionGroup);
 
         try {
           client.grantPrivilege(grantOptionUser,testRole,SOLR, testPrivilege);
@@ -342,7 +342,7 @@ public class TestSentryGenericServiceIntegration extends SentryGenericServiceInt
 
 
         client.createRole(adminUser, testRole, SOLR);
-        client.addRoleToGroups(adminUser, testRole, SOLR, testGroup);
+        client.grantRoleToGroups(adminUser, testRole, SOLR, testGroup);
 
         TSentryPrivilege queryPrivilege = new TSentryPrivilege(SOLR, "service1",
             fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
@@ -355,7 +355,7 @@ public class TestSentryGenericServiceIntegration extends SentryGenericServiceInt
         client.grantPrivilege(adminUser, testRole, SOLR, queryPrivilege);
         client.grantPrivilege(adminUser, testRole, SOLR, updatePrivilege);
 
-        assertEquals(2, client.listPrivilegesByRoleName(testUser, testRole, SOLR, "service1").size());
+        assertEquals(2, client.listAllPrivilegesByRoleName(testUser, testRole, SOLR, "service1").size());
 
         assertEquals(1, client.listPrivilegesByRoleName(testUser, testRole,
             SOLR, "service1", Arrays.asList(new Collection("c1"))).size());
@@ -401,7 +401,7 @@ public class TestSentryGenericServiceIntegration extends SentryGenericServiceInt
         writePolicyFile();
 
         client.createRole(adminUser, testRole, SOLR);
-        client.addRoleToGroups(adminUser, testRole, SOLR, adminGroup);
+        client.grantRoleToGroups(adminUser, testRole, SOLR, adminGroup);
 
         TSentryPrivilege queryPrivilege = new TSentryPrivilege(SOLR, "service1",
         fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
@@ -414,34 +414,34 @@ public class TestSentryGenericServiceIntegration extends SentryGenericServiceInt
         client.grantPrivilege(adminUser, testRole, SOLR, queryPrivilege);
         client.grantPrivilege(adminUser, testRole, SOLR, updatePrivilege);
 
-        //test listPrivilegsbyAuthorizable without requested group and active role set.
-        assertEquals(1, client.listPrivilegsbyAuthorizable(SOLR, "service1", adminUser,
+        //test listPrivilegesbyAuthorizable without requested group and active role set.
+        assertEquals(1, client.listPrivilegesbyAuthorizable(SOLR, "service1", adminUser,
             Sets.newHashSet(new String("Collection=c1->Field=f1")), null, null).size());
 
-        //test listPrivilegsbyAuthorizable with requested group (testGroup)
-        Map<String, TSentryPrivilegeMap> privilegeMap = client.listPrivilegsbyAuthorizable(SOLR,
+        //test listPrivilegesbyAuthorizable with requested group (testGroup)
+        Map<String, TSentryPrivilegeMap> privilegeMap = client.listPrivilegesbyAuthorizable(SOLR,
             "service1", adminUser, Sets.newHashSet(new String("Collection=c1->Field=f1")), testGroup, null);
         TSentryPrivilegeMap actualMap = privilegeMap.get(new String("Collection=c1->Field=f1"));
         assertEquals(0, actualMap.getPrivilegeMap().size());
 
-        //test listPrivilegsbyAuthorizable with active role set.
+        //test listPrivilegesbyAuthorizable with active role set.
         ActiveRoleSet roleSet = ActiveRoleSet.ALL;
-        assertEquals(1, client.listPrivilegsbyAuthorizable(SOLR, "service1", adminUser,
+        assertEquals(1, client.listPrivilegesbyAuthorizable(SOLR, "service1", adminUser,
             Sets.newHashSet(new String("Collection=c1->Field=f1")), null, roleSet).size());
-        privilegeMap = client.listPrivilegsbyAuthorizable(SOLR,
+        privilegeMap = client.listPrivilegesbyAuthorizable(SOLR,
           "service1", adminUser, Sets.newHashSet(new String("Collection=c1->Field=f1")), null, roleSet);
         actualMap = privilegeMap.get(new String("Collection=c1->Field=f1"));
         assertEquals(1, actualMap.getPrivilegeMap().size());
 
-        privilegeMap = client.listPrivilegsbyAuthorizable(SOLR,
+        privilegeMap = client.listPrivilegesbyAuthorizable(SOLR,
             "service1", testUser, Sets.newHashSet(new String("Collection=c1->Field=f1")), null, roleSet);
         actualMap = privilegeMap.get(new String("Collection=c1->Field=f1"));
         assertEquals(0, actualMap.getPrivilegeMap().size());
 
         // grant tesRole to testGroup.
-        client.addRoleToGroups(adminUser, testRole, SOLR, testGroup);
+        client.grantRoleToGroups(adminUser, testRole, SOLR, testGroup);
 
-        privilegeMap = client.listPrivilegsbyAuthorizable(SOLR,
+        privilegeMap = client.listPrivilegesbyAuthorizable(SOLR,
             "service1", testUser, Sets.newHashSet(new String("Collection=c1")), null, roleSet);
         actualMap = privilegeMap.get(new String("Collection=c1"));
         assertEquals(1, actualMap.getPrivilegeMap().size());

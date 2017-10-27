@@ -281,7 +281,8 @@ public class TestAuthorize extends AbstractKafkaSentryTestBase {
       testConsume(TOPIC_NAME, StaticUserGroupRole.USER_1);
       Assert.fail("user1 must not have been authorized to read consumer group sentrykafkaconsumer.");
     } catch (Exception ex) {
-      assertCausedMessage(ex, "Not authorized to access topics: [" + TOPIC_NAME + "]");
+      assertCausedMessages(ex, "Not authorized to access group: sentrykafkaconsumer",
+              "Not authorized to access topics: [" + TOPIC_NAME + "]");
     }
 
   /*
@@ -311,7 +312,7 @@ public class TestAuthorize extends AbstractKafkaSentryTestBase {
     SentryGenericServiceClient sentryClient = getSentryClient();
     try {
       sentryClient.createRoleIfNotExist(ADMIN_USER, role, COMPONENT);
-      sentryClient.addRoleToGroups(ADMIN_USER, role, COMPONENT, Sets.newHashSet(group));
+      sentryClient.grantRoleToGroups(ADMIN_USER, role, COMPONENT, Sets.newHashSet(group));
 
       sentryClient.grantPrivilege(ADMIN_USER, role, COMPONENT,
               new TSentryPrivilege(COMPONENT, "kafka", authorizables,

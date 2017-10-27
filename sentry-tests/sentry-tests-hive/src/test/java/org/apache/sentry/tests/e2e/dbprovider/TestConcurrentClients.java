@@ -340,7 +340,7 @@ public class TestConcurrentClients extends AbstractTestWithStaticConfiguration {
               client.grantRoleToGroup(ADMIN1, ADMINGROUP, test_role);
 
               // validate role
-              Set<TSentryRole> sentryRoles = client.listRoles(ADMIN1);
+              Set<TSentryRole> sentryRoles = client.listAllRoles(ADMIN1);
               String results = "";
               for (TSentryRole role : sentryRoles) {
                 results += role.toString() + "|";

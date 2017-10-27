@@ -56,7 +56,7 @@ public class TestSentryServiceWithInvalidMsgSize extends SentryServiceIntegratio
         boolean exceptionThrown = false;
         try {
           // client throws exception when message size is larger than the client's thrift max message size.
-          clientWithSmallMaxMsgSize.listRoles(ADMIN_USER);
+          clientWithSmallMaxMsgSize.listAllRoles(ADMIN_USER);
         } catch (SentryUserException e) {
           exceptionThrown = true;
           Assert.assertTrue(e.getMessage().contains("Thrift exception occurred"));
@@ -69,9 +69,9 @@ public class TestSentryServiceWithInvalidMsgSize extends SentryServiceIntegratio
 
         // client can still talk with sentry server when message size is smaller.
         client.dropRoleIfExists(ADMIN_USER, ROLE_NAME);
-        client.listRoles(ADMIN_USER);
+        client.listAllRoles(ADMIN_USER);
         client.createRole(ADMIN_USER, ROLE_NAME);
-        client.listRoles(ADMIN_USER);
+        client.listAllRoles(ADMIN_USER);
       }
     });
   }
@@ -97,7 +97,7 @@ public class TestSentryServiceWithInvalidMsgSize extends SentryServiceIntegratio
         writePolicyFile();
 
         // client can talk with server when message size is smaller.
-        client.listRoles(ADMIN_USER);
+        client.listAllRoles(ADMIN_USER);
         client.createRole(ADMIN_USER, ROLE_NAME);
 
         boolean exceptionThrown = false;
@@ -112,7 +112,7 @@ public class TestSentryServiceWithInvalidMsgSize extends SentryServiceIntegratio
         }
 
         // client can still talk with sentry server when message size is smaller.
-        Set<TSentryRole> roles = client.listRoles(ADMIN_USER);
+        Set<TSentryRole> roles = client.listAllRoles(ADMIN_USER);
         Assert.assertTrue(roles.size() == 1);
         Assert.assertEquals(ROLE_NAME, roles.iterator().next().getRoleName());
       }

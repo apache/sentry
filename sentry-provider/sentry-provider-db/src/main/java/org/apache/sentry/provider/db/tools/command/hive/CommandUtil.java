@@ -31,7 +31,7 @@ public final class CommandUtil {
 
   // check the privilege value for the specific privilege scope
   // eg, for the table scope, server and database can't be empty
-  public static void validatePrivilegeHierarchy(TSentryPrivilege tSentryPrivilege) {
+  public static void validatePrivilegeHierarchy(TSentryPrivilege tSentryPrivilege) throws IllegalArgumentException {
     String serverName = tSentryPrivilege.getServerName();
     String dbName = tSentryPrivilege.getDbName();
     String tableName = tSentryPrivilege.getTableName();
