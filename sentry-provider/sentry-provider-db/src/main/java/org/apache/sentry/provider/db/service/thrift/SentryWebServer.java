@@ -122,6 +122,11 @@ public class SentryWebServer {
 
     servletContextHandler.addServlet(new ServletHolder(LogLevelServlet.class), "/admin/logLevel");
 
+    if (conf.getBoolean(ServerConfig.SENTRY_WEB_PUBSUB_SERVLET_ENABLED,
+                        ServerConfig.SENTRY_WEB_PUBSUB_SERVLET_ENABLED_DEFAULT)) {
+      servletContextHandler.addServlet(new ServletHolder(PubSubServlet.class), "/admin/publishMessage");
+    }
+
     ResourceHandler resourceHandler = new ResourceHandler();
     resourceHandler.setDirectoriesListed(true);
     URL url = this.getClass().getResource(RESOURCE_DIR);
