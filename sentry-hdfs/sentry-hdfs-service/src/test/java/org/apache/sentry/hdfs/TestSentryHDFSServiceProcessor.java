@@ -18,6 +18,8 @@
 package org.apache.sentry.hdfs;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.sentry.core.common.utils.PubSub;
+import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
 import org.apache.sentry.hdfs.service.thrift.TAuthzUpdateRequest;
 import org.apache.sentry.hdfs.service.thrift.TAuthzUpdateResponse;
 import org.apache.sentry.provider.db.SentryPolicyStorePlugin;
@@ -45,7 +47,10 @@ public class TestSentryHDFSServiceProcessor {
   public static void setUp() throws SentryPolicyStorePlugin.SentryPluginException {
     serviceProcessor = new SentryHDFSServiceProcessor();
     sentryStoreMock = Mockito.mock(SentryStore.class);
-    new SentryPlugin().initialize(new Configuration(), sentryStoreMock);
+    Configuration conf = new Configuration();
+    // enable full update triger via pub-sub mechanism
+    conf.set(ServerConfig.SENTRY_SERVICE_FULL_UPDATE_PUBSUB, "true");
+    new SentryPlugin().initialize(conf, sentryStoreMock);
   }
 
   @Test
@@ -129,6 +134,45 @@ public class TestSentryHDFSServiceProcessor {
     assertEquals(1, sentryUpdates.getAuthzPermUpdateSize());
     assertEquals(3, sentryUpdates.getAuthzPermUpdate().get(0).getSeqNum());
     assertFalse(sentryUpdates.getAuthzPermUpdate().get(0).isHasfullImage());
+  }
+
+  /**
+   * Verify that publish-subscribe mechanism works for triggering full paths updates
+   */
+  @Test
+  public void testRequestSyncUpdatesWhenPubSubNotifyReturnsFullPathsUpdate() throws Exception {
+    // Configure SentryStore mock to return small sequence numbers
+    Mockito.when(sentryStoreMock.getLastProcessedImageID())
+        .thenReturn(1L);
+    Mockito.when(sentryStoreMock.getLastProcessedPathChangeID())
+        .thenReturn(2L);
+    Mockito.when(sentryStoreMock.getLastProcessedPermChangeID())
+        .thenReturn(2L);
+    // Also, configure SentryStore mock return full paths update once;
+    // throw an exception afterwards.
+    Mockito.when(sentryStoreMock.retrieveFullPathsImageUpdate(Mockito.any()))
+        .thenReturn(new PathsUpdate(8, 5, true))
+        .thenThrow(new RuntimeException("Not supposed to ask for full path update first time"));
+
+    // now ask for larger sequence numbers - supposed to return nothing
+    TAuthzUpdateRequest updateRequest = new TAuthzUpdateRequest(3, 3, 1);
+    TAuthzUpdateResponse sentryUpdates= serviceProcessor.get_authz_updates(updateRequest);
+    // no permissions updates
+    assertEquals(0, sentryUpdates.getAuthzPermUpdateSize());
+    // no paths updates
+    assertEquals(0, sentryUpdates.getAuthzPathUpdateSize());
+
+    // Now set full update trigger ...
+    PubSub.getInstance().publish(PubSub.Topic.HDFS_SYNC_NN, "test message");
+    // ... then repeat exactly the same update call
+    sentryUpdates= serviceProcessor.get_authz_updates(updateRequest);
+    // ... still no permissions updates returned
+    assertEquals(0, sentryUpdates.getAuthzPermUpdateSize());
+    // ... but now we are getting full paths update, as intended by trigger logic
+    assertEquals(1, sentryUpdates.getAuthzPathUpdateSize());
+    assertEquals(5, sentryUpdates.getAuthzPathUpdate().get(0).getImgNum());
+    assertEquals(8, sentryUpdates.getAuthzPathUpdate().get(0).getSeqNum());
+    assertTrue(sentryUpdates.getAuthzPathUpdate().get(0).isHasFullImage());
   }
 
   @Test
