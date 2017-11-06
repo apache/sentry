@@ -116,11 +116,6 @@ public class TopLevelShell implements ShellDependent, Runnable {
     }
 
     @Command(description = "list Sentry privileges")
-    public String listPrivileges() {
-        return tools.listPrivileges();
-    }
-
-    @Command(description = "list Sentry privileges")
     public List<String> listPrivileges(
             @Param(name = "roleName")
             String roleName) {

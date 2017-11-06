@@ -45,11 +45,6 @@ public class PrivsShell implements ShellDependent {
     }
 
     @Command
-    public String list() {
-        return tools.listPrivileges();
-    }
-
-    @Command
     public List<String> list(
             @Param(name = "roleName")
             String roleName) {

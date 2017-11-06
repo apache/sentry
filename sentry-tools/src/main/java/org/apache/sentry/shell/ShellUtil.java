@@ -18,28 +18,25 @@
 
 package org.apache.sentry.shell;
 
-import com.google.common.collect.Sets;
-import org.apache.commons.lang.StringUtils;
 import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.provider.db.service.thrift.*;
-import org.apache.sentry.provider.db.tools.command.hive.CommandUtil;
+import org.apache.sentry.provider.db.tools.SentryShellCommon;
+import org.apache.sentry.provider.db.tools.ShellCommand;
+import org.apache.sentry.provider.db.tools.command.hive.HiveShellCommand;
 
 import java.util.*;
-
-import static org.apache.sentry.service.thrift.SentryServiceUtil.convertTSentryPrivilegeToStr;
-import static org.apache.sentry.service.thrift.SentryServiceUtil.convertToTSentryPrivilege;
 
 /**
  * ShellUtil implements actual commands
  */
 class ShellUtil {
 
-    private final SentryPolicyServiceClient sentryClient;
+    private final ShellCommand command;
     private final String authUser;
 
     ShellUtil(SentryPolicyServiceClient sentryClient, String authUser) {
-        this.sentryClient = sentryClient;
         this.authUser = authUser;
+        command = new HiveShellCommand(sentryClient);
     }
 
     List<String> listRoles() {
@@ -47,33 +44,22 @@ class ShellUtil {
     }
 
     List<String> listRoles(String group) {
-        Set<TSentryRole> roles = null;
         try {
-            if (StringUtils.isEmpty(group)) {
-                roles = sentryClient.listAllRoles(authUser);
-            } else {
-                roles = sentryClient.listRolesByGroupName(authUser, group);
-            }
-        } catch (SentryUserException e) {
-            System.out.println("Error listing roles: " + e.toString());
-        }
-        List<String> result = new ArrayList<>();
-        if (roles == null || roles.isEmpty()) {
+            // TODO remove "null" here
+            List<String> result = command.listRoles(authUser, null, group);
+            Collections.sort(result);
             return result;
+        } catch (SentryUserException e) {
+            System.out.printf("failed to list roles with group %s: %s\n",
+                              group, e.toString());
+            return Collections.emptyList();
         }
-
-        for (TSentryRole role : roles) {
-            result.add(role.getRoleName());
-        }
-
-        Collections.sort(result);
-        return result;
     }
 
     void createRoles(String ...roles) {
         for (String role : roles) {
             try {
-                sentryClient.createRole(authUser, role);
+                command.createRole(authUser, role);
             } catch (SentryUserException e) {
                 System.out.printf("failed to create role %s: %s\n",
                         role, e.toString());
@@ -84,7 +70,7 @@ class ShellUtil {
     void dropRoles(String ...roles) {
         for (String role : roles) {
             try {
-                sentryClient.dropRole(authUser, role);
+                command.dropRole(authUser, role);
             } catch (SentryUserException e) {
                 System.out.printf("failed to drop role %s: %s\n",
                         role, e.toString());
@@ -92,36 +78,10 @@ class ShellUtil {
         }
     }
 
-    List<String> listGroups() {
-        Set<TSentryRole> roles = null;
-
-        try {
-            roles = sentryClient.listAllRoles(authUser);
-        } catch (SentryUserException e) {
-            System.out.println("Error reading roles: " + e.toString());
-        }
-
-        if (roles == null || roles.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        // Set of all group names
-        Set<String> groupNames = new HashSet<>();
-
-        // Get all group names
-        for (TSentryRole role: roles) {
-            for (TSentryGroup group: role.getGroups()) {
-                groupNames.add(group.getGroupName());
-            }
-        }
-
-        List<String> result = new ArrayList<>(groupNames);
-
-        Collections.sort(result);
-        return result;
-    }
-
     List<String> listGroupRoles() {
+        // TODO
+        return Collections.emptyList();
+        /*
         Set<TSentryRole> roles = null;
 
         try {
@@ -170,11 +130,14 @@ class ShellUtil {
                     StringUtils.join(groupInfo.get(groupName), ", "));
         }
         return result;
+        */
     }
 
     void grantGroupsToRole(String roleName, String ...groups) {
         try {
-            sentryClient.grantRoleToGroups(authUser, roleName, Sets.newHashSet(groups));
+            // TODO change grantRoleToGroups
+            String joinedGroups = String.join(SentryShellCommon.GROUP_SPLIT_CHAR, groups);
+            command.grantRoleToGroups(authUser, roleName, joinedGroups);
         } catch (SentryUserException e) {
             System.out.printf("Failed to gran role %s to groups: %s\n",
                     roleName, e.toString());
@@ -183,7 +146,9 @@ class ShellUtil {
 
     void revokeGroupsFromRole(String roleName, String ...groups) {
         try {
-            sentryClient.revokeRoleFromGroups(authUser, roleName, Sets.newHashSet(groups));
+            // TODO change revokeRoleFromGroups
+            String joinedGroups = String.join(SentryShellCommon.GROUP_SPLIT_CHAR, groups);
+            command.revokeRoleFromGroups(authUser, roleName, joinedGroups);
         } catch (SentryUserException e) {
             System.out.printf("Failed to revoke role %s to groups: %s\n",
                     roleName, e.toString());
@@ -191,68 +156,26 @@ class ShellUtil {
     }
 
     void grantPrivilegeToRole(String roleName, String privilege) {
-        TSentryPrivilege tPriv = convertToTSentryPrivilege(privilege);
         try {
-            CommandUtil.validatePrivilegeHierarchy(tPriv);
-            sentryClient.grantPrivilege(authUser, roleName, tPriv);
-        } catch (SentryUserException | IllegalArgumentException e) {
+            command.grantPrivilegeToRole(authUser, roleName, privilege);
+        } catch (SentryUserException e) {
             System.out.println("Error granting privilege: " + e.toString());
         }
     }
 
     List<String> listPrivileges(String roleName) {
-        Set<TSentryPrivilege> privileges = null;
         try {
-            privileges = sentryClient
-                    .listAllPrivilegesByRoleName(authUser, roleName);
+            return command.listPrivileges(authUser, roleName);
         } catch (SentryUserException e) {
             System.out.println("Failed to list privileges: " + e.toString());
+            return Collections.emptyList();
         }
-
-        List<String> result = new LinkedList<>();
-        if (privileges == null || privileges.isEmpty()) {
-            return result;
-        }
-
-        for (TSentryPrivilege privilege : privileges) {
-            String privilegeStr = convertTSentryPrivilegeToStr(privilege);
-            if (privilegeStr.isEmpty()) {
-                continue;
-            }
-            result.add(privilegeStr);
-        }
-        return result;
-    }
-
-    /**
-     * List all privileges
-     * @return string with privilege info for all roles
-     */
-    String listPrivileges() {
-        List<String> roles = listRoles(null);
-        if (roles == null || roles.isEmpty()) {
-            return "";
-        }
-
-        StringBuilder result = new StringBuilder();
-        for (String role: roles) {
-            List<String> privs = listPrivileges(role);
-            if (privs.isEmpty()) {
-                continue;
-            }
-            result.append(role).append(" = ");
-            result.append(StringUtils.join(listPrivileges(role), ",\n\t"));
-            result.append('\n');
-        }
-        return result.toString();
     }
 
     void revokePrivilegeFromRole(String roleName, String privilegeStr) {
-        TSentryPrivilege tSentryPrivilege = convertToTSentryPrivilege(privilegeStr);
         try {
-            CommandUtil.validatePrivilegeHierarchy(tSentryPrivilege);
-            sentryClient.revokePrivilege(authUser, roleName, tSentryPrivilege);
-        } catch (SentryUserException | IllegalArgumentException e) {
+            command.revokePrivilegeFromRole(authUser, roleName, privilegeStr);
+        } catch (SentryUserException e) {
             System.out.println("failed to revoke privilege: " + e.toString());
         }
     }

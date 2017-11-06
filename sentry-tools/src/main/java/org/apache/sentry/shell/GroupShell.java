@@ -37,11 +37,6 @@ public class GroupShell implements ShellDependent {
         this.tools = new ShellUtil(sentryClient, authUser);
     }
 
-    @Command
-    public List<String> list() {
-        return tools.listGroups();
-    }
-
     @Command(abbrev = "lr", header = "[groups]",
             description = "list groups and their roles")
     public List<String> listRoles() {
