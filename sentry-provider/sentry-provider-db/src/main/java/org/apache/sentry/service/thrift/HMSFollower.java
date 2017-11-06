@@ -18,6 +18,8 @@
 
 package org.apache.sentry.service.thrift;
 
+import org.apache.sentry.core.common.utils.PubSub;
+import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
 
 import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SERVER_NAME;
 import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SERVER_NAME_DEPRECATED;
@@ -26,6 +28,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.jdo.JDODataStoreException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.api.NotificationEvent;
@@ -41,10 +44,12 @@ import org.slf4j.LoggerFactory;
  * update permissions stored in Sentry using SentryStore and also update the &lt obj,path &gt state
  * stored for HDFS-Sentry sync.
  */
-public class HMSFollower implements Runnable, AutoCloseable {
+public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(HMSFollower.class);
+  private static final String FULL_UPDATE_TRIGGER = "FULL UPDATE TRIGGER: ";
   private static boolean connectedToHms = false;
+
   private SentryHMSClient client;
   private final Configuration authzConf;
   private final SentryStore sentryStore;
@@ -52,6 +57,7 @@ public class HMSFollower implements Runnable, AutoCloseable {
   private boolean readyToServe;
   private final HiveNotificationFetcher notificationFetcher;
   private final boolean hdfsSyncEnabled;
+  private final AtomicBoolean fullUpdateHMS = new AtomicBoolean(false);
 
   private final LeaderStatusMonitor leaderMonitor;
 
@@ -99,6 +105,13 @@ public class HMSFollower implements Runnable, AutoCloseable {
     client = new SentryHMSClient(authzConf, hiveConnectionFactory);
     hdfsSyncEnabled = SentryServiceUtil.isHDFSSyncEnabledNoCache(authzConf); // no cache to test different settings for hdfs sync
     notificationFetcher = new HiveNotificationFetcher(sentryStore, hiveConnectionFactory);
+
+    // subscribe to full update notification
+    if (conf.getBoolean(ServerConfig.SENTRY_SERVICE_FULL_UPDATE_PUBSUB, false)) {
+      LOGGER.info(FULL_UPDATE_TRIGGER + "subscribing to topic " + PubSub.Topic.HDFS_SYNC_HMS.getName());
+      PubSub.getInstance().subscribe(PubSub.Topic.HDFS_SYNC_HMS, this);
+    }
+
   }
 
   @VisibleForTesting
@@ -240,6 +253,13 @@ public class HMSFollower implements Runnable, AutoCloseable {
     if (currentHmsNotificationId < latestSentryNotificationId) {
       LOGGER.info("The latest notification ID on HMS is less than the latest notification ID "
           + "processed by Sentry. Need to request a full HMS snapshot.");
+      return true;
+    }
+
+    // check if forced full update is required, reset update flag to false
+    // to only do it once per forced full update request.
+    if (fullUpdateHMS.compareAndSet(true, false)) {
+      LOGGER.info(FULL_UPDATE_TRIGGER + "initiating full HMS snapshot request");
       return true;
     }
 
@@ -434,5 +454,15 @@ public class HMSFollower implements Runnable, AutoCloseable {
     }
 
     counterWait.update(eventId);
+  }
+
+  /**
+   * PubSub.Subscriber callback API
+   */
+  @Override
+  public void onMessage(PubSub.Topic topic, String message) {
+    Preconditions.checkArgument(topic == PubSub.Topic.HDFS_SYNC_HMS, "Unexpected topic %s instead of %s", topic, PubSub.Topic.HDFS_SYNC_HMS);
+    LOGGER.info(FULL_UPDATE_TRIGGER + "Received [{}, {}] notification", topic, message);
+    fullUpdateHMS.set(true);
   }
 }
