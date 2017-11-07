@@ -42,6 +42,12 @@ limitations under the License.
     <dependency>
       <groupId>org.apache.sqoop</groupId>
       <artifactId>test</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.testng</groupId>
+          <artifactId>testng</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
@@ -116,56 +122,15 @@ limitations under the License.
       <version>${datanucleus-jdo.version}</version>
     </dependency>
   </dependencies>
-  <profiles>
-    <profile>
-      <id>download-sqoop2</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-        <property>
-          <name>!skipTests</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-dependency-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>download-deps</id>
-                <phase>generate-resources</phase>
-                <goals>
-                  <goal>copy</goal>
-                </goals>
-                <configuration>
-                  <artifactItems>
-                    <artifactItem>
-                      <groupId>org.apache.tomcat</groupId>
-                      <artifactId>tomcat</artifactId>
-                      <version>7.0.81</version>
-                      <type>zip</type>
-                      <overWrite>true</overWrite>
-                      <outputDirectory>target/thirdparty</outputDirectory>
-                    </artifactItem>
-                    <artifactItem>
-                      <groupId>org.apache.sqoop</groupId>
-                      <artifactId>sqoop-server</artifactId>
-                      <version>2.0.0-SNAPSHOT</version>
-                      <type>war</type>
-                      <overWrite>true</overWrite>
-                      <outputDirectory>target/thirdparty</outputDirectory>
-                    </artifactItem>
-                  </artifactItems>
-                  <outputAbsoluteArtifactFilename>true</outputAbsoluteArtifactFilename>
-                  <overWriteSnapshots>true</overWriteSnapshots>
-                  <overWriteIfNewer>true</overWriteIfNewer>
-                  <stripVersion>true</stripVersion>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <reuseForks>false</reuseForks>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

@@ -91,7 +91,7 @@ limitations under the License.
     <shiro.version>1.4.0</shiro.version>
     <slf4j.version>1.7.25</slf4j.version>
     <solr.version>4.10.2</solr.version>
-    <sqoop.version>1.99.6</sqoop.version>
+    <sqoop.version>1.99.7</sqoop.version>
     <surefire.version>2.20.1</surefire.version>
     <test.sentry.hadoop.classpath>${maven.test.classpath}</test.sentry.hadoop.classpath>
     <zookeeper.version>3.4.5</zookeeper.version>

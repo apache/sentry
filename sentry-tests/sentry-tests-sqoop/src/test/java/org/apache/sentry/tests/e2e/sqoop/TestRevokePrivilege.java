@@ -36,8 +36,8 @@ public class TestRevokePrivilege extends AbstractSqoopSentryTestBase {
   public void testNotSupportRevokePrivilegeFromUser() throws Exception {
     SqoopClient client = sqoopServerRunner.getSqoopClient(ADMIN_USER);
     MPrincipal user1 = new MPrincipal("not_support_revoke_user_1", MPrincipal.TYPE.GROUP);
-    MResource  allConnector = new MResource(SqoopActionConstant.ALL, MResource.TYPE.CONNECTOR);
-    MPrivilege readPriv = new MPrivilege(allConnector,SqoopActionConstant.READ, false);
+    MResource hdfsConnector = new MResource(HDFS_CONNECTOR_NAME, MResource.TYPE.CONNECTOR);
+    MPrivilege readPriv = new MPrivilege(hdfsConnector, SqoopActionConstant.READ, false);
     try {
       client.revokePrivilege(Lists.newArrayList(user1), Lists.newArrayList(readPriv));
       fail("expected not support exception happend");
@@ -50,8 +50,8 @@ public class TestRevokePrivilege extends AbstractSqoopSentryTestBase {
   public void testNotSupportRevokePrivilegeFromGroup() throws Exception {
     SqoopClient client = sqoopServerRunner.getSqoopClient(ADMIN_USER);
     MPrincipal group1 = new MPrincipal("not_support_revoke_group_1", MPrincipal.TYPE.GROUP);
-    MResource  allConnector = new MResource(SqoopActionConstant.ALL, MResource.TYPE.CONNECTOR);
-    MPrivilege readPriv = new MPrivilege(allConnector,SqoopActionConstant.READ, false);
+    MResource hdfsConnector = new MResource(HDFS_CONNECTOR_NAME, MResource.TYPE.CONNECTOR);
+    MPrivilege readPriv = new MPrivilege(hdfsConnector, SqoopActionConstant.READ, false);
     try {
       client.revokePrivilege(Lists.newArrayList(group1), Lists.newArrayList(readPriv));
       fail("expected not support exception happend");
@@ -65,13 +65,13 @@ public class TestRevokePrivilege extends AbstractSqoopSentryTestBase {
     SqoopClient client = sqoopServerRunner.getSqoopClient(ADMIN_USER);
     MRole testRole = new MRole("noexist_privilege_role1");
     MPrincipal testPrinc = new MPrincipal(testRole.getName(), MPrincipal.TYPE.ROLE);
-    MResource allConnector = new MResource(SqoopActionConstant.ALL, MResource.TYPE.CONNECTOR);
-    MPrivilege readPrivilege = new MPrivilege(allConnector, SqoopActionConstant.READ, false);
+    MResource hdfsConnector = new MResource(HDFS_CONNECTOR_NAME, MResource.TYPE.CONNECTOR);
+    MPrivilege readPrivilege = new MPrivilege(hdfsConnector, SqoopActionConstant.READ, false);
     client.createRole(testRole);
-    assertTrue(client.getPrivilegesByPrincipal(testPrinc, allConnector).size() == 0);
+    assertTrue(client.getPrivilegesByPrincipal(testPrinc, hdfsConnector).size() == 0);
 
     client.revokePrivilege(Lists.newArrayList(testPrinc), Lists.newArrayList(readPrivilege));
-    assertTrue(client.getPrivilegesByPrincipal(testPrinc, allConnector).size() == 0);
+    assertTrue(client.getPrivilegesByPrincipal(testPrinc, hdfsConnector).size() == 0);
   }
 
 
@@ -80,21 +80,21 @@ public class TestRevokePrivilege extends AbstractSqoopSentryTestBase {
     /**
      * user1 belongs to group group1
      * admin user grant role role1 to group group1
-     * admin user grant read privilege on connector all to role role1
+     * admin user grant read privilege on connector HDFS_CONNECTOR_NAME to role role1
      */
     SqoopClient client = sqoopServerRunner.getSqoopClient(ADMIN_USER);
     MRole role1 = new MRole(ROLE1);
     MPrincipal group1Princ = new MPrincipal(GROUP1, MPrincipal.TYPE.GROUP);
     MPrincipal role1Princ = new MPrincipal(ROLE1, MPrincipal.TYPE.ROLE);
-    MResource allConnector = new MResource(SqoopActionConstant.ALL, MResource.TYPE.CONNECTOR);
-    MPrivilege readPrivilege = new MPrivilege(allConnector, SqoopActionConstant.READ, false);
+    MResource hdfsConnector = new MResource(HDFS_CONNECTOR_NAME, MResource.TYPE.CONNECTOR);
+    MPrivilege readPrivilege = new MPrivilege(hdfsConnector, SqoopActionConstant.READ, false);
     client.createRole(role1);
     client.grantRole(Lists.newArrayList(role1), Lists.newArrayList(group1Princ));
     client.grantPrivilege(Lists.newArrayList(role1Princ), Lists.newArrayList(readPrivilege));
 
     // check user1 has privilege on role1
     client = sqoopServerRunner.getSqoopClient(USER1);
-    assertTrue(client.getPrivilegesByPrincipal(role1Princ, allConnector).size() == 1);
+    assertTrue(client.getPrivilegesByPrincipal(role1Princ, hdfsConnector).size() == 1);
 
     // admin user revoke read privilege from role1
     client = sqoopServerRunner.getSqoopClient(ADMIN_USER);
@@ -102,7 +102,7 @@ public class TestRevokePrivilege extends AbstractSqoopSentryTestBase {
 
     // check user1 has no privilege on role1
     client = sqoopServerRunner.getSqoopClient(USER1);
-    assertTrue(client.getPrivilegesByPrincipal(role1Princ, allConnector).size() == 0);
+    assertTrue(client.getPrivilegesByPrincipal(role1Princ, hdfsConnector).size() == 0);
   }
 
   @Test
@@ -110,31 +110,31 @@ public class TestRevokePrivilege extends AbstractSqoopSentryTestBase {
     /**
      * user2 belongs to group group2
      * admin user grant role role2 to group group2
-     * admin user grant read and write privilege on connector all to role role2
+     * admin user grant read and write privilege on connector HDFS_CONNECTOR_NAME to role role2
      */
     SqoopClient client = sqoopServerRunner.getSqoopClient(ADMIN_USER);
     MRole role2 = new MRole(ROLE2);
     MPrincipal group2Princ = new MPrincipal(GROUP2, MPrincipal.TYPE.GROUP);
     MPrincipal role2Princ = new MPrincipal(ROLE2, MPrincipal.TYPE.ROLE);
-    MResource allConnector = new MResource(SqoopActionConstant.ALL, MResource.TYPE.CONNECTOR);
-    MPrivilege writePrivilege = new MPrivilege(allConnector, SqoopActionConstant.WRITE, false);
-    MPrivilege readPrivilege = new MPrivilege(allConnector, SqoopActionConstant.READ, false);
+    MResource hdfsConnector = new MResource(HDFS_CONNECTOR_NAME, MResource.TYPE.CONNECTOR);
+    MPrivilege writePrivilege = new MPrivilege(hdfsConnector, SqoopActionConstant.WRITE, false);
+    MPrivilege readPrivilege = new MPrivilege(hdfsConnector, SqoopActionConstant.READ, false);
     client.createRole(role2);
     client.grantRole(Lists.newArrayList(role2), Lists.newArrayList(group2Princ));
     client.grantPrivilege(Lists.newArrayList(role2Princ), Lists.newArrayList(writePrivilege, readPrivilege));
 
     // check user2 has two privileges on role2
     client = sqoopServerRunner.getSqoopClient(USER2);
-    assertTrue(client.getPrivilegesByPrincipal(role2Princ, allConnector).size() == 2);
+    assertTrue(client.getPrivilegesByPrincipal(role2Princ, hdfsConnector).size() == 2);
 
     // admin user revoke all privilege from role2
-    MPrivilege allPrivilege = new MPrivilege(allConnector, SqoopActionConstant.ALL_NAME, false);
+    MPrivilege allPrivilege = new MPrivilege(hdfsConnector, SqoopActionConstant.ALL_NAME, false);
     client = sqoopServerRunner.getSqoopClient(ADMIN_USER);
     client.revokePrivilege(Lists.newArrayList(role2Princ), Lists.newArrayList(allPrivilege));
 
     // check user2 has no privilege on role2
     client = sqoopServerRunner.getSqoopClient(USER2);
-    assertTrue(client.getPrivilegesByPrincipal(role2Princ, allConnector).size() == 0);
+    assertTrue(client.getPrivilegesByPrincipal(role2Princ, hdfsConnector).size() == 0);
   }
 
   @Test
@@ -142,34 +142,34 @@ public class TestRevokePrivilege extends AbstractSqoopSentryTestBase {
     /**
      * user3 belongs to group group3
      * admin user grant role role3 to group group3
-     * admin user grant all privilege on connector all to role role3
+     * admin user grant all privilege on connector HDFS_CONNECTOR_NAME to role role3
      */
     SqoopClient client = sqoopServerRunner.getSqoopClient(ADMIN_USER);
     MRole role3 = new MRole(ROLE3);
     MPrincipal group3Princ = new MPrincipal(GROUP3, MPrincipal.TYPE.GROUP);
     MPrincipal role3Princ = new MPrincipal(ROLE3, MPrincipal.TYPE.ROLE);
-    MResource allConnector = new MResource(SqoopActionConstant.ALL, MResource.TYPE.CONNECTOR);
-    MPrivilege allPrivilege = new MPrivilege(allConnector, SqoopActionConstant.ALL_NAME, false);
+    MResource hdfsConnector = new MResource(HDFS_CONNECTOR_NAME, MResource.TYPE.CONNECTOR);
+    MPrivilege allPrivilege = new MPrivilege(hdfsConnector, SqoopActionConstant.ALL_NAME, false);
     client.createRole(role3);
     client.grantRole(Lists.newArrayList(role3), Lists.newArrayList(group3Princ));
     client.grantPrivilege(Lists.newArrayList(role3Princ), Lists.newArrayList(allPrivilege));
 
     // check user3 has one privilege on role3
     client = sqoopServerRunner.getSqoopClient(USER3);
-    assertTrue(client.getPrivilegesByPrincipal(role3Princ, allConnector).size() == 1);
+    assertTrue(client.getPrivilegesByPrincipal(role3Princ, hdfsConnector).size() == 1);
     // user3 has the all action on role3
-    MPrivilege user3Privilege = client.getPrivilegesByPrincipal(role3Princ, allConnector).get(0);
+    MPrivilege user3Privilege = client.getPrivilegesByPrincipal(role3Princ, hdfsConnector).get(0);
     assertEquals(user3Privilege.getAction(), SqoopActionConstant.ALL_NAME);
 
     // admin user revoke the read privilege on connector all from role role3
-    MPrivilege readPrivilege = new MPrivilege(allConnector, SqoopActionConstant.READ, false);
+    MPrivilege readPrivilege = new MPrivilege(hdfsConnector, SqoopActionConstant.READ, false);
     client = sqoopServerRunner.getSqoopClient(ADMIN_USER);
     client.revokePrivilege(Lists.newArrayList(role3Princ), Lists.newArrayList(readPrivilege));
 
     // check user3 has only the write privilege on role3
     client = sqoopServerRunner.getSqoopClient(USER3);
-    assertTrue(client.getPrivilegesByPrincipal(role3Princ, allConnector).size() == 1);
-    user3Privilege = client.getPrivilegesByPrincipal(role3Princ, allConnector).get(0);
+    assertTrue(client.getPrivilegesByPrincipal(role3Princ, hdfsConnector).size() == 1);
+    user3Privilege = client.getPrivilegesByPrincipal(role3Princ, hdfsConnector).get(0);
     assertEquals(user3Privilege.getAction().toLowerCase(), SqoopActionConstant.WRITE);
   }
 }

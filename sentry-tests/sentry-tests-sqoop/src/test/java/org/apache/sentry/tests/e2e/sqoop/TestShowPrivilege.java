@@ -36,7 +36,7 @@ public class TestShowPrivilege extends AbstractSqoopSentryTestBase {
   public void testNotSupportShowOnUser() throws Exception {
     SqoopClient client = sqoopServerRunner.getSqoopClient(ADMIN_USER);
     MPrincipal user1 = new MPrincipal("not_support_user1", MPrincipal.TYPE.USER);
-    MResource resource1 = new MResource("all", MResource.TYPE.CONNECTOR);
+    MResource resource1 = new MResource(HDFS_CONNECTOR_NAME, MResource.TYPE.CONNECTOR);
     try {
       client.getPrivilegesByPrincipal(user1, resource1);
       fail("expected not support exception happend");
@@ -49,7 +49,7 @@ public class TestShowPrivilege extends AbstractSqoopSentryTestBase {
   public void testNotSupportShowOnGroup() throws Exception {
     SqoopClient client = sqoopServerRunner.getSqoopClient(ADMIN_USER);
     MPrincipal group1 = new MPrincipal("not_support_group1", MPrincipal.TYPE.GROUP);
-    MResource resource1 = new MResource("all", MResource.TYPE.CONNECTOR);
+    MResource resource1 = new MResource(HDFS_CONNECTOR_NAME, MResource.TYPE.CONNECTOR);
     try {
       client.getPrivilegesByPrincipal(group1, resource1);
       fail("expected not support exception happend");
@@ -63,26 +63,26 @@ public class TestShowPrivilege extends AbstractSqoopSentryTestBase {
     /**
      * user1 belongs to group group1
      * admin user grant role role1 to group group1
-     * admin user grant read privilege on connector all to role role1
+     * admin user grant read privilege on connector HDFS_CONNECTOR_NAME to role role1
      */
     SqoopClient client = sqoopServerRunner.getSqoopClient(ADMIN_USER);
     MRole role1 = new MRole(ROLE1);
     MPrincipal group1Princ = new MPrincipal(GROUP1, MPrincipal.TYPE.GROUP);
     MPrincipal role1Princ = new MPrincipal(ROLE1, MPrincipal.TYPE.ROLE);
-    MResource allConnector = new MResource(SqoopActionConstant.ALL, MResource.TYPE.CONNECTOR);
-    MPrivilege readPriv = new MPrivilege(allConnector, SqoopActionConstant.READ, false);
+    MResource hdfsConnector = new MResource(HDFS_CONNECTOR_NAME, MResource.TYPE.CONNECTOR);
+    MPrivilege readPriv = new MPrivilege(hdfsConnector, SqoopActionConstant.READ, false);
     client.createRole(role1);
     client.grantRole(Lists.newArrayList(role1), Lists.newArrayList(group1Princ));
     client.grantPrivilege(Lists.newArrayList(role1Princ), Lists.newArrayList(readPriv));
 
     // user1 show privilege on role1
     client = sqoopServerRunner.getSqoopClient(USER1);
-    assertTrue(client.getPrivilegesByPrincipal(role1Princ, allConnector).size() == 1);
+    assertTrue(client.getPrivilegesByPrincipal(role1Princ, hdfsConnector).size() == 1);
 
     // user2 can't show privilege on role1, because user2 doesn't belong to role1
     client = sqoopServerRunner.getSqoopClient(USER2);
     try {
-      client.getPrivilegesByPrincipal(role1Princ, allConnector);
+      client.getPrivilegesByPrincipal(role1Princ, hdfsConnector);
       fail("expected SentryAccessDeniedException happend");
     } catch (Exception e) {
       assertCausedMessage(e, "SentryAccessDeniedException");
