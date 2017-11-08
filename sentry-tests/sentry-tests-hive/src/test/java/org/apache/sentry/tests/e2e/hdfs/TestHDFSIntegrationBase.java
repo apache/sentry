@@ -807,7 +807,6 @@ public abstract class TestHDFSIntegrationBase {
           properties.put(ServerConfig.RPC_ADDRESS, "localhost");
           properties.put(ServerConfig.RPC_PORT, String.valueOf(sentryPort > 0 ? sentryPort : 0));
           properties.put(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
-          properties.put("sentry.hive.server", "server1");
 
           properties.put(ServerConfig.SENTRY_STORE_GROUP_MAPPING, ServerConfig.SENTRY_STORE_LOCAL_GROUP_MAPPING);
           properties.put(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE, policyFileLocation.getPath());
@@ -856,7 +855,6 @@ public abstract class TestHDFSIntegrationBase {
     //Clean up roles
     conn = hiveServer2.createConnection("hive", "hive");
     stmt = conn.createStatement();
-    LOGGER.info("About to clear all roles");
     for( String role:roles) {
       stmt.execute("drop role " + role);
     }
