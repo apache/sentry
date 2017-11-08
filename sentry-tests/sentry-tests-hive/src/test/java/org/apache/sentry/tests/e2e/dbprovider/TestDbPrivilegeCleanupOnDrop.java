@@ -22,8 +22,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -31,23 +29,17 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.sentry.service.thrift.HMSFollower;
-import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
-import org.junit.BeforeClass;
+import org.apache.sentry.tests.e2e.hdfs.TestHDFSIntegrationBase;
+import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import org.junit.Before;
-import org.junit.After;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
-import com.google.common.io.Resources;
 
-public class TestDbPrivilegeCleanupOnDrop extends
-    AbstractTestWithStaticConfiguration {
+public class TestDbPrivilegeCleanupOnDrop extends TestHDFSIntegrationBase {
 
   private final static int SHOW_GRANT_TABLE_POSITION = 2;
   private final static int SHOW_GRANT_DB_POSITION = 1;
-
-  private final String SINGLE_TYPE_DATA_FILE_NAME = "kv1.dat";
 
   private final static String tableName1 = "tb_1";
   private final static String tableName2 = "tb_2";
@@ -55,43 +47,60 @@ public class TestDbPrivilegeCleanupOnDrop extends
   private final static String tableName4 = "tb_4";
   private final static String renameTag = "_new";
 
-  static final long WAIT_FOR_NOTIFICATION_PROCESSING = 10000;
+  protected static final String ALL_DB1 = "server=server1->db=db_1",
+          ADMIN1 = StaticUserGroup.ADMIN1,
+          ADMINGROUP = StaticUserGroup.ADMINGROUP,
+          USER1_1 = StaticUserGroup.USER1_1,
+          USER2_1 = StaticUserGroup.USER2_1,
+          USER3_1 = StaticUserGroup.USER3_1,
+          USERGROUP1 = StaticUserGroup.USERGROUP1,
+          USERGROUP2 = StaticUserGroup.USERGROUP2,
+          USERGROUP3 = StaticUserGroup.USERGROUP3,
+          DB1 = "db_1",
+          DB2 = "db_2";
 
-  @BeforeClass
-  public static void setupTestStaticConfiguration() throws Exception {
-    useSentryService = true;
-    if (!setMetastoreListener) {
-      setMetastoreListener = true;
-    }
-    AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
-  }
+  static final long WAIT_FOR_NOTIFICATION_PROCESSING = 5000;
 
-  @Override
+  private Connection connection;
+  private Statement statement;
+
   @Before
-  public void setup() throws Exception {
-    super.setupAdmin();
-    super.setup();
-    // context = createContext();
-    File dataFile = new File(dataDir, SINGLE_TYPE_DATA_FILE_NAME);
-    FileOutputStream to = new FileOutputStream(dataFile);
-    Resources.copy(Resources.getResource(SINGLE_TYPE_DATA_FILE_NAME), to);
-    to.close();
-    // Check the HMS connection only when notification log is enabled.
-    if (enableNotificationLog) {
-      while (!HMSFollower.isConnectedToHms()) {
-        Thread.sleep(1000);
-      }
-    }
+  public void initialize() throws Exception{
+    super.setUpTempDir();
+    admin = "hive";
+    connection = hiveServer2.createConnection(admin, admin);
+    statement = connection.createStatement();
+    statement.execute("create role admin_role");
+    statement.execute("grant role admin_role to group hive");
+    statement.execute("grant all on server server1 to role admin_role");
   }
 
-  @After
-  public void tearDown() throws Exception {
-    if (context != null) {
-      context.close();
-    }
-  }
+  @Test
+  public void BasicSanity() throws Exception {
+    dbNames = new String[]{DB1};
+    roles = new String[]{"admin_role", "all_db1", "all_tbl1", "all_tbl2"};
 
+    statement.execute("CREATE ROLE all_db1");
+    statement.execute("CREATE ROLE all_tbl1");
+    statement.execute("CREATE ROLE all_tbl2");
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("create table " + DB1 + "." + tableName3
+            + " (under_col int comment 'the under column', value string)");
+    statement.execute("create table " + DB1 + "." + tableName4
+            + " (under_col int comment 'the under column', value string)");
+
+
+    statement.execute("GRANT all ON DATABASE " + DB1 + " TO ROLE all_db1");
+    statement.execute("USE " + DB1);
+    statement.execute("GRANT all ON TABLE " + tableName3 + " TO ROLE all_tbl1");
+    statement.execute("GRANT all ON TABLE " + tableName4 + " TO ROLE all_tbl2");
+
+    statement.execute("DROP DATABASE " + DB1 + " CASCADE");
+
+    verifyDbPrivilegesDropped(statement);
+  }
   /**
+   *
    * drop table and verify that the no privileges are referring to it drop db
    * and verify that the no privileges are referring to it drop db cascade
    * verify that the no privileges are referring to db and tables under it
@@ -100,16 +109,15 @@ public class TestDbPrivilegeCleanupOnDrop extends
    */
   @Test
   public void testDropObjects() throws Exception {
-    Connection connection = context.createConnection(ADMIN1);
-    Statement statement = context.createStatement(connection);
+    dbNames = new String[]{DB1, DB2};
+    roles = new String[]{"admin_role", "read_db1", "all_db1", "select_tbl1",
+            "insert_tbl1", "all_tbl1", "all_tbl2", "all_prod"};
 
     setupRoles(statement); // create required roles
     setupDbObjects(statement); // create test DBs and Tables
     setupPrivileges(statement); // setup privileges for USER1
     dropDbObjects(statement); // drop objects
-    if (enableNotificationLog) {
-      Thread.sleep(WAIT_FOR_NOTIFICATION_PROCESSING);
-    }
+    Thread.sleep(WAIT_FOR_NOTIFICATION_PROCESSING);
     verifyPrivilegesDropped(statement); // verify privileges are removed
 
     statement.close();
@@ -138,17 +146,17 @@ public class TestDbPrivilegeCleanupOnDrop extends
    */
   @Test
   public void testReCreateObjects() throws Exception {
-    Connection connection = context.createConnection(ADMIN1);
-    Statement statement = context.createStatement(connection);
+    dbNames = new String[]{DB1, DB2};
+    roles = new String[]{"admin_role", "read_db1", "all_db1", "select_tbl1",
+            "insert_tbl1", "all_tbl1", "all_tbl2", "all_prod"};
+
     setupRoles(statement); // create required roles
     setupDbObjects(statement); // create test DBs and Tables
     setupPrivileges(statement); // setup privileges for USER1
     dropDbObjects(statement); // drop DB and tables
 
     setupDbObjects(statement); // recreate same DBs and tables
-    if (enableNotificationLog) {
-      Thread.sleep(WAIT_FOR_NOTIFICATION_PROCESSING);
-    }
+    Thread.sleep(WAIT_FOR_NOTIFICATION_PROCESSING);
     verifyPrivilegesDropped(statement); // verify the stale privileges removed
   }
 
@@ -160,15 +168,14 @@ public class TestDbPrivilegeCleanupOnDrop extends
    */
   @Test
   public void testRenameTables() throws Exception {
-    Connection connection = context.createConnection(ADMIN1);
-    Statement statement = context.createStatement(connection);
+    dbNames = new String[]{DB1, DB2};
+    roles = new String[]{"admin_role", "read_db1", "all_db1", "select_tbl1",
+            "insert_tbl1", "all_tbl1", "all_tbl2", "all_prod"};
 
     setupRoles(statement); // create required roles
     setupDbObjects(statement); // create test DBs and Tables
     setupPrivileges(statement); // setup privileges for USER1
-    if (enableNotificationLog) {
-      Thread.sleep(WAIT_FOR_NOTIFICATION_PROCESSING);
-    }
+    Thread.sleep(WAIT_FOR_NOTIFICATION_PROCESSING);
 
     // verify privileges on the created tables
     statement.execute("USE " + DB2);
@@ -180,9 +187,7 @@ public class TestDbPrivilegeCleanupOnDrop extends
 
     renameTables(statement); // alter tables to rename
     // verify privileges removed for old tables
-    if (enableNotificationLog) {
-      Thread.sleep(WAIT_FOR_NOTIFICATION_PROCESSING);
-    }
+    Thread.sleep(WAIT_FOR_NOTIFICATION_PROCESSING);
     verifyTablePrivilegesDropped(statement);
 
     // verify privileges created for new tables
@@ -205,8 +210,9 @@ public class TestDbPrivilegeCleanupOnDrop extends
    */
   @Test
   public void testDropAndRenameWithMultiAction() throws Exception {
-    Connection connection = context.createConnection(ADMIN1);
-    Statement statement = context.createStatement(connection);
+    dbNames = new String[]{DB1, DB2};
+    roles = new String[]{"admin_role", "user_role"};
+
     statement.execute("CREATE ROLE user_role");
     statement.execute("GRANT ROLE user_role TO GROUP " + USERGROUP1);
 
@@ -224,19 +230,15 @@ public class TestDbPrivilegeCleanupOnDrop extends
     statement.execute("GRANT CREATE ON DATABASE " + DB1 + " TO ROLE user_role");
 
     // After rename table t1 to t2
-    connection = context.createConnection(USER1_1);
-    statement = context.createStatement(connection);
+    connection = hiveServer2.createConnection(USER1_1, USER1_1);
+    statement = connection.createStatement();
     statement.execute("USE " + DB1);
     statement.execute("ALTER TABLE t1 RENAME TO t2");
-    if (enableNotificationLog) {
-      Thread.sleep(WAIT_FOR_NOTIFICATION_PROCESSING);
-    }
+    Thread.sleep(WAIT_FOR_NOTIFICATION_PROCESSING);
 
     // After rename table t1 to t2, user_role should have permission to drop t2
     statement.execute("drop table t2");
-    if (enableNotificationLog) {
-      Thread.sleep(WAIT_FOR_NOTIFICATION_PROCESSING);
-    }
+    Thread.sleep(WAIT_FOR_NOTIFICATION_PROCESSING);
     ResultSet resultSet = statement.executeQuery("SHOW GRANT ROLE user_role");
     // user_role will revoke all privilege from table t2, only remain DROP/CREATE on db_1
     assertRemainingRows(resultSet, 2);
@@ -353,7 +355,7 @@ public class TestDbPrivilegeCleanupOnDrop extends
         String returned = resultSet.getString(resultPos);
         assertFalse("value " + objectName + " shouldn't be detected, but actually " + returned + " is found from resultSet",
                 objectName.equalsIgnoreCase(returned));
-      }
+          }
       resultSet.close();
     }
   }
