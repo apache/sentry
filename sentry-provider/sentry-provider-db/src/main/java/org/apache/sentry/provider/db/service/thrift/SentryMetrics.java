@@ -375,7 +375,11 @@ public final class SentryMetrics {
         }
 
         // Move temp file to the destination file
-        Files.move(tmpFile, path, StandardCopyOption.REPLACE_EXISTING);
+        try {
+          Files.move(tmpFile, path, StandardCopyOption.ATOMIC_MOVE);
+        } catch (Exception e) {
+          LOGGER.error("Failed to move temp metrics file to {}: {}", path, e.getMessage());
+        }
       } catch (Throwable t) {
         // catch all errors (throwable and execptions to prevent subsequent tasks from being suppressed)
         LOGGER.error("Error executing scheduled task ", t);
