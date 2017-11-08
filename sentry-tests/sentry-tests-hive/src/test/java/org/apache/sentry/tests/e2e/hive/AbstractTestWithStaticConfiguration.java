@@ -128,7 +128,6 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
   protected static final String SERVER_HOST = "localhost";
   private static final String EXTERNAL_SENTRY_SERVICE = "sentry.e2etest.external.sentry";
   protected static final String EXTERNAL_HIVE_LIB = "sentry.e2etest.hive.lib";
-  private static final String ENABLE_NOTIFICATION_LOG = "sentry.e2etest.enable.notification.log";
 
   protected static boolean policyOnHdfs = false;
   protected static boolean defaultFSOnHdfs = false;
@@ -152,7 +151,7 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
   protected static Map<String, String> properties;
   protected static SentrySrv sentryServer;
   protected static Configuration sentryConf;
-  protected static boolean enableNotificationLog = false;
+  protected static boolean enableNotificationLog = true;
   protected static Context context;
   protected final String semanticException = "SemanticException No valid privileges";
 
@@ -280,10 +279,6 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
       policyURI += "/" + HiveServerFactory.AUTHZ_PROVIDER_FILENAME;
     } else {
       policyURI = policyFileLocation.getPath();
-    }
-
-    if ("true".equalsIgnoreCase(System.getProperty(ENABLE_NOTIFICATION_LOG, "false"))) {
-      enableNotificationLog = true;
     }
 
     if (enableHiveConcurrency) {
