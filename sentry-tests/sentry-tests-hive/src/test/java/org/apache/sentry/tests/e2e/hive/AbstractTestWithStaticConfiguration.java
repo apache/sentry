@@ -52,7 +52,6 @@ import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.sentry.binding.hive.SentryHiveAuthorizationTaskFactoryImpl;
 import org.apache.sentry.binding.metastore.SentryMetastorePostEventListenerNotificationLog;
-import org.apache.sentry.binding.metastore.SentryMetastorePostEventListener;
 import org.apache.sentry.core.model.db.DBModelAction;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.core.model.db.DBModelAuthorizables;
@@ -520,13 +519,8 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
         properties.put(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname,
                 "org.apache.hive.hcatalog.listener.DbNotificationListener");
       } else {
-        if (enableNotificationLog) {
-          properties.put(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname,
-              SentryMetastorePostEventListenerNotificationLog.class.getName());
-        } else {
-          properties.put(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname,
-              SentryMetastorePostEventListener.class.getName());
-        }
+        properties.put(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname,
+            SentryMetastorePostEventListenerNotificationLog.class.getName());
         properties.put("hcatalog.message.factory.impl.json",
             "org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageFactory");
       }
