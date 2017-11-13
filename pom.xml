@@ -414,11 +414,6 @@ limitations under the License.
       </dependency>
       <dependency>
         <groupId>org.apache.sentry</groupId>
-        <artifactId>sentry-binding-hive-v2</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.sentry</groupId>
         <artifactId>sentry-binding-solr</artifactId>
         <version>${project.version}</version>
       </dependency>
