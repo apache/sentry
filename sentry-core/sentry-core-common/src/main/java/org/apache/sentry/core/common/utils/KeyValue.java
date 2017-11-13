@@ -68,6 +68,17 @@ public class KeyValue {
     return result;
   }
 
+  /**
+   * Compares the specified object with this KeyValue for equality.
+   *
+   * Returns true if and only if the specified object is also a KeyValue and the corresponding
+   * key-value pair in the two KeyValue objects are equals. Key and value strings are compared
+   * for equality as case-insensitive (Two KeyValue objects are equal if (k1.equalsIgnoreCase(k2)
+   * && v1.equalsIgnoreCase(v1))).
+   *
+   * @param obj the object to be compared for equality with this KeyValue
+   * @return true if the specified object is equal to this KeyValue
+   */
   @Override
   public boolean equals(Object obj) {
     if (this == obj) {
@@ -84,14 +95,14 @@ public class KeyValue {
       if (other.key != null) {
         return false;
       }
-    } else if (!key.equals(other.key)) {
+    } else if (!key.equalsIgnoreCase(other.key)) {
       return false;
     }
     if (value == null) {
       if (other.value != null) {
         return false;
       }
-    } else if (!value.equals(other.value)) {
+    } else if (!value.equalsIgnoreCase(other.value)) {
       return false;
     }
     return true;

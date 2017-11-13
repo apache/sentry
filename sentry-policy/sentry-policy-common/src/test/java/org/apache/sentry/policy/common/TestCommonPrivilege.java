@@ -129,19 +129,4 @@ public class TestCommonPrivilege {
     assertFalse(privilegForSelect.implies(privilegForAll, testModel));
     assertFalse(privilegForInsert.implies(privilegForAll, testModel));
   }
-
-  @Test
-  public void testImplyStringCaseSensitive() throws Exception {
-    CommonPrivilege privileg1 = new CommonPrivilege("server=server1->db=db1->table=table1->column=col1->action=select");
-    CommonPrivilege privileg2 = new CommonPrivilege("server=server1->db=db1->table=table1->column=CoL1->action=select");
-    CommonPrivilege privileg3 = new CommonPrivilege("server=SERver1->db=Db1->table=TAbLe1->column=col1->action=select");
-    CommonPrivilege privileg4 = new CommonPrivilege("SERVER=server1->DB=db1->TABLE=table1->COLUMN=col1->ACTION=select");
-
-    // column is case sensitive
-    assertFalse(privileg1.implies(privileg2, testModel));
-    // server, db, table is case insensitive
-    assertTrue(privileg1.implies(privileg3, testModel));
-    // key in privilege is case insensitive
-    assertTrue(privileg1.implies(privileg4, testModel));
-  }
 }
