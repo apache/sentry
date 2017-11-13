@@ -35,7 +35,7 @@ import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.BitFieldAction;
 import org.apache.sentry.core.common.BitFieldActionFactory;
 import org.apache.sentry.core.model.kafka.KafkaActionFactory;
-import org.apache.sentry.core.model.search.SearchActionFactory;
+import org.apache.sentry.core.model.solr.SolrActionFactory;
 import org.apache.sentry.core.model.sqoop.SqoopActionFactory;
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject.Builder;
 import org.apache.sentry.provider.db.service.model.MSentryGMPrivilege;
@@ -67,7 +67,7 @@ public class PrivilegeOperatePersistence {
   private static final Logger LOGGER = LoggerFactory.getLogger(PrivilegeOperatePersistence.class);
   private static final Map<String, BitFieldActionFactory> actionFactories = Maps.newHashMap();
   static{
-    actionFactories.put("solr", new SearchActionFactory());
+    actionFactories.put("solr", new SolrActionFactory());
     actionFactories.put("sqoop", new SqoopActionFactory());
     actionFactories.put("kafka", KafkaActionFactory.getInstance());
   }

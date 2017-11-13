@@ -29,9 +29,9 @@ import java.util.Set;
 import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
-import org.apache.sentry.core.model.search.Collection;
-import org.apache.sentry.core.model.search.Field;
-import org.apache.sentry.core.model.search.SearchConstants;
+import org.apache.sentry.core.model.solr.Collection;
+import org.apache.sentry.core.model.solr.Field;
+import org.apache.sentry.core.model.solr.SolrConstants;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
@@ -122,11 +122,11 @@ public class TestSentryGenericServiceIntegration extends SentryGenericServiceInt
 
         TSentryPrivilege queryPrivilege = new TSentryPrivilege(SOLR, "service1",
                                               fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
-                                              SearchConstants.QUERY);
+                                              SolrConstants.QUERY);
 
         TSentryPrivilege updatePrivilege = new TSentryPrivilege(SOLR, "service1",
             fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
-            SearchConstants.UPDATE);
+            SolrConstants.UPDATE);
 
         client.grantPrivilege(requestorUserName, roleName1, SOLR, queryPrivilege);
         client.grantPrivilege(requestorUserName, roleName2, SOLR, updatePrivilege);
@@ -156,7 +156,7 @@ public class TestSentryGenericServiceIntegration extends SentryGenericServiceInt
 
         TSentryPrivilege queryPrivilege = new TSentryPrivilege(SOLR, "service1",
             fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
-            SearchConstants.QUERY);
+            SolrConstants.QUERY);
 
         client.grantPrivilege(requestorUserName, roleName1, SOLR, queryPrivilege);
         Set<TSentryPrivilege> listPrivilegesByRoleName = client.listAllPrivilegesByRoleName(requestorUserName, roleName1, SOLR, "service1");
@@ -215,11 +215,11 @@ public class TestSentryGenericServiceIntegration extends SentryGenericServiceInt
 
         TSentryPrivilege queryPrivilege = new TSentryPrivilege(SOLR, "service1",
             fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
-            SearchConstants.QUERY);
+            SolrConstants.QUERY);
 
         TSentryPrivilege updatePrivilege = new TSentryPrivilege(SOLR, "service1",
             fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
-            SearchConstants.UPDATE);
+            SolrConstants.UPDATE);
 
         client.grantPrivilege(requestorUserName, roleName, SOLR, updatePrivilege);
         client.grantPrivilege(requestorUserName, roleName, SOLR, queryPrivilege);
@@ -247,7 +247,7 @@ public class TestSentryGenericServiceIntegration extends SentryGenericServiceInt
 
         TSentryPrivilege queryPrivilege = new TSentryPrivilege(SOLR, "service1",
             fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
-            SearchConstants.QUERY);
+            SolrConstants.QUERY);
 
         client.grantPrivilege(requestorUserName, roleName, SOLR, queryPrivilege);
         assertEquals(1, client.listAllPrivilegesByRoleName(requestorUserName, roleName, SOLR, "service1").size());
@@ -281,17 +281,17 @@ public class TestSentryGenericServiceIntegration extends SentryGenericServiceInt
 
         TSentryPrivilege grantPrivilege = new TSentryPrivilege(SOLR, "service1",
             fromAuthorizable(Arrays.asList(new Collection("c1"))),
-            SearchConstants.QUERY);
+            SolrConstants.QUERY);
         grantPrivilege.setGrantOption(TSentryGrantOption.TRUE);
 
         TSentryPrivilege noGrantPrivilege = new TSentryPrivilege(SOLR, "service1",
             fromAuthorizable(Arrays.asList(new Collection("c1"))),
-            SearchConstants.QUERY);
+            SolrConstants.QUERY);
         noGrantPrivilege.setGrantOption(TSentryGrantOption.FALSE);
 
         TSentryPrivilege testPrivilege = new TSentryPrivilege(SOLR, "service1",
             fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
-            SearchConstants.QUERY);
+            SolrConstants.QUERY);
         testPrivilege.setGrantOption(TSentryGrantOption.FALSE);
 
         client.grantPrivilege(adminUser, grantRole, SOLR, grantPrivilege);
@@ -346,11 +346,11 @@ public class TestSentryGenericServiceIntegration extends SentryGenericServiceInt
 
         TSentryPrivilege queryPrivilege = new TSentryPrivilege(SOLR, "service1",
             fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
-            SearchConstants.QUERY);
+            SolrConstants.QUERY);
 
         TSentryPrivilege updatePrivilege = new TSentryPrivilege(SOLR, "service1",
             fromAuthorizable(Arrays.asList(new Collection("c2"), new Field("f2"))),
-            SearchConstants.UPDATE);
+            SolrConstants.UPDATE);
 
         client.grantPrivilege(adminUser, testRole, SOLR, queryPrivilege);
         client.grantPrivilege(adminUser, testRole, SOLR, updatePrivilege);
@@ -405,11 +405,11 @@ public class TestSentryGenericServiceIntegration extends SentryGenericServiceInt
 
         TSentryPrivilege queryPrivilege = new TSentryPrivilege(SOLR, "service1",
         fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
-        SearchConstants.QUERY);
+        SolrConstants.QUERY);
 
         TSentryPrivilege updatePrivilege = new TSentryPrivilege(SOLR, "service1",
         fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f2"))),
-        SearchConstants.UPDATE);
+        SolrConstants.UPDATE);
 
         client.grantPrivilege(adminUser, testRole, SOLR, queryPrivilege);
         client.grantPrivilege(adminUser, testRole, SOLR, updatePrivilege);
@@ -464,7 +464,7 @@ public class TestSentryGenericServiceIntegration extends SentryGenericServiceInt
 
         TSentryPrivilege queryPrivilege = new TSentryPrivilege(SOLR, "service1",
             fromAuthorizable(Arrays.asList(new Collection("c1"), new Field("f1"))),
-            SearchConstants.QUERY);
+            SolrConstants.QUERY);
         client.grantPrivilege(requestorUserName, roleName, SOLR, queryPrivilege);
 
         assertEquals(1, client.listPrivilegesByRoleName(requestorUserName, roleName,
@@ -484,7 +484,7 @@ public class TestSentryGenericServiceIntegration extends SentryGenericServiceInt
 
         TSentryPrivilege dropPrivilege = new TSentryPrivilege(SOLR, "service1",
             fromAuthorizable(Arrays.asList(new Collection("c2"), new Field("f2"))),
-            SearchConstants.QUERY);
+            SolrConstants.QUERY);
 
         client.dropPrivilege(requestorUserName, SOLR, dropPrivilege);
 

@@ -16,56 +16,64 @@
  */
 package org.apache.sentry.tests.e2e.solr;
 
-import org.junit.After;
-import org.junit.Before;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.apache.sentry.tests.e2e.solr.TestSentryServer.ADMIN_USER;
 
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.sentry.core.common.exception.SentryUserException;
+import org.apache.sentry.core.model.solr.SolrConstants;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-
-import java.io.File;
-import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.List;
-
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
  * Test the document-level security features
  */
-public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
+public class TestDocLevelOperations extends AbstractSolrSentryTestCase {
   private static final String AUTH_FIELD = "sentry_auth";
   private static final int NUM_DOCS = 100;
   private static final int EXTRA_AUTH_FIELDS = 2;
-  private String userName = null;
+
+  @BeforeClass
+  public static void setupPermissions() throws SentryUserException {
+    sentryClient.createRole(ADMIN_USER, "junit_role", COMPONENT_SOLR);
+    sentryClient.createRole(ADMIN_USER, "doclevel_role", COMPONENT_SOLR);
+    sentryClient.grantRoleToGroups(ADMIN_USER, "junit_role", COMPONENT_SOLR,
+        Collections.singleton("junit"));
+    sentryClient.grantRoleToGroups(ADMIN_USER, "doclevel_role", COMPONENT_SOLR,
+        Collections.singleton("doclevel"));
+
+    // junit user
+    grantAdminPrivileges(ADMIN_USER, "junit_role", SolrConstants.ALL, SolrConstants.ALL);
+    grantCollectionPrivileges(ADMIN_USER, "junit_role", "docLevelCollection", SolrConstants.ALL);
+    grantCollectionPrivileges(ADMIN_USER, "junit_role", "allRolesCollection", SolrConstants.ALL);
+    grantCollectionPrivileges(ADMIN_USER, "junit_role", "testUpdateDeleteOperations", SolrConstants.ALL);
+
+    // docLevel user
+    grantCollectionPrivileges(ADMIN_USER, "doclevel_role", "docLevelCollection", SolrConstants.ALL);
+    grantCollectionPrivileges(ADMIN_USER, "doclevel_role", "testUpdateDeleteOperations", SolrConstants.ALL);
+
+    // admin user
+    grantCollectionPrivileges(ADMIN_USER, ADMIN_ROLE, SolrConstants.ALL, SolrConstants.ALL);
+  }
 
   @Before
-  public void beforeTest() throws Exception {
-    userName = getAuthenticatedUser();
-  }
-
-  @After
-  public void afterTest() throws Exception {
-    setAuthenticationUser(userName);
-  }
-
-  private void setupCollectionWithDocSecurity(String name) throws Exception {
-    String configDir = RESOURCES_DIR + File.separator + DEFAULT_COLLECTION
-      + File.separator + "conf";
-    uploadConfigDirToZk(configDir);
-    // replace solrconfig.xml with solrconfig-doc-level.xml
-    uploadConfigFileToZk(configDir + File.separator + "solrconfig-doclevel.xml",
-      "solrconfig.xml");
-    setupCollection(name);
+  public void resetAuthenticatedUser() {
+    setAuthenticationUser("admin");
   }
 
   private QueryRequest getRealTimeGetRequest() {
@@ -77,6 +85,7 @@ public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
     return getRealTimeGetRequest(idsBuilder.toString());
   }
 
+  @SuppressWarnings("serial")
   private QueryRequest getRealTimeGetRequest(String ids) {
     final ModifiableSolrParams idsParams = new ModifiableSolrParams();
     idsParams.add("ids", ids);
@@ -107,34 +116,29 @@ public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
     // ensure no current documents
     verifyDeletedocsPass(ADMIN_USER, collectionName, true);
 
-    CloudSolrServer server = getCloudSolrServer(collectionName);
-    try {
-      DocLevelGenerator generator = new DocLevelGenerator(AUTH_FIELD);
-      generator.generateDocs(server, NUM_DOCS, "junit_role", "admin_role", EXTRA_AUTH_FIELDS);
+    DocLevelGenerator generator = new DocLevelGenerator(collectionName, AUTH_FIELD);
+    generator.generateDocs(cluster.getSolrClient(), NUM_DOCS, "junit_role", "admin_role", EXTRA_AUTH_FIELDS);
 
-      querySimple(new QueryRequest(new SolrQuery("*:*")), server, checkNonAdminUsers);
-      querySimple(getRealTimeGetRequest(), server, checkNonAdminUsers);
-    } finally {
-      server.shutdown();
-    }
+    querySimple(collectionName, new QueryRequest(new SolrQuery("*:*")), cluster.getSolrClient(), checkNonAdminUsers);
+    querySimple(collectionName, getRealTimeGetRequest(), cluster.getSolrClient(), checkNonAdminUsers);
   }
 
-  private void querySimple(QueryRequest request, CloudSolrServer server,
+  private void querySimple(String collectionName, QueryRequest request, CloudSolrClient client,
       boolean checkNonAdminUsers) throws Exception {
     // as admin  -- should get the other half
     setAuthenticationUser("admin");
-    QueryResponse  rsp = request.process(server);
+    QueryResponse  rsp = request.process(client, collectionName);
     SolrDocumentList docList = rsp.getResults();
     assertEquals(NUM_DOCS / 2, docList.getNumFound());
     for (SolrDocument doc : docList) {
       String id = doc.getFieldValue("id").toString();
       assertEquals(1, Long.valueOf(id) % 2);
     }
- 
+
     if (checkNonAdminUsers) {
       // as junit -- should get half the documents
       setAuthenticationUser("junit");
-      rsp = request.process(server);
+      rsp = request.process(client, collectionName);
       docList = rsp.getResults();
       assertEquals(NUM_DOCS / 2, docList.getNumFound());
       for (SolrDocument doc : docList) {
@@ -143,8 +147,8 @@ public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
       }
 
       // as docLevel -- should get all
-      setAuthenticationUser("docLevel");
-      rsp = request.process(server);
+      setAuthenticationUser("doclevel");
+      rsp = request.process(client, collectionName);
       assertEquals(NUM_DOCS, rsp.getResults().getNumFound());
     }
   }
@@ -155,38 +159,31 @@ public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
   @Test
   public void testDocLevelOperations() throws Exception {
     String collectionName = "docLevelCollection";
-    setupCollectionWithDocSecurity(collectionName);
+    createCollection(ADMIN_USER, collectionName, "cloud-minimal_doc_level_security", NUM_SERVERS, 1);
 
-    try {
-      createDocsAndQuerySimple(collectionName, true);
-      CloudSolrServer server = getCloudSolrServer(collectionName);
-      try {
-        // test filter queries work as AND -- i.e. user can't avoid doc-level
-        // checks by prefixing their own filterQuery
-        setAuthenticationUser("junit");
-        String fq = URLEncoder.encode(" {!raw f=" + AUTH_FIELD + " v=docLevel_role}", "UTF-8");
-        String path = "/" + collectionName + "/select?q=*:*&fq="+fq;
-        String retValue = makeHttpRequest(server, "GET", path, null, null);
-        assertTrue(retValue.contains("numFound=\"" + NUM_DOCS / 2 + "\" "));
+    CloudSolrClient client = cluster.getSolrClient();
+    createDocsAndQuerySimple(collectionName, true);
 
-        // test that user can't inject an "OR" into the query
-        final String syntaxErrorMsg = "org.apache.solr.search.SyntaxError: Cannot parse";
-        fq = URLEncoder.encode(" {!raw f=" + AUTH_FIELD + " v=docLevel_role} OR ", "UTF-8");
-        path = "/" + collectionName + "/select?q=*:*&fq="+fq;
-        retValue = makeHttpRequest(server, "GET", path, null, null);
-        assertTrue(retValue.contains(syntaxErrorMsg));
+    // test filter queries work as AND -- i.e. user can't avoid doc-level
+    // checks by prefixing their own filterQuery
+    setAuthenticationUser("junit");
+    String fq = URLEncoder.encode(" {!raw f=" + AUTH_FIELD + " v=doclevel_role}");
+    String path = "/" + collectionName + "/select?q=*:*&fq="+fq;
+    String retValue = makeHttpRequest(client, "GET", path, null, null, HttpServletResponse.SC_OK);
+    assertTrue("Result : " + retValue, retValue.contains("\"numFound\":"  + NUM_DOCS / 2));
 
-        // same test, prefix OR this time
-        fq = URLEncoder.encode(" OR {!raw f=" + AUTH_FIELD + " v=docLevel_role}", "UTF-8");
-        path = "/" + collectionName + "/select?q=*:*&fq="+fq;
-        retValue = makeHttpRequest(server, "GET", path, null, null);
-        assertTrue(retValue.contains(syntaxErrorMsg));
-      } finally {
-        server.shutdown();
-      }
-    } finally {
-      deleteCollection(collectionName);
-    }
+    // test that user can't inject an "OR" into the query
+    final String syntaxErrorMsg = "org.apache.solr.search.SyntaxError: Cannot parse";
+    fq = URLEncoder.encode(" {!raw f=" + AUTH_FIELD + " v=docLevel_role} OR ");
+    path = "/" + collectionName + "/select?q=*:*&fq="+fq;
+    retValue = makeHttpRequest(client, "GET", path, null, null, HttpServletResponse.SC_BAD_REQUEST);
+    assertTrue(retValue.contains(syntaxErrorMsg));
+
+    // same test, prefix OR this time
+    fq = URLEncoder.encode(" OR {!raw f=" + AUTH_FIELD + " v=docLevel_role}");
+    path = "/" + collectionName + "/select?q=*:*&fq="+fq;
+    retValue = makeHttpRequest(client, "GET", path, null, null, HttpServletResponse.SC_BAD_REQUEST);
+    assertTrue(retValue.contains(syntaxErrorMsg));
   }
 
   /**
@@ -196,67 +193,57 @@ public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
   @Test
   public void testAllRolesToken() throws Exception {
     String collectionName = "allRolesCollection";
-    setupCollectionWithDocSecurity(collectionName);
+    createCollection(ADMIN_USER, collectionName, "cloud-minimal_doc_level_security", NUM_SERVERS, 1);
 
+    String allRolesToken = "OR";
+    int junitFactor = 2;
+    int allRolesFactor  = 5;
 
-    try {
-      String allRolesToken = "OR";
-      int junitFactor = 2;
-      int allRolesFactor  = 5;
+    int totalJunitAdded = 0; // total docs added with junit token
+    int totalAllRolesAdded = 0; // total number of docs with the allRolesToken
+    int totalOnlyAllRolesAdded = 0; // total number of docs with _only_ the allRolesToken
 
-      int totalJunitAdded = 0; // total docs added with junit token
-      int totalAllRolesAdded = 0; // total number of docs with the allRolesToken
-      int totalOnlyAllRolesAdded = 0; // total number of docs with _only_ the allRolesToken
+    // create documents
+    ArrayList<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
+    for (int i = 0; i < NUM_DOCS; ++i) {
+      boolean addedViaJunit = false;
+      SolrInputDocument doc = new SolrInputDocument();
+      String iStr = Long.toString(i);
+      doc.addField("id", iStr);
+      doc.addField("description", "description" + iStr);
 
-      // create documents
-      ArrayList<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
-      for (int i = 0; i < NUM_DOCS; ++i) {
-        boolean addedViaJunit = false;
-        SolrInputDocument doc = new SolrInputDocument();
-        String iStr = Long.toString(i);
-        doc.addField("id", iStr);
-        doc.addField("description", "description" + iStr);
-
-        if (i % junitFactor == 0) {
-          doc.addField(AUTH_FIELD, "junit_role");
-          addedViaJunit = true;
-          ++totalJunitAdded;
-        } if (i % allRolesFactor == 0) {
-          doc.addField(AUTH_FIELD, allRolesToken);
-          ++totalAllRolesAdded;
-          if (!addedViaJunit) {
-            ++totalOnlyAllRolesAdded;
-          }
+      if (i % junitFactor == 0) {
+        doc.addField(AUTH_FIELD, "junit_role");
+        addedViaJunit = true;
+        ++totalJunitAdded;
+      } if (i % allRolesFactor == 0) {
+        doc.addField(AUTH_FIELD, allRolesToken);
+        ++totalAllRolesAdded;
+        if (!addedViaJunit) {
+          ++totalOnlyAllRolesAdded;
         }
-        docs.add(doc);
       }
-      // make sure our factors give us interesting results --
-      // that some docs only have all roles and some only have junit
-      assert(totalOnlyAllRolesAdded > 0);
-      assert(totalJunitAdded > totalAllRolesAdded);
-
-      CloudSolrServer server = getCloudSolrServer(collectionName);
-      try {
-        server.add(docs);
-        server.commit(true, true);
-
-        checkAllRolesToken(new QueryRequest(new SolrQuery("*:*")), server,
-            totalAllRolesAdded, totalOnlyAllRolesAdded, allRolesFactor, totalJunitAdded, junitFactor);
-        checkAllRolesToken(getRealTimeGetRequest(), server,
-             totalAllRolesAdded, totalOnlyAllRolesAdded, allRolesFactor, totalJunitAdded, junitFactor);
-      } finally {
-        server.shutdown();
-      }
-    } finally {
-      deleteCollection(collectionName);
+      docs.add(doc);
     }
+    // make sure our factors give us interesting results --
+    // that some docs only have all roles and some only have junit
+    assert(totalOnlyAllRolesAdded > 0);
+    assert(totalJunitAdded > totalAllRolesAdded);
+
+    cluster.getSolrClient().add(collectionName, docs);
+    cluster.getSolrClient().commit(collectionName, true, true);
+
+    checkAllRolesToken(collectionName, new QueryRequest(new SolrQuery("*:*")), cluster.getSolrClient(),
+        totalAllRolesAdded, totalOnlyAllRolesAdded, allRolesFactor, totalJunitAdded, junitFactor);
+    checkAllRolesToken(collectionName, getRealTimeGetRequest(), cluster.getSolrClient(),
+         totalAllRolesAdded, totalOnlyAllRolesAdded, allRolesFactor, totalJunitAdded, junitFactor);
   }
 
-  private void checkAllRolesToken(QueryRequest request, CloudSolrServer server,
+  private void checkAllRolesToken(String collectionName, QueryRequest request, CloudSolrClient client,
       int totalAllRolesAdded, int totalOnlyAllRolesAdded, int allRolesFactor, int totalJunitAdded, int junitFactor) throws Exception {
     // as admin  -- should only get all roles token documents
     setAuthenticationUser("admin");
-    QueryResponse rsp = request.process(server);
+    QueryResponse rsp = request.process(client, collectionName);
     SolrDocumentList docList = rsp.getResults();
     assertEquals(totalAllRolesAdded, docList.getNumFound());
     for (SolrDocument doc : docList) {
@@ -266,7 +253,7 @@ public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
 
     // as junit -- should get junit added + onlyAllRolesAdded
     setAuthenticationUser("junit");
-    rsp = request.process(server);
+    rsp = request.process(client, collectionName);
     docList = rsp.getResults();
     assertEquals(totalJunitAdded + totalOnlyAllRolesAdded, docList.getNumFound());
     for (SolrDocument doc : docList) {
@@ -285,122 +272,106 @@ public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
   private void deleteByQueryTest(String collectionName, String deleteUser,
       String deleteByQueryStr, String queryUser, int expectedQueryDocs) throws Exception {
     createDocsAndQuerySimple(collectionName, true);
-    CloudSolrServer server = getCloudSolrServer(collectionName);
-    try {
-      setAuthenticationUser(deleteUser);
-      server.deleteByQuery(deleteByQueryStr);
-      server.commit();
+    setAuthenticationUser(deleteUser);
+    cluster.getSolrClient().deleteByQuery(collectionName, deleteByQueryStr);
+    cluster.getSolrClient().commit(collectionName);
 
-      checkDeleteByQuery(new QueryRequest(new SolrQuery("*:*")), server,
-          queryUser, expectedQueryDocs);
-      checkDeleteByQuery(getRealTimeGetRequest(), server,
-          queryUser, expectedQueryDocs);
-    } finally {
-      server.shutdown();
-    }
+    checkDeleteByQuery(collectionName, new QueryRequest(new SolrQuery("*:*")), cluster.getSolrClient(),
+        queryUser, expectedQueryDocs);
+    checkDeleteByQuery(collectionName, getRealTimeGetRequest(), cluster.getSolrClient(),
+        queryUser, expectedQueryDocs);
   }
 
-  private void checkDeleteByQuery(QueryRequest query, CloudSolrServer server,
+  private void checkDeleteByQuery(String collectionName, QueryRequest query, CloudSolrClient server,
       String queryUser, int expectedQueryDocs) throws Exception {
-    QueryResponse rsp =  query.process(server);
+    QueryResponse rsp =  query.process(server, collectionName);
     long junitResults = rsp.getResults().getNumFound();
     assertEquals(0, junitResults);
 
     setAuthenticationUser(queryUser);
-    rsp =  query.process(server);
+    rsp =  query.process(server, collectionName);
     long docLevelResults = rsp.getResults().getNumFound();
     assertEquals(expectedQueryDocs, docLevelResults);
   }
 
   private void deleteByIdTest(String collectionName) throws Exception {
     createDocsAndQuerySimple(collectionName, true);
-    CloudSolrServer server = getCloudSolrServer(collectionName);
-    try {
-      setAuthenticationUser("junit");
-      List<String> allIds = new ArrayList<String>(NUM_DOCS);
-      for (int i = 0; i < NUM_DOCS; ++i) {
-        allIds.add(Long.toString(i));
-      }
-      server.deleteById(allIds);
-      server.commit();
-
-      checkDeleteById(new QueryRequest(new SolrQuery("*:*")), server);
-      checkDeleteById(getRealTimeGetRequest(), server);
-    } finally {
-      server.shutdown();
+    setAuthenticationUser("junit");
+    List<String> allIds = new ArrayList<String>(NUM_DOCS);
+    for (int i = 0; i < NUM_DOCS; ++i) {
+      allIds.add(Long.toString(i));
     }
+    cluster.getSolrClient().deleteById(collectionName, allIds);
+    cluster.getSolrClient().commit(collectionName);
+
+    checkDeleteById(collectionName, new QueryRequest(new SolrQuery("*:*")), cluster.getSolrClient());
+    checkDeleteById(collectionName, getRealTimeGetRequest(), cluster.getSolrClient());
+
   }
 
-  private void checkDeleteById(QueryRequest request, CloudSolrServer server)
+  private void checkDeleteById(String collectionName, QueryRequest request, CloudSolrClient server)
       throws Exception {
-    QueryResponse rsp = request.process(server);
+    QueryResponse rsp = request.process(server, collectionName);
     long junitResults = rsp.getResults().getNumFound();
     assertEquals(0, junitResults);
 
-    setAuthenticationUser("docLevel");
-    rsp =  request.process(server);
+    setAuthenticationUser("doclevel");
+    rsp =  request.process(server, collectionName);
     long docLevelResults = rsp.getResults().getNumFound();
     assertEquals(0, docLevelResults);
   }
 
   private void updateDocsTest(String collectionName) throws Exception {
     createDocsAndQuerySimple(collectionName, true);
-    CloudSolrServer server = getCloudSolrServer(collectionName);
-    try {
-      setAuthenticationUser("junit");
-      String docIdStr = Long.toString(1);
+    setAuthenticationUser("junit");
+    String docIdStr = Long.toString(1);
 
-      // verify we can't view one of the odd documents
-      QueryRequest query = new QueryRequest(new SolrQuery("id:"+docIdStr));
-      QueryRequest rtgQuery = getRealTimeGetRequest(docIdStr);
-      checkUpdateDocsQuery(query, server, 0);
-      checkUpdateDocsQuery(rtgQuery, server, 0);
+    // verify we can't view one of the odd documents
+    QueryRequest query = new QueryRequest(new SolrQuery("id:"+docIdStr));
+    QueryRequest rtgQuery = getRealTimeGetRequest(docIdStr);
+    checkUpdateDocsQuery(collectionName, query, cluster.getSolrClient(), 0);
+    checkUpdateDocsQuery(collectionName, rtgQuery, cluster.getSolrClient(), 0);
 
-      // overwrite the document that we can't see
-      ArrayList<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
-      SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("id", docIdStr);
-      doc.addField("description", "description" + docIdStr);
-      doc.addField(AUTH_FIELD, "junit_role");
-      docs.add(doc);
-      server.add(docs);
-      server.commit();
+    // overwrite the document that we can't see
+    ArrayList<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", docIdStr);
+    doc.addField("description", "description" + docIdStr);
+    doc.addField(AUTH_FIELD, "junit_role");
+    docs.add(doc);
+    cluster.getSolrClient().add(collectionName, docs);
+    cluster.getSolrClient().commit(collectionName);
 
-      // verify we can now view the document
-      checkUpdateDocsQuery(query, server, 1);
-      checkUpdateDocsQuery(rtgQuery, server, 1);
-    } finally {
-      server.shutdown();
-    }
+    // verify we can now view the document
+    checkUpdateDocsQuery(collectionName, query, cluster.getSolrClient(), 1);
+    checkUpdateDocsQuery(collectionName, rtgQuery, cluster.getSolrClient(), 1);
+
   }
 
-  private void checkUpdateDocsQuery(QueryRequest request, CloudSolrServer server, int expectedDocs)
+  private void checkUpdateDocsQuery(String collectionName, QueryRequest request, CloudSolrClient server, int expectedDocs)
       throws Exception {
-    QueryResponse rsp = request.process(server);
+    QueryResponse rsp = request.process(server, collectionName);
     assertEquals(expectedDocs, rsp.getResults().getNumFound());
   }
 
   @Test
   public void testUpdateDeleteOperations() throws Exception {
     String collectionName = "testUpdateDeleteOperations";
+    createCollection(ADMIN_USER, collectionName, "cloud-minimal_doc_level_security", NUM_SERVERS, 1);
 
-    setupCollectionWithDocSecurity(collectionName);
-    try {
-      createDocsAndQuerySimple(collectionName, true);
+    createDocsAndQuerySimple(collectionName, true);
 
-      // test deleteByQuery "*:*"
-      deleteByQueryTest(collectionName, "junit", "*:*", "docLevel", 0);
+    // test deleteByQuery "*:*"
+    deleteByQueryTest(collectionName, "junit", "*:*", "doclevel", 0);
 
-      // test deleteByQuery non-*:*
-      deleteByQueryTest(collectionName, "junit", "sentry_auth:docLevel_role", "docLevel", 0);
+    // test deleteByQuery non-*:*
+    deleteByQueryTest(collectionName, "junit", "sentry_auth:doclevel_role", "doclevel", 0);
 
-      // test deleting all documents by Id
-      deleteByIdTest(collectionName);
+    // test deleting all documents by Id
+    deleteByIdTest(collectionName);
 
-      updateDocsTest(collectionName);
-    } finally {
-      deleteCollection(collectionName);
-    }
+    updateDocsTest(collectionName);
+
   }
 
   /**
@@ -410,19 +381,14 @@ public class TestDocLevelOperations extends AbstractSolrSentryTestBase {
   @Test
   public void indexDocAuthTests() throws Exception {
     String collectionName = "testIndexlevelDoclevelOperations";
+    createCollection(ADMIN_USER, collectionName, "cloud-minimal_doc_level_security", NUM_SERVERS, 1);
 
-    setupCollectionWithDocSecurity(collectionName);
-    try {
-      createDocsAndQuerySimple(collectionName, false);
+    createDocsAndQuerySimple(collectionName, false);
 
-      // test query for "*:*" fails as junit user (junit user doesn't have index level permissions but has doc level permissions set)
-      verifyQueryFail("junit", collectionName, ALL_DOCS);
+    // test query for "*:*" fails as junit user (junit user doesn't have index level permissions but has doc level permissions set)
+    verifyQueryFail("junit", collectionName, ALL_DOCS);
 
-      // test query for "*:*" fails as docLevel user (docLevel user has neither index level permissions nor doc level permissions set)
-      verifyQueryFail("docLevel", collectionName, ALL_DOCS);
-
-    } finally {
-      deleteCollection(collectionName);
-    }
+    // test query for "*:*" fails as docLevel user (docLevel user has neither index level permissions nor doc level permissions set)
+    verifyQueryFail("doclevel", collectionName, ALL_DOCS);
   }
 }

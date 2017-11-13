@@ -32,7 +32,7 @@ limitations under the License.
     <module>sentry-core-common</module>
     <module>sentry-core-model-db</module>
     <module>sentry-core-model-indexer</module>
-    <module>sentry-core-model-search</module>
+    <module>sentry-core-model-solr</module>
     <module>sentry-core-model-sqoop</module>
     <module>sentry-core-model-kafka</module>
   </modules>

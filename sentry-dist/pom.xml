@@ -40,7 +40,7 @@ limitations under the License.
     </dependency>
     <dependency>
       <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-core-model-search</artifactId>
+      <artifactId>sentry-core-model-solr</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.sentry</groupId>
@@ -61,14 +61,6 @@ limitations under the License.
     <dependency>
       <groupId>org.apache.sentry</groupId>
       <artifactId>sentry-binding-kafka</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.sentry</groupId>
-      <artifactId>solr-sentry-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.sentry</groupId>
-      <artifactId>solr-sentry-handlers</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.sentry</groupId>
@@ -93,6 +85,10 @@ limitations under the License.
     <dependency>
       <groupId>org.apache.sentry</groupId>
       <artifactId>sentry-policy-indexer</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.sentry</groupId>
+      <artifactId>solr-sentry-handlers</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.sentry</groupId>

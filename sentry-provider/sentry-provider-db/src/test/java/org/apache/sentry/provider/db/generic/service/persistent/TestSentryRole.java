@@ -33,7 +33,7 @@ import javax.jdo.Query;
 import javax.jdo.Transaction;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.sentry.core.model.search.Collection;
+import org.apache.sentry.core.model.solr.Collection;
 import org.apache.sentry.provider.db.service.model.MSentryGMPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryRole;

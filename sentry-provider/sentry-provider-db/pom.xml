@@ -108,7 +108,7 @@ limitations under the License.
     </dependency>
     <dependency>
       <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-core-model-search</artifactId>
+      <artifactId>sentry-core-model-solr</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.sentry</groupId>
@@ -238,6 +238,19 @@ limitations under the License.
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-metastore</artifactId>
       <version>${hive.version}</version>
+      <exclusions>
+      <!-- This dependency needs to be excluded to avoid compilation errors in the Eclipse build.
+           Without this change, the Eclipse build classpath contains this jar file ahead of
+           datanucleus javax.jdo*.jar. This error can not be reproduced with the maven build.
+           Cause of compilation error : PersistenceManager class provided as part of this version,
+           does not implement java.lang.AutoClosable interface. This breaks the usage of
+           PersistenceManager inside try-with-resources clause in Sentry TransactionManager class.
+       -->
+        <exclusion>
+          <groupId>javax.jdo</groupId>
+          <artifactId>jdo-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
 

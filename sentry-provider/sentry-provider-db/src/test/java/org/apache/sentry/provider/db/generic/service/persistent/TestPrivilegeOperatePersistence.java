@@ -29,9 +29,9 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.BitFieldAction;
 import org.apache.sentry.core.common.BitFieldActionFactory;
-import org.apache.sentry.core.model.search.Collection;
-import org.apache.sentry.core.model.search.Field;
-import org.apache.sentry.core.model.search.SearchConstants;
+import org.apache.sentry.core.model.solr.Collection;
+import org.apache.sentry.core.model.solr.Field;
+import org.apache.sentry.core.model.solr.SolrConstants;
 import org.apache.sentry.core.model.sqoop.SqoopActionConstant;
 import org.apache.sentry.core.common.exception.SentryGrantDeniedException;
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject.Builder;
@@ -89,7 +89,7 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
 
     PrivilegeObject queryPrivilegeWithOption = new Builder()
     .setComponent(SEARCH)
-    .setAction(SearchConstants.QUERY)
+    .setAction(SolrConstants.QUERY)
     .setService(SERVICE)
     .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME)))
     .withGrantOption(true)
@@ -103,7 +103,7 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
 
     PrivilegeObject queryPrivilegeWithNoOption = new Builder()
     .setComponent(SEARCH)
-    .setAction(SearchConstants.QUERY)
+    .setAction(SolrConstants.QUERY)
     .setService(SERVICE)
     .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME)))
     .withGrantOption(false)
@@ -117,7 +117,7 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
 
     PrivilegeObject queryPrivilegeWithNullGrant = new Builder()
         .setComponent(SEARCH)
-        .setAction(SearchConstants.QUERY)
+        .setAction(SolrConstants.QUERY)
         .setService(SERVICE)
         .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME)))
         .withGrantOption(null)
@@ -145,7 +145,7 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
     String grantor = ADMIN_USER;
     PrivilegeObject allPrivilege = new Builder()
         .setComponent(SEARCH)
-        .setAction(SearchConstants.ALL)
+        .setAction(SolrConstants.ALL)
         .setService(SERVICE)
         .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME)))
         .build();
@@ -162,7 +162,7 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
         sentryStore.getPrivilegesByRole(SEARCH, Sets.newHashSet(roleName)));
 
     PrivilegeObject queryPrivilege = new Builder(allPrivilege)
-        .setAction(SearchConstants.QUERY)
+        .setAction(SolrConstants.QUERY)
         .build();
 
     /**
@@ -191,13 +191,13 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
 
     PrivilegeObject queryPrivilege = new Builder()
         .setComponent(SEARCH)
-        .setAction(SearchConstants.QUERY)
+        .setAction(SolrConstants.QUERY)
         .setService(SERVICE)
         .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME)))
         .build();
 
     PrivilegeObject updatePrivilege = new Builder(queryPrivilege)
-        .setAction(SearchConstants.UPDATE)
+        .setAction(SolrConstants.UPDATE)
         .build();
 
     sentryStore.createRole(SEARCH, roleName1, grantor);
@@ -216,7 +216,7 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
         sentryStore.getPrivilegesByRole(SEARCH, Sets.newHashSet(roleName2)));
 
     PrivilegeObject allPrivilege = new Builder(queryPrivilege)
-        .setAction(SearchConstants.ALL)
+        .setAction(SolrConstants.ALL)
         .build();
 
     /**
@@ -255,7 +255,7 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
      */
     PrivilegeObject queryPrivilege1 = new Builder()
         .setComponent(SEARCH)
-        .setAction(SearchConstants.QUERY)
+        .setAction(SolrConstants.QUERY)
         .setService(SERVICE)
         .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME)))
         .withGrantOption(true)
@@ -270,7 +270,7 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
      */
     PrivilegeObject queryPrivilege2 = new Builder()
         .setComponent(SEARCH)
-        .setAction(SearchConstants.QUERY)
+        .setAction(SolrConstants.QUERY)
         .setService(SERVICE)
         .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME)))
         .withGrantOption(false).build();
@@ -347,7 +347,7 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
      */
     PrivilegeObject queryPrivilege = new Builder()
         .setComponent(SEARCH)
-        .setAction(SearchConstants.QUERY)
+        .setAction(SolrConstants.QUERY)
         .setService(SERVICE)
         .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME)))
         .withGrantOption(true)
@@ -383,13 +383,13 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
     String grantor = ADMIN_USER;
     PrivilegeObject queryPrivilege = new Builder()
         .setComponent(SEARCH)
-        .setAction(SearchConstants.QUERY)
+        .setAction(SolrConstants.QUERY)
         .setService(SERVICE)
         .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME), new Field(FIELD_NAME)))
         .build();
 
     PrivilegeObject updatePrivilege = new Builder(queryPrivilege)
-        .setAction(SearchConstants.UPDATE)
+        .setAction(SolrConstants.UPDATE)
         .build();
 
     sentryStore.createRole(SEARCH, roleName, grantor);
@@ -419,13 +419,13 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
     String grantor = ADMIN_USER;
     PrivilegeObject queryPrivilege = new Builder()
         .setComponent(SEARCH)
-        .setAction(SearchConstants.QUERY)
+        .setAction(SolrConstants.QUERY)
         .setService(SERVICE)
         .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME),new Field(FIELD_NAME)))
         .build();
 
     PrivilegeObject updatePrivilege = new Builder(queryPrivilege)
-        .setAction(SearchConstants.UPDATE)
+        .setAction(SolrConstants.UPDATE)
         .build();
 
     sentryStore.createRole(SEARCH, roleName, grantor);
@@ -439,7 +439,7 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
      * revoke all privilege
      */
     PrivilegeObject allPrivilege = new Builder(queryPrivilege)
-        .setAction(SearchConstants.ALL)
+        .setAction(SolrConstants.ALL)
         .build();
 
     sentryStore.alterRoleRevokePrivilege(SEARCH, roleName, allPrivilege, grantor);
@@ -461,7 +461,7 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
     String grantor = ADMIN_USER;
     PrivilegeObject allPrivilege = new Builder()
         .setComponent(SEARCH)
-        .setAction(SearchConstants.ALL)
+        .setAction(SolrConstants.ALL)
         .setService(SERVICE)
         .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME), new Field(FIELD_NAME)))
         .build();
@@ -476,11 +476,11 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
      * revoke update privilege
      */
     PrivilegeObject updatePrivilege = new Builder(allPrivilege)
-        .setAction(SearchConstants.UPDATE)
+        .setAction(SolrConstants.UPDATE)
         .build();
 
     PrivilegeObject queryPrivilege = new Builder(allPrivilege)
-        .setAction(SearchConstants.QUERY)
+        .setAction(SolrConstants.QUERY)
         .build();
 
     sentryStore.alterRoleRevokePrivilege(SEARCH, roleName, updatePrivilege, grantor);
@@ -503,17 +503,17 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
     String grantor = ADMIN_USER;
     PrivilegeObject allPrivilege = new Builder()
         .setComponent(SEARCH)
-        .setAction(SearchConstants.ALL)
+        .setAction(SolrConstants.ALL)
         .setService(SERVICE)
         .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME), new Field(FIELD_NAME)))
         .build();
 
     PrivilegeObject updatePrivilege = new Builder(allPrivilege)
-        .setAction(SearchConstants.UPDATE)
+        .setAction(SolrConstants.UPDATE)
         .build();
 
     PrivilegeObject queryPrivilege = new Builder(allPrivilege)
-        .setAction(SearchConstants.QUERY)
+        .setAction(SolrConstants.QUERY)
         .build();
 
     sentryStore.createRole(SEARCH, roleName, grantor);
@@ -550,21 +550,21 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
     String grantor = ADMIN_USER;
     PrivilegeObject updatePrivilege1 = new Builder()
         .setComponent(SEARCH)
-        .setAction(SearchConstants.UPDATE)
+        .setAction(SolrConstants.UPDATE)
         .setService(SERVICE)
         .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME), new Field(FIELD_NAME)))
         .build();
 
     PrivilegeObject queryPrivilege1 = new Builder()
         .setComponent(SEARCH)
-        .setAction(SearchConstants.QUERY)
+        .setAction(SolrConstants.QUERY)
         .setService(SERVICE)
         .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME),new Field(FIELD_NAME)))
         .build();
 
     PrivilegeObject queryPrivilege2 = new Builder()
         .setComponent(SEARCH)
-        .setAction(SearchConstants.QUERY)
+        .setAction(SolrConstants.QUERY)
         .setService(SERVICE)
         .setAuthorizables(Arrays.asList(new Collection(NOT_COLLECTION_NAME)))
         .build();
@@ -580,7 +580,7 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
      */
     PrivilegeObject allPrivilege = new Builder()
         .setComponent(SEARCH)
-        .setAction(SearchConstants.ALL)
+        .setAction(SolrConstants.ALL)
         .setService(SERVICE)
         .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME)))
         .build();
@@ -605,7 +605,7 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
      */
     PrivilegeObject queryPrivilege = new Builder()
         .setComponent(SEARCH)
-        .setAction(SearchConstants.QUERY)
+        .setAction(SolrConstants.QUERY)
         .setService(SERVICE)
         .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME)))
         .withGrantOption(true)
@@ -645,13 +645,13 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
 
     PrivilegeObject queryPrivilege = new Builder()
         .setComponent(SEARCH)
-        .setAction(SearchConstants.QUERY)
+        .setAction(SolrConstants.QUERY)
         .setService(SERVICE)
         .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME), new Field(FIELD_NAME)))
         .build();
 
     PrivilegeObject updatePrivilege = new Builder(queryPrivilege)
-        .setAction(SearchConstants.UPDATE)
+        .setAction(SolrConstants.UPDATE)
         .build();
 
     /**
@@ -685,7 +685,7 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
      * drop ALL privilege
      */
     PrivilegeObject allPrivilege = new Builder(queryPrivilege)
-        .setAction(SearchConstants.ALL)
+        .setAction(SolrConstants.ALL)
         .build();
 
     sentryStore.dropPrivilege(SEARCH, allPrivilege, grantor);
@@ -706,7 +706,7 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
 
     PrivilegeObject parentPrivilege = new Builder()
         .setComponent(SEARCH)
-        .setAction(SearchConstants.ALL)
+        .setAction(SolrConstants.ALL)
         .setService(SERVICE)
         .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME)))
         .build();
@@ -727,33 +727,33 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
 
     PrivilegeObject oldQueryPrivilege = new Builder()
         .setComponent(SEARCH)
-        .setAction(SearchConstants.QUERY)
+        .setAction(SolrConstants.QUERY)
         .setService(SERVICE)
         .setAuthorizables(oldAuthoriables)
         .build();
 
     PrivilegeObject oldUpdatePrivilege = new Builder(oldQueryPrivilege)
-        .setAction(SearchConstants.UPDATE)
+        .setAction(SolrConstants.UPDATE)
         .build();
 
     PrivilegeObject oldALLPrivilege = new Builder(oldQueryPrivilege)
-        .setAction(SearchConstants.ALL)
+        .setAction(SolrConstants.ALL)
         .build();
 
 
     PrivilegeObject newQueryPrivilege = new Builder()
         .setComponent(SEARCH)
-        .setAction(SearchConstants.QUERY)
+        .setAction(SolrConstants.QUERY)
         .setService(SERVICE)
         .setAuthorizables(newAuthoriables)
         .build();
 
     PrivilegeObject newUpdatePrivilege = new Builder(newQueryPrivilege)
-        .setAction(SearchConstants.UPDATE)
+        .setAction(SolrConstants.UPDATE)
         .build();
 
     PrivilegeObject newALLPrivilege = new Builder(newQueryPrivilege)
-        .setAction(SearchConstants.ALL)
+        .setAction(SolrConstants.ALL)
         .build();
 
 
@@ -826,7 +826,7 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
 
     PrivilegeObject queryPrivilege = new Builder()
         .setComponent(SEARCH)
-        .setAction(SearchConstants.QUERY)
+        .setAction(SolrConstants.QUERY)
         .setService(SERVICE)
         .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME)))
         .build();
@@ -837,7 +837,7 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
 
     PrivilegeObject updatePrivilege = new Builder()
         .setComponent(SEARCH)
-        .setAction(SearchConstants.QUERY)
+        .setAction(SolrConstants.QUERY)
         .setService(SERVICE)
         .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME)))
         .build();
@@ -863,28 +863,28 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
 
     PrivilegeObject queryPrivilege1 = new Builder()
          .setComponent(SEARCH)
-         .setAction(SearchConstants.QUERY)
+         .setAction(SolrConstants.QUERY)
          .setService(service1)
          .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME)))
          .build();
 
     PrivilegeObject updatePrivilege1 = new Builder()
          .setComponent(SEARCH)
-         .setAction(SearchConstants.UPDATE)
+         .setAction(SolrConstants.UPDATE)
          .setService(service1)
          .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME), new Field(FIELD_NAME)))
          .build();
 
     PrivilegeObject queryPrivilege2 = new Builder()
          .setComponent(SEARCH)
-         .setAction(SearchConstants.QUERY)
+         .setAction(SolrConstants.QUERY)
          .setService(service1)
          .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME)))
          .build();
 
     PrivilegeObject updatePrivilege2 = new Builder()
          .setComponent(SEARCH)
-         .setAction(SearchConstants.UPDATE)
+         .setAction(SolrConstants.UPDATE)
          .setService(service1)
          .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME), new Field(FIELD_NAME)))
          .build();
@@ -928,28 +928,28 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
 
     PrivilegeObject queryPrivilege1 = new Builder()
     .setComponent(SEARCH)
-    .setAction(SearchConstants.QUERY)
+    .setAction(SolrConstants.QUERY)
     .setService(service1)
     .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME)))
     .build();
 
     PrivilegeObject updatePrivilege1 = new Builder()
     .setComponent(SEARCH)
-    .setAction(SearchConstants.UPDATE)
+    .setAction(SolrConstants.UPDATE)
     .setService(service1)
     .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME), new Field(FIELD_NAME)))
     .build();
 
     PrivilegeObject queryPrivilege2 = new Builder()
     .setComponent(SEARCH)
-    .setAction(SearchConstants.QUERY)
+    .setAction(SolrConstants.QUERY)
     .setService(service1)
     .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME)))
     .build();
 
     PrivilegeObject updatePrivilege2 = new Builder()
     .setComponent(SEARCH)
-    .setAction(SearchConstants.UPDATE)
+    .setAction(SolrConstants.UPDATE)
     .setService(service1)
     .setAuthorizables(Arrays.asList(new Collection(COLLECTION_NAME), new Field(FIELD_NAME)))
     .build();
@@ -1018,7 +1018,7 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
     String grantor = ADMIN_USER;
     PrivilegeObject queryPrivilege = new Builder()
       .setComponent(component)
-      .setAction(SearchConstants.QUERY)
+      .setAction(SolrConstants.QUERY)
       .setService(SERVICE)
       .setAuthorizables(Collections.singletonList(new Collection(COLLECTION_NAME)))
       .withGrantOption(null)
@@ -1032,7 +1032,7 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
 
     PrivilegeObject queryPrivilegeWithOption = new Builder()
       .setComponent(component)
-      .setAction(SearchConstants.QUERY)
+      .setAction(SolrConstants.QUERY)
       .setService(SERVICE)
       .setAuthorizables(Collections.singletonList(new Collection(COLLECTION_NAME)))
       .withGrantOption(true)
@@ -1045,7 +1045,7 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
 
     PrivilegeObject queryPrivilegeWithNoOption = new Builder()
       .setComponent(component)
-      .setAction(SearchConstants.QUERY)
+      .setAction(SolrConstants.QUERY)
       .setService(SERVICE)
       .setAuthorizables(Collections.singletonList(new Collection(COLLECTION_NAME)))
       .withGrantOption(false)
@@ -1066,7 +1066,7 @@ public class TestPrivilegeOperatePersistence extends SentryStoreIntegrationBase 
     public enum MyComponentActionType {
       FOO("foo", 1),
       BAR("bar", 2),
-      QUERY(SearchConstants.QUERY, 4),
+      QUERY(SolrConstants.QUERY, 4),
       ALL("*", FOO.getCode() | BAR.getCode() | QUERY.getCode());
 
       private String name;

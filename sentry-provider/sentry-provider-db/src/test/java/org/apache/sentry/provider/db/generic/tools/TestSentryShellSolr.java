@@ -432,7 +432,7 @@ public class TestSentryShellSolr extends SentryGenericServiceIntegrationBase {
           getShellResultWithOSRedirect(sentryShell, args, false);
           fail("Expected IllegalArgumentException");
         } catch (IllegalArgumentException e) {
-          assert("Privilege is invalid: action required but not specified.".equals(e.getMessage()));
+          assertEquals("Privilege is invalid: action required but not specified.", e.getMessage());
         }
 
         // test: -r is required when revoke privilege from role
