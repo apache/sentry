@@ -55,13 +55,6 @@ public class TestKeyValue {
     doTest(kv1, kv2, kv3);
   }
 
-  @Test
-  public void testKeyValueCaseInsensitive() throws Exception {
-    KeyValue kv1 = new KeyValue("k1", "v1");
-    KeyValue kv2 = new KeyValue("K1", "V1");
-    Assert.assertEquals(kv1, kv2);
-  }
-
   private void doTest(KeyValue kv1, KeyValue kv2, KeyValue kv3) {
     Assert.assertEquals(kv1, kv2);
     Assert.assertFalse(kv1.equals(kv3));
