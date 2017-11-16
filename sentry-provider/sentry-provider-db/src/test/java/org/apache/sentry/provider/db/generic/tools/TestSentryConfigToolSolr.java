@@ -147,7 +147,7 @@ public class TestSentryConfigToolSolr extends SentryGenericServiceIntegrationBas
           }
 
           for (String expectedPrivilege : expectedPrivileges) {
-            assertTrue("Did not find expected privilege: " + expectedPrivilege,
+            assertTrue("Did not find expected privilege: " + expectedPrivilege + " in " + privilegeStrs,
                 privilegeStrs.contains(expectedPrivilege));
           }
         }

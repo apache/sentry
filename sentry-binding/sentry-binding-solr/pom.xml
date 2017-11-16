@@ -30,17 +30,18 @@ limitations under the License.
 
   <dependencies>
     <dependency>
+      <groupId>org.apache.solr</groupId>
+      <artifactId>solr-core</artifactId>
+      <version>${solr.version}</version>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-core-common</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-core-model-search</artifactId>
+      <artifactId>sentry-core-model-solr</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.sentry</groupId>

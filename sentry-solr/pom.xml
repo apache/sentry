@@ -31,7 +31,6 @@ limitations under the License.
 
   <modules>
     <module>solr-sentry-handlers</module>
-    <module>solr-sentry-core</module>
   </modules>
 
 </project>

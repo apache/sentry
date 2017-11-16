@@ -17,22 +17,23 @@
 
 package org.apache.solr.handler.component;
 
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.sentry.binding.solr.authz.SentrySolrPluginImpl;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.sentry.SentryIndexAuthorizationSingleton;
-import com.google.common.annotations.VisibleForTesting;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.security.AuthorizationPlugin;
+
 import java.io.IOException;
 import java.util.Set;
+
+import javax.servlet.http.HttpServletRequest;
 
 public class QueryDocAuthorizationComponent extends SearchComponent
 {
@@ -42,20 +43,10 @@ public class QueryDocAuthorizationComponent extends SearchComponent
   public static final String DEFAULT_AUTH_FIELD = "sentry_auth";
   public static final String ALL_ROLES_TOKEN_PROP = "allRolesToken";
   public static final String ENABLED_PROP = "enabled";
-  private SentryIndexAuthorizationSingleton sentryInstance;
+  private static final String superUser = System.getProperty("solr.authorization.superuser", "solr");
   private String authField;
   private String allRolesToken;
   private boolean enabled;
-
-  public QueryDocAuthorizationComponent() {
-    this(SentryIndexAuthorizationSingleton.getInstance());
-  }
-
-  @VisibleForTesting
-  public QueryDocAuthorizationComponent(SentryIndexAuthorizationSingleton sentryInstance) {
-    super();
-    this.sentryInstance = sentryInstance;
-  }
 
   @Override
   public void init(NamedList args) {
@@ -89,43 +80,28 @@ public class QueryDocAuthorizationComponent extends SearchComponent
     return null;
   }
 
-  private BooleanClause getBooleanClause(String authField, String value) {
-    Term t = new Term(authField, value);
-    return new BooleanClause(new TermQuery(t), BooleanClause.Occur.SHOULD);
-  }
-
-  public Query getFilterQuery(Set<String> roles) {
-    if (roles != null && roles.size() > 0) {
-      BooleanQuery query = new BooleanQuery();
-      for (String role : roles) {
-        query.add(getBooleanClause(authField, role));
-      }
-      if (allRolesToken != null && !allRolesToken.isEmpty()) {
-        query.add(getBooleanClause(authField, allRolesToken));
-      }
-      return query;
-    }
-
-    return null;
-  }
-
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
     if (!enabled) {
       return;
     }
 
-    String userName = sentryInstance.getUserName(rb.req);
-    String superUser = System.getProperty("solr.authorization.superuser", "solr");
+    String userName = getUserName(rb.req);
     if (superUser.equals(userName)) {
       return;
     }
-    Set<String> roles = sentryInstance.getRoles(userName);
-    if (roles != null && roles.size() > 0) {
+
+    Set<String> roles = getRoles(rb.req, userName);
+    if (roles != null && !roles.isEmpty()) {
       String filterQuery = getFilterQueryStr(roles);
+
       ModifiableSolrParams newParams = new ModifiableSolrParams(rb.req.getParams());
       newParams.add("fq", filterQuery);
       rb.req.setParams(newParams);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Adding filter query {} for user {} with roles {}", new Object[] {filterQuery, userName, roles});
+      }
+
     } else {
       throw new SolrException(SolrException.ErrorCode.UNAUTHORIZED,
         "Request from user: " + userName +
@@ -142,12 +118,56 @@ public class QueryDocAuthorizationComponent extends SearchComponent
     return "Handle Query Document Authorization";
   }
 
-  @Override
-  public String getSource() {
-    return "$URL$";
-  }
-
   public boolean getEnabled() {
     return enabled;
   }
+
+  /**
+   * This method return the user name from the provided {@linkplain SolrQueryRequest}
+   */
+  private String getUserName (SolrQueryRequest req) {
+    // If a local request, treat it like a super user request; i.e. it is equivalent to an
+    // http request from the same process.
+    if (req instanceof LocalSolrQueryRequest) {
+      return superUser;
+    }
+
+    SolrCore solrCore = req.getCore();
+
+    HttpServletRequest httpServletRequest = (HttpServletRequest)req.getContext().get("httpRequest");
+    if (httpServletRequest == null) {
+      StringBuilder builder = new StringBuilder("Unable to locate HttpServletRequest");
+      if (solrCore != null && solrCore.getSolrConfig().getBool(
+        "requestDispatcher/requestParsers/@addHttpRequestToContext", true) == false) {
+        builder.append(", ensure requestDispatcher/requestParsers/@addHttpRequestToContext is set to true in solrconfig.xml");
+      }
+      throw new SolrException(SolrException.ErrorCode.UNAUTHORIZED, builder.toString());
+    }
+
+    String userName = httpServletRequest.getRemoteUser();
+    if (userName == null) {
+      userName = SentrySolrPluginImpl.getShortUserName(httpServletRequest.getUserPrincipal());
+    }
+    if (userName == null) {
+      throw new SolrException(SolrException.ErrorCode.UNAUTHORIZED, "This request is not authenticated.");
+    }
+
+    return userName;
+  }
+
+  /**
+   * This method returns the roles associated with the specified <code>userName</code>
+   */
+  private Set<String> getRoles (SolrQueryRequest req, String userName) {
+    SolrCore solrCore = req.getCore();
+
+    AuthorizationPlugin plugin = solrCore.getCoreContainer().getAuthorizationPlugin();
+    if (!(plugin instanceof SentrySolrPluginImpl)) {
+      throw new SolrException(SolrException.ErrorCode.UNAUTHORIZED, getClass().getSimpleName() +
+          " can only be used with Sentry authorization plugin for Solr");
+    }
+
+    return ((SentrySolrPluginImpl)plugin).getRoles(userName);
+  }
+
 }

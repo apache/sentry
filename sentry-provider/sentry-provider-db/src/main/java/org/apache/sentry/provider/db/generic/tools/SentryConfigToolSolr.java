@@ -29,7 +29,7 @@ import org.apache.sentry.core.common.Action;
 import org.apache.sentry.core.common.exception.SentryConfigurationException;
 import org.apache.sentry.core.common.utils.KeyValue;
 import org.apache.sentry.core.common.utils.SentryConstants;
-import org.apache.sentry.core.model.search.SearchPrivilegeModel;
+import org.apache.sentry.core.model.solr.SolrPrivilegeModel;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
@@ -92,7 +92,7 @@ public class SentryConfigToolSolr extends SentryConfigToolCommon {
     SimpleFileProviderBackend policyFileBackend =
         new SimpleFileProviderBackend(conf, policyFile);
     ProviderBackendContext context = new ProviderBackendContext();
-    context.setValidators(SearchPrivilegeModel.getInstance().getPrivilegeValidators());
+    context.setValidators(SolrPrivilegeModel.getInstance().getPrivilegeValidators());
     policyFileBackend.initialize(context);
     if (validate) {
       validatePolicy(policyFileBackend);

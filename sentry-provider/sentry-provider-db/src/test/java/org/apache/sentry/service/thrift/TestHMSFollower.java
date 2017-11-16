@@ -49,10 +49,13 @@ import org.apache.hive.hcatalog.messaging.HCatEventMessage.EventType;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageFactory;
+import org.apache.sentry.core.common.utils.PubSub;
 import org.apache.sentry.hdfs.UniquePathsUpdate;
 import org.apache.sentry.provider.db.service.persistent.PathsImage;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
+import static org.apache.sentry.hdfs.ServiceConstants.ServerConfig.SENTRY_SERVICE_FULL_UPDATE_PUBSUB;
+
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -79,6 +82,7 @@ public class TestHMSFollower {
     hiveConnectionFactory = new HiveSimpleConnectionFactory(configuration, new HiveConf());
     hiveConnectionFactory.init();
     configuration.set("sentry.hive.sync.create", "true");
+    configuration.set(SENTRY_SERVICE_FULL_UPDATE_PUBSUB, "true");
 
     // enable HDFS sync, so perm and path changes will be saved into DB
     configuration.set(ServiceConstants.ServerConfig.PROCESSOR_FACTORIES, "org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
@@ -138,6 +142,100 @@ public class TestHMSFollower {
     hmsFollower.run();
     verify(sentryStore, times(0)).persistFullPathsImage(Mockito.anyMap(), Mockito.anyLong());
     verify(sentryStore, times(0)).persistLastProcessedNotificationID(Mockito.anyLong());
+  }
+
+  @Test
+  public void testPersistAFullSnapshotWhenFullSnapshotTrigger() throws Exception {
+    /*
+     * TEST CASE
+     *
+     * Simulates (by using mocks) the following:
+     *
+     * HMS client always returns the paths image with the eventId == 1.
+     *
+     * On the 1st run:  Sentry has not processed any notifications, so this
+     * should trigger a new full HMS snapshot request with the eventId = 1
+     *
+     * On the 2nd run: Sentry store returns the latest eventId == 1,
+     * which matches the eventId returned by HMS client. Because of the match,
+     * no full update is triggered.
+     *
+     * On the 3d run: before the run, full update flag in HMSFollower is set via
+     * publish-subscribe mechanism.
+     * Sentry store still returns the latest eventId == 1,
+     * which matches the eventId returned by HMS client. Because of the match,
+     * no full update should be triggered. However, because of the trigger set,
+     * a new full HMS snapshot will be triggered.
+     *
+     * On the 4th run: Sentry store returns the latest eventId == 1,
+     * which matches the eventId returned by HMS client. Because of the match,
+     * no full update is triggered. This is to check that forced trigger set
+     * for run 3 only works once.
+     *
+     */
+
+    final long SENTRY_PROCESSED_EVENT_ID = SentryStore.EMPTY_NOTIFICATION_ID;
+    final long HMS_PROCESSED_EVENT_ID = 1L;
+
+    // Mock that returns a full snapshot
+    Map<String, Collection<String>> snapshotObjects = new HashMap<>();
+    snapshotObjects.put("db", Sets.newHashSet("/db"));
+    snapshotObjects.put("db.table", Sets.newHashSet("/db/table"));
+    PathsImage fullSnapshot = new PathsImage(snapshotObjects, HMS_PROCESSED_EVENT_ID, 1);
+
+    // Mock that returns the current HMS notification ID
+    when(hmsClientMock.getCurrentNotificationEventId())
+        .thenReturn(new CurrentNotificationEventId(fullSnapshot.getId()));
+
+    SentryHMSClient sentryHmsClient = Mockito.mock(SentryHMSClient.class);
+    when(sentryHmsClient.getFullSnapshot()).thenReturn(fullSnapshot);
+
+    HMSFollower hmsFollower = new HMSFollower(configuration, sentryStore, null,
+        hmsConnectionMock, hiveInstance);
+    hmsFollower.setSentryHmsClient(sentryHmsClient);
+
+    // 1st run should get a full snapshot because AuthzPathsMapping is empty
+    when(sentryStore.getLastProcessedNotificationID()).thenReturn(SENTRY_PROCESSED_EVENT_ID);
+    when(sentryStore.isAuthzPathsMappingEmpty()).thenReturn(true);
+    when(sentryStore.isHmsNotificationEmpty()).thenReturn(true);
+    hmsFollower.run();
+    verify(sentryStore, times(1)).persistFullPathsImage(
+        fullSnapshot.getPathImage(), fullSnapshot.getId());
+    // Saving notificationID is in the same transaction of saving full snapshot
+    verify(sentryStore, times(0)).persistLastProcessedNotificationID(fullSnapshot.getId());
+
+    reset(sentryStore);
+
+    // 2nd run should not get a snapshot because is already processed
+    when(sentryStore.getLastProcessedNotificationID()).thenReturn(fullSnapshot.getId());
+    when(sentryStore.isAuthzPathsMappingEmpty()).thenReturn(false);
+    hmsFollower.run();
+    verify(sentryStore, times(0)).persistFullPathsImage(Mockito.anyMap(), Mockito.anyLong());
+    verify(sentryStore, times(0)).persistLastProcessedNotificationID(Mockito.anyLong());
+
+    reset(sentryStore);
+
+    // 3d run should not get a snapshot because is already processed,
+    // but because of full update trigger it will, as in the first run
+    PubSub.getInstance().publish(PubSub.Topic.HDFS_SYNC_HMS, "message");
+
+    when(sentryStore.getLastProcessedNotificationID()).thenReturn(fullSnapshot.getId());
+    when(sentryStore.isAuthzPathsMappingEmpty()).thenReturn(false);
+    hmsFollower.run();
+    verify(sentryStore, times(1)).persistFullPathsImage(
+        fullSnapshot.getPathImage(), fullSnapshot.getId());
+    verify(sentryStore, times(0)).persistLastProcessedNotificationID(fullSnapshot.getId());
+
+    reset(sentryStore);
+
+    // 4th run should not get a snapshot because is already processed and publish-subscribe
+    // trigger is only supposed to work once. This is exactly as 2nd run.
+    when(sentryStore.getLastProcessedNotificationID()).thenReturn(fullSnapshot.getId());
+    when(sentryStore.isAuthzPathsMappingEmpty()).thenReturn(false);
+    hmsFollower.run();
+    verify(sentryStore, times(0)).persistFullPathsImage(Mockito.anyMap(), Mockito.anyLong());
+    verify(sentryStore, times(0)).persistLastProcessedNotificationID(Mockito.anyLong());
+
   }
 
   @Test

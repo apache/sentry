@@ -18,19 +18,22 @@
 package org.apache.sentry.provider.db.tools.command.hive;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
+import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
-import org.apache.sentry.provider.db.tools.SentryShellCommon;
 import org.apache.sentry.provider.db.tools.ShellCommand;
 import org.apache.sentry.service.thrift.SentryServiceUtil;
-
-import com.google.common.collect.Sets;
 
 /**
  * The ShellCommand implementation for Hive.
@@ -57,9 +60,8 @@ public class HiveShellCommand implements ShellCommand {
     client.grantPrivilege(requestorName, roleName, tSentryPrivilege);
   }
 
-  public void grantRoleToGroups(String requestorName, String roleName, String groups) throws SentryUserException {
-    Set<String> groupSet = Sets.newHashSet(groups.split(SentryShellCommon.GROUP_SPLIT_CHAR));
-    client.grantRoleToGroups(requestorName, roleName, groupSet);
+  public void grantRoleToGroups(String requestorName, String roleName, Set<String> groups) throws SentryUserException {
+    client.grantRoleToGroups(requestorName, roleName, groups);
   }
 
   public void revokePrivilegeFromRole(String requestorName, String roleName, String privilege) throws SentryUserException {
@@ -68,12 +70,11 @@ public class HiveShellCommand implements ShellCommand {
     client.revokePrivilege(requestorName, roleName, tSentryPrivilege);
   }
 
-  public void revokeRoleFromGroups(String requestorName, String roleName, String groups) throws SentryUserException {
-    Set<String> groupSet = Sets.newHashSet(groups.split(SentryShellCommon.GROUP_SPLIT_CHAR));
-    client.revokeRoleFromGroups(requestorName, roleName, groupSet);
+  public void revokeRoleFromGroups(String requestorName, String roleName, Set<String> groups) throws SentryUserException {
+    client.revokeRoleFromGroups(requestorName, roleName, groups);
   }
 
-  public List<String> listRoles(String requestorName, String roleName, String group) throws SentryUserException {
+  public List<String> listRoles(String requestorName, String group) throws SentryUserException {
     Set<TSentryRole> roles;
     if (StringUtils.isEmpty(group)) {
       roles = client.listAllRoles(requestorName);
@@ -102,6 +103,49 @@ public class HiveShellCommand implements ShellCommand {
         result.add(privilegeStr);
       }
     }
+    return result;
+  }
+
+  public List<String> listGroupRoles(String requestorName) throws SentryUserException {
+    Set<TSentryRole> roles = client.listAllRoles(requestorName);
+    if (roles == null || roles.isEmpty()) {
+      return Collections.emptyList();
+    }
+
+    // Set of all group names
+    Set<String> groupNames = new HashSet<>();
+
+    // Map group to set of roles
+    Map<String, Set<String>> groupInfo = new HashMap<>();
+
+    // Get all group names
+    for (TSentryRole role: roles) {
+      for (TSentryGroup group : role.getGroups()) {
+        String groupName = group.getGroupName();
+        groupNames.add(groupName);
+        Set<String> groupRoles = groupInfo.get(groupName);
+        if (groupRoles != null) {
+          // Add a new or existing role
+          groupRoles.add(role.getRoleName());
+          continue;
+        }
+        // Never seen this group before
+        groupRoles = new HashSet<>();
+        groupRoles.add(role.getRoleName());
+        groupInfo.put(groupName, groupRoles);
+      }
+    }
+
+    List<String> groups = new ArrayList<>(groupNames);
+
+    // Produce printable result as
+    // group1 = role1, role2, ...
+    // group2 = ...
+    List<String> result = new LinkedList<>();
+    for (String groupName: groups) {
+      result.add(groupName + " = " + StringUtils.join(groupInfo.get(groupName), ", "));
+    }
+
     return result;
   }
 

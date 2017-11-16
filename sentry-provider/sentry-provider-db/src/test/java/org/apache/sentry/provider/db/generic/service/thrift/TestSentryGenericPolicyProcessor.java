@@ -27,14 +27,14 @@ import java.util.*;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.exception.SentrySiteConfigurationException;
-import org.apache.sentry.core.model.search.Collection;
-import org.apache.sentry.core.model.search.Field;
-import org.apache.sentry.core.model.search.SearchConstants;
-import org.apache.sentry.provider.common.GroupMappingService;
+import org.apache.sentry.core.model.solr.Collection;
+import org.apache.sentry.core.model.solr.Field;
+import org.apache.sentry.core.model.solr.SolrConstants;
 import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
 import org.apache.sentry.core.common.exception.SentryGrantDeniedException;
 import org.apache.sentry.core.common.exception.SentryInvalidInputException;
 import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
+import org.apache.sentry.provider.common.GroupMappingService;
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject;
 import org.apache.sentry.provider.db.generic.service.persistent.SentryStoreLayer;
 import org.apache.sentry.provider.db.generic.service.persistent.PrivilegeObject.Builder;
@@ -222,17 +222,17 @@ public class TestSentryGenericPolicyProcessor extends org.junit.Assert {
     String groupName = "g1";
     PrivilegeObject queryPrivilege = new Builder()
                                    .setComponent("SOLR")
-                                   .setAction(SearchConstants.QUERY)
+                                   .setAction(SolrConstants.QUERY)
                                    .setService("service1")
                                    .setAuthorizables(Arrays.asList(new Collection("c1"), new Field("f1")))
                                    .build();
     PrivilegeObject updatePrivilege = new Builder(queryPrivilege)
-                                   .setAction(SearchConstants.UPDATE)
+                                   .setAction(SolrConstants.UPDATE)
                                    .build();
 
     MSentryGMPrivilege mSentryGMPrivilege = new MSentryGMPrivilege("SOLR", "service1",
     Arrays.asList(new Collection("c1"), new Field("f1")),
-    SearchConstants.QUERY, true);
+    SolrConstants.QUERY, true);
 
     MSentryRole role = new MSentryRole("r1", 290);
     mSentryGMPrivilege.setRoles(Sets.newHashSet(role));

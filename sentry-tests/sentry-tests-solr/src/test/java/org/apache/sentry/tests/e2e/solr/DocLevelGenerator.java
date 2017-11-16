@@ -16,28 +16,30 @@
  */
 package org.apache.sentry.tests.e2e.solr;
 
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
 
 import java.util.ArrayList;
 
 public class DocLevelGenerator {
+  private String collection;
   private String authField;
 
-  public DocLevelGenerator(String authField) {
+  public DocLevelGenerator(String collection, String authField) {
+    this.collection = collection;
     this.authField = authField;
   }
 
   /**
    * Generates docs according to the following parameters:
    *
-   * @param server SolrServer to use
+   * @param client Solr client to use
    * @param numDocs number of documents to generate
    * @param evenDocsToken every even number doc gets this token added to the authField
    * @param oddDocsToken every odd number doc gets this token added to the authField
    * @param extraAuthFieldsCount generates this number of bogus entries in the authField
    */
-  public void generateDocs(CloudSolrServer server, int numDocs, String evenDocsToken, String oddDocsToken, int extraAuthFieldsCount) throws Exception {
+  public void generateDocs(CloudSolrClient client, int numDocs, String evenDocsToken, String oddDocsToken, int extraAuthFieldsCount) throws Exception {
 
     // create documents
     ArrayList<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
@@ -59,12 +61,12 @@ public class DocLevelGenerator {
       }
       // add a token to all docs so we can check that we can get all
       // documents returned
-      doc.addField(authField, "docLevel_role");
+      doc.addField(authField, "doclevel_role");
 
       docs.add(doc);
     }
 
-    server.add(docs);
-    server.commit(true, true);
+    client.add(collection, docs);
+    client.commit(collection, true, true);
   }
 }

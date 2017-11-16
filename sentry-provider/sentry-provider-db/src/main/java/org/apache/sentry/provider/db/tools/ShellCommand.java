@@ -18,6 +18,7 @@
 package org.apache.sentry.provider.db.tools;
 
 import java.util.List;
+import java.util.Set;
 
 import org.apache.sentry.core.common.exception.SentryUserException;
 
@@ -26,19 +27,21 @@ import org.apache.sentry.core.common.exception.SentryUserException;
  */
 public interface ShellCommand {
 
-    void createRole(String requestorName, String roleName) throws SentryUserException;
+  void createRole(String requestorName, String roleName) throws SentryUserException;
 
-    void dropRole(String requestorName, String roleName) throws SentryUserException;
+  void dropRole(String requestorName, String roleName) throws SentryUserException;
 
-    void grantPrivilegeToRole(String requestorName, String roleName, String privilege) throws SentryUserException;
+  void grantPrivilegeToRole(String requestorName, String roleName, String privilege) throws SentryUserException;
 
-    void grantRoleToGroups(String requestorName, String roleName, String groups) throws SentryUserException;
+  void grantRoleToGroups(String requestorName, String roleName, Set<String> groups) throws SentryUserException;
 
-    void revokePrivilegeFromRole(String requestorName, String roleName, String privilege) throws SentryUserException;
+  void revokePrivilegeFromRole(String requestorName, String roleName, String privilege) throws SentryUserException;
 
-    void revokeRoleFromGroups(String requestorName, String roleName, String groups) throws SentryUserException;
+  void revokeRoleFromGroups(String requestorName, String roleName, Set<String> groups) throws SentryUserException;
 
-    List<String> listRoles(String requestorName, String roleName, String group) throws SentryUserException;
+  List<String> listRoles(String requestorName, String group) throws SentryUserException;
 
-    List<String> listPrivileges(String requestorName, String roleName) throws SentryUserException;
+  List<String> listPrivileges(String requestorName, String roleName) throws SentryUserException;
+
+  List<String> listGroupRoles(String requestorName) throws SentryUserException;
 }

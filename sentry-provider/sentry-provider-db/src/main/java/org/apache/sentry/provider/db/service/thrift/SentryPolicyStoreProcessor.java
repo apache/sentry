@@ -1161,11 +1161,13 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       String msg = String.format("wait request for id %d is interrupted",
               request.getId());
       LOGGER.error(msg, e);
+      response.setId(0);
       response.setStatus(Status.RuntimeError(msg, e));
       Thread.currentThread().interrupt();
     } catch (TimeoutException e) {
-      String msg = String.format("timeod out wait request for id %d", request.getId());
+      String msg = String.format("timed out wait request for id %d", request.getId());
       LOGGER.warn(msg, e);
+      response.setId(0);
       response.setStatus(Status.RuntimeError(msg, e));
     }
     return response;

@@ -24,9 +24,9 @@ import static org.junit.Assert.fail;
 import java.util.Arrays;
 
 import org.apache.sentry.core.model.db.AccessConstants;
-import org.apache.sentry.core.model.search.Collection;
-import org.apache.sentry.core.model.search.Field;
-import org.apache.sentry.core.model.search.SearchConstants;
+import org.apache.sentry.core.model.solr.Collection;
+import org.apache.sentry.core.model.solr.Field;
+import org.apache.sentry.core.model.solr.SolrConstants;
 import org.apache.sentry.provider.db.service.model.MSentryGMPrivilege;
 import org.junit.Test;
 
@@ -36,21 +36,21 @@ public class TestSentryGMPrivilege {
   public void testValidateAuthorizables() throws Exception {
     try {
       new MSentryGMPrivilege("solr",
-          "service1", Arrays.asList(new Collection("c1"), new Field("f1")),SearchConstants.QUERY, false);
+          "service1", Arrays.asList(new Collection("c1"), new Field("f1")),SolrConstants.QUERY, false);
     } catch (IllegalStateException e) {
       fail("unexpect happend: it is a validated privilege");
     }
 
     try {
       new MSentryGMPrivilege("solr",
-          "service1", Arrays.asList(new Collection(""), new Field("f1")),SearchConstants.QUERY, false);
+          "service1", Arrays.asList(new Collection(""), new Field("f1")),SolrConstants.QUERY, false);
       fail("unexpect happend: it is not a validated privilege, The empty name of authorizable can't be empty");
     } catch (IllegalStateException e) {
     }
 
     try {
       new MSentryGMPrivilege("solr",
-          "service1", Arrays.asList(null, new Field("f1")),SearchConstants.QUERY, false);
+          "service1", Arrays.asList(null, new Field("f1")),SolrConstants.QUERY, false);
       fail("unexpect happend: it is not a validated privilege, The authorizable can't be null");
     } catch (IllegalStateException e) {
     }
@@ -60,24 +60,24 @@ public class TestSentryGMPrivilege {
   public void testImpliesWithServerScope() throws Exception {
     //The persistent privilege is server scope
     MSentryGMPrivilege serverPrivilege = new MSentryGMPrivilege("solr",
-        "service1", null,SearchConstants.QUERY, false);
+        "service1", null,SolrConstants.QUERY, false);
 
     MSentryGMPrivilege collectionPrivilege = new MSentryGMPrivilege("solr",
         "service1", Arrays.asList(new Collection("c1")),
-        SearchConstants.QUERY, false);
+        SolrConstants.QUERY, false);
     assertTrue(serverPrivilege.implies(collectionPrivilege));
 
     MSentryGMPrivilege fieldPrivilege = new MSentryGMPrivilege("solr",
         "service1", Arrays.asList(new Collection("c1"), new Field("f1")),
-        SearchConstants.QUERY, false);
+        SolrConstants.QUERY, false);
     assertTrue(serverPrivilege.implies(fieldPrivilege));
     assertTrue(collectionPrivilege.implies(fieldPrivilege));
 
-    serverPrivilege.setAction(SearchConstants.UPDATE);
+    serverPrivilege.setAction(SolrConstants.UPDATE);
     assertFalse(serverPrivilege.implies(collectionPrivilege));
     assertFalse(serverPrivilege.implies(fieldPrivilege));
 
-    serverPrivilege.setAction(SearchConstants.ALL);
+    serverPrivilege.setAction(SolrConstants.ALL);
     assertTrue(serverPrivilege.implies(collectionPrivilege));
     assertTrue(serverPrivilege.implies(fieldPrivilege));
   }
@@ -91,15 +91,15 @@ public class TestSentryGMPrivilege {
      * Test the scope of persistent privilege is the larger than the requested privilege
      */
     MSentryGMPrivilege serverPrivilege = new MSentryGMPrivilege("solr",
-        "service1", null, SearchConstants.QUERY, false);
+        "service1", null, SolrConstants.QUERY, false);
 
     MSentryGMPrivilege collectionPrivilege = new MSentryGMPrivilege("solr",
         "service1", Arrays.asList(new Collection("c1")),
-        SearchConstants.QUERY, false);
+        SolrConstants.QUERY, false);
 
     MSentryGMPrivilege fieldPrivilege = new MSentryGMPrivilege("solr",
         "service1", Arrays.asList(new Collection("c1"), new Field("f1")),
-        SearchConstants.QUERY, false);
+        SolrConstants.QUERY, false);
     assertTrue(serverPrivilege.implies(collectionPrivilege));
     assertTrue(serverPrivilege.implies(fieldPrivilege));
     assertTrue(collectionPrivilege.implies(fieldPrivilege));
@@ -116,7 +116,7 @@ public class TestSentryGMPrivilege {
      */
     MSentryGMPrivilege fieldAllPrivilege = new MSentryGMPrivilege("solr",
         "service1", Arrays.asList(new Collection("c1"), new Field(AccessConstants.ALL)),
-        SearchConstants.QUERY, false);
+        SolrConstants.QUERY, false);
 
     assertTrue(fieldAllPrivilege.implies(collectionPrivilege));
 
@@ -125,11 +125,11 @@ public class TestSentryGMPrivilege {
      */
     MSentryGMPrivilege fieldPrivilege1 = new MSentryGMPrivilege("solr",
         "service1", Arrays.asList(new Collection("c1"), new Field("f1")),
-        SearchConstants.QUERY, false);
+        SolrConstants.QUERY, false);
 
     MSentryGMPrivilege fieldPrivilege2 = new MSentryGMPrivilege("solr",
         "service1", Arrays.asList(new Collection("c2"), new Field("f2")),
-        SearchConstants.QUERY, false);
+        SolrConstants.QUERY, false);
     assertFalse(fieldPrivilege1.implies(fieldPrivilege2));
   }
 
@@ -141,30 +141,30 @@ public class TestSentryGMPrivilege {
   public void testSearchImpliesEqualAuthorizable() throws Exception {
 
     MSentryGMPrivilege serverPrivilege1 = new MSentryGMPrivilege("solr",
-        "service1", null,SearchConstants.QUERY, false);
+        "service1", null,SolrConstants.QUERY, false);
 
     MSentryGMPrivilege serverPrivilege2 = new MSentryGMPrivilege("solr",
-        "service2", null,SearchConstants.QUERY, false);
+        "service2", null,SolrConstants.QUERY, false);
 
     assertFalse(serverPrivilege1.implies(serverPrivilege2));
 
     MSentryGMPrivilege collectionPrivilege1 = new MSentryGMPrivilege("solr",
         "service1", Arrays.asList(new Collection("c1")),
-        SearchConstants.QUERY, false);
+        SolrConstants.QUERY, false);
 
     MSentryGMPrivilege collectionPrivilege2 = new MSentryGMPrivilege("solr",
         "service1", Arrays.asList(new Collection("c2")),
-        SearchConstants.QUERY, false);
+        SolrConstants.QUERY, false);
 
     assertFalse(collectionPrivilege1.implies(collectionPrivilege2));
 
     MSentryGMPrivilege fieldPrivilege1 = new MSentryGMPrivilege("solr",
         "service1", Arrays.asList(new Collection("c1"), new Field("f1")),
-        SearchConstants.QUERY, false);
+        SolrConstants.QUERY, false);
 
     MSentryGMPrivilege fieldPrivilege2 = new MSentryGMPrivilege("solr",
         "service1", Arrays.asList(new Collection("c1"), new Field("f2")),
-        SearchConstants.QUERY, false);
+        SolrConstants.QUERY, false);
 
     assertFalse(fieldPrivilege1.implies(fieldPrivilege2));
 
@@ -185,23 +185,23 @@ public class TestSentryGMPrivilege {
      */
     MSentryGMPrivilege fieldPrivilege1 = new MSentryGMPrivilege("solr",
         "service1", Arrays.asList(new Collection("c1"), new Field("f2")),
-        SearchConstants.QUERY, false);
+        SolrConstants.QUERY, false);
 
     MSentryGMPrivilege fieldPrivilege2 = new MSentryGMPrivilege("solr",
         "service1", Arrays.asList(new Collection("c1"), new Field("f2")),
-        SearchConstants.QUERY, false);
+        SolrConstants.QUERY, false);
 
     assertTrue(fieldPrivilege1.implies(fieldPrivilege2));
 
     /**
      * action isn't equal
      */
-    fieldPrivilege2.setAction(SearchConstants.UPDATE);
+    fieldPrivilege2.setAction(SolrConstants.UPDATE);
     assertFalse(fieldPrivilege1.implies(fieldPrivilege2));
     /**
      * action isn't equal,but the persistent privilege has the ALL action
      */
-    fieldPrivilege1.setAction(SearchConstants.ALL);
+    fieldPrivilege1.setAction(SolrConstants.ALL);
     assertTrue(fieldPrivilege1.implies(fieldPrivilege2));
   }
 }

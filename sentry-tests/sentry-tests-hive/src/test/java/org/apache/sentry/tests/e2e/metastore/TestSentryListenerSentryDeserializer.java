@@ -55,7 +55,6 @@ public class TestSentryListenerSentryDeserializer extends AbstractMetastoreTestW
   public static void setupTestStaticConfiguration() throws Exception {
     setMetastoreListener = true;
     useDbNotificationListener = false;
-    enableNotificationLog = true;
     AbstractMetastoreTestWithStaticConfiguration.setupTestStaticConfiguration();
     setupClass();
   }

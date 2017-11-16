@@ -18,7 +18,12 @@
 package org.apache.sentry.provider.db.generic.tools.command;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
@@ -26,10 +31,7 @@ import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryRole;
-import org.apache.sentry.provider.db.tools.SentryShellCommon;
 import org.apache.sentry.provider.db.tools.ShellCommand;
-
-import com.google.common.collect.Sets;
 
 /**
  * The ShellCommand implementation for the Generic clients
@@ -62,9 +64,8 @@ public class GenericShellCommand implements ShellCommand {
     client.grantPrivilege(requestorName, roleName, component, sentryPrivilege);
   }
 
-  public void grantRoleToGroups(String requestorName, String roleName, String groups) throws SentryUserException {
-    Set<String> groupSet = Sets.newHashSet(groups.split(SentryShellCommon.GROUP_SPLIT_CHAR));
-    client.grantRoleToGroups(requestorName, roleName, component, groupSet);
+  public void grantRoleToGroups(String requestorName, String roleName, Set<String> groups) throws SentryUserException {
+    client.grantRoleToGroups(requestorName, roleName, component, groups);
   }
 
   public void revokePrivilegeFromRole(String requestorName, String roleName, String privilege) throws SentryUserException {
@@ -72,12 +73,11 @@ public class GenericShellCommand implements ShellCommand {
     client.revokePrivilege(requestorName, roleName, component, sentryPrivilege);
   }
 
-  public void revokeRoleFromGroups(String requestorName, String roleName, String groups) throws SentryUserException {
-    Set<String> groupSet = Sets.newHashSet(groups.split(SentryShellCommon.GROUP_SPLIT_CHAR));
-    client.revokeRoleFromGroups(requestorName, roleName, component, groupSet);
+  public void revokeRoleFromGroups(String requestorName, String roleName, Set<String> groups) throws SentryUserException {
+    client.revokeRoleFromGroups(requestorName, roleName, component, groups);
   }
 
-  public List<String> listRoles(String requestorName, String roleName, String group) throws SentryUserException {
+  public List<String> listRoles(String requestorName, String group) throws SentryUserException {
     Set<TSentryRole> roles;
     if (StringUtils.isEmpty(group)) {
       roles = client.listAllRoles(requestorName, component);
@@ -109,4 +109,47 @@ public class GenericShellCommand implements ShellCommand {
 
     return result;
   }
+
+  public List<String> listGroupRoles(String requestorName) throws SentryUserException {
+    Set<TSentryRole> roles = client.listAllRoles(requestorName, component);
+    if (roles == null || roles.isEmpty()) {
+      return Collections.emptyList();
+    }
+
+    // Set of all group names
+    Set<String> groupNames = new HashSet<>();
+
+    // Map group to set of roles
+    Map<String, Set<String>> groupInfo = new HashMap<>();
+
+    // Get all group names
+    for (TSentryRole role: roles) {
+      for (String group : role.getGroups()) {
+        groupNames.add(group);
+        Set<String> groupRoles = groupInfo.get(group);
+        if (groupRoles != null) {
+          // Add a new or existing role
+          groupRoles.add(role.getRoleName());
+          continue;
+        }
+        // Never seen this group before
+        groupRoles = new HashSet<>();
+        groupRoles.add(role.getRoleName());
+        groupInfo.put(group, groupRoles);
+      }
+    }
+
+    List<String> groups = new ArrayList<>(groupNames);
+
+    // Produce printable result as
+    // group1 = role1, role2, ...
+    // group2 = ...
+    List<String> result = new LinkedList<>();
+    for (String groupName: groups) {
+      result.add(groupName + " = " + StringUtils.join(groupInfo.get(groupName), ", "));
+    }
+
+    return result;
+  }
+
 }

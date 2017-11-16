@@ -83,7 +83,7 @@ public class AbstractSqoopSentryTestBase {
   protected static final String ROLE5 = StaticUserGroupRole.ROLE_5;
 
   protected static SentryService server;
-  protected static TomcatSqoopRunner sqoopServerRunner;
+  protected static JettySqoopRunner sqoopServerRunner;
 
   protected static File baseDir;
   protected static File sqoopDir;
@@ -91,6 +91,9 @@ public class AbstractSqoopSentryTestBase {
   protected static File policyFilePath;
 
   protected static PolicyFile policyFile;
+
+  protected static String JDBC_CONNECTOR_NAME = "generic-jdbc-connector";
+  protected static String HDFS_CONNECTOR_NAME = "hdfs-connector";
 
   @BeforeClass
   public static void beforeTestEndToEnd() throws Exception {
@@ -163,7 +166,7 @@ public class AbstractSqoopSentryTestBase {
   public static void startSqoopWithSentryEnable() throws Exception {
     File sentrySitePath = new File(baseDir, "sentry-site.xml");
     getClientConfig().writeXml(new FileOutputStream(sentrySitePath));
-    sqoopServerRunner = new TomcatSqoopRunner(sqoopDir.toString(), SQOOP_SERVER_NAME,
+    sqoopServerRunner = new JettySqoopRunner(sqoopDir.toString(), SQOOP_SERVER_NAME,
         sentrySitePath.toURI().toURL().toString());
     sqoopServerRunner.start();
   }

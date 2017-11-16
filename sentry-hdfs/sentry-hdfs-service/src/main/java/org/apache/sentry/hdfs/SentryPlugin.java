@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.exception.SentryInvalidInputException;
+import org.apache.sentry.core.common.utils.PubSub;
 import org.apache.sentry.core.common.utils.SigUtils;
 import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
@@ -41,6 +42,7 @@ import org.apache.sentry.provider.db.service.thrift.TRenamePrivilegesRequest;
 import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.service.thrift.HMSFollower;
+import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,20 +74,29 @@ import static org.apache.sentry.hdfs.service.thrift.sentry_hdfs_serviceConstants
    * The image number may be used to identify whether new full updates are persisted and need
    * to be retrieved instead of delta updates.
    * <p>
-   * SentryPlugin also implements signal-triggered mechanism of full path
-   * updates from HMS to Sentry and from Sentry to NameNode, to address
-   * mission-critical out-of-sync situations that may be encountered in the field.
+   * SentryPlugin implements mechanism of triggering full path updates from Sentry to NameNode,
+   * to address mission-critical out-of-sync situations that may be encountered in the field.
    * Those out-of-sync situations may not be detectable via the exsiting sequence
    * numbers mechanism (most likely due to the implementation bugs).
    * <p>
-   * To facilitate signal-triggered full update from Sentry to NameNode,
-   * the boolean variables 'fullUpdateNN' is used to ensure that Sentry sends full
-   * update to NameNode, and does so only once per signal.
+   * To trigger full update from Sentry to NameNode, the boolean variable 'fullUpdateNN' is
+   * used to ensure that Sentry sends full update to NameNode, and does so only once per
+   * triggering event.
    * </ol>
    * The details:
    * <ol>
    * <li>
-   * Upon receiving a signal, fullUpdateNN is set to true.
+   * There are two mechanisms to trigger full update: by signal (deprecated) and via WebUI.
+   * Both mechanisms are configurable and turned OFF by default.
+   * <li>
+   * To use signal mechanism, SentryPlugin uses SigUtils to subscribe to specific
+   * (configurable) signal that should be delivered to JVM running Sentry server.
+   * <li>
+   * To use the WebUI mechanism, SentryPlugin uses PubSub which provides publish-subscribe
+   * framework. SentryPlugin subscribed to PubSub.Topic.HDFS_SYNC_NN topic.
+   * 
+   * Upon receiving a signal,  or upon been notified via pub-sub mechanism, fullUpdateNN
+   * is set to true.
    * <li>
    * When NameNode calls getAllPathsUpdatesFrom() asking for partial update,
    * Sentry checks if both fullUpdateNN == true. If yes, it sends full update back
@@ -93,9 +104,10 @@ import static org.apache.sentry.hdfs.service.thrift.sentry_hdfs_serviceConstants
    * </ol>
    */
 
-public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListener {
+public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListener, PubSub.Subscriber {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryPlugin.class);
+  private static final String FULL_UPDATE_TRIGGER = "FULL UPDATE TRIGGER: ";
 
   private final AtomicBoolean fullUpdateNN = new AtomicBoolean(false);
   public static volatile SentryPlugin instance;
@@ -131,6 +143,12 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
         }
       }
     }
+
+    // subscribe to full update notification
+    if (conf.getBoolean(ServerConfig.SENTRY_SERVICE_FULL_UPDATE_PUBSUB, false)) {
+      LOGGER.info(FULL_UPDATE_TRIGGER + "subscribing to topic " + PubSub.Topic.HDFS_SYNC_NN.getName());
+      PubSub.getInstance().subscribe(PubSub.Topic.HDFS_SYNC_NN, this);
+    }
   }
 
   /**
@@ -148,7 +166,7 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
      * Sentry is in the middle of signal-triggered full update.
      * It already got a full update from HMS
      */
-    LOGGER.info("SIGNAL HANDLING: sending full PATH update to NameNode");
+    LOGGER.info(FULL_UPDATE_TRIGGER + "sending full PATH update to NameNode");
     fullUpdateNN.set(false); // don't do full NN update till the next signal
     List<PathsUpdate> updates =
         pathsUpdater.getAllUpdatesFrom(SEQUENCE_NUMBER_UPDATE_UNINITIALIZED, IMAGE_NUMBER_UPDATE_UNINITIALIZED);
@@ -167,15 +185,15 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     if (updates != null) {
       if (!updates.isEmpty()) {
         if (updates.get(0).hasFullImage()) {
-          LOGGER.info("SIGNAL HANDLING: Confirmed full PATH update to NameNode for pathSeqNum {} and pathImgNum {}", pathSeqNum, pathImgNum);
+          LOGGER.info(FULL_UPDATE_TRIGGER + "Confirmed full PATH update to NameNode for pathSeqNum {} and pathImgNum {}", pathSeqNum, pathImgNum);
         } else {
-          LOGGER.warn("SIGNAL HANDLING: Sending partial instead of full PATH update to NameNode  for pathSeqNum {} and pathImgNum {} (???)", pathSeqNum, pathImgNum);
+          LOGGER.warn(FULL_UPDATE_TRIGGER + "Sending partial instead of full PATH update to NameNode  for pathSeqNum {} and pathImgNum {} (???)", pathSeqNum, pathImgNum);
         }
       } else {
-        LOGGER.warn("SIGNAL HANDLING: Sending empty instead of full PATH update to NameNode  for pathSeqNum {} and pathImgNum {} (???)", pathSeqNum, pathImgNum);
+        LOGGER.warn(FULL_UPDATE_TRIGGER + "Sending empty instead of full PATH update to NameNode  for pathSeqNum {} and pathImgNum {} (???)", pathSeqNum, pathImgNum);
       }
     } else {
-      LOGGER.warn("SIGNAL HANDLING: returned NULL instead of full PATH update to NameNode  for pathSeqNum {} and pathImgNum {} (???)", pathSeqNum, pathImgNum);
+      LOGGER.warn(FULL_UPDATE_TRIGGER + "returned NULL instead of full PATH update to NameNode  for pathSeqNum {} and pathImgNum {} (???)", pathSeqNum, pathImgNum);
     }
     return updates;
   }
@@ -334,9 +352,22 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     return update;
   }
 
+  /**
+   * SigUtils.SigListener callback API
+   */
   @Override
   public void onSignal(final String sigName) {
     LOGGER.info("SIGNAL HANDLING: Received signal " + sigName + ", triggering full update");
+    fullUpdateNN.set(true);
+  }
+
+  /**
+   * PubSub.Subscriber callback API
+   */
+  @Override
+  public void onMessage(PubSub.Topic topic, String message) {
+    Preconditions.checkArgument(topic == PubSub.Topic.HDFS_SYNC_NN, "Unexpected topic %s instead of %s", topic, PubSub.Topic.HDFS_SYNC_NN);
+    LOGGER.info(FULL_UPDATE_TRIGGER + "Received [{}, {}] notification", topic, message);
     fullUpdateNN.set(true);
   }
 

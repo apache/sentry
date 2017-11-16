@@ -1,0 +1,18 @@
+{
+    "authentication": {
+        "class": "org.apache.sentry.tests.e2e.solr.DummyAuthPluginImpl"
+    },
+    "authorization": {
+        "class": "org.apache.sentry.binding.solr.authz.SentrySolrPluginImpl",
+        "sysPropPrefix": "solr.",
+        "authConfigs": [
+            "authorization.sentry.site",
+            "authorization.superuser",
+            "authorization.enable.auditlog"
+        ],
+        "defaultConfigs": {
+          "authorization.superuser" : "solr",
+          "authorization.enable.auditlog" : "true"
+        }
+    }
+}

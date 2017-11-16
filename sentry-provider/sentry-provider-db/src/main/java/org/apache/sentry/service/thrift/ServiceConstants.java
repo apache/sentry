@@ -152,7 +152,7 @@ public class ServiceConstants {
         .put("datanucleus.validateColumns", "false")
         .put("datanucleus.validateConstraints", "false")
         .put("datanucleus.storeManagerType", "rdbms")
-        .put("datanucleus.schema.autoCreateAll", "true")
+        .put("datanucleus.schema.autoCreateAll", "false")
         .put("datanucleus.autoCreateSchema", "false")
         .put("datanucleus.fixedDatastore", "true")
         .put("datanucleus.autoStartMechanismMode", "checked")
@@ -215,6 +215,9 @@ public class ServiceConstants {
     // Flag to enable admin servlet
     public static final String SENTRY_WEB_ADMIN_SERVLET_ENABLED = "sentry.web.admin.servlet.enabled";
     public static final boolean SENTRY_WEB_ADMIN_SERVLET_ENABLED_DEFAULT = false;
+
+    public static final String SENTRY_WEB_PUBSUB_SERVLET_ENABLED = "sentry.web.pubsub.servlet.enabled";
+    public static final boolean SENTRY_WEB_PUBSUB_SERVLET_ENABLED_DEFAULT = false;
 
     // max message size for thrift messages
     public static final String SENTRY_POLICY_SERVER_THRIFT_MAX_MESSAGE_SIZE = "sentry.policy.server.thrift.max.message.size";
@@ -289,6 +292,9 @@ public class ServiceConstants {
     public static final String CACHE_UPDATE_FAILURES_BEFORE_PRIV_REVOKE = "sentry.provider.backend.generic.cache.update.failures.count";
     public static final int CACHE_UPDATE_FAILURES_BEFORE_PRIV_REVOKE_DEFAULT = 3;
     public static final String PRIVILEGE_CONVERTER = "sentry.provider.backend.generic.privilege.converter";
+
+    public static final String COMPONENT_TYPE = "sentry.provider.backend.generic.component-type";
+    public static final String SERVICE_NAME = "sentry.provider.backend.generic.service-name";
   }
 
   /**

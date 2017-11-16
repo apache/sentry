@@ -16,81 +16,80 @@
  */
 package org.apache.sentry.binding.solr.authz;
 
-import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
-import static org.apache.sentry.core.model.search.SearchConstants.SENTRY_SEARCH_SERVICE_DEFAULT;
-import static org.apache.sentry.core.model.search.SearchConstants.SENTRY_SEARCH_SERVICE_KEY;
-import static org.apache.sentry.core.model.search.SearchModelAuthorizable.AuthorizableType.Collection;
+import static org.apache.sentry.core.model.solr.SolrConstants.SENTRY_SOLR_SERVICE_DEFAULT;
+import static org.apache.sentry.core.model.solr.SolrConstants.SENTRY_SOLR_SERVICE_KEY;
 
-import java.io.File;
+import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
-import java.util.List;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.binding.solr.conf.SolrAuthzConf;
 import org.apache.sentry.binding.solr.conf.SolrAuthzConf.AuthzConfVars;
-import org.apache.sentry.core.common.Action;
 import org.apache.sentry.core.common.ActiveRoleSet;
+import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.Model;
 import org.apache.sentry.core.common.Subject;
-import org.apache.sentry.core.model.search.Collection;
-import org.apache.sentry.core.model.search.SearchModelAction;
-import org.apache.sentry.core.model.search.SearchPrivilegeModel;
+import org.apache.sentry.core.model.solr.SolrPrivilegeModel;
+import org.apache.sentry.core.model.solr.AdminOperation;
+import org.apache.sentry.core.model.solr.Collection;
+import org.apache.sentry.core.model.solr.SolrModelAction;
+import org.apache.sentry.core.model.solr.SolrModelAuthorizable;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.AuthorizationComponent;
 import org.apache.sentry.provider.common.AuthorizationProvider;
-import org.apache.sentry.provider.common.GroupMappingService;
 import org.apache.sentry.provider.common.HadoopGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
+import org.apache.sentry.provider.common.GroupMappingService;
 import org.apache.sentry.provider.db.generic.SentryGenericProviderBackend;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
-import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
-import org.apache.sentry.provider.db.generic.service.thrift.TSentryGrantOption;
-import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.generic.tools.GenericPrivilegeConverter;
 import org.apache.sentry.service.thrift.ServiceConstants;
+import org.apache.solr.security.AuthorizationResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
-
-public class SolrAuthzBinding {
+/**
+ * This class provides functionality to initialize the Sentry (specifically
+ * {@linkplain AuthorizationProvider} and {@linkplain ProviderBackend}) as
+ * well as query the permissions for a given user and a specific set of
+ * entities.
+ */
+public class SolrAuthzBinding implements Closeable {
   private static final Logger LOG = LoggerFactory
       .getLogger(SolrAuthzBinding.class);
-  private static final String[] HADOOP_CONF_FILES = {"core-site.xml",
-    "hdfs-site.xml", "mapred-site.xml", "yarn-site.xml", "hadoop-site.xml"};
-  public static final String KERBEROS_ENABLED = "solr.hdfs.security.kerberos.enabled";
-  public static final String KERBEROS_KEYTAB = "solr.hdfs.security.kerberos.keytabfile";
-  public static final String KERBEROS_PRINCIPAL = "solr.hdfs.security.kerberos.principal";
-  private static final String SOLR_POLICY_ENGINE_OLD = "org.apache.sentry.policy.search.SimpleSearchPolicyEngine";
-  private static final String kerberosEnabledProp = Strings.nullToEmpty(System.getProperty(KERBEROS_ENABLED)).trim();
-  private static final String keytabProp = Strings.nullToEmpty(System.getProperty(KERBEROS_KEYTAB)).trim();
-  private static final String principalProp = Strings.nullToEmpty(System.getProperty(KERBEROS_PRINCIPAL)).trim();
-  private static Boolean kerberosInit;
+
+  static final Set<SolrModelAction> QUERY = new HashSet<>(Arrays.asList(SolrModelAction.QUERY));
+  static final Set<SolrModelAction> UPDATE = new HashSet<>(Arrays.asList(SolrModelAction.UPDATE));
 
   private final SolrAuthzConf authzConf;
-  private final AuthorizationProvider authProvider;
+  public final AuthorizationProvider authProvider;
   private final GroupMappingService groupMapping;
-  private ProviderBackend providerBackend;
-  private Subject bindingSubject;
+  public ProviderBackend providerBackend;
 
-  public SolrAuthzBinding (SolrAuthzConf authzConf) throws Exception {
-    this.authzConf = addHdfsPropsToConf(authzConf);
+  /**
+   * The constructor.
+   *
+   * @param authzConf The Sentry/Solr authorization configuration
+   * @throws Exception in case of errors.
+   */
+  public SolrAuthzBinding(SolrAuthzConf authzConf) throws Exception {
+    this.authzConf = authzConf;
     this.authProvider = getAuthProvider();
     this.groupMapping = authProvider.getGroupMapping();
-    /**
-     * The Solr server principal will use the binding
-     */
-    this.bindingSubject = new Subject(UserGroupInformation.getCurrentUser()
-        .getShortUserName());
+  }
+
+  @Override
+  public void close() throws IOException {
+    if (this.authProvider != null) {
+      this.authProvider.close();
+    }
   }
 
   // Instantiate the configured authz provider
@@ -103,36 +102,18 @@ public class SolrAuthzBinding {
         authzConf.get(AuthzConfVars.AUTHZ_PROVIDER_BACKEND.getVar());
     String policyEngineName =
         authzConf.get(AuthzConfVars.AUTHZ_POLICY_ENGINE.getVar(), AuthzConfVars.AUTHZ_POLICY_ENGINE.getDefault());
-    String serviceName = authzConf.get(SENTRY_SEARCH_SERVICE_KEY, SENTRY_SEARCH_SERVICE_DEFAULT);
-
-    // for the backward compatibility
-    if (SOLR_POLICY_ENGINE_OLD.equals(policyEngineName)) {
-      policyEngineName = AuthzConfVars.AUTHZ_POLICY_ENGINE.getDefault();
-    }
+    String serviceName = authzConf.get(SENTRY_SOLR_SERVICE_KEY, SENTRY_SOLR_SERVICE_DEFAULT);
 
     LOG.debug("Using authorization provider " + authProviderName +
         " with resource " + resourceName + ", policy engine "
         + policyEngineName + ", provider backend " + providerBackendName);
-    // load the provider backend class
-    if (kerberosEnabledProp.equalsIgnoreCase("true")) {
-      initKerberos(keytabProp, principalProp);
-    } else {
-      // set configuration so that group mappings are properly setup even if
-      // we don't use kerberos, for testing
-      UserGroupInformation.setConfiguration(authzConf);
-    }
 
     // for convenience, set the PrivilegeConverter.
     if (authzConf.get(ServiceConstants.ClientConfig.PRIVILEGE_CONVERTER) == null) {
-      authzConf.set(ServiceConstants.ClientConfig.PRIVILEGE_CONVERTER, GenericPrivilegeConverter.class.getName());
+      authzConf.set(ServiceConstants.ClientConfig.PRIVILEGE_CONVERTER,
+                       GenericPrivilegeConverter.class.getName());
     }
 
-    // the SearchProviderBackend is deleted in SENTRY-828, this is for the compatible with the
-    // previous Sentry.
-    if ("org.apache.sentry.provider.db.generic.service.thrift.SearchProviderBackend"
-        .equals(providerBackendName)) {
-      providerBackendName = SentryGenericProviderBackend.class.getName();
-    }
     Constructor<?> providerBackendConstructor =
         Class.forName(providerBackendName).getDeclaredConstructor(Configuration.class, String.class);
     providerBackendConstructor.setAccessible(true);
@@ -142,14 +123,14 @@ public class SolrAuthzBinding {
 
     if (providerBackend instanceof SentryGenericProviderBackend) {
       ((SentryGenericProviderBackend) providerBackend)
-          .setComponentType(AuthorizationComponent.Search);
+      .setComponentType(AuthorizationComponent.Search);
       ((SentryGenericProviderBackend) providerBackend).setServiceName(serviceName);
     }
 
     // Create backend context
     ProviderBackendContext context = new ProviderBackendContext();
     context.setAllowPerDatabase(false);
-    context.setValidators(SearchPrivilegeModel.getInstance().getPrivilegeValidators());
+    context.setValidators(SolrPrivilegeModel.getInstance().getPrivilegeValidators());
     providerBackend.initialize(context);
 
     // load the policy engine class
@@ -167,34 +148,63 @@ public class SolrAuthzBinding {
 
     // load the authz provider class
     Constructor<?> constrctor =
-      Class.forName(authProviderName).getDeclaredConstructor(Configuration.class,
-              String.class, PolicyEngine.class, Model.class);
+        Class.forName(authProviderName).getDeclaredConstructor(Configuration.class,
+            String.class, PolicyEngine.class, Model.class);
     constrctor.setAccessible(true);
     return (AuthorizationProvider) constrctor.newInstance(new Object[] {authzConf, resourceName,
-            policyEngine, SearchPrivilegeModel.getInstance()});
+        policyEngine, SolrPrivilegeModel.getInstance()});
   }
 
-
   /**
-   * Authorize access to an index/collection
-   * @param subject
-   * @param collection
-   * @param actions
-   * @throws SentrySolrAuthorizationException
+   * Authorize access to a Solr operation
+   * @param subject The user invoking the SOLR operation
+   * @param admin The {@linkplain SolrModelAuthorizable} associated with the operation
+   * @param actions The action performed as part of the operation (query or update)
+   * @return {@linkplain AuthorizationResponse#OK} If the authorization is successful
+   *         {@linkplain AuthorizationResponse#FORBIDDEN} if the authorization fails.
    */
-  public void authorizeCollection(Subject subject, Collection collection, Set<SearchModelAction> actions) throws SentrySolrAuthorizationException {
-    boolean isDebug = LOG.isDebugEnabled();
-    if(isDebug) {
-      LOG.debug("Going to authorize collection " + collection.getName() +
+  public AuthorizationResponse authorize (Subject subject,
+      java.util.Collection<? extends SolrModelAuthorizable> authorizables, Set<SolrModelAction> actions) {
+    if(LOG.isDebugEnabled()) {
+      LOG.debug("Going to authorize " + authorizables +
           " for subject " + subject.getName());
       LOG.debug("Actions: " + actions);
     }
 
-    if (!authProvider.hasAccess(subject, Arrays.asList(new Collection[] {collection}), actions,
-        ActiveRoleSet.ALL)) {
-      throw new SentrySolrAuthorizationException("User " + subject.getName() +
-        " does not have privileges for " + collection.getName());
+    for (SolrModelAuthorizable a : authorizables) {
+      if (!authProvider.hasAccess(subject, Arrays.asList(new Authorizable[] { a }),
+          actions, ActiveRoleSet.ALL)) {
+        return AuthorizationResponse.FORBIDDEN;
+      }
     }
+
+    return AuthorizationResponse.OK;
+  }
+
+  /**
+   * Authorize access to an index/collection
+   * @param subject The user invoking the SOLR collection related operation
+   * @param collection The Solr collection associated with the operation
+   * @param actions The action performed as part of the operation (query or update)
+   * @return {@linkplain AuthorizationResponse#OK} If the authorization is successful
+   *         {@linkplain AuthorizationResponse#FORBIDDEN} if the authorization fails.
+   */
+  public AuthorizationResponse authorizeCollection(Subject subject, Collection collection,
+      Set<SolrModelAction> actions) {
+    return authorize(subject, Collections.singleton(collection), actions);
+  }
+
+  /**
+   * Authorize access to an admin operation
+   * @param subject The user invoking the SOLR admin operation
+   * @param admin The type of the admin operation
+   * @param actions The action performed as part of the operation (query or update)
+   * @return {@linkplain AuthorizationResponse#OK} If the authorization is successful
+   *         {@linkplain AuthorizationResponse#FORBIDDEN} if the authorization fails.
+   */
+  public AuthorizationResponse authorizeAdminAction(Subject subject, AdminOperation admin,
+      Set<SolrModelAction> actions) {
+    return authorize(subject, Collections.singleton(admin), actions);
   }
 
   /**
@@ -217,103 +227,7 @@ public class SolrAuthzBinding {
     return providerBackend.getRoles(getGroups(user), ActiveRoleSet.ALL);
   }
 
-  private SolrAuthzConf addHdfsPropsToConf(SolrAuthzConf conf) throws IOException {
-    String confDir = System.getProperty("solr.hdfs.confdir");
-    if (confDir != null && confDir.length() > 0) {
-      File confDirFile = new File(confDir);
-      if (!confDirFile.exists()) {
-        throw new IOException("Resource directory does not exist: " + confDirFile.getAbsolutePath());
-      }
-      if (!confDirFile.isDirectory()) {
-        throw new IOException("Specified resource directory is not a directory" + confDirFile.getAbsolutePath());
-      }
-      if (!confDirFile.canRead()) {
-        throw new IOException("Resource directory must be readable by the Solr process: " + confDirFile.getAbsolutePath());
-      }
-      for (String file : HADOOP_CONF_FILES) {
-        if (new File(confDirFile, file).exists()) {
-          conf.addResource(new Path(confDir, file));
-        }
-      }
-    }
-    return conf;
-  }
-
-  /**
-   * Initialize kerberos via UserGroupInformation.  Will only attempt to login
-   * during the first request, subsequent calls will have no effect.
-   */
-  public void initKerberos(String keytabFile, String principal) {
-    if (keytabFile == null || keytabFile.length() == 0) {
-      throw new IllegalArgumentException("keytabFile required because kerberos is enabled");
-    }
-    if (principal == null || principal.length() == 0) {
-      throw new IllegalArgumentException("principal required because kerberos is enabled");
-    }
-    synchronized (SolrAuthzBinding.class) {
-      if (kerberosInit == null) {
-        kerberosInit = Boolean.TRUE;
-        final String authVal = authzConf.get(HADOOP_SECURITY_AUTHENTICATION);
-        final String kerberos = "kerberos";
-        if (authVal != null && !authVal.equals(kerberos)) {
-          throw new IllegalArgumentException(HADOOP_SECURITY_AUTHENTICATION
-              + " set to: " + authVal + ", not kerberos, but attempting to "
-              + " connect to HDFS via kerberos");
-        }
-        // let's avoid modifying the supplied configuration, just to be conservative
-        final Configuration ugiConf = new Configuration(authzConf);
-        ugiConf.set(HADOOP_SECURITY_AUTHENTICATION, kerberos);
-        UserGroupInformation.setConfiguration(ugiConf);
-        LOG.info(
-            "Attempting to acquire kerberos ticket with keytab: {}, principal: {} ",
-            keytabFile, principal);
-        try {
-          UserGroupInformation.loginUserFromKeytab(principal, keytabFile);
-        } catch (IOException ioe) {
-          throw new RuntimeException(ioe);
-        }
-        LOG.info("Got Kerberos ticket");
-      }
-    }
-  }
-
-  /**
-   * SENTRY-478
-   * If the binding uses the searchProviderBackend, it can sync privilege with Sentry Service
-   */
-  public boolean isSyncEnabled() {
-    return providerBackend instanceof SentryGenericProviderBackend;
-  }
-
   public SentryGenericServiceClient getClient() throws Exception {
     return SentryGenericServiceClientFactory.create(authzConf);
-  }
-
-  /**
-   * Attempt to notify the Sentry service when deleting collection happened
-   * @param collection
-   * @throws SolrException
-   */
-  public void deleteCollectionPrivilege(String collection) throws SentrySolrAuthorizationException {
-    if (!isSyncEnabled()) {
-      return;
-    }
-    try (SentryGenericServiceClient client = getClient()) {
-      TSentryPrivilege tPrivilege = new TSentryPrivilege();
-      tPrivilege.setComponent(AuthorizationComponent.Search);
-      tPrivilege.setServiceName(authzConf.get(SENTRY_SEARCH_SERVICE_KEY,
-          SENTRY_SEARCH_SERVICE_DEFAULT));
-      tPrivilege.setAction(Action.ALL);
-      tPrivilege.setGrantOption(TSentryGrantOption.UNSET);
-      List<TAuthorizable> authorizables = Lists.newArrayList(new TAuthorizable(Collection.name(),
-          collection));
-      tPrivilege.setAuthorizables(authorizables);
-      client.dropPrivilege(bindingSubject.getName(), AuthorizationComponent.Search, tPrivilege);
-    } catch (SentryUserException ex) {
-      throw new SentrySolrAuthorizationException("User " + bindingSubject.getName() +
-          " can't delete privileges for collection " + collection);
-    } catch (Exception ex) {
-      throw new SentrySolrAuthorizationException("Unable to obtain client:" + ex.getMessage());
-    }
   }
 }

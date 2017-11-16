@@ -144,6 +144,7 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
     if (webServerEnabled) {
       conf.set(ServerConfig.SENTRY_WEB_ENABLE, "true");
       conf.set(ServerConfig.SENTRY_WEB_PORT, String.valueOf(webServerPort));
+      conf.set(ServerConfig.SENTRY_WEB_PUBSUB_SERVLET_ENABLED, "true");
       if (webSecurity) {
         httpKeytab = new File(kdcWorkDir, "http.keytab");
         kdc.createPrincipal(httpKeytab, HTTP_PRINCIPAL);

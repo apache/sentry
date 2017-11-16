@@ -263,6 +263,12 @@ public class SentryStore {
         ServerConfig.SENTRY_VERIFY_SCHEM_VERSION,
         ServerConfig.SENTRY_VERIFY_SCHEM_VERSION_DEFAULT).equalsIgnoreCase(
         "true");
+
+    // Schema verification should be set to false only for testing.
+    // If it is set to false, appropriate datanucleus properties will be set so that
+    // database schema is automatically created. This is desirable only for running tests.
+    // Sentry uses <code>SentrySchemaTool</code> to create schema with the help of sql scripts.
+
     if (!checkSchemaVersion) {
       prop.setProperty("datanucleus.schema.autoCreateAll", "true");
       prop.setProperty("datanucleus.autoCreateSchema", "true");
