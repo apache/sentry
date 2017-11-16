@@ -20,7 +20,6 @@ package org.apache.sentry.shell;
 
 import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.provider.db.service.thrift.*;
-import org.apache.sentry.provider.db.tools.SentryShellCommon;
 import org.apache.sentry.provider.db.tools.ShellCommand;
 import org.apache.sentry.provider.db.tools.command.hive.HiveShellCommand;
 
@@ -45,8 +44,7 @@ class ShellUtil {
 
     List<String> listRoles(String group) {
         try {
-            // TODO remove "null" here
-            List<String> result = command.listRoles(authUser, null, group);
+            List<String> result = command.listRoles(authUser, group);
             Collections.sort(result);
             return result;
         } catch (SentryUserException e) {
@@ -79,65 +77,18 @@ class ShellUtil {
     }
 
     List<String> listGroupRoles() {
-        // TODO
-        return Collections.emptyList();
-        /*
-        Set<TSentryRole> roles = null;
-
         try {
-            roles = sentryClient.listAllRoles(authUser);
+            return command.listGroupRoles(authUser);
         } catch (SentryUserException e) {
-            System.out.println("Error reading roles: " + e.toString());
+            System.out.printf("failed to list the groups and roles: %s\n", e.toString());
+            return Collections.emptyList();
         }
-
-        if (roles == null || roles.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        // Set of all group names
-        Set<String> groupNames = new HashSet<>();
-
-        // Map group to set of roles
-        Map<String, Set<String>> groupInfo = new HashMap<>();
-
-        // Get all group names
-        for (TSentryRole role: roles) {
-            for (TSentryGroup group: role.getGroups()) {
-                String groupName = group.getGroupName();
-                groupNames.add(groupName);
-                Set<String> groupRoles = groupInfo.get(groupName);
-                if (groupRoles != null) {
-                    // Add a new or existing role
-                    groupRoles.add(role.getRoleName());
-                    continue;
-                }
-                // Never seen this group before
-                groupRoles = new HashSet<>();
-                groupRoles.add(role.getRoleName());
-                groupInfo.put(groupName, groupRoles);
-            }
-        }
-
-        List<String> groups = new ArrayList<>(groupNames);
-        Collections.sort(groups);
-
-        // Produce printable result as
-        // group1 = role1, role2, ...
-        // group2 = ...
-        List<String> result = new LinkedList<>();
-        for(String groupName: groups) {
-            result.add(groupName + " = " +
-                    StringUtils.join(groupInfo.get(groupName), ", "));
-        }
-        return result;
-        */
     }
 
     void grantGroupsToRole(String roleName, String ...groups) {
         try {
-            // TODO change grantRoleToGroups
-            String joinedGroups = String.join(SentryShellCommon.GROUP_SPLIT_CHAR, groups);
-            command.grantRoleToGroups(authUser, roleName, joinedGroups);
+            Set<String> groupsSet = new HashSet<>(Arrays.asList(groups));
+            command.grantRoleToGroups(authUser, roleName, groupsSet);
         } catch (SentryUserException e) {
             System.out.printf("Failed to gran role %s to groups: %s\n",
                     roleName, e.toString());
@@ -146,9 +97,8 @@ class ShellUtil {
 
     void revokeGroupsFromRole(String roleName, String ...groups) {
         try {
-            // TODO change revokeRoleFromGroups
-            String joinedGroups = String.join(SentryShellCommon.GROUP_SPLIT_CHAR, groups);
-            command.revokeRoleFromGroups(authUser, roleName, joinedGroups);
+            Set<String> groupsSet = new HashSet<>(Arrays.asList(groups));
+            command.revokeRoleFromGroups(authUser, roleName, groupsSet);
         } catch (SentryUserException e) {
             System.out.printf("Failed to revoke role %s to groups: %s\n",
                     roleName, e.toString());
