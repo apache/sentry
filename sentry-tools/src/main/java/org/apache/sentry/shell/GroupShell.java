@@ -21,40 +21,65 @@ package org.apache.sentry.shell;
 import com.budhash.cliche.Command;
 import com.budhash.cliche.Shell;
 import com.budhash.cliche.ShellDependent;
-import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 
+import org.apache.sentry.core.common.exception.SentryUserException;
+import org.apache.sentry.provider.db.tools.ShellCommand;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Sentry group manipulation for CLI
  */
 public class GroupShell implements ShellDependent {
 
-    private final ShellUtil tools;
-    Shell shell;
+  private final ShellCommand shellCommand;
+  private final String authUser;
+  Shell shell;
 
-    public GroupShell(SentryPolicyServiceClient sentryClient, String authUser) {
-        this.tools = new ShellUtil(sentryClient, authUser);
-    }
+  public GroupShell(ShellCommand shellCommand, String authUser) {
+    this.shellCommand = shellCommand;
+    this.authUser = authUser;
+  }
 
-    @Command(abbrev = "lr", header = "[groups]",
-            description = "list groups and their roles")
-    public List<String> listRoles() {
-        return tools.listGroupRoles();
+  @Command(abbrev = "lr", header = "[groups]",
+          description = "list groups and their roles")
+  public List<String> listRoles() {
+    try {
+      return shellCommand.listGroupRoles(authUser);
+    } catch (SentryUserException e) {
+      System.out.printf("failed to list the groups and roles: %s\n", e.toString());
+      return Collections.emptyList();
     }
+  }
 
-    @Command(description = "Grant role to groups")
-    public void grant(String roleName, String ...groups) {
-        tools.grantGroupsToRole(roleName, groups);
+  @Command(description = "Grant role to groups")
+  public void grant(String roleName, String ...groups) {
+    try {
+      Set<String> groupsSet = new HashSet<>(Arrays.asList(groups));
+      shellCommand.grantRoleToGroups(authUser, roleName, groupsSet);
+    } catch (SentryUserException e) {
+      System.out.printf("Failed to gran role %s to groups: %s\n",
+              roleName, e.toString());
     }
+  }
 
-    @Command(description = "Revoke role from groups")
-    public void revoke(String roleName, String ...groups) {
-        tools.revokeGroupsFromRole(roleName, groups);
+  @Command(description = "Revoke role from groups")
+  public void revoke(String roleName, String ...groups) {
+    try {
+      Set<String> groupsSet = new HashSet<>(Arrays.asList(groups));
+      shellCommand.revokeRoleFromGroups(authUser, roleName, groupsSet);
+    } catch (SentryUserException e) {
+      System.out.printf("Failed to revoke role %s to groups: %s\n",
+              roleName, e.toString());
     }
+  }
 
-    @Override
-    public void cliSetShell(Shell theShell) {
-        this.shell = theShell;
-    }
+  @Override
+  public void cliSetShell(Shell theShell) {
+    this.shell = theShell;
+  }
 }

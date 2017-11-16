@@ -18,139 +18,284 @@
 
 package org.apache.sentry.shell;
 
-import com.budhash.cliche.*;
+import org.apache.sentry.core.common.exception.SentryUserException;
+import org.apache.sentry.provider.common.AuthorizationComponent;
+import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
+import org.apache.sentry.provider.db.generic.tools.GenericPrivilegeConverter;
+import org.apache.sentry.provider.db.generic.tools.command.GenericShellCommand;
+import org.apache.sentry.provider.db.generic.tools.command.TSentryPrivilegeConverter;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
+import org.apache.sentry.provider.db.tools.ShellCommand;
+import org.apache.sentry.provider.db.tools.command.hive.HiveShellCommand;
+
+import com.budhash.cliche.Command;
+import com.budhash.cliche.Param;
+import com.budhash.cliche.Shell;
+import com.budhash.cliche.ShellDependent;
+import com.budhash.cliche.ShellFactory;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Top level commands
  */
 public class TopLevelShell implements ShellDependent, Runnable {
 
-    private final Shell topShell;
-    private final ShellUtil tools;
-    private Shell shell; // top level shell object
+  public enum TYPE { kafka, hive, solr, sqoop };
 
-    private final String authUser;
-    private final SentryPolicyServiceClient sentryClient;
+  private final Shell topShell;
+  private ShellCommand shellCommand;
+  private Shell shell; // top level shell object
 
-    TopLevelShell(SentryPolicyServiceClient sentryClient,
-                  String authUser) {
-        this.authUser = authUser;
-        this.sentryClient = sentryClient;
-        this.tools = new ShellUtil(sentryClient, authUser);
-        topShell = ShellFactory.createConsoleShell("sentry",
-                "sentry shell\n" +
-                "Enter ?l to list available commands.",
-                this);
+  private final String authUser;
+  private final SentryPolicyServiceClient sentryClient;
+  private final SentryGenericServiceClient sentryGenericClient;
+
+  TopLevelShell(SentryPolicyServiceClient sentryClient,
+      SentryGenericServiceClient sentryGenericClient,
+      String authUser) {
+    this.authUser = authUser;
+    this.sentryClient = sentryClient;
+    this.sentryGenericClient = sentryGenericClient;
+    shellCommand = new HiveShellCommand(sentryClient);
+    topShell = ShellFactory.createConsoleShell("sentry",
+        "sentry shell\n" +
+        "Enter ?l to list available commands.",
+        this);
+  }
+
+  @Command(description="list, create and remove roles")
+  public void roles() throws IOException {
+    ShellFactory.createSubshell("roles", shell, "roles commands",
+        new RolesShell(shellCommand, authUser)).commandLoop();
+  }
+
+  @Command(description = "list, create and remove groups")
+  public void groups() throws IOException {
+    ShellFactory.createSubshell("groups", shell, "groups commands",
+        new GroupShell(shellCommand, authUser)).commandLoop();
+  }
+
+  @Command(description = "list, create and remove privileges")
+  public void privileges() throws IOException {
+    ShellFactory.createSubshell("privileges", shell, "privileges commands",
+        new PrivsShell(shellCommand, authUser)).commandLoop();
+  }
+
+  @Command(description = "List sentry roles. shows all available roles.")
+  public List<String> listRoles() {
+    try {
+      List<String> result = shellCommand.listRoles(authUser, null);
+      Collections.sort(result);
+      return result;
+    } catch (SentryUserException e) {
+      System.out.printf("failed to list roles: %s\n", e.toString());
+      return Collections.emptyList();
+    }
+  }
+
+  @Command(description = "List sentry roles by group")
+  public List<String> listRoles(
+      @Param(name = "groupName")
+      String group) {
+    try {
+      List<String> result = shellCommand.listRoles(authUser, group);
+      Collections.sort(result);
+      return result;
+    } catch (SentryUserException e) {
+      System.out.printf("failed to list roles with group %s: %s\n",
+          group, e.toString());
+      return Collections.emptyList();
+    }
+  }
+
+  @Command(abbrev = "lg", header = "[groups]",
+    description = "list groups and their roles")
+  public List<String> listGroups() {
+    try {
+      return shellCommand.listGroupRoles(authUser);
+    } catch (SentryUserException e) {
+      System.out.printf("failed to list the groups and roles: %s\n", e.toString());
+      return Collections.emptyList();
+    }
+  }
+
+  @Command(description = "Grant role to groups")
+  public void grantRole(
+      @Param(name = "roleName")
+      String roleName,
+      @Param(name = "group...") String ...groups) {
+    try {
+      Set<String> groupsSet = new HashSet<>(Arrays.asList(groups));
+      shellCommand.grantRoleToGroups(authUser, roleName, groupsSet);
+    } catch (SentryUserException e) {
+      System.out.printf("Failed to gran role %s to groups: %s\n",
+          roleName, e.toString());
+    }
+  }
+
+  @Command(abbrev = "grm", description = "Revoke role from groups")
+  public void revokeRole(
+      @Param(name = "roleName")
+      String roleName,
+      @Param(name = "group...")
+      String ...groups) {
+    try {
+      Set<String> groupsSet = new HashSet<>(Arrays.asList(groups));
+      shellCommand.revokeRoleFromGroups(authUser, roleName, groupsSet);
+    } catch (SentryUserException e) {
+      System.out.printf("Failed to revoke role %s to groups: %s\n",
+          roleName, e.toString());
+    }
+  }
+
+  @Command(description = "Create Sentry role(s).")
+  public void createRole(
+      @Param(name = "roleName", description = "name of role to create")
+      String ...roles) {
+    for (String role : roles) {
+      try {
+        shellCommand.createRole(authUser, role);
+      } catch (SentryUserException e) {
+        System.out.printf("failed to create role %s: %s\n",
+            role, e.toString());
+      }
+    }
+  }
+
+  @Command(abbrev = "dr", description = "drop Sentry role(s).")
+  public void dropRole(
+      @Param(name = "roleName ...", description = "role names to drop")
+      String ...roles) {
+    for (String role : roles) {
+      try {
+        shellCommand.dropRole(authUser, role);
+      } catch (SentryUserException e) {
+        System.out.printf("failed to drop role %s: %s\n",
+            role, e.toString());
+      }
+    }
+  }
+
+  @Command(description = "list Sentry privileges")
+  public List<String> listPrivileges(
+      @Param(name = "roleName")
+      String roleName) {
+    try {
+      return shellCommand.listPrivileges(authUser, roleName);
+    } catch (SentryUserException e) {
+      System.out.println("Failed to list privileges: " + e.toString());
+      return Collections.emptyList();
+    }
+  }
+
+  @Command(description = "Grant privilege to role")
+  public void grantPrivilege(
+      @Param(name = "roleName")
+      String roleName,
+      @Param(name = "privilege", description = "privilege string, e.g. server=s1->db=foo")
+      String privilege) {
+    try {
+      shellCommand.grantPrivilegeToRole(authUser, roleName, privilege);
+    } catch (SentryUserException e) {
+      System.out.println("Error granting privilege: " + e.toString());
+    }
+  }
+
+  @Command
+  public void revokePrivilege(
+      @Param(name = "roleName")
+      String roleName,
+      @Param(name = "privilege", description = "privilege string, e.g. server=s1->db=foo")
+      String privilege) {
+    try {
+      shellCommand.revokePrivilegeFromRole(authUser, roleName, privilege);
+    } catch (SentryUserException e) {
+      System.out.println("failed to revoke privilege: " + e.toString());
+    }
+  }
+
+  @Command(description = "Set the type: hive, kafka, sqoop, solr, etc.")
+  public void type(
+      @Param(name = "type", description = "the type to set: hive, kafka, sqoop, solr, etc.")
+      String type) {
+    // Check it's a valid type first
+    try {
+      TYPE parsedType = TYPE.valueOf(type);
+      if (parsedType == TYPE.hive) {
+        shellCommand = new HiveShellCommand(sentryClient);
+      } else {
+        String component = getComponent(parsedType);
+        String service = getService(parsedType);
+        TSentryPrivilegeConverter converter = new GenericPrivilegeConverter(component, service);
+        shellCommand = new GenericShellCommand(sentryGenericClient, component, service, converter);
+      }
+    } catch (IllegalArgumentException ex) {
+      System.out.printf("The %s type value is not an accepted type value\n", type);
+    }
+  }
+
+  @Command(description = "Set the type: hive, kafka, sqoop, solr, etc.")
+  public void type(
+      @Param(name = "type", description = "the type to set: hive, kafka, sqoop, solr, etc.")
+      String type,
+      @Param(name = "service", description = "the service name")
+      String service) {
+    try {
+      // Check it's a valid type first
+      TYPE parsedType = TYPE.valueOf(type);
+      if (parsedType == TYPE.hive) {
+        shellCommand = new HiveShellCommand(sentryClient);
+      } else {
+        String component = getComponent(parsedType);
+        TSentryPrivilegeConverter converter = new GenericPrivilegeConverter(component, service);
+        shellCommand = new GenericShellCommand(sentryGenericClient, component, service, converter);
+      }
+    } catch (IllegalArgumentException ex) {
+      System.out.printf("The %s type value is not an accepted type value\n", type);
+    }
+  }
+
+  @Override
+  public void cliSetShell(Shell theShell) {
+    this.shell = theShell;
+  }
+
+  @Override
+  public void run() {
+    try {
+      this.topShell.commandLoop();
+    } catch (IOException e) {
+      System.out.println("error: " + e.toString());
+    }
+  }
+
+  private String getComponent(TYPE type) {
+    if (type == TYPE.kafka) {
+      return AuthorizationComponent.KAFKA;
+    } else if (type == TYPE.solr) {
+      return "SOLR";
+    } else if (type == TYPE.sqoop) {
+      return AuthorizationComponent.SQOOP;
     }
 
-    @Command(description="list, create and remove roles")
-    public void roles() throws IOException {
-        ShellFactory.createSubshell("roles", shell, "roles commands",
-                new RolesShell(sentryClient, authUser)).commandLoop();
+    throw new IllegalArgumentException("Invalid type specified for SentryShellGeneric: " + type);
+  }
+
+  private String getService(TYPE type) {
+    if (type == TYPE.kafka) {
+      return AuthorizationComponent.KAFKA;
+    } else if (type == TYPE.solr) {
+      return "service1";
+    } else if (type == TYPE.sqoop) {
+      return "sqoopServer1";
     }
 
-    @Command(description = "list, create and remove groups")
-    public void groups() throws IOException {
-        ShellFactory.createSubshell("groups", shell, "groups commands",
-                new GroupShell(sentryClient, authUser)).commandLoop();
-    }
-
-    @Command(description = "list, create and remove privileges")
-    public void privileges() throws IOException {
-        ShellFactory.createSubshell("privileges", shell, "privileges commands",
-                new PrivsShell(sentryClient, authUser)).commandLoop();
-    }
-
-    @Command(description = "List sentry roles. shows all available roles.")
-    public List<String> listRoles() {
-        return tools.listRoles();
-    }
-
-    @Command(description = "List sentry roles by group")
-    public List<String> listRoles(
-            @Param(name = "groupName")
-            String group) {
-        return tools.listRoles(group);
-    }
-
-    @Command(abbrev = "lg", header = "[groups]",
-             description = "list groups and their roles")
-    public List<String> listGroups() {
-        return tools.listGroupRoles();
-    }
-
-    @Command(description = "Grant role to groups")
-    public void grantRole(
-            @Param(name = "roleName")
-            String roleName,
-            @Param(name = "group...") String ...groups) {
-        tools.grantGroupsToRole(roleName, groups);
-    }
-
-    @Command(abbrev = "grm",
-            description = "Revoke role from groups")
-    public void revokeRole(
-            @Param(name = "roleName")
-            String roleName,
-            @Param(name = "group...")
-            String ...groups) {
-        tools.revokeGroupsFromRole(roleName, groups);
-    }
-
-    @Command(description = "Create Sentry role(s).")
-    public void createRole(
-            @Param(name = "roleName", description = "name of role to create")
-                    String ...roles) {
-        tools.createRoles(roles);
-    }
-
-    @Command(abbrev = "dr", description = "drop Sentry role(s).")
-    public void dropRole(
-            @Param(name = "roleName ...", description = "role names to drop")
-                    String ...roles) {
-        tools.dropRoles(roles);
-    }
-
-    @Command(description = "list Sentry privileges")
-    public List<String> listPrivileges(
-            @Param(name = "roleName")
-            String roleName) {
-        return tools.listPrivileges(roleName);
-    }
-
-    @Command(description = "Grant privilege to role")
-    public void grantPrivilege(
-            @Param(name = "roleName")
-            String roleName,
-            @Param(name = "privilege", description = "privilege string, e.g. server=s1->db=foo")
-            String privilege) {
-        tools.grantPrivilegeToRole(roleName, privilege);
-    }
-
-    @Command
-    public void revokePrivilege(
-            @Param(name = "roleName")
-            String roleName,
-            @Param(name = "privilege", description = "privilege string, e.g. server=s1->db=foo")
-            String privilege) {
-        tools.revokePrivilegeFromRole(roleName, privilege);
-    }
-
-    @Override
-    public void cliSetShell(Shell theShell) {
-        this.shell = theShell;
-    }
-
-    @Override
-    public void run() {
-        try {
-            this.topShell.commandLoop();
-        } catch (IOException e) {
-            System.out.println("error: " + e.toString());
-        }
-    }
+    throw new IllegalArgumentException("Invalid type specified for SentryShellGeneric: " + type);
+  }
 }
