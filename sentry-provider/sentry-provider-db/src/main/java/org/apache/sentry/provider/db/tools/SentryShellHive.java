@@ -19,6 +19,7 @@
 package org.apache.sentry.provider.db.tools;
 
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -29,6 +30,8 @@ import org.apache.sentry.provider.db.tools.command.hive.*;
 import org.apache.sentry.service.thrift.SentryServiceClientFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Sets;
 
 /**
  * SentryShellHive is an admin tool, and responsible for the management of repository.
@@ -59,15 +62,17 @@ public class SentryShellHive extends SentryShellCommon {
       } else if (isDropRole) {
         command.dropRole(requestorName, roleName);
       } else if (isAddRoleGroup) {
-        command.grantRoleToGroups(requestorName, roleName, groupName);
+        Set<String> groups = Sets.newHashSet(groupName.split(SentryShellCommon.GROUP_SPLIT_CHAR));
+        command.grantRoleToGroups(requestorName, roleName, groups);
       } else if (isDeleteRoleGroup) {
-        command.revokeRoleFromGroups(requestorName, roleName, groupName);
+        Set<String> groups = Sets.newHashSet(groupName.split(SentryShellCommon.GROUP_SPLIT_CHAR));
+        command.revokeRoleFromGroups(requestorName, roleName, groups);
       } else if (isGrantPrivilegeRole) {
         command.grantPrivilegeToRole(requestorName, roleName, privilegeStr);
       } else if (isRevokePrivilegeRole) {
         command.revokePrivilegeFromRole(requestorName, roleName, privilegeStr);
       } else if (isListRole) {
-        List<String> roles = command.listRoles(requestorName, roleName, groupName);
+        List<String> roles = command.listRoles(requestorName, groupName);
         for (String role : roles) {
           System.out.println(role);
         }
@@ -75,6 +80,11 @@ public class SentryShellHive extends SentryShellCommon {
         List<String> privileges = command.listPrivileges(requestorName, roleName);
         for (String privilege : privileges) {
           System.out.println(privilege);
+        }
+      } else if (isListGroup) {
+        List<String> groups = command.listGroupRoles(requestorName);
+        for (String group : groups) {
+          System.out.println(group);
         }
       }
     }

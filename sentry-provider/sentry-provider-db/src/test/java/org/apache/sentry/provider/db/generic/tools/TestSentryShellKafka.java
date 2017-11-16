@@ -160,6 +160,15 @@ public class TestSentryShellKafka extends SentryGenericServiceIntegrationBase {
         roleNames = getShellResultWithOSRedirect(sentryShell, args, true);
         validateRoleNames(roleNames, TEST_ROLE_NAME_1);
 
+        // List the groups and roles via listGroups
+        args = new String[] { "--list_group", "-conf", confPath.getAbsolutePath(), "-t", "kafka" };
+        sentryShell = new SentryShellGeneric();
+        Set<String> groups = getShellResultWithOSRedirect(sentryShell, args, true);
+        assertEquals(3, groups.size());
+        assertTrue(groups.contains("testGroup3 = testrole1"));
+        assertTrue(groups.contains("testGroup2 = testrole1"));
+        assertTrue(groups.contains("testGroup1 = testrole2, testrole1"));
+
         // test: delete role from group with -drg
         args = new String[] { "-drg", "-r", TEST_ROLE_NAME_1, "-g", TEST_GROUP_1, "-conf",
             confPath.getAbsolutePath(), "-t", "kafka" };

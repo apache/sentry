@@ -60,6 +60,7 @@ abstract public class SentryShellCommon {
   protected boolean isRevokePrivilegeRole;
   protected boolean isListRole;
   protected boolean isListPrivilege;
+  protected boolean isListGroup;
   protected boolean isPrintHelp;
   // flag for the parameter check
   protected boolean roleNameRequired;
@@ -80,6 +81,7 @@ abstract public class SentryShellCommon {
    *   -rpr,--revoke_privilege_role -r <rolename>  -p <privilege> revoke privilege from role
    *   -lr,--list_role              -g <groupname>                list roles for group
    *   -lp,--list_privilege         -r <rolename>                 list privilege for role
+   *   -lg,--list_group                                           list all groups associated with all roles
    *   -t,--type                    <typename>                    the shell for hive model or generic model
    * </pre>
    *
@@ -112,6 +114,9 @@ abstract public class SentryShellCommon {
     Option lpOpt = new Option("lp", "list_privilege", false, "List privilege");
     lpOpt.setRequired(false);
 
+    Option lgOpt = new Option("lg", "list_group", false, "List groups");
+    lgOpt.setRequired(false);
+
     // required args group
     OptionGroup simpleShellOptGroup = new OptionGroup();
     simpleShellOptGroup.addOption(crOpt);
@@ -122,6 +127,7 @@ abstract public class SentryShellCommon {
     simpleShellOptGroup.addOption(rprOpt);
     simpleShellOptGroup.addOption(lrOpt);
     simpleShellOptGroup.addOption(lpOpt);
+    simpleShellOptGroup.addOption(lgOpt);
     simpleShellOptGroup.setRequired(true);
     simpleShellOptions.addOptionGroup(simpleShellOptGroup);
 
@@ -207,6 +213,8 @@ abstract public class SentryShellCommon {
         } else if (opt.getOpt().equals("lp")) {
           isListPrivilege = true;
           roleNameRequired = true;
+        } else if (opt.getOpt().equals("lg")) {
+          isListGroup = true;
         } else if (opt.getOpt().equals("conf")) {
           confPath = opt.getValue();
         } else if (opt.getOpt().equals("t")) {
