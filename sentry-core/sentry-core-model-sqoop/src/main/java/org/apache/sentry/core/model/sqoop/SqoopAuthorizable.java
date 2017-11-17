@@ -24,7 +24,7 @@ import org.apache.sentry.core.common.Authorizable;
  */
 public interface SqoopAuthorizable extends Authorizable {
   String ALL = "*";
-  enum AuthorizableType implements org.apache.sentry.core.common.AuthorizableType<SqoopAuthorizable> {
+  public enum AuthorizableType {
     SERVER,
     CONNECTOR,
     LINK,

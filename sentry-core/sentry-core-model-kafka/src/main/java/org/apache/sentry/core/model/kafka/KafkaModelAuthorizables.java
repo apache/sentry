@@ -16,19 +16,27 @@
  */
 package org.apache.sentry.core.model.kafka;
 
-import org.apache.sentry.core.common.AbstractAuthorizableFactory;
+import org.apache.sentry.core.common.utils.KeyValue;
+import org.apache.sentry.core.model.kafka.KafkaAuthorizable.AuthorizableType;
 import org.apache.shiro.config.ConfigurationException;
 
-public class KafkaModelAuthorizables extends AbstractAuthorizableFactory<KafkaAuthorizable, KafkaAuthorizable.AuthorizableType> {
-  private static final KafkaModelAuthorizables instance = new KafkaModelAuthorizables();
-
-
-  public static KafkaAuthorizable from(String keyValue) throws ConfigurationException {
-    return instance.create(keyValue);
+public class KafkaModelAuthorizables {
+  public static KafkaAuthorizable from(KeyValue keyValue) throws ConfigurationException {
+    String prefix = keyValue.getKey().toLowerCase();
+    String name = keyValue.getValue();
+    for (AuthorizableType type : AuthorizableType.values()) {
+      if (prefix.equalsIgnoreCase(type.name())) {
+        return from(type, name);
+      }
+    }
+    return null;
   }
 
-  @Override
-  public KafkaAuthorizable create(KafkaAuthorizable.AuthorizableType type, String name) throws ConfigurationException {
+  public static KafkaAuthorizable from(String keyValue) throws ConfigurationException {
+    return from(new KeyValue(keyValue));
+  }
+
+  public static KafkaAuthorizable from(AuthorizableType type, String name) throws ConfigurationException {
     switch (type) {
       case HOST:
         return new Host(name);
@@ -45,10 +53,5 @@ public class KafkaModelAuthorizables extends AbstractAuthorizableFactory<KafkaAu
       default:
         return null;
     }
-  }
-
-  @Override
-  protected KafkaAuthorizable.AuthorizableType[] getTypes() {
-    return KafkaAuthorizable.AuthorizableType.values();
   }
 }
