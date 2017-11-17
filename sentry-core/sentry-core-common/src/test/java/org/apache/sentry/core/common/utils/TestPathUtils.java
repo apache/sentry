@@ -21,8 +21,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import com.google.common.collect.Lists;
 import java.net.URI;
 
+import java.util.Arrays;
+import java.util.List;
 import org.junit.Test;
 
 public class TestPathUtils {
@@ -145,5 +148,29 @@ public class TestPathUtils {
       parseLocalURI("file:///tmp/hive-user"));
     assertEquals("file://localhost:9999/tmp/hive-user",
         PathUtils.parseLocalURI("file://localhost:9999/tmp/hive-user"));
+  }
+
+  @Test
+  public void testStripSurplusSlashesAndSplitPath() throws Exception {
+
+    List<String> expected = Arrays.asList("a", "b", "c");
+
+    String path = "a/b/c";
+    assertEquals("Invalid split doesn't match expected output", expected, Lists.newArrayList(PathUtils.splitPath(path)));
+
+    path = "/a/b/c";
+    assertEquals("Invalid split doesn't match expected output", expected, Lists.newArrayList(PathUtils.splitPath(path)));
+
+    path = "a/b/c/";
+    assertEquals("Invalid split doesn't match expected output", expected, Lists.newArrayList(PathUtils.splitPath(path)));
+
+    path = "/a/b/c/";
+    assertEquals("Invalid split doesn't match expected output", expected, Lists.newArrayList(PathUtils.splitPath(path)));
+
+    path = "/////a/b/c///";
+    assertEquals("Invalid split doesn't match expected output", expected, Lists.newArrayList(PathUtils.splitPath(path)));
+
+    path = "/////a//b//c///";
+    assertEquals("Invalid split doesn't match expected output", expected, Lists.newArrayList(PathUtils.splitPath(path)));
   }
 }
