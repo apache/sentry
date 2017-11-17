@@ -44,7 +44,7 @@ public interface KafkaAuthorizable extends Authorizable {
   /**
    * Types of resources that Kafka supports authorization on.
    */
-  public enum AuthorizableType {
+  enum AuthorizableType implements org.apache.sentry.core.common.AuthorizableType<KafkaAuthorizable>{
     CLUSTER,
     HOST,
     TOPIC,

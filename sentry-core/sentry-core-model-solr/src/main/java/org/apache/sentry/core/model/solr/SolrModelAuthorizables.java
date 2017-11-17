@@ -16,43 +16,39 @@
  */
 package org.apache.sentry.core.model.solr;
 
-import org.apache.sentry.core.common.utils.KeyValue;
+import org.apache.sentry.core.common.AbstractAuthorizableFactory;
 import org.apache.sentry.core.model.solr.SolrModelAuthorizable.AuthorizableType;
 
-public class SolrModelAuthorizables {
+public class SolrModelAuthorizables extends AbstractAuthorizableFactory<SolrModelAuthorizable, AuthorizableType> {
+  private static final SolrModelAuthorizables instance = new SolrModelAuthorizables();
 
-  private SolrModelAuthorizables() {
-    // Make constructor private to avoid instantiation
+  public static SolrModelAuthorizable from(String s) {
+    return instance.create(s);
   }
 
-  public static SolrModelAuthorizable from(KeyValue keyValue) {
-    String prefix = keyValue.getKey().toLowerCase();
-    String name = keyValue.getValue().toLowerCase();
+  public SolrModelAuthorizable create(SolrModelAuthorizable.AuthorizableType type, String name) {
     SolrModelAuthorizable result = null;
-    for(AuthorizableType type : AuthorizableType.values()) {
-      if(prefix.equalsIgnoreCase(type.name())) {
-        switch (type) {
-          case Collection:
-            result = new Collection(name);
-            break;
-          case Admin:
-            result = new AdminOperation(name);
-            break;
-          case Config:
-            result = new Config(name);
-            break;
-          case Schema:
-            result = new Schema(name);
-            break;
-          default:
-            break;
-        }
-      }
+    switch (type) {
+      case Collection:
+        result = new Collection(name);
+        break;
+      case Admin:
+        result = new AdminOperation(name);
+        break;
+      case Config:
+        result = new Config(name);
+        break;
+      case Schema:
+        result = new Schema(name);
+        break;
+      default:
+        break;
     }
     return result;
   }
 
-  public static SolrModelAuthorizable from(String s) {
-    return from(new KeyValue(s));
+  @Override
+  protected SolrModelAuthorizable.AuthorizableType[] getTypes() {
+    return SolrModelAuthorizable.AuthorizableType.values();
   }
 }
