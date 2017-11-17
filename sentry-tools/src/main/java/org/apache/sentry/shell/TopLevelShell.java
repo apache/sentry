@@ -19,6 +19,13 @@
 package org.apache.sentry.shell;
 
 import org.apache.sentry.core.common.exception.SentryUserException;
+import org.apache.sentry.core.model.kafka.KafkaAuthorizable;
+import org.apache.sentry.core.model.kafka.KafkaModelAuthorizables;
+import org.apache.sentry.core.model.kafka.KafkaPrivilegeModel;
+import org.apache.sentry.core.model.solr.SolrModelAuthorizables;
+import org.apache.sentry.core.model.solr.SolrPrivilegeModel;
+import org.apache.sentry.core.model.sqoop.SqoopModelAuthorizables;
+import org.apache.sentry.core.model.sqoop.SqoopPrivilegeModel;
 import org.apache.sentry.provider.common.AuthorizationComponent;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
 import org.apache.sentry.provider.db.generic.tools.GenericPrivilegeConverter;
@@ -33,6 +40,11 @@ import com.budhash.cliche.Param;
 import com.budhash.cliche.Shell;
 import com.budhash.cliche.ShellDependent;
 import com.budhash.cliche.ShellFactory;
+import com.google.common.base.Function;
+
+import static org.apache.sentry.core.common.utils.SentryConstants.AUTHORIZABLE_SEPARATOR;
+import static org.apache.sentry.core.common.utils.SentryConstants.KV_SEPARATOR;
+import static org.apache.sentry.core.common.utils.SentryConstants.RESOURCE_WILDCARD_VALUE;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -40,6 +52,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import javax.annotation.Nullable;
 
 /**
  * Top level commands
@@ -232,7 +246,7 @@ public class TopLevelShell implements ShellDependent, Runnable {
       } else {
         String component = getComponent(parsedType);
         String service = getService(parsedType);
-        TSentryPrivilegeConverter converter = new GenericPrivilegeConverter(component, service);
+        TSentryPrivilegeConverter converter = getPrivilegeConverter(parsedType, component, service);
         shellCommand = new GenericShellCommand(sentryGenericClient, component, service, converter);
       }
     } catch (IllegalArgumentException ex) {
@@ -253,7 +267,7 @@ public class TopLevelShell implements ShellDependent, Runnable {
         shellCommand = new HiveShellCommand(sentryClient);
       } else {
         String component = getComponent(parsedType);
-        TSentryPrivilegeConverter converter = new GenericPrivilegeConverter(component, service);
+        TSentryPrivilegeConverter converter = getPrivilegeConverter(parsedType, component, service);
         shellCommand = new GenericShellCommand(sentryGenericClient, component, service, converter);
       }
     } catch (IllegalArgumentException ex) {
@@ -294,6 +308,49 @@ public class TopLevelShell implements ShellDependent, Runnable {
       return "service1";
     } else if (type == TYPE.sqoop) {
       return "sqoopServer1";
+    }
+
+    throw new IllegalArgumentException("Invalid type specified for SentryShellGeneric: " + type);
+  }
+
+  private TSentryPrivilegeConverter getPrivilegeConverter(TYPE type, String component, String service) {
+    if (type == TYPE.kafka) {
+      GenericPrivilegeConverter privilegeConverter = new GenericPrivilegeConverter(
+          component,
+          service,
+          KafkaPrivilegeModel.getInstance().getPrivilegeValidators(),
+          new KafkaModelAuthorizables(),
+          true
+      );
+      privilegeConverter.setPrivilegeStrParser(new Function<String, String>() {
+        @Nullable
+        @Override
+        public String apply(@Nullable String privilegeStr) {
+          final String hostPrefix = KafkaAuthorizable.AuthorizableType.HOST.name() + KV_SEPARATOR;
+          final String hostPrefixLowerCase = hostPrefix.toLowerCase();
+          if (!privilegeStr.toLowerCase().startsWith(hostPrefixLowerCase)) {
+            return hostPrefix + RESOURCE_WILDCARD_VALUE + AUTHORIZABLE_SEPARATOR + privilegeStr;
+          }
+          return privilegeStr;
+        }
+      });
+      return privilegeConverter;
+    } else if (type == TYPE.solr) {
+      return new GenericPrivilegeConverter(
+          component,
+          service,
+          SolrPrivilegeModel.getInstance().getPrivilegeValidators(),
+          new SolrModelAuthorizables(),
+          true
+      );
+    } else if (type == TYPE.sqoop) {
+      return new GenericPrivilegeConverter(
+          component,
+          service,
+          SqoopPrivilegeModel.getInstance().getPrivilegeValidators(service),
+          new SqoopModelAuthorizables(),
+          true
+      );
     }
 
     throw new IllegalArgumentException("Invalid type specified for SentryShellGeneric: " + type);
