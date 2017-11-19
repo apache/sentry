@@ -201,6 +201,11 @@ public class HiveServerFactory {
     // to HIVESERVER2 if we're using the authorization V2 in test mode.
     properties.put(ConfVars.HIVE_TEST_AUTHORIZATION_SQLSTD_HS2_MODE.varname, "true");
 
+    // Sets the hadoop temporary directory specified by the java.io.tmpdir (already set to the
+    // maven build directory to avoid writing to the /tmp directly
+    String hadoopTempDir = System.getProperty("java.io.tmpdir") + File.separator + "hadoop-tmp";
+    properties.put("hadoop.tmp.dir", hadoopTempDir);
+
     if (!properties.containsKey(METASTORE_BYPASS)) {
       properties.put(METASTORE_BYPASS, "hive,impala," + System.getProperty("user.name", ""));
     } else {
