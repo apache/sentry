@@ -36,6 +36,7 @@ import org.apache.hadoop.hive.metastore.api.PrincipalType;
 import org.apache.hadoop.hive.ql.CompilationOpContext;
 import org.apache.hadoop.hive.ql.DriverContext;
 import org.apache.hadoop.hive.ql.QueryPlan;
+import org.apache.hadoop.hive.ql.QueryState;
 import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
@@ -109,11 +110,11 @@ public class SentryGrantRevokeTask extends Task<DDLWork> implements Serializable
   private HiveOperation stmtOperation;
 
   @Override
-  public void initialize(HiveConf conf, QueryPlan queryPlan, DriverContext ctx,
+  public void initialize(QueryState queryState, QueryPlan queryPlan, DriverContext ctx,
       CompilationOpContext opContext) {
     // CompilationOpContext is an unused parameter on the initialize() method.
-    super.initialize(conf, queryPlan, driverContext, null);
-    this.conf = conf;
+    super.initialize(queryState, queryPlan, driverContext, null);
+    this.conf = queryState.getConf();
   }
 
   @Override

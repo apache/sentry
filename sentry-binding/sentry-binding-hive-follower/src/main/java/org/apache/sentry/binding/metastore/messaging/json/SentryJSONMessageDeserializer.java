@@ -19,6 +19,11 @@
 package org.apache.sentry.binding.metastore.messaging.json;
 
 import org.apache.hive.hcatalog.messaging.*;
+import org.apache.hive.hcatalog.messaging.json.JSONAlterIndexMessage;
+import org.apache.hive.hcatalog.messaging.json.JSONCreateFunctionMessage;
+import org.apache.hive.hcatalog.messaging.json.JSONCreateIndexMessage;
+import org.apache.hive.hcatalog.messaging.json.JSONDropFunctionMessage;
+import org.apache.hive.hcatalog.messaging.json.JSONDropIndexMessage;
 import org.apache.hive.hcatalog.messaging.json.JSONInsertMessage;
 import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -130,13 +135,81 @@ public class SentryJSONMessageDeserializer extends MessageDeserializer {
   }
 
   /**
+   * Method to de-serialize CreateFunctionMessage instance.
+   */
+  @Override
+  public CreateFunctionMessage getCreateFunctionMessage(String messageBody) {
+    // Sentry does not need this message, but it needs to be implemented so that Hive can
+    // complete the notification log for such event.
+    try {
+      return mapper.readValue(messageBody, JSONCreateFunctionMessage.class);
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Could not construct JSONCreateFunctionMessage: ", e);
+    }
+  }
+
+  /**
+   * Method to de-serialize DropFunctionMessage instance.
+   */
+  @Override
+  public DropFunctionMessage getDropFunctionMessage(String messageBody) {
+    // Sentry does not need this message, but it needs to be implemented so that Hive can
+    // complete the notification log for such event.
+    try {
+      return mapper.readValue(messageBody, JSONDropFunctionMessage.class);
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Could not construct JSONDropDatabaseMessage: ", e);
+    }
+  }
+
+  /**
+   * Method to de-serialize CreateIndexMessage instance.                                                                                                                                                   +   */
+  @Override
+  public CreateIndexMessage getCreateIndexMessage(String messageBody) {
+    // Sentry does not need this message, but it needs to be implemented so that Hive can
+    // complete the notification log for such event.
+    try {
+      return mapper.readValue(messageBody, JSONCreateIndexMessage.class);
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Could not construct JSONCreateIndexMessage: ", e);
+    }
+  }
+
+  /**
+   * Method to de-serialize DropIndexMessage instance.
+   */
+  @Override
+  public DropIndexMessage getDropIndexMessage(String messageBody) {
+    // Sentry does not need this message, but it needs to be implemented so that Hive can
+    // complete the notification log for such event.
+    try {
+      return mapper.readValue(messageBody, JSONDropIndexMessage.class);
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Could not construct JSONDropIndexMessage: ", e);
+    }
+  }
+
+  /**
+   * Method to de-serialize AlterIndexMessage instance.
+   */
+  @Override
+  public AlterIndexMessage getAlterIndexMessage(String messageBody) {
+    // Sentry does not need this message, but it needs to be implemented so that Hive can
+    // complete the notification log for such event.
+    try {
+      return mapper.readValue(messageBody, JSONAlterIndexMessage.class);
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Could not construct JSONAlterIndexMessage: ", e);
+    }
+  }
+
+  /**
    * Method to de-serialize JSONInsertMessage instance.
    */
   @Override
   public InsertMessage getInsertMessage(String messageBody) {
-    // Sentry would be not be interested in InsertMessage as these are generated when is data is
-    // added inserted. This method is implemented for completeness. This is reason why, new sentry
-    // JSON class is not defined for InsertMessage.
+    // Sentry does not need this message, but it needs to be implemented so that Hive can
+    // complete the notification log for such event.
     try {
       return mapper.readValue(messageBody, JSONInsertMessage.class);
     } catch (Exception e) {

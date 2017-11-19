@@ -206,6 +206,16 @@ public class HiveServerFactory {
     String hadoopTempDir = System.getProperty("java.io.tmpdir") + File.separator + "hadoop-tmp";
     properties.put("hadoop.tmp.dir", hadoopTempDir);
 
+    // This configuration will avoid that the HMS fails if the metastore schema has not version
+    // information. For some reason, HMS does not set a version initially on our tests.
+    properties.put(ConfVars.METASTORE_SCHEMA_VERIFICATION.varname, "false");
+
+    // Disable join cartesian checks to allow Sentry tests to pass
+    properties.put(ConfVars.HIVE_STRICT_CHECKS_CARTESIAN.varname, "false");
+
+    // Disable capability checks (these checks do not work when Hive is in testing mode)
+    properties.put(ConfVars.METASTORE_CAPABILITY_CHECK.varname, "false");
+
     if (!properties.containsKey(METASTORE_BYPASS)) {
       properties.put(METASTORE_BYPASS, "hive,impala," + System.getProperty("user.name", ""));
     } else {

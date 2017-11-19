@@ -143,9 +143,6 @@ public class SentryFilterDDLTask extends DDLTask {
     parentTasks = ddlTask.getParentTasks();
     backupTask = ddlTask.getBackupTask();
     backupChildrenTasks = ddlTask.getBackupChildrenTasks();
-    started = ddlTask.started();
-    isdone = ddlTask.done();
-    queued = ddlTask.getQueued();
     id = ddlTask.getId();
     taskCounters = ddlTask.getCounters();
     feedSubscribers = ddlTask.getFeedSubscribers();
@@ -157,5 +154,11 @@ public class SentryFilterDDLTask extends DDLTask {
     setException(ddlTask.getException());
     console = ddlTask.console;
     setFetchSource(ddlTask.isFetchSource());
+    taskHandle = ddlTask.getTaskHandle();
+    conf = ddlTask.conf;
+    queryState = ddlTask.queryState;
+    driverContext = ddlTask.getDriverContext();
+    clonedConf = ddlTask.clonedConf;
+    queryDisplay = ddlTask.queryDisplay;
   }
 }

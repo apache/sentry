@@ -291,7 +291,7 @@ public class HiveAuthzBindingHook extends HiveAuthzBindingHookBase {
   @Override
   public void postAnalyze(HiveSemanticAnalyzerHookContext context,
       List<Task<? extends Serializable>> rootTasks) throws SemanticException {
-    HiveOperation stmtOperation = getCurrentHiveStmtOp();
+    HiveOperation stmtOperation = context.getHiveOperation();
     HiveAuthzPrivileges stmtAuthObject;
 
     stmtAuthObject = HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(stmtOperation);

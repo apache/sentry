@@ -22,9 +22,16 @@ import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.metastore.api.Database;
+import org.apache.hadoop.hive.metastore.api.Function;
+import org.apache.hadoop.hive.metastore.api.Index;
 import org.apache.hadoop.hive.metastore.api.Partition;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.hive.hcatalog.messaging.*;
+import org.apache.hive.hcatalog.messaging.json.JSONAlterIndexMessage;
+import org.apache.hive.hcatalog.messaging.json.JSONCreateFunctionMessage;
+import org.apache.hive.hcatalog.messaging.json.JSONCreateIndexMessage;
+import org.apache.hive.hcatalog.messaging.json.JSONDropFunctionMessage;
+import org.apache.hive.hcatalog.messaging.json.JSONDropIndexMessage;
 import org.apache.hive.hcatalog.messaging.json.JSONInsertMessage;
 
 import java.util.*;
@@ -105,6 +112,47 @@ public class SentryJSONMessageFactory extends MessageFactory {
     return new SentryJSONDropPartitionMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL,
         table.getDbName(), table.getTableName(), partitionBasicInfo.getPartitionList(),
         now(), partitionBasicInfo.getLocations());
+  }
+
+  @Override
+  public CreateFunctionMessage buildCreateFunctionMessage(Function function) {
+    // Sentry would be not be interested in CreateFunctionMessage as these are generated when is data is
+    // added inserted. This method is implemented for completeness. This is reason why, new sentry
+    // JSON class is not defined for CreateFunctionMessage
+    return new JSONCreateFunctionMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, function, now());
+  }
+
+  @Override
+  public DropFunctionMessage buildDropFunctionMessage(Function function) {
+    // Sentry would be not be interested in DropFunctionMessage as these are generated when is data is
+    // added inserted. This method is implemented for completeness. This is reason why, new sentry
+    // JSON class is not defined for DropFunctionMessage
+    return new JSONDropFunctionMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, function, now());
+
+  }
+
+  @Override
+  public CreateIndexMessage buildCreateIndexMessage(Index index) {
+    // Sentry would be not be interested in CreateIndexMessage as these are generated when is data is
+    // added inserted. This method is implemented for completeness. This is reason why, new sentry
+    // JSON class is not defined for CreateIndexMessage
+    return new JSONCreateIndexMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, index, now());
+  }
+
+  @Override
+  public DropIndexMessage buildDropIndexMessage(Index index) {
+    // Sentry would be not be interested in DropIndexMessage as these are generated when is data is
+    // added inserted. This method is implemented for completeness. This is reason why, new sentry
+    // JSON class is not defined for DropIndexMessage
+    return new JSONDropIndexMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, index, now());
+  }
+
+  @Override
+  public AlterIndexMessage buildAlterIndexMessage(Index before, Index after) {
+    // Sentry would be not be interested in AlterIndexMessage as these are generated when is data is
+    // added inserted. This method is implemented for completeness. This is reason why, new sentry
+    // JSON class is not defined for AlterIndexMessage
+    return new JSONAlterIndexMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, before, after, now());
   }
 
   @Override

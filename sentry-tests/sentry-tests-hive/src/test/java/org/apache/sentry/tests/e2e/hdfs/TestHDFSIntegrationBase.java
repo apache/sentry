@@ -575,6 +575,10 @@ public abstract class TestHDFSIntegrationBase {
         String hadoopTempDir = System.getProperty("java.io.tmpdir") + File.separator + "hadoop-tmp";
         hiveConf.set("hadoop.tmp.dir", hadoopTempDir);
 
+        // This configuration will avoid that the HMS fails if the metastore schema has not version
+        // information. For some reason, HMS does not set a version initially on our tests.
+        hiveConf.set(ConfVars.METASTORE_SCHEMA_VERIFICATION.varname, "false");
+
         // Sets hive.metastore.authorization.storage.checks to true, so that
         // disallow the operations such as drop-partition if the user in question
         // doesn't have permissions to delete the corresponding directory

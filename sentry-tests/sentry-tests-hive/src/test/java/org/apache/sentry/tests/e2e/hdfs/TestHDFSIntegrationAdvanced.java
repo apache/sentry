@@ -791,7 +791,14 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
      // Alter table tab1 to be tbCopy which is at scheme-less location.
      // And the corresponding path will be updated to sentry server.
      hmsClient.alter_table(dbName, "tab1", tbCopy);
-     Assert.assertEquals(hmsClient.getTable(dbName, tblName).getSd().getLocation(), "/tmp/external");
+
+     // Remove the checking for the location of the table. The HMS will never return scheme-less
+     // URI locations anymore. However, if any NPE being triggered in future because of any changes,
+     // the test case will cover it and capture it.
+     // i.e. hdfs://<localhost>/tmp/external (location with scheme)
+     //      /tmp/external                   (location without scheme)
+     // Assert.assertEquals("/tmp/external", hmsClient.getTable(dbName, tblName).getSd().getLocation());
+
      verifyOnPath("/tmp/external", FsAction.ALL, StaticUserGroup.HIVE, true);
 
      stmt.close();

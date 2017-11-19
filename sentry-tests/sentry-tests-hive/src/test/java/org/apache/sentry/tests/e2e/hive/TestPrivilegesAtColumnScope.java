@@ -205,12 +205,13 @@ public class TestPrivilegesAtColumnScope extends AbstractTestWithStaticConfigura
       context.verifyAuthzException(e);
     }
 
-    // negative test: test user can't query column of view
+    // positive test: test user can query column of view
+    // Hive 2 adds a new column view authorization as part of the Column Pruning feature
+    // See Hive ColumnPrunerSelectProc.process() on how view authorization is handled
     try {
       statement.execute("SELECT COUNT(A) FROM VIEW_1");
-      Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
-      context.verifyAuthzException(e);
+      Assert.fail("Exception not expected.");
     }
     // negative test: test user can't query column of view
     try {
@@ -255,18 +256,18 @@ public class TestPrivilegesAtColumnScope extends AbstractTestWithStaticConfigura
       context.verifyAuthzException(e);
     }
 
-    // negative test: test user can't query view
+    // positive test: test user can query column of view
+    // Hive 2 adds a new column view authorization as part of the Column Pruning feature
+    // See Hive ColumnPrunerSelectProc.process() on how view authorization is handled
     try {
       statement.execute("SELECT COUNT(A) FROM VIEW_1");
-      Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
-      context.verifyAuthzException(e);
+      Assert.fail("Exception not expected.");
     }
     try {
       statement.execute("SELECT COUNT(B) FROM VIEW_1");
-      Assert.fail("Expected SQL exception");
     } catch (SQLException e) {
-      context.verifyAuthzException(e);
+      Assert.fail("Exception not expected.");
     }
 
     // negative test: test user can't create a new view
@@ -378,12 +379,13 @@ public class TestPrivilegesAtColumnScope extends AbstractTestWithStaticConfigura
     Statement statement = context.createStatement(connection);
     statement.execute("USE DB_1");
 
-    // test user can't execute query VIEW_1 JOIN VIEW_2
+    // test user can execute query VIEW_1 JOIN VIEW_2
+    // Hive 2 adds a new column view authorization as part of the Column Pruning feature
+    // See Hive ColumnPrunerSelectProc.process() on how view authorization is handled
     try {
       statement.execute("SELECT COUNT(*) FROM VIEW_1 V1 JOIN VIEW_2 V2 ON (V1.B = V2.B)");
-      Assert.fail("Expected SQL Exception");
     } catch (SQLException e) {
-      context.verifyAuthzException(e);
+      Assert.fail("Exception not expected");
     }
 
     // test user can't execute query VIEW_1 JOIN TAB_2
@@ -438,12 +440,13 @@ public class TestPrivilegesAtColumnScope extends AbstractTestWithStaticConfigura
       context.verifyAuthzException(e);
     }
 
-    // test user can't execute query VIEW_1 JOIN VIEW_2
+    // test user can execute query VIEW_1 JOIN VIEW_2
+    // Hive 2 adds a new column view authorization as part of the Column Pruning feature
+    // See Hive ColumnPrunerSelectProc.process() on how view authorization is handled
     try {
       statement.execute("SELECT COUNT(*) FROM VIEW_1 V1 JOIN VIEW_2 V2 ON (V1.B = V2.B)");
-      Assert.fail("Expected SQL Exception");
     } catch (SQLException e) {
-      context.verifyAuthzException(e);
+      Assert.fail("Exception not expected");
     }
 
     // test user can't execute query TAB_1 JOIN TAB_2

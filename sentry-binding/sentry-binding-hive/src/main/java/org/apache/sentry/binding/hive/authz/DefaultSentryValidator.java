@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Set;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.metadata.AuthorizationException;
+import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.security.HiveAuthenticationProvider;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAccessControlException;
@@ -373,6 +374,22 @@ public class DefaultSentryValidator extends SentryHiveAuthorizationValidator {
       }
     }
     return listObjs;
+  }
+
+  @Override
+  public List<HivePrivilegeObject> applyRowFilterAndColumnMasking(HiveAuthzContext hiveAuthzContext,
+      List<HivePrivilegeObject> list) throws SemanticException {
+    // Sentry does not support this feature yet. Returning null is enough to let Hive
+    // that no row filtering nor column masking will be applied.
+    return null;
+  }
+
+  @Override
+  public boolean needTransform() {
+    // Hive uses this value to know whether a Hive query must be transformed if row filtering
+    // or column masking is applied. Sentry does not support such feature yet, so returning
+    // false is enough to let Hive know that the query is not required to be transformed.
+    return false;
   }
 
   private List<HivePrivilegeObject> filterShowTables(List<HivePrivilegeObject> listObjs,
