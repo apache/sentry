@@ -18,24 +18,36 @@
 
 package org.apache.sentry.provider.db.generic.tools;
 
-import com.google.common.base.Function;
+import static org.apache.sentry.core.common.utils.SentryConstants.AUTHORIZABLE_SEPARATOR;
+import static org.apache.sentry.core.common.utils.SentryConstants.KV_SEPARATOR;
+import static org.apache.sentry.core.common.utils.SentryConstants.RESOURCE_WILDCARD_VALUE;
+
 import com.google.common.collect.Lists;
+
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+
 import org.apache.sentry.core.common.Authorizable;
-import org.apache.sentry.core.common.AuthorizableFactory;
 import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.utils.KeyValue;
 import org.apache.sentry.core.common.utils.PolicyFileConstants;
 import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.common.validator.PrivilegeValidator;
 import org.apache.sentry.core.common.validator.PrivilegeValidatorContext;
+import org.apache.sentry.core.model.kafka.KafkaAuthorizable;
+import org.apache.sentry.core.model.kafka.KafkaModelAuthorizables;
+import org.apache.sentry.core.model.kafka.KafkaPrivilegeModel;
+import org.apache.sentry.core.model.solr.SolrModelAuthorizables;
+import org.apache.sentry.core.model.solr.SolrPrivilegeModel;
+import org.apache.sentry.core.model.sqoop.SqoopModelAuthorizables;
+import org.apache.sentry.core.model.sqoop.SqoopPrivilegeModel;
+import org.apache.sentry.provider.common.AuthorizationComponent;
 import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryGrantOption;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.generic.tools.command.TSentryPrivilegeConverter;
 import org.apache.shiro.config.ConfigurationException;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * A TSentryPrivilegeConverter implementation for "Generic" privileges, covering Apache Kafka, Apache Solr and Apache Sqoop.
@@ -49,23 +61,15 @@ public class GenericPrivilegeConverter implements TSentryPrivilegeConverter {
   private String service;
   private boolean validate;
 
-  private List<PrivilegeValidator> privilegeValidators;
-
-  private AuthorizableFactory authorizableFactory;
-
-  /**
-   * Optional function to parse or convert privilege string.
-   */
-  private Function<String, String> privilegeStrParser;
-
-  public GenericPrivilegeConverter(String component, String service, List<PrivilegeValidator> privilegeValidators, AuthorizableFactory authorizableFactory, boolean validate) {
-    this.component = component;
-    this.service = service;
-    this.privilegeValidators = privilegeValidators;
-    this.authorizableFactory = authorizableFactory;
-    this.validate = validate;
+  public GenericPrivilegeConverter(String component, String service) {
+    this(component, service, true);
   }
 
+  public GenericPrivilegeConverter(String component, String service, boolean validate) {
+    this.component = component;
+    this.service = service;
+    this.validate = validate;
+  }
 
   public TSentryPrivilege fromString(String privilegeStr) throws SentryUserException {
     privilegeStr = parsePrivilegeString(privilegeStr);
@@ -74,13 +78,13 @@ public class GenericPrivilegeConverter implements TSentryPrivilegeConverter {
     }
 
     TSentryPrivilege tSentryPrivilege = new TSentryPrivilege();
-    List<TAuthorizable> authorizables = new ArrayList<>();
+    List<TAuthorizable> authorizables = new LinkedList<TAuthorizable>();
     for (String authorizable : SentryConstants.AUTHORIZABLE_SPLITTER.split(privilegeStr)) {
       KeyValue keyValue = new KeyValue(authorizable);
       String key = keyValue.getKey();
       String value = keyValue.getValue();
 
-      Authorizable authz = authorizableFactory.create(key, value);
+      Authorizable authz = getAuthorizable(keyValue);
       if (authz != null) {
         authorizables.add(new TAuthorizable(authz.getTypeName(), authz.getName()));
       } else if (PolicyFileConstants.PRIVILEGE_ACTION_NAME.equalsIgnoreCase(key)) {
@@ -107,30 +111,39 @@ public class GenericPrivilegeConverter implements TSentryPrivilegeConverter {
       String grantOption = (tSentryPrivilege.getGrantOption() == TSentryGrantOption.TRUE ? "true"
               : "false");
 
-      for (TAuthorizable tAuthorizable : authorizables) {
-        privileges.add(SentryConstants.KV_JOINER.join(
-                tAuthorizable.getType(), tAuthorizable.getName()));
+      Iterator<TAuthorizable> it = authorizables.iterator();
+      if (it != null) {
+        while (it.hasNext()) {
+          TAuthorizable tAuthorizable = it.next();
+          privileges.add(SentryConstants.KV_JOINER.join(
+              tAuthorizable.getType(), tAuthorizable.getName()));
+        }
       }
 
       if (!authorizables.isEmpty()) {
         privileges.add(SentryConstants.KV_JOINER.join(
-                PolicyFileConstants.PRIVILEGE_ACTION_NAME, action));
+            PolicyFileConstants.PRIVILEGE_ACTION_NAME, action));
       }
 
       // only append the grant option to privilege string if it's true
       if ("true".equals(grantOption)) {
         privileges.add(SentryConstants.KV_JOINER.join(
-                PolicyFileConstants.PRIVILEGE_GRANT_OPTION_NAME, grantOption));
+            PolicyFileConstants.PRIVILEGE_GRANT_OPTION_NAME, grantOption));
       }
     }
     return SentryConstants.AUTHORIZABLE_JOINER.join(privileges);
   }
 
   private String parsePrivilegeString(String privilegeStr) {
-    if (privilegeStrParser == null) {
-      return privilegeStr;
+    if (AuthorizationComponent.KAFKA.equals(component)) {
+      final String hostPrefix = KafkaAuthorizable.AuthorizableType.HOST.name() + KV_SEPARATOR;
+      final String hostPrefixLowerCase = hostPrefix.toLowerCase();
+      if (!privilegeStr.toLowerCase().startsWith(hostPrefixLowerCase)) {
+        return hostPrefix + RESOURCE_WILDCARD_VALUE + AUTHORIZABLE_SEPARATOR + privilegeStr;
+      }
     }
-    return privilegeStrParser.apply(privilegeStr);
+
+    return privilegeStr;
   }
 
   private void validatePrivilegeHierarchy(String privilegeStr) throws SentryUserException {
@@ -145,21 +158,28 @@ public class GenericPrivilegeConverter implements TSentryPrivilegeConverter {
     }
   }
 
-  private List<PrivilegeValidator> getPrivilegeValidators() {
-    return privilegeValidators;
+  private List<PrivilegeValidator> getPrivilegeValidators() throws SentryUserException {
+    if (AuthorizationComponent.KAFKA.equals(component)) {
+      return KafkaPrivilegeModel.getInstance().getPrivilegeValidators();
+    } else if ("SOLR".equals(component)) {
+      return SolrPrivilegeModel.getInstance().getPrivilegeValidators();
+    } else if (AuthorizationComponent.SQOOP.equals(component)) {
+      return SqoopPrivilegeModel.getInstance().getPrivilegeValidators(service);
+    }
+
+    throw new SentryUserException("Invalid component specified for GenericPrivilegeCoverter: " + component);
   }
 
+  private Authorizable getAuthorizable(KeyValue keyValue) throws SentryUserException {
+    if (AuthorizationComponent.KAFKA.equals(component)) {
+      return KafkaModelAuthorizables.from(keyValue);
+    } else if ("SOLR".equals(component)) {
+      return SolrModelAuthorizables.from(keyValue);
+    } else if (AuthorizationComponent.SQOOP.equals(component)) {
+      return SqoopModelAuthorizables.from(keyValue);
+    }
 
-  public void setPrivilegeValidators(List<PrivilegeValidator> privilegeValidators) {
-    this.privilegeValidators = privilegeValidators;
-  }
-
-  public void setAuthorizableFactory(AuthorizableFactory authorizableFactory) {
-    this.authorizableFactory = authorizableFactory;
-  }
-
-  public void setPrivilegeStrParser(Function<String, String> privilegeStrParser) {
-    this.privilegeStrParser = privilegeStrParser;
+    throw new SentryUserException("Invalid component specified for GenericPrivilegeCoverter: " + component);
   }
 
 }

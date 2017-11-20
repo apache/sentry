@@ -16,39 +16,43 @@
  */
 package org.apache.sentry.core.model.solr;
 
-import org.apache.sentry.core.common.AbstractAuthorizableFactory;
+import org.apache.sentry.core.common.utils.KeyValue;
 import org.apache.sentry.core.model.solr.SolrModelAuthorizable.AuthorizableType;
 
-public class SolrModelAuthorizables extends AbstractAuthorizableFactory<SolrModelAuthorizable, AuthorizableType> {
-  private static final SolrModelAuthorizables instance = new SolrModelAuthorizables();
+public class SolrModelAuthorizables {
 
-  public static SolrModelAuthorizable from(String s) {
-    return instance.create(s);
+  private SolrModelAuthorizables() {
+    // Make constructor private to avoid instantiation
   }
 
-  public SolrModelAuthorizable create(SolrModelAuthorizable.AuthorizableType type, String name) {
+  public static SolrModelAuthorizable from(KeyValue keyValue) {
+    String prefix = keyValue.getKey().toLowerCase();
+    String name = keyValue.getValue().toLowerCase();
     SolrModelAuthorizable result = null;
-    switch (type) {
-      case Collection:
-        result = new Collection(name);
-        break;
-      case Admin:
-        result = new AdminOperation(name);
-        break;
-      case Config:
-        result = new Config(name);
-        break;
-      case Schema:
-        result = new Schema(name);
-        break;
-      default:
-        break;
+    for(AuthorizableType type : AuthorizableType.values()) {
+      if(prefix.equalsIgnoreCase(type.name())) {
+        switch (type) {
+          case Collection:
+            result = new Collection(name);
+            break;
+          case Admin:
+            result = new AdminOperation(name);
+            break;
+          case Config:
+            result = new Config(name);
+            break;
+          case Schema:
+            result = new Schema(name);
+            break;
+          default:
+            break;
+        }
+      }
     }
     return result;
   }
 
-  @Override
-  protected SolrModelAuthorizable.AuthorizableType[] getTypes() {
-    return SolrModelAuthorizable.AuthorizableType.values();
+  public static SolrModelAuthorizable from(String s) {
+    return from(new KeyValue(s));
   }
 }

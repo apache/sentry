@@ -507,14 +507,14 @@ public class  TestMetastoreEndToEnd extends
     client = context.getMetaStoreClient(USER1_1);
     Partition newPartition = client.getPartition(dbName, tabName1, partVals1);
     newPartition.getSd().setLocation(tabDir1);
-    client.alter_partition(dbName, tabName1, newPartition);
+    client.alter_partition(dbName, tabName1, newPartition, null);
     client.close();
 
     // user with Table and URI privileges should be able to alter partition set location
     client = context.getMetaStoreClient(USER2_1);
     newPartition = client.getPartition(dbName, tabName1, partVals2);
     newPartition.getSd().setLocation(tabDir1);
-    client.alter_partition(dbName, tabName1, newPartition);
+    client.alter_partition(dbName, tabName1, newPartition, null);
     client.close();
 
     policyFile.addRolesToGroup(USERGROUP3, db_all_role);
@@ -524,7 +524,7 @@ public class  TestMetastoreEndToEnd extends
     newPartition = client.getPartition(dbName, tabName1, partVals2);
     newPartition.getSd().setLocation(tabDir1);
     try {
-      client.alter_partition(dbName, tabName1, newPartition);
+      client.alter_partition(dbName, tabName1, newPartition, null);
       fail("alter partition with location should have failed");
     } catch (MetaException e) {
       Context.verifyMetastoreAuthException(e);

@@ -1065,4 +1065,17 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
       transport = null;
     }
   }
+
+  public long syncNotifications(long id) throws SentryUserException {
+    TSentrySyncIDRequest request =
+        new TSentrySyncIDRequest(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT, id);
+
+    try {
+      TSentrySyncIDResponse response = client.sentry_sync_notifications(request);
+      Status.throwIfNotOk(response.getStatus());
+      return response.getId();
+    } catch (TException e) {
+      throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
+    }
+  }
 }

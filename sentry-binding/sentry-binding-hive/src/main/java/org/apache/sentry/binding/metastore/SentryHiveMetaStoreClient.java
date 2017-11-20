@@ -49,7 +49,7 @@ public class SentryHiveMetaStoreClient extends HiveMetaStoreClient implements
 
   public SentryHiveMetaStoreClient(HiveConf conf, HiveMetaHookLoader hookLoader)
       throws MetaException {
-    super(conf, hookLoader);
+    super(conf, hookLoader, true);
   }
 
   @Override

@@ -16,34 +16,42 @@
  */
 package org.apache.sentry.core.model.sqoop;
 
-import org.apache.sentry.core.common.AbstractAuthorizableFactory;
+import org.apache.sentry.core.model.sqoop.SqoopAuthorizable.AuthorizableType;
+import org.apache.sentry.core.common.utils.KeyValue;
 
-public class SqoopModelAuthorizables extends AbstractAuthorizableFactory<SqoopAuthorizable, SqoopAuthorizable.AuthorizableType> {
+public class SqoopModelAuthorizables {
 
-  private static final SqoopModelAuthorizables instance = new SqoopModelAuthorizables();
+  private SqoopModelAuthorizables() {
+    // Make constructor private to avoid instantiation
+  }
+
+  public static SqoopAuthorizable from(KeyValue keyValue) {
+    String prefix = keyValue.getKey().toLowerCase();
+    String name = keyValue.getValue().toLowerCase();
+    for (AuthorizableType type : AuthorizableType.values()) {
+      if(prefix.equalsIgnoreCase(type.name())) {
+        return from(type, name);
+      }
+    }
+    return null;
+  }
 
   public static SqoopAuthorizable from(String keyValue) {
-    return instance.create(keyValue);
+    return from(new KeyValue(keyValue));
   }
 
-
-  public SqoopAuthorizable create(SqoopAuthorizable.AuthorizableType type, String name) {
+  public static SqoopAuthorizable from(AuthorizableType type, String name) {
     switch(type) {
-      case SERVER:
-        return new Server(name);
-      case JOB:
-        return new Job(name);
-      case CONNECTOR:
-        return new Connector(name);
-      case LINK:
-        return new Link(name);
-      default:
-        return null;
+    case SERVER:
+      return new Server(name);
+    case JOB:
+      return new Job(name);
+    case CONNECTOR:
+      return new Connector(name);
+    case LINK:
+      return new Link(name);
+    default:
+      return null;
     }
-  }
-
-  @Override
-  protected SqoopAuthorizable.AuthorizableType[] getTypes() {
-    return SqoopAuthorizable.AuthorizableType.values();
   }
 }

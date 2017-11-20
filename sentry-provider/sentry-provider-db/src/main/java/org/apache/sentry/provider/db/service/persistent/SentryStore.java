@@ -3248,7 +3248,7 @@ public class SentryStore {
     // objects up to the "to" record, and will not pass any unnecessary objects that are before
     // the "from" record.
     query.setRange(0, 1);
-    return ((List<MAuthzPathsMapping>) query.execute()).isEmpty();
+    return ((List<?>) query.execute()).isEmpty();
   }
 
   /**

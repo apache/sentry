@@ -28,6 +28,7 @@ import org.apache.hadoop.hive.cli.CliSessionState;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.Database;
+import org.apache.hadoop.hive.metastore.api.EnvironmentContext;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.Order;
 import org.apache.hadoop.hive.metastore.api.Partition;
@@ -138,7 +139,7 @@ public abstract class AbstractMetastoreTestWithStaticConfiguration extends
 
   public void alterPartitionWithLocation(HiveMetaStoreClient client, Partition partition, String location) throws Exception {
     partition.getSd().setLocation(location);
-    client.alter_partition(partition.getDbName(), partition.getTableName(), partition);
+    client.alter_partition(partition.getDbName(), partition.getTableName(), partition, new EnvironmentContext());
   }
 
   public void renamePartition(HiveMetaStoreClient client, Partition partition, Partition newPartition) throws Exception {

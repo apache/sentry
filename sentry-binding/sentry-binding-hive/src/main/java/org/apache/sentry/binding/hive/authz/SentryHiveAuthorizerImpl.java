@@ -20,11 +20,13 @@ import java.util.List;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.exec.SentryHivePrivilegeObjectDesc;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.plan.PrivilegeObjectDesc;
 import org.apache.hadoop.hive.ql.security.authorization.DefaultHiveAuthorizationTranslator;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.AbstractHiveAuthorizer;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAccessControlException;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAuthorizationTranslator;
+import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAuthorizer.VERSION;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAuthzContext;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveAuthzPluginException;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveOperationType;
@@ -163,6 +165,17 @@ public class SentryHiveAuthorizerImpl extends AbstractHiveAuthorizer {
   @Override
   public HiveAuthorizationTranslator getHiveAuthorizationTranslator() throws HiveAuthzPluginException {
     return hiveTranslator;
+  }
+
+  @Override
+  public List<HivePrivilegeObject> applyRowFilterAndColumnMasking(HiveAuthzContext hiveAuthzContext,
+      List<HivePrivilegeObject> list) throws SemanticException {
+    return null;
+  }
+
+  @Override
+  public boolean needTransform() {
+    return false;
   }
 
   protected static HivePrivilegeObjectType getPrivObjectType(

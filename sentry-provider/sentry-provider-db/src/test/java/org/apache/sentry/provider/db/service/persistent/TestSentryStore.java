@@ -3461,4 +3461,61 @@ public class TestSentryStore extends org.junit.Assert {
     }
   }
 
+  /**
+   * Test paths with multiple leading slashes
+   * @throws Exception
+   */
+  @Test
+  public void testRetrievePathImageWithMultipleLeadingSlashes() throws Exception {
+    //Test with no leading slashes
+    String prefix = "user/hive/warehouse";
+    String []prefixes = {"/" + prefix};
+    Map<String, Collection<String>> authzPaths = new HashMap<>();
+    // Makes sure that authorizable object could be associated
+    // with different paths and can be properly persisted into database.
+    String tablePath = prefix + "/loc1/db2.db/table1.1";
+    authzPaths.put("db1.table1", Sets.newHashSet(tablePath));
+    long notificationID = 1;
+    sentryStore.persistFullPathsImage(authzPaths, notificationID);
+    PathsUpdate pathsUpdate = sentryStore.retrieveFullPathsImageUpdate(prefixes);
+    assertEquals(notificationID, pathsUpdate.getImgNum());
+    TPathsUpdate tPathsUpdate = pathsUpdate.toThrift();
+    TPathsDump pathDump = tPathsUpdate.getPathsDump();
+    Map<Integer, TPathEntry> nodeMap = pathDump.getNodeMap();
+    assertEquals(7, nodeMap.size());
+
+    //Test with single leading slashes
+    prefix = "/user/hive/warehouse";
+    prefixes = new String[]{prefix};
+    authzPaths = new HashMap<>();
+    // Makes sure that authorizable object could be associated
+    // with different paths and can be properly persisted into database.
+    tablePath = prefix + "/loc1/db2.db/table1.1";
+    authzPaths.put("db1.table1", Sets.newHashSet(tablePath));
+    notificationID = 2;
+    sentryStore.persistFullPathsImage(authzPaths, notificationID);
+    pathsUpdate = sentryStore.retrieveFullPathsImageUpdate(prefixes);
+    assertEquals(notificationID, pathsUpdate.getImgNum());
+    tPathsUpdate = pathsUpdate.toThrift();
+    pathDump = tPathsUpdate.getPathsDump();
+    nodeMap = pathDump.getNodeMap();
+    assertEquals(7, nodeMap.size());
+
+    //Test with multiple leading slash
+    prefix = "///user/hive/warehouse";
+    prefixes = new String[]{prefix};
+    authzPaths = new HashMap<>();
+    // Makes sure that authorizable object could be associated
+    // with different paths and can be properly persisted into database.
+    tablePath = prefix + "/loc1/db2.db/table1.1";
+    authzPaths.put("db1.table1", Sets.newHashSet(tablePath));
+    notificationID = 3;
+    sentryStore.persistFullPathsImage(authzPaths, notificationID);
+    pathsUpdate = sentryStore.retrieveFullPathsImageUpdate(prefixes);
+    assertEquals(notificationID, pathsUpdate.getImgNum());
+    tPathsUpdate = pathsUpdate.toThrift();
+    pathDump = tPathsUpdate.getPathsDump();
+    nodeMap = pathDump.getNodeMap();
+    assertEquals(7, nodeMap.size());
+  }
 }

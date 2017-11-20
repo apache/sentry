@@ -52,6 +52,7 @@ limitations under the License.
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <buildtools.dir>${basedir}/build-tools</buildtools.dir>
+    <test.tmp.dir>${project.build.directory}/tmp</test.tmp.dir>
     <maven.compile.source>1.8</maven.compile.source>
     <maven.compile.target>1.8</maven.compile.target>
     <failIfNoTests>false</failIfNoTests>
@@ -71,7 +72,7 @@ limitations under the License.
     <guava.version>14.0.1</guava.version>
     <hadoop.version>2.7.2</hadoop.version>
     <hamcrest.version>1.3</hamcrest.version>
-    <hive.version>2.0.0</hive.version>
+    <hive.version>2.3.2</hive.version>
     <jackson.version>1.8.8</jackson.version>
     <jdo-api.version>3.0.1</jdo-api.version>
     <jetty.version>9.3.21.v20170918</jetty.version>
@@ -712,6 +713,19 @@ limitations under the License.
               </target>
             </configuration>
           </execution>
+          <execution>
+            <id>setup-test-dirs</id>
+            <phase>process-test-resources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <delete dir="${test.tmp.dir}" />
+                <mkdir dir="${test.tmp.dir}" />
+              </target>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
 
@@ -803,6 +817,7 @@ limitations under the License.
             <argLine>-Xms512m -Xmx2g -XX:MaxPermSize=256m</argLine>
             <systemPropertyVariables>
               <java.net.preferIPv4Stack>true</java.net.preferIPv4Stack>
+              <java.io.tmpdir>${test.tmp.dir}</java.io.tmpdir>
             </systemPropertyVariables>
           </configuration>
         </plugin>
