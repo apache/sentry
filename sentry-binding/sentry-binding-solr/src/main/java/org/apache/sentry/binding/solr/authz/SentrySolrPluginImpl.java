@@ -16,6 +16,7 @@
  */
 package org.apache.sentry.binding.solr.authz;
 
+import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
 import static org.apache.sentry.binding.solr.authz.SolrAuthzBinding.QUERY;
 import static org.apache.sentry.binding.solr.authz.SolrAuthzBinding.UPDATE;
 
@@ -43,6 +44,7 @@ import org.apache.sentry.core.model.solr.Collection;
 import org.apache.sentry.core.model.solr.SolrConstants;
 import org.apache.sentry.core.model.solr.SolrModelAction;
 import org.apache.sentry.core.model.solr.SolrModelAuthorizable;
+import org.apache.sentry.provider.file.SimpleFileProviderBackend;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -109,6 +111,20 @@ public class SentrySolrPluginImpl implements AuthorizationPlugin {
    * core-site.xml) required to properly setup Hadoop {@linkplain UserGroupInformation} context.
    */
   public static final String SENTRY_HADOOP_CONF_DIR_PROPERTY = "authorization.sentry.hadoop.conf";
+
+  /**
+   * A configuration property to specify the kerberos principal to be used for communicating with
+   * HDFS. This is required only in case of {@linkplain SimpleFileProviderBackend} when the policy
+   * file is stored on HDFS.
+   */
+  public static final String SENTRY_HDFS_KERBEROS_PRINCIPAL = "authorization.hdfs.kerberos.principal";
+
+  /**
+   * A configuration property to specify the kerberos keytab file to be used for communicating with
+   * HDFS. This is required only in case of {@linkplain SimpleFileProviderBackend} when the policy
+   * file is stored on HDFS.
+   */
+  public static final String SENTRY_HDFS_KERBEROS_KEYTAB = "authorization.hdfs.kerberos.keytabfile";
 
   private String solrSuperUser;
   private SolrAuthzBinding binding;
@@ -267,7 +283,16 @@ public class SentrySolrPluginImpl implements AuthorizationPlugin {
       List<URL> configFiles = getHadoopConfigFiles(sentryHadoopConfLoc);
       configFiles.add((new File(sentrySiteLoc)).toURI().toURL());
 
-      binding = new SolrAuthzBinding(new SolrAuthzConf(configFiles));
+      SolrAuthzConf conf = new SolrAuthzConf(configFiles);
+      if (shouldInitializeKereberos(conf)) {
+        String princ = Preconditions.checkNotNull(config.get(SENTRY_HDFS_KERBEROS_PRINCIPAL),
+            "The authorization plugin is missing the " + SENTRY_HDFS_KERBEROS_PRINCIPAL + " property.");
+        String keytab = Preconditions.checkNotNull(config.get(SENTRY_HDFS_KERBEROS_KEYTAB),
+            "The authorization plugin is missing the " + SENTRY_HDFS_KERBEROS_KEYTAB + " property.");
+        initKerberos(conf, keytab, princ);
+      }
+
+      binding = new SolrAuthzBinding(conf);
       LOG.info("SolrAuthzBinding created successfully");
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to create SolrAuthzBinding", e);
@@ -405,4 +430,31 @@ public class SentrySolrPluginImpl implements AuthorizationPlugin {
 
     return result;
   }
+
+  /**
+   * Initialize kerberos via UserGroupInformation.  Will only attempt to login
+   * during the first request, subsequent calls will have no effect.
+   */
+  private void initKerberos(SolrAuthzConf authzConf, String keytabFile, String principal) {
+    synchronized (SentrySolrPluginImpl.class) {
+      UserGroupInformation.setConfiguration(authzConf);
+      LOG.info(
+          "Attempting to acquire kerberos ticket with keytab: {}, principal: {} ",
+          keytabFile, principal);
+      try {
+        UserGroupInformation.loginUserFromKeytab(principal, keytabFile);
+      } catch (IOException ioe) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, ioe);
+      }
+      LOG.info("Got Kerberos ticket");
+    }
+  }
+
+  private boolean shouldInitializeKereberos(SolrAuthzConf conf) {
+    String providerBackend = conf.get(SolrAuthzConf.AuthzConfVars.AUTHZ_PROVIDER_BACKEND.getVar());
+    String authVal = conf.get(HADOOP_SECURITY_AUTHENTICATION);
+    return SimpleFileProviderBackend.class.getName().equals(providerBackend)
+           && "kerberos".equalsIgnoreCase(authVal);
+  }
+
 }

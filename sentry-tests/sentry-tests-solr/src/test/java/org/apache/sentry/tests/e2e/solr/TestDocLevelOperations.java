@@ -43,7 +43,7 @@ import org.junit.Test;
 /**
  * Test the document-level security features
  */
-public class TestDocLevelOperations extends AbstractSolrSentryTestCase {
+public class TestDocLevelOperations extends SolrSentryServiceTestBase {
   private static final String AUTH_FIELD = "sentry_auth";
   private static final int NUM_DOCS = 100;
   private static final int EXTRA_AUTH_FIELDS = 2;
