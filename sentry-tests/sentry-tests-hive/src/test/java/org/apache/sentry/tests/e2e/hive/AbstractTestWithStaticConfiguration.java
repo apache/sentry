@@ -516,10 +516,10 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
     if (setMetastoreListener) {
       LOGGER.info("setMetastoreListener is enabled");
       if (useDbNotificationListener) {
-        properties.put(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname,
+        properties.put(HiveConf.ConfVars.METASTORE_TRANSACTIONAL_EVENT_LISTENERS.varname,
                 "org.apache.hive.hcatalog.listener.DbNotificationListener");
       } else {
-        properties.put(HiveConf.ConfVars.METASTORE_EVENT_LISTENERS.varname,
+        properties.put(HiveConf.ConfVars.METASTORE_TRANSACTIONAL_EVENT_LISTENERS.varname,
             SentryMetastorePostEventListenerNotificationLog.class.getName());
         properties.put("hcatalog.message.factory.impl.json",
             "org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageFactory");
