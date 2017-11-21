@@ -235,9 +235,11 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
   /**
    * Checks if a new full HMS snapshot request is needed by checking if:
    * <ul>
-   *   <li>No snapshots has been persisted yet.</li>
+   *   <li>Sentry HMS Notification table is EMPTY</li>
+   *   <li>HDFSSync is enabled and Sentry Authz Snapshot table is EMPTY</li>
    *   <li>The current notification Id on the HMS is less than the
    *   latest processed by Sentry.</li>
+   *   <li>Full Snapshot Signal is detected</li>
    * </ul>
    *
    * @param latestSentryNotificationId The notification Id to check against the HMS
@@ -246,6 +248,13 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
    */
   private boolean isFullSnapshotRequired(long latestSentryNotificationId) throws Exception {
     if (sentryStore.isHmsNotificationEmpty()) {
+      return true;
+    }
+
+    // Once HDFS sync is enabled, and if MAuthzPathsSnapshotId
+    // table is still empty, we need to request a full snapshot
+    if(hdfsSyncEnabled && sentryStore.isAuthzPathsSnapshotEmpty()) {
+      LOGGER.debug("HDFSSync is enabled and MAuthzPathsSnapshotId table is empty. Need to request a full snapshot");
       return true;
     }
 

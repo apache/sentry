@@ -3162,6 +3162,23 @@ public class SentryStore {
   }
 
   /**
+   * Tells if there are any records in MAuthzPathsSnapshotId
+   *
+   * @return true if there are no entries in <code>MAuthzPathsSnapshotId</code>
+   * false if there are entries
+   * @throws Exception
+   */
+  public boolean isAuthzPathsSnapshotEmpty() throws Exception {
+    return tm.executeTransactionWithRetry(
+        new TransactionBlock<Boolean>() {
+          public Boolean execute(PersistenceManager pm) throws Exception {
+            pm.setDetachAllOnCommit(false); // No need to detach objects
+            return isTableEmptyCore(pm, MAuthzPathsSnapshotId.class);
+          }
+        });
+  }
+
+  /**
    * Updates authzObj -> [Paths] mapping to replace an existing path with a new one
    * given an authzObj. As well as persist the corresponding delta path change to
    * MSentryPathChange table in a single transaction.

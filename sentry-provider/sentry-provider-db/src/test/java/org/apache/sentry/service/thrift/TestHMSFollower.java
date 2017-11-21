@@ -239,6 +239,101 @@ public class TestHMSFollower {
   }
 
   @Test
+  public void testPersistAFullSnapshotWhenAuthzsnapshotIsEmptyAndHDFSSyncIsEnabled() throws Exception {
+    /*
+     * TEST CASE
+     *
+     * Simulates (by using mocks) the following:
+     *
+     * Disable HDFSSync before triggering a full snapshot
+     *
+     * HMS client always returns the paths image with the eventId == 1.
+     *
+     * On the 1st run:  Sentry notification table is empty, so this
+     * should trigger a new full HMS snapshot request with the eventId = 1
+     * but it should not persist it, in stead only set last
+     * last processed notification Id. This will prevent a
+     * unless until notifications are out of sync or hdfs sync is enabled
+     *
+     * On the 2nd run: Just enable hdfs sync and a full snapshot should be triggered
+     * because MAuthzPathsSnapshotId table is empty
+     *
+     */
+
+    configuration.set(ServiceConstants.ServerConfig.PROCESSOR_FACTORIES, "");
+    configuration.set(ServiceConstants.ServerConfig.SENTRY_POLICY_STORE_PLUGINS, "");
+
+    final long SENTRY_PROCESSED_EVENT_ID = SentryStore.EMPTY_NOTIFICATION_ID;
+    final long HMS_PROCESSED_EVENT_ID = 1L;
+
+    // Mock that returns a full snapshot
+    Map<String, Collection<String>> snapshotObjects = new HashMap<>();
+    snapshotObjects.put("db", Sets.newHashSet("/db"));
+    snapshotObjects.put("db.table", Sets.newHashSet("/db/table"));
+    PathsImage fullSnapshot = new PathsImage(snapshotObjects, HMS_PROCESSED_EVENT_ID, 1);
+
+    SentryHMSClient sentryHmsClient = Mockito.mock(SentryHMSClient.class);
+    when(sentryHmsClient.getFullSnapshot()).thenReturn(fullSnapshot);
+
+    HMSFollower hmsFollower = new HMSFollower(configuration, sentryStore, null,
+        hmsConnectionMock, hiveInstance);
+    hmsFollower.setSentryHmsClient(sentryHmsClient);
+
+    // 1st run should get a full snapshot because hms notificaions is empty
+    // but it should never be persisted because HDFS sync is disabled
+    when(sentryStore.getLastProcessedNotificationID()).thenReturn(SENTRY_PROCESSED_EVENT_ID);
+    when(sentryStore.isHmsNotificationEmpty()).thenReturn(true);
+    hmsFollower.run();
+    verify(sentryStore, times(0)).persistFullPathsImage(
+        fullSnapshot.getPathImage(), fullSnapshot.getId());
+    // Since hdfs sync is disabled we would set last processed notifications
+    // and since we did trigger createFullSnapshot() method we won't process any notifications
+    verify(sentryStore, times(1)).setLastProcessedNotificationID(fullSnapshot.getId());
+    verify(sentryStore, times(0)).persistLastProcessedNotificationID(fullSnapshot.getId());
+
+    reset(sentryStore);
+
+    //Re-enable HDFS Sync and simply start the HMS follower thread, full snap shot
+    // should be triggered because MAuthzPathsSnapshotId table is empty
+    configuration.set(ServiceConstants.ServerConfig.PROCESSOR_FACTORIES, "org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
+    configuration.set(ServiceConstants.ServerConfig.SENTRY_POLICY_STORE_PLUGINS, "org.apache.sentry.hdfs.SentryPlugin");
+
+    //Create a new hmsFollower instance since configuration is changing
+    hmsFollower = new HMSFollower(configuration, sentryStore, null,
+        hmsConnectionMock, hiveInstance);
+    hmsFollower.setSentryHmsClient(sentryHmsClient);
+
+
+    //Set last processed notification Id to match the full new value 1L
+    final long LATEST_EVENT_ID = 1L;
+    when(sentryStore.getLastProcessedNotificationID()).thenReturn(LATEST_EVENT_ID);
+    //Mock that sets isHmsNotificationEmpty to false
+    when(sentryStore.isHmsNotificationEmpty()).thenReturn(false);
+    // Mock that sets the current HMS notification ID. Set it to match
+    // last processed notification Id so that doesn't trigger a full snapshot
+    when(hmsClientMock.getCurrentNotificationEventId())
+        .thenReturn(new CurrentNotificationEventId(LATEST_EVENT_ID));
+    //Mock that sets getting next notification eve
+    when(hmsClientMock.getNextNotification(Mockito.eq(HMS_PROCESSED_EVENT_ID - 1), Mockito.eq(Integer.MAX_VALUE),
+        (NotificationFilter) Mockito.notNull()))
+        .thenReturn(new NotificationEventResponse(
+            Arrays.<NotificationEvent>asList(
+                new NotificationEvent(LATEST_EVENT_ID, 0, "", "")
+            )
+        ));
+    //Mock that sets isAuthzPathsSnapshotEmpty to true so trigger this particular test
+    when(sentryStore.isAuthzPathsSnapshotEmpty()).thenReturn(true);
+
+    hmsFollower.run();
+    verify(sentryStore, times(1)).persistFullPathsImage(
+        fullSnapshot.getPathImage(), fullSnapshot.getId());
+    verify(sentryStore, times(0)).setLastProcessedNotificationID(fullSnapshot.getId());
+    verify(sentryStore, times(0)).persistLastProcessedNotificationID(fullSnapshot.getId());
+
+    reset(sentryStore);
+  }
+
+  @Test
   public void testPersistAFullSnapshotWhenLastHmsNotificationIsLowerThanLastProcessed()
       throws Exception {
     /*
