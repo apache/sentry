@@ -16,15 +16,24 @@
  */
 package org.apache.sentry.policy.common;
 
+import java.util.Collection;
 import java.util.Set;
 
 import org.apache.shiro.util.PermissionUtils;
+import org.apache.shiro.util.StringUtils;
 
 public class PrivilegeUtils {
   public static Set<String> toPrivilegeStrings(String s) {
     return PermissionUtils.toPermissionStrings(s);
   }
-  
+
+  /**
+   * Transform the specified {@linkplain Set} of privileges to a {@linkplain String} value.
+   */
+  public static String fromPrivilegeStrings (Collection<String> s) {
+    return StringUtils.toDelimitedString(s, String.valueOf(StringUtils.DEFAULT_DELIMITER_CHAR));
+  }
+
   private PrivilegeUtils() {
     // Make constructor private to avoid instantiation
   }

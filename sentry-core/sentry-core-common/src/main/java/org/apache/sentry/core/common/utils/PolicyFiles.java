@@ -16,20 +16,27 @@
  */
 package org.apache.sentry.core.common.utils;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IOUtils;
 import org.apache.shiro.config.Ini;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Joiner;
+import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Resources;
 
@@ -37,6 +44,8 @@ public final class PolicyFiles {
 
   private static final Logger LOGGER = LoggerFactory
       .getLogger(PolicyFiles.class);
+  private static final String NL = System.getProperty("line.separator", "\n");
+
 
   public static void copyToDir(File dest, String... resources)
       throws FileNotFoundException, IOException {
@@ -89,6 +98,45 @@ public final class PolicyFiles {
         }
       }
     }
+  }
+
+  /**
+   * Save the specified Sentry configuration file to the desired location
+   *
+   * @param iniFile The Sentry configuration ini file to be saved
+   * @param fileSystem The {@linkplain FileSystem} instance to be used
+   * @param path The path on the {@linkplain FileSystem} where the configuration file should be stored.
+   * @throws IOException in case of I/O errors
+   */
+  public static void writeToPath (Ini iniFile, FileSystem fileSystem, Path path) throws IOException {
+    if (fileSystem.exists(path)) {
+      throw new IllegalArgumentException("The specified path " + path + " already exist!");
+    }
+
+    List<String> sectionStrs = new ArrayList<>();
+    for (String sectionName : PolicyFileConstants.SECTION_NAMES) {
+      sectionStrs.add(toString(sectionName, iniFile.getSection(sectionName)));
+    }
+
+    String contents = Joiner.on(NL).join(sectionStrs.iterator());
+    try (OutputStream out = fileSystem.create(path)) {
+      ByteArrayInputStream in = new ByteArrayInputStream(contents.getBytes(StandardCharsets.UTF_8));
+      IOUtils.copyBytes(in, out, fileSystem.getConf());
+    }
+  }
+
+  private static String toString(String name, Ini.Section mapping) {
+    if(mapping == null || mapping.isEmpty()) {
+      return "";
+    }
+    Joiner kvJoiner = Joiner.on(" = ");
+    List<String> lines = Lists.newArrayList();
+    lines.add(NL);
+    lines.add("[" + name + "]");
+    for(String key : mapping.keySet()) {
+      lines.add(kvJoiner.join(key, mapping.get(key)));
+    }
+    return Joiner.on(NL).join(lines);
   }
 
   private PolicyFiles() {
