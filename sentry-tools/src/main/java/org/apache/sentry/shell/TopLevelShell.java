@@ -226,7 +226,7 @@ public class TopLevelShell implements ShellDependent, Runnable {
       String type) {
     // Check it's a valid type first
     try {
-      TYPE parsedType = TYPE.valueOf(type);
+      TYPE parsedType = parseType(type);
       if (parsedType == TYPE.HIVE) {
         shellCommand = new HiveShellCommand(sentryClient);
       } else {
@@ -236,7 +236,7 @@ public class TopLevelShell implements ShellDependent, Runnable {
         shellCommand = new GenericShellCommand(sentryGenericClient, component, service, converter);
       }
     } catch (IllegalArgumentException ex) {
-      System.out.printf("The %s type value is not an accepted type value\n", type);
+      System.out.printf("%s is not an accepted type value\n", type);
     }
   }
 
@@ -257,7 +257,7 @@ public class TopLevelShell implements ShellDependent, Runnable {
         shellCommand = new GenericShellCommand(sentryGenericClient, component, service, converter);
       }
     } catch (IllegalArgumentException ex) {
-      System.out.printf("The %s type value is not an accepted type value\n", type);
+      System.out.printf("%s is not an accepted type value\n", type);
     }
   }
 
