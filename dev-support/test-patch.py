@@ -120,7 +120,7 @@ def git_checkout(result, branch):
 
 def git_apply(result, cmd, patch_file, output_dir):
   output_file = "%s/apply.txt" % (output_dir)
-  rc = execute("%s %s 1>%s 2>&1" % (cmd, patch_file, output_file))
+  rc = execute("%s %s |& tee %s" % (cmd, patch_file, output_file))
   output = ""
   if os.path.exists(output_file):
     with open(output_file) as fh:
@@ -131,12 +131,12 @@ def git_apply(result, cmd, patch_file, output_dir):
     result.fatal("failed to apply patch (exit code %d):\n%s\n" % (rc, output))
 
 def mvn_clean(result, mvn_repo, output_dir, mvn_profile):
-  rc = execute("mvn clean -Dmaven.repo.local=%s %s 1>%s/clean.txt 2>&1" % (mvn_repo, mvn_profile, output_dir))
+  rc = execute("mvn clean -Dmaven.repo.local=%s %s |& tee %s/clean.txt" % (mvn_repo, mvn_profile, output_dir))
   if rc != 0:
     result.fatal("failed to clean project (exit code %d)" % (rc))
 
 def mvn_install(result, mvn_repo, output_dir, mvn_profile):
-  rc = execute("mvn install -U -DskipTests -Dmaven.repo.local=%s %s 1>%s/install.txt 2>&1" % (mvn_repo, mvn_profile, output_dir))
+  rc = execute("mvn install -U -DskipTests -Dmaven.repo.local=%s %s |& tee %s/install.txt" % (mvn_repo, mvn_profile, output_dir))
   if rc != 0:
     result.fatal("failed to build with patch (exit code %d)" % (rc))
 
@@ -146,7 +146,7 @@ def find_all_files(top):
             yield os.path.join(root, f)
 
 def mvn_test(result, mvn_repo, output_dir, mvn_profile):
-  rc = execute("mvn verify -Dmaven.repo.local=%s %s 1>%s/test.txt 2>&1" % (mvn_repo, mvn_profile, output_dir))
+  rc = execute("mvn verify -Dmaven.repo.local=%s %s |& tee %s/test.txt" % (mvn_repo, mvn_profile, output_dir))
   if rc == 0:
     result.success("all tests passed")
   else:
