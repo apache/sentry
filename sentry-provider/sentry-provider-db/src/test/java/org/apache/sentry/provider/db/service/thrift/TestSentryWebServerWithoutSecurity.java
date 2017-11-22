@@ -84,4 +84,12 @@ public class TestSentryWebServerWithoutSecurity extends SentryServiceIntegration
     String defaultResponse = IOUtils.toString(conn.getInputStream());
     Assert.assertEquals(xmlResponse, defaultResponse);
   }
+
+  @Test
+  public void testTraceIsDisabled() throws Exception {
+    final URL url = new URL("http://"+ SERVER_HOST + ":" + webServerPort);
+    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+    conn.setRequestMethod("TRACE");
+    Assert.assertEquals(HttpURLConnection.HTTP_FORBIDDEN, conn.getResponseCode());
+  }
 }

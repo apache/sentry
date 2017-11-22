@@ -39,6 +39,8 @@ import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authentication.server.AuthenticationFilter;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
+import org.eclipse.jetty.security.ConstraintMapping;
+import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -54,6 +56,7 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -154,7 +157,33 @@ public class SentryWebServer {
       filterHolder.setInitParameters(loadWebAuthenticationConf(conf));
     }
 
-    server.setHandler(contextHandlerCollection);
+    server.setHandler(disableTraceMethod(contextHandlerCollection));
+  }
+
+  /**
+   * Disables the HTTP TRACE method request which leads to Cross-Site Tracking (XST) problems.
+   *
+   * To disable it, we need to wrap the Handler (which has the HTTP TRACE enabled) with
+   * a constraint that denies access to the HTTP TRACE method.
+   *
+   * @param handler The Handler which has the HTTP TRACE enabled.
+   * @return A new Handler wrapped with the HTTP TRACE constraint and the Handler passed as parameter.
+   */
+  private Handler disableTraceMethod(Handler handler) {
+    Constraint disableTraceConstraint = new Constraint();
+    disableTraceConstraint.setName("Disable TRACE");
+    disableTraceConstraint.setAuthenticate(true);
+
+    ConstraintMapping mapping = new ConstraintMapping();
+    mapping.setConstraint(disableTraceConstraint);
+    mapping.setMethod("TRACE");
+    mapping.setPathSpec("/");
+
+    ConstraintSecurityHandler constraintSecurityHandler = new ConstraintSecurityHandler();
+    constraintSecurityHandler.addConstraintMapping(mapping);
+    constraintSecurityHandler.setHandler(handler);
+
+    return constraintSecurityHandler;
   }
 
   public void start() throws Exception{

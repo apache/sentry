@@ -164,4 +164,12 @@ public class TestSentryWebServerWithKerberos extends SentryServiceIntegrationBas
       }
     });
   }
+
+  @Test
+  public void testTraceIsDisabled() throws Exception {
+    final URL url = new URL("http://"+ SERVER_HOST + ":" + webServerPort);
+    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+    conn.setRequestMethod("TRACE");
+    Assert.assertEquals(HttpURLConnection.HTTP_FORBIDDEN, conn.getResponseCode());
+  }
 }
