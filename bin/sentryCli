@@ -18,39 +18,37 @@
 bin=`dirname "$0"`
 myhome=`cd "$bin/.."; pwd`
 
-if [[ -z $SENTRY_HOME ]] ; then
-  export SENTRY_HOME=$myhome
-fi
+export SENTRY_HOME=${SENTRY_HOME:-${myhome}}
 
 # check for hadoop in the path
 HADOOP_IN_PATH=`which hadoop 2>/dev/null`
-if [ -f ${HADOOP_IN_PATH} ]; then
+if [[ -f ${HADOOP_IN_PATH} ]]; then
   HADOOP_DIR=`dirname "$HADOOP_IN_PATH"`/..
 fi
 # HADOOP_HOME env variable overrides hadoop in the path
 HADOOP_HOME=${HADOOP_HOME:-${HADOOP_PREFIX:-$HADOOP_DIR}}
-if [ "$HADOOP_HOME" == "" ]; then
+if [[ -z ${HADOOP_HOME} ]]; then
   echo "Cannot find hadoop installation: \$HADOOP_HOME or \$HADOOP_PREFIX must be set or hadoop must be in the path";
   exit 4;
 fi
 
 HADOOP=$HADOOP_HOME/bin/hadoop
-if [ ! -f ${HADOOP} ]; then
+if [[ ! -f ${HADOOP} ]]; then
   echo "Cannot find hadoop installation: \$HADOOP_HOME or \$HADOOP_PREFIX must be set or hadoop must be in the path";
   exit 4;
 fi
 
 export _CMD_JAR=${SENTRY_SHELL_JAR:-sentry-provider-db-*.jar}
 for f in ${SENTRY_HOME}/lib/*.jar; do
-  HADOOP_CLASSPATH=${HADOOP_CLASSPATH}:${f}
+  HADOOP_CLASSPATH+=:${f}
 done
 export HADOOP_CLASSPATH
 
 for f in ${SENTRY_HOME}/lib/server/*.jar; do
-  HADOOP_CLASSPATH=${HADOOP_CLASSPATH}:${f}
+  HADOOP_CLASSPATH+=:${f}
 done
 for f in ${SENTRY_HOME}/lib/plugins/*.jar; do
-  HADOOP_CLASSPATH=${HADOOP_CLASSPATH}:${f}
+  HADOOP_CLASSPATH+=:${f}
 done
 
 args=()

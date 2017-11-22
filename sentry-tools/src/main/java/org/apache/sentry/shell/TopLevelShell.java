@@ -46,7 +46,7 @@ import java.util.Set;
  */
 public class TopLevelShell implements ShellDependent, Runnable {
 
-  public enum TYPE { kafka, hive, solr, sqoop };
+  public enum TYPE { KAFKA, HIVE, SOLR, SQOOP };
 
   private final Shell topShell;
   private ShellCommand shellCommand;
@@ -227,7 +227,7 @@ public class TopLevelShell implements ShellDependent, Runnable {
     // Check it's a valid type first
     try {
       TYPE parsedType = TYPE.valueOf(type);
-      if (parsedType == TYPE.hive) {
+      if (parsedType == TYPE.HIVE) {
         shellCommand = new HiveShellCommand(sentryClient);
       } else {
         String component = getComponent(parsedType);
@@ -248,8 +248,8 @@ public class TopLevelShell implements ShellDependent, Runnable {
       String service) {
     try {
       // Check it's a valid type first
-      TYPE parsedType = TYPE.valueOf(type);
-      if (parsedType == TYPE.hive) {
+      TYPE parsedType = parseType(type);
+      if (parsedType == TYPE.HIVE) {
         shellCommand = new HiveShellCommand(sentryClient);
       } else {
         String component = getComponent(parsedType);
@@ -276,27 +276,39 @@ public class TopLevelShell implements ShellDependent, Runnable {
   }
 
   private String getComponent(TYPE type) {
-    if (type == TYPE.kafka) {
-      return AuthorizationComponent.KAFKA;
-    } else if (type == TYPE.solr) {
-      return "SOLR";
-    } else if (type == TYPE.sqoop) {
-      return AuthorizationComponent.SQOOP;
+    switch (type) {
+      case KAFKA:
+        return AuthorizationComponent.KAFKA;
+      case SOLR:
+        return "SOLR";
+      case SQOOP:
+        return AuthorizationComponent.SQOOP;
+      default:
+        throw new IllegalArgumentException("Invalid type specified for SentryShellGeneric: " + type);
     }
-
-    throw new IllegalArgumentException("Invalid type specified for SentryShellGeneric: " + type);
   }
 
   private String getService(TYPE type) {
-    if (type == TYPE.kafka) {
-      return AuthorizationComponent.KAFKA;
-    } else if (type == TYPE.solr) {
-      return "service1";
-    } else if (type == TYPE.sqoop) {
-      return "sqoopServer1";
+    switch (type) {
+      case KAFKA:
+        return AuthorizationComponent.KAFKA;
+      case SOLR:
+        return "service1";
+      case SQOOP:
+        return "sqoopServer1";
+      default:
+        throw new IllegalArgumentException("Invalid type specified for SentryShellGeneric: " + type);
+    }
+  }
+
+  private TYPE parseType(String typeStr) {
+    for (TYPE type : TYPE.values()) {
+      if (type.name().equalsIgnoreCase(typeStr)) {
+        return type;
+      }
     }
 
-    throw new IllegalArgumentException("Invalid type specified for SentryShellGeneric: " + type);
+    throw new IllegalArgumentException("Invalid type specified for SentryShellGeneric: " + typeStr);
   }
 
 }

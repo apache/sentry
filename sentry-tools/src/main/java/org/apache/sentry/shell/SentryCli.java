@@ -27,8 +27,6 @@ import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericService
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.service.thrift.SentryServiceClientFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -43,9 +41,7 @@ import static org.apache.sentry.service.thrift.ServiceConstants.ServerConfig.SEC
  * Sentry interactive tool
  */
 public class SentryCli {
-  private static final Logger log = LoggerFactory.getLogger(SentryCli.class.getName());
   private static final String LOG4J_CONF = "log4jConf";
-  private final String[] args;
   private Options options = new Options();
   private CommandLine cmd;
 
@@ -92,7 +88,6 @@ public class SentryCli {
    * @param args command-line arguments
    */
   public SentryCli(String[] args) {
-    this.args = args;
     options.addOption("h", "help", false, "show help");
     // file path of sentry-site
     options.addOption("U", userOpt, true, "auth user");
@@ -109,23 +104,6 @@ public class SentryCli {
       help();
     }
     init();
-  }
-
-  /**
-   * Parse command-line arguments.
-   */
-  public void parse() {
-    CommandLineParser parser = new GnuParser();
-    try {
-      cmd = parser.parse(options, args);
-      if (cmd.hasOption("h")) {
-        help();
-      }
-    } catch (ParseException e) {
-      log.warn("error in parsing expression", e);
-      help();
-      System.exit(1);
-    }
   }
 
   /**
