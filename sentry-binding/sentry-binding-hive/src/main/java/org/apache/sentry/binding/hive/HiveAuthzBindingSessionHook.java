@@ -53,6 +53,7 @@ public class HiveAuthzBindingSessionHook
     HiveAuthzConf.HIVE_SENTRY_SUBJECT_NAME,
     HiveAuthzConf.SENTRY_ACTIVE_ROLE_SET
     );
+  public static final String WILDCARD_ACL_VALUE = "*";
 
   /**
    * The session hook for sentry authorization that sets the required session level configuration
@@ -90,9 +91,9 @@ public class HiveAuthzBindingSessionHook
     sessionConf.set(HiveAuthzConf.HIVE_SENTRY_SUBJECT_NAME, sessionHookContext.getSessionUser());
 
     // Set MR ACLs to session user
-    appendConfVar(sessionConf, JobContext.JOB_ACL_VIEW_JOB,
+    updateJobACL(sessionConf, JobContext.JOB_ACL_VIEW_JOB,
         sessionHookContext.getSessionUser());
-    appendConfVar(sessionConf, JobContext.JOB_ACL_MODIFY_JOB,
+    updateJobACL(sessionConf, JobContext.JOB_ACL_MODIFY_JOB,
         sessionHookContext.getSessionUser());
 
     // setup restrict list
@@ -116,5 +117,28 @@ public class HiveAuthzBindingSessionHook
       currentValue = sentryConfVal + "," + currentValue;
     }
     sessionConf.set(confVar, currentValue);
+  }
+
+  // Setup ACL to include the session user
+  private void updateJobACL(HiveConf sessionConf, String aclName,
+      String sessionUser) {
+    String aclString = sessionConf.get(aclName, "");
+    // An empty ACL, replace it with the user
+    if (aclString.isEmpty()) {
+      aclString = sessionUser;
+    } else {
+      // ACLs can start with a space if only groups are configured
+      if (aclString.startsWith(" ")) {
+        aclString = sessionUser + aclString;
+      } else {
+        // Do not replace the wildcard ACL, it would restrict access
+        boolean isWildcard = (aclString.contains(WILDCARD_ACL_VALUE) &&
+            aclString.trim().equals(WILDCARD_ACL_VALUE));
+        if (!isWildcard) {
+          aclString = sessionUser + "," + aclString;
+        }
+      }
+    }
+    sessionConf.set(aclName, aclString.trim());
   }
 }
