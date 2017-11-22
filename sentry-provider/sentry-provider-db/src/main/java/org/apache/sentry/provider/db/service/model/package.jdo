@@ -247,8 +247,7 @@
        <datastore-identity>
          <column name="AUTHZ_OBJ_ID"/>
        </datastore-identity>
-       <index name="AuthzObjNameID" unique="true">
-         <field name="authzObjName"/>
+       <index name="AUTHZ_SNAPSHOT_ID_INDEX" unique="false">
          <field name="authzSnapshotID"/>
        </index>
        <!--
