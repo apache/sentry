@@ -36,12 +36,8 @@ import org.junit.After;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TestDbSentryOnFailureHookLoading extends AbstractTestWithDbProvider {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(TestDbSentryOnFailureHookLoading.class);
 
   @BeforeClass
   public static void setup() throws Exception {
@@ -264,16 +260,13 @@ public class TestDbSentryOnFailureHookLoading extends AbstractTestWithDbProvider
     }
     if(tableName != null) {
       Assert.assertNotNull("Table object is null for op: " + expectedOp, DummySentryOnFailureHook.table);
-      Assert.assertTrue(tableName.equalsIgnoreCase(DummySentryOnFailureHook.table.getName()));
+      Assert.assertNotNull("Table name is null for op: " + expectedOp, DummySentryOnFailureHook.table.getName());
+      Assert.assertEquals(tableName.toLowerCase(), DummySentryOnFailureHook.table.getName().toLowerCase());
     }
     if(dbName != null) {
       Assert.assertNotNull("Database object is null for op: " + expectedOp, DummySentryOnFailureHook.db);
-
-      String failureHookDbName = DummySentryOnFailureHook.db.getName();
-      LOGGER.debug("dbName: {}; DummySentryOnFailureHook.db.getName(): {}", dbName, failureHookDbName);
-      if(!failureHookDbName.equalsIgnoreCase("*")) {
-        Assert.assertTrue(dbName.equalsIgnoreCase(failureHookDbName));
-      }
+      Assert.assertNotNull("Database name is null for op: " + expectedOp, DummySentryOnFailureHook.db.getName());
+      Assert.assertEquals(dbName.toLowerCase(), DummySentryOnFailureHook.db.getName().toLowerCase());
     }
   }
 }

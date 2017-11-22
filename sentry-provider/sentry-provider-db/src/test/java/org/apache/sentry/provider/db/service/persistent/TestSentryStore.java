@@ -133,17 +133,20 @@ public class TestSentryStore extends org.junit.Assert {
     policyFilePath = new File(dataDir, "local_policy_file.ini");
     conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE,
         policyFilePath.getPath());
-    conf.setInt(ServerConfig.SENTRY_STORE_TRANSACTION_RETRY, 10);
 
+    // These tests do not need to retry transactions, so setting to 1 to reduce testing time
+    conf.setInt(ServerConfig.SENTRY_STORE_TRANSACTION_RETRY, 1);
 
+    // SentryStore should be initialized only once. The tables created by the test cases will
+    // be cleaned up during the @After method.
+    sentryStore = new SentryStore(conf);
+
+    boolean hdfsSyncEnabled = SentryServiceUtil.isHDFSSyncEnabled(conf);
+    sentryStore.setPersistUpdateDeltas(hdfsSyncEnabled);
   }
 
   @Before
   public void before() throws Exception {
-    boolean hdfsSyncEnabled = SentryServiceUtil.isHDFSSyncEnabled(conf);
-    sentryStore = new SentryStore(conf);
-    sentryStore.setPersistUpdateDeltas(hdfsSyncEnabled);
-
     policyFile = new PolicyFile();
     String adminUser = "g1";
     addGroupsToUser(adminUser, adminGroups);
@@ -153,9 +156,6 @@ public class TestSentryStore extends org.junit.Assert {
   @After
   public void after() {
     sentryStore.clearAllTables();
-    if (sentryStore != null) {
-      sentryStore.stop();
-    }
   }
 
   @AfterClass
@@ -163,6 +163,8 @@ public class TestSentryStore extends org.junit.Assert {
     if (dataDir != null) {
       FileUtils.deleteQuietly(dataDir);
     }
+
+    sentryStore.stop();
   }
 
   /**

@@ -37,7 +37,7 @@ import org.restlet.resource.ClientResource;
 import org.restlet.resource.ResourceException;
 
 @SuppressSSL
-public class TestSolrAdminOperations extends AbstractSolrSentryTestCase {
+public class TestSolrAdminOperations extends SolrSentryServiceTestBase {
 
   @Test
   public void testQueryAdminOperation() throws Exception {
@@ -168,21 +168,4 @@ public class TestSolrAdminOperations extends AbstractSolrSentryTestCase {
     }
   }
 
-  protected void adminUpdateActionFailure(String userName, String collectionName)
-      throws SolrServerException, IOException {
-    String tmp = getAuthenticatedUser();
-    try {
-      setAuthenticationUser(userName); // This user doesn't have admin permissions
-      // Create collection.
-      CollectionAdminRequest.Create createCmd =
-          CollectionAdminRequest.createCollection(collectionName, "cloud-minimal", 1, NUM_SERVERS);
-      createCmd.process(cluster.getSolrClient());
-      fail("This admin request should have failed with authorization error.");
-
-    } catch (RemoteSolrException ex) {
-      assertEquals(HttpServletResponse.SC_FORBIDDEN , ex.code());
-    } finally {
-      setAuthenticationUser(tmp);
-    }
-  }
 }

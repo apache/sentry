@@ -19,18 +19,11 @@ package org.apache.sentry.tests.e2e.solr;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.Thread.UncaughtExceptionHandler;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.Locale;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -43,19 +36,11 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.util.EntityUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 
 import org.apache.sentry.binding.solr.authz.SentrySolrPluginImpl;
-import org.apache.sentry.core.common.exception.SentryUserException;
-import org.apache.sentry.core.model.solr.SolrConstants;
-import org.apache.sentry.core.model.solr.SolrModelAuthorizable;
-import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
-import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
-import org.apache.sentry.provider.db.generic.service.thrift.TSentryGrantOption;
-import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -66,208 +51,23 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.restlet.representation.Representation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 
 @ThreadLeakScope(ThreadLeakScope.Scope.NONE)
 @SolrTestCaseJ4.SuppressSSL
 public abstract class AbstractSolrSentryTestCase extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(AbstractSolrSentryTestCase.class);
   protected static final int NUM_SERVERS = 3;
   protected static final String COMPONENT_SOLR = "solr";
   protected static final String SERVICE_NAME = "service1";
   protected static final String ADMIN_ROLE  = "admin_role";
-  private static final String SENTRY_SITE_LOC_SYSPROP = "solr."+SentrySolrPluginImpl.SNTRY_SITE_LOCATION_PROPERTY;
+  protected static final String SENTRY_SITE_LOC_SYSPROP = "solr."+SentrySolrPluginImpl.SNTRY_SITE_LOCATION_PROPERTY;
   protected static final String ALL_DOCS = "*:*";
 
-  protected static TestSentryServer sentrySvc;
-  protected static SentryGenericServiceClient sentryClient;
-  protected static UncaughtExceptionHandler orgExceptionHandler;
-
-  @BeforeClass
-  public static void setupClass() throws Exception {
-    skipBrokenLocales();
-
-    Path testDataPath = createTempDir("solr-integration-db-");
-
-    try {
-      sentrySvc = new TestSentryServer(testDataPath, getUserGroupMappings());
-      sentrySvc.startSentryService();
-      sentryClient = sentrySvc.connectToSentryService();
-      log.info("Successfully started Sentry service");
-    } catch (Exception ex) {
-      log.error ("Unexpected exception while starting Sentry service", ex);
-      throw ex;
-    }
-
-    for (int i = 0; i < 4; i++) {
-      sentryClient.createRole(TestSentryServer.ADMIN_USER, "role"+i, COMPONENT_SOLR);
-      sentryClient.grantRoleToGroups(TestSentryServer.ADMIN_USER, "role"+i, COMPONENT_SOLR, Collections.singleton("group"+i));
-    }
-
-    log.info("Successfully created roles in Sentry service");
-
-    sentryClient.createRole(TestSentryServer.ADMIN_USER, ADMIN_ROLE, COMPONENT_SOLR);
-    sentryClient.grantRoleToGroups(TestSentryServer.ADMIN_USER, ADMIN_ROLE, COMPONENT_SOLR,
-        Collections.singleton(TestSentryServer.ADMIN_GROUP));
-    grantAdminPrivileges(TestSentryServer.ADMIN_USER, ADMIN_ROLE, SolrConstants.ALL, SolrConstants.ALL);
-
-    log.info("Successfully granted admin privileges to " + ADMIN_ROLE);
-
-
-    System.setProperty(SENTRY_SITE_LOC_SYSPROP, sentrySvc.getSentrySitePath().toString());
-
-    // set the solr for the loginUser and belongs to solr group
-    // Note - Solr/Sentry unit tests don't use Hadoop authentication framework. Hence the
-    // UserGroupInformation is not available when the request is being processed by the Solr server.
-    // The document level security search component requires this UserGroupInformation while querying
-    // the roles associated with the user. Please refer to implementation of
-    // SentryGenericProviderBackend#getRoles(...) method. Hence this is a workaround to satisfy this requirement.
-    UserGroupInformation.setLoginUser(UserGroupInformation.createUserForTesting("solr", new String[]{"solr"}));
-
-    try {
-      configureCluster(NUM_SERVERS)
-        .withSecurityJson(TEST_PATH().resolve("security").resolve("security.json"))
-        .addConfig("cloud-minimal", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-        .addConfig("cloud-managed", TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
-        .addConfig("cloud-minimal_doc_level_security", TEST_PATH().resolve("configsets")
-                      .resolve("cloud-minimal_doc_level_security").resolve("conf"))
-        .configure();
-      log.info("Successfully started Solr service");
-
-    } catch (Exception ex) {
-      log.error ("Unexpected exception while starting SolrCloud", ex);
-      throw ex;
-    }
-
-    log.info("Successfully setup Solr with Sentry service");
-  }
-
-  /**
-   * A sample failed run was with following parameters
-   * -Dtests.seed=C92C593AE70E7466 -Dtests.locale=und -Dtests.timezone=Europe/Sarajevo -Dtests.asserts=true -Dtests.file.encoding=UTF-8
-   */
-  private static void skipBrokenLocales() {
-    assumeFalse("This test fails on UNIX whenever Locale has a language, country, or variant that does not satisfy" +
-                " the IETF BCP 47 language tag syntax requirements",
-                "und".equals(Locale.getDefault().toLanguageTag()));
-    assumeFalse("This test fails on UNIX with error - Supplied locale description 'sr__#Latn' is invalid, expecting ln[_CO[_variant]]" +
-                "ln=lower-case two-letter ISO-639 language code, CO=upper-case two-letter ISO-3166 country code",
-                "sr-Latn".equals(Locale.getDefault().toLanguageTag()));
-  }
-
-  @AfterClass
-  public static void cleanUpResources() throws Exception {
-    if (sentryClient != null) {
-      sentryClient.close();
-      sentryClient = null;
-    }
-    if (sentrySvc != null) {
-      sentrySvc.close();
-      sentrySvc = null;
-    }
-    System.clearProperty(SENTRY_SITE_LOC_SYSPROP);
-  }
-
-  public static void grantAdminPrivileges(String requestor, String roleName, String entityName, String action)
-      throws SentryUserException {
-    List<TAuthorizable> auths = new ArrayList<>(1);
-    auths.add(new TAuthorizable(SolrModelAuthorizable.AuthorizableType.Admin.name(), entityName));
-
-    TSentryPrivilege privilege = new TSentryPrivilege(COMPONENT_SOLR, SERVICE_NAME, auths, action);
-    privilege.setGrantOption(TSentryGrantOption.TRUE);
-    sentryClient.grantPrivilege(requestor, roleName, COMPONENT_SOLR, privilege);
-  }
-
-  public static void revokeAdminPrivileges(String requestor, String roleName, String entityName, String action)
-      throws SentryUserException {
-    List<TAuthorizable> auths = new ArrayList<>(1);
-    auths.add(new TAuthorizable(SolrModelAuthorizable.AuthorizableType.Admin.name(), entityName));
-
-    TSentryPrivilege privilege = new TSentryPrivilege(COMPONENT_SOLR, SERVICE_NAME, auths, action);
-    privilege.setGrantOption(TSentryGrantOption.TRUE);
-    sentryClient.revokePrivilege(requestor, roleName, COMPONENT_SOLR, privilege);
-  }
-
-  public static void grantCollectionPrivileges(String requestor, String roleName,
-      String collectionName, String action) throws SentryUserException {
-    List<TAuthorizable> auths = new ArrayList<>(1);
-    auths.add(new TAuthorizable(SolrModelAuthorizable.AuthorizableType.Collection.name(), collectionName));
-
-    TSentryPrivilege privilege = new TSentryPrivilege(COMPONENT_SOLR, SERVICE_NAME, auths, action);
-    privilege.setGrantOption(TSentryGrantOption.TRUE);
-    sentryClient.grantPrivilege(requestor, roleName, COMPONENT_SOLR, privilege);
-  }
-
-  public static void revokeCollectionPrivileges(String requestor, String roleName,
-      String collectionName, String action) throws SentryUserException {
-    List<TAuthorizable> auths = new ArrayList<>(1);
-    auths.add(new TAuthorizable(SolrModelAuthorizable.AuthorizableType.Collection.name(), collectionName));
-
-    TSentryPrivilege privilege = new TSentryPrivilege(COMPONENT_SOLR, SERVICE_NAME, auths, action);
-    privilege.setGrantOption(TSentryGrantOption.TRUE);
-    sentryClient.revokePrivilege(requestor, roleName, COMPONENT_SOLR, privilege);
-  }
-
-  public static void grantConfigPrivileges(String requestor, String roleName, String configName,
-      String action) throws SentryUserException {
-    List<TAuthorizable> auths = new ArrayList<>(1);
-    auths.add(new TAuthorizable(SolrModelAuthorizable.AuthorizableType.Config.name(), configName));
-
-    TSentryPrivilege privilege = new TSentryPrivilege(COMPONENT_SOLR, SERVICE_NAME, auths, action);
-    privilege.setGrantOption(TSentryGrantOption.TRUE);
-    sentryClient.grantPrivilege(requestor, roleName, COMPONENT_SOLR, privilege);
-  }
-
-  public static void revokeConfigPrivileges(String requestor, String roleName, String configName,
-      String action) throws SentryUserException {
-    List<TAuthorizable> auths = new ArrayList<>(1);
-    auths.add(new TAuthorizable(SolrModelAuthorizable.AuthorizableType.Config.name(), configName));
-
-    TSentryPrivilege privilege = new TSentryPrivilege(COMPONENT_SOLR, SERVICE_NAME, auths, action);
-    privilege.setGrantOption(TSentryGrantOption.TRUE);
-    sentryClient.revokePrivilege(requestor, roleName, COMPONENT_SOLR, privilege);
-  }
-
-  public static void grantSchemaPrivileges(String requestor, String roleName, String schemaName,
-      String action) throws SentryUserException {
-    List<TAuthorizable> auths = new ArrayList<>(1);
-    auths.add(new TAuthorizable(SolrModelAuthorizable.AuthorizableType.Schema.name(), schemaName));
-
-    TSentryPrivilege privilege = new TSentryPrivilege(COMPONENT_SOLR, SERVICE_NAME, auths, action);
-    privilege.setGrantOption(TSentryGrantOption.TRUE);
-    sentryClient.grantPrivilege(requestor, roleName, COMPONENT_SOLR, privilege);
-  }
-
-  public static void revokeSchemaPrivileges(String requestor, String roleName, String schemaName,
-      String action) throws SentryUserException {
-    List<TAuthorizable> auths = new ArrayList<>(1);
-    auths.add(new TAuthorizable(SolrModelAuthorizable.AuthorizableType.Schema.name(), schemaName));
-
-    TSentryPrivilege privilege = new TSentryPrivilege(COMPONENT_SOLR, SERVICE_NAME, auths, action);
-    privilege.setGrantOption(TSentryGrantOption.TRUE);
-    sentryClient.revokePrivilege(requestor, roleName, COMPONENT_SOLR, privilege);
-  }
-
-  protected static Map<String, Set<String>> getUserGroupMappings() {
-    Map<String, Set<String>> result = new HashMap<>();
-    result.put("user0", Collections.singleton("group0"));
-    result.put("user1", Collections.singleton("group1"));
-    result.put("user2", Collections.singleton("group2"));
-    result.put("user3", Collections.singleton("group3"));
-    result.put(TestSentryServer.ADMIN_USER, Collections.singleton(TestSentryServer.ADMIN_GROUP));
-    result.put("solr", Collections.singleton("solr"));
-    result.put("junit", Collections.singleton("junit"));
-    result.put("doclevel", Collections.singleton("doclevel"));
-    return Collections.unmodifiableMap(result);
-  }
 
   /**
    * Get the user defined in the Solr authentication plugin
@@ -596,5 +396,66 @@ public abstract class AbstractSolrSentryTestCase extends SolrCloudTestCase {
     return makeHttpRequest(client, firstServer, httpMethod, path, content, contentType, expectedStatusCode);
   }
 
+  protected SolrDocumentList expectedDocs(SolrInputDocument... docs) {
+    SolrDocumentList result = new SolrDocumentList();
 
+    for (SolrInputDocument doc : docs) {
+      SolrDocument r = new SolrDocument();
+      for (SolrInputField field : doc) {
+        r.setField(field.getName(), field.getValue());
+      }
+      result.add(r);
+    }
+    return result;
+  }
+
+  protected void adminUpdateActionFailure(String userName, String collectionName)
+      throws SolrServerException, IOException {
+    String tmp = getAuthenticatedUser();
+    try {
+      setAuthenticationUser(userName); // This user doesn't have admin permissions
+      // Create collection.
+      CollectionAdminRequest.Create createCmd =
+          CollectionAdminRequest.createCollection(collectionName, "cloud-minimal", 1, NUM_SERVERS);
+      createCmd.process(cluster.getSolrClient());
+      fail("This admin request should have failed with authorization error.");
+
+    } catch (RemoteSolrException ex) {
+      assertEquals(HttpServletResponse.SC_FORBIDDEN , ex.code());
+    } finally {
+      setAuthenticationUser(tmp);
+    }
+  }
+
+  protected void verifyCollectionUpdateFailure(String userName, String collectionName,
+      SolrInputDocument doc) throws SolrServerException, IOException {
+    String tmp = getAuthenticatedUser();
+    try {
+      setAuthenticationUser(userName);
+      cluster.getSolrClient().add(collectionName, doc);
+      cluster.getSolrClient().commit(collectionName);
+      fail("This collection query request should have failed with authorization error.");
+
+    } catch (RemoteSolrException ex) {
+      assertEquals(HttpServletResponse.SC_FORBIDDEN, ex.code());
+    } finally {
+      setAuthenticationUser(tmp);
+    }
+  }
+
+  protected void verifyCollectionQueryFailure(String userName, String collectionName,
+      String queryStr) throws SolrServerException, IOException {
+    String tmp = getAuthenticatedUser();
+    try {
+      setAuthenticationUser(userName);
+      cluster.getSolrClient().query(collectionName, new SolrQuery(queryStr));
+      fail("This collection query request should have failed with authorization error.");
+
+    } catch (SolrServerException ex) {
+      assertTrue(ex.getRootCause() instanceof RemoteSolrException);
+      assertEquals(HttpServletResponse.SC_FORBIDDEN, ((RemoteSolrException)ex.getRootCause()).code());
+    } finally {
+      setAuthenticationUser(tmp);
+    }
+  }
 }

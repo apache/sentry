@@ -262,14 +262,13 @@ public class HiveAuthzBindingHook extends HiveAuthzBindingHookBase {
         }
         break;
     case HiveParser.TOK_ALTERTABLE:
-
+      currDB = getCanonicalDb();
       for (Node childNode : ast.getChildren()) {
         ASTNode childASTNode = (ASTNode) childNode;
         if ("TOK_ALTERTABLE_SERIALIZER".equals(childASTNode.getText())) {
           ASTNode serdeNode = (ASTNode)childASTNode.getChild(0);
           String serdeClassName = BaseSemanticAnalyzer.unescapeSQLString(serdeNode.getText());
           setSerdeURI(serdeClassName);
-          currDB = getCanonicalDb();
         }
         if ("TOK_ALTERTABLE_RENAME".equals(childASTNode.getText())) {
           currDB = extractDatabase((ASTNode)ast.getChild(0));
@@ -277,6 +276,7 @@ public class HiveAuthzBindingHook extends HiveAuthzBindingHookBase {
           currOutDB = extractDatabase(newTableNode);
         }
       }
+
       break;
     default:
         currDB = getCanonicalDb();

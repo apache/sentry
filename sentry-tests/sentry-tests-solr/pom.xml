@@ -274,7 +274,9 @@ limitations under the License.
           <systemPropertyVariables>
             <test.solr.allowed.securerandom>NativePRNG</test.solr.allowed.securerandom>
             <!-- Solr test framework randomizes the locale configuration which sometimes
-                 result in test failures due to derby initialization errors -->
+                 result in test failures due to derby initialization errors (Ref: LUCENE-8009).
+                 To reduce the flakiness of the unit tests, setting the locale explicitly.
+             -->
             <tests.locale>en-US</tests.locale>
           </systemPropertyVariables>
         </configuration>

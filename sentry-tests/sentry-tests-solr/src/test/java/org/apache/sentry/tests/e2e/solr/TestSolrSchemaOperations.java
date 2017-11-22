@@ -31,7 +31,7 @@ import org.restlet.resource.ClientResource;
 import org.restlet.resource.ResourceException;
 
 @SuppressSSL
-public class TestSolrSchemaOperations extends AbstractSolrSentryTestCase {
+public class TestSolrSchemaOperations extends SolrSentryServiceTestBase {
   private static final String fieldToBeAdded = "{ " +
       "\"add-field\":{" +
       "\"name\":\"test\"," +

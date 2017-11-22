@@ -16,6 +16,9 @@
  */
 package org.apache.sentry.core.common.utils;
 
+import java.util.Arrays;
+import java.util.List;
+
 public class PolicyFileConstants {
   public static final String DATABASES = "databases";
   public static final String GROUPS = "groups";
@@ -29,6 +32,11 @@ public class PolicyFileConstants {
   public static final String PRIVILEGE_URI_NAME = "uri";
   public static final String PRIVILEGE_ACTION_NAME = "action";
   public static final String PRIVILEGE_GRANT_OPTION_NAME = "grantoption";
+
+  /**
+   * This constant defines all possible section names in sentry ini file in the expected order
+   */
+  public static final List<String> SECTION_NAMES = Arrays.asList(DATABASES, USERS, GROUPS, ROLES);
 
   private PolicyFileConstants() {
     // Make constructor private to avoid instantiation

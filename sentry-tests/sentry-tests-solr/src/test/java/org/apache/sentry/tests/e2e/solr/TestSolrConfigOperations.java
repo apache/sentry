@@ -35,7 +35,7 @@ import org.restlet.resource.ClientResource;
 import org.restlet.resource.ResourceException;
 
 @SuppressSSL
-public class TestSolrConfigOperations extends AbstractSolrSentryTestCase {
+public class TestSolrConfigOperations extends SolrSentryServiceTestBase {
   @Test
   public void testConfigSetOperations() throws Exception {
     grantConfigPrivileges(ADMIN_USER, "role0", "test", SolrConstants.UPDATE);
