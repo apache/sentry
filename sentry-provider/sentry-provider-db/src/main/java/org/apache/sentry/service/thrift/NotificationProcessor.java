@@ -25,7 +25,7 @@ import com.google.common.collect.Lists;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.api.NotificationEvent;
-import org.apache.hive.hcatalog.messaging.HCatEventMessage.EventType;
+import org.apache.hadoop.hive.metastore.messaging.EventMessage.EventType;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONAddPartitionMessage;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONAlterPartitionMessage;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONAlterTableMessage;

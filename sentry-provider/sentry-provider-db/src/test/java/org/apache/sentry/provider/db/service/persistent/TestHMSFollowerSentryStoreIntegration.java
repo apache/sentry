@@ -29,8 +29,8 @@ import org.apache.hadoop.hive.metastore.api.*;
 import org.apache.hadoop.security.alias.CredentialProvider;
 import org.apache.hadoop.security.alias.CredentialProviderFactory;
 import org.apache.hadoop.security.alias.UserProvider;
-import org.apache.hive.hcatalog.messaging.HCatEventMessage;
-import org.apache.hive.hcatalog.messaging.HCatEventMessage.EventType;
+import org.apache.hadoop.hive.metastore.messaging.EventMessage;
+import org.apache.hadoop.hive.metastore.messaging.EventMessage.EventType;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageFactory;
 
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
@@ -186,7 +186,7 @@ public class TestHMSFollowerSentryStoreIntegration {
     // Create notification events to drop the table
     StorageDescriptor sd = new StorageDescriptor();
     sd.setLocation("hdfs:///db1.db/table1");
-    NotificationEvent notificationEvent = new NotificationEvent(1, 0, HCatEventMessage.EventType.DROP_TABLE.toString(),
+    NotificationEvent notificationEvent = new NotificationEvent(1, 0, EventMessage.EventType.DROP_TABLE.toString(),
         messageFactory.buildDropTableMessage(new Table(tableName1, dbName1, null, 0, 0, 0, sd, null, null, null, null, null)).toString());
     List<NotificationEvent> events = new ArrayList<>();
     events.add(notificationEvent);

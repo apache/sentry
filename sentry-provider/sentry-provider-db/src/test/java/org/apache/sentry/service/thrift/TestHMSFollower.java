@@ -44,8 +44,8 @@ import org.apache.hadoop.hive.metastore.api.NotificationEventResponse;
 import org.apache.hadoop.hive.metastore.api.Partition;
 import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.metastore.api.Table;
-import org.apache.hive.hcatalog.messaging.HCatEventMessage;
-import org.apache.hive.hcatalog.messaging.HCatEventMessage.EventType;
+import org.apache.hadoop.hive.metastore.messaging.EventMessage;
+import org.apache.hadoop.hive.metastore.messaging.EventMessage.EventType;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageFactory;
@@ -515,7 +515,7 @@ public class TestHMSFollower {
 
     // Create notification events
     NotificationEvent notificationEvent = new NotificationEvent(1, 0,
-        HCatEventMessage.EventType.CREATE_DATABASE.toString(),
+        EventMessage.EventType.CREATE_DATABASE.toString(),
         messageFactory.buildCreateDatabaseMessage(new Database(dbName, null, "hdfs:///db1", null))
             .toString());
     List<NotificationEvent> events = new ArrayList<>();
@@ -544,7 +544,7 @@ public class TestHMSFollower {
 
     // Create notification events
     NotificationEvent notificationEvent = new NotificationEvent(1, 0,
-        HCatEventMessage.EventType.DROP_DATABASE.toString(),
+        EventMessage.EventType.DROP_DATABASE.toString(),
         messageFactory.buildDropDatabaseMessage(new Database(dbName, null, "hdfs:///db1", null))
             .toString());
     List<NotificationEvent> events = new ArrayList<>();
@@ -577,10 +577,10 @@ public class TestHMSFollower {
     StorageDescriptor sd = new StorageDescriptor();
     sd.setLocation("hdfs:///db1.db/table1");
     NotificationEvent notificationEvent = new NotificationEvent(1, 0,
-        HCatEventMessage.EventType.CREATE_TABLE.toString(),
+        EventMessage.EventType.CREATE_TABLE.toString(),
         messageFactory.buildCreateTableMessage(
-            new Table(tableName, dbName, null, 0, 0, 0, sd, null, null, null, null, null))
-            .toString());
+            new Table(tableName, dbName, null, 0, 0, 0, sd, null, null, null, null, null),
+            Collections.emptyIterator()).toString());
     List<NotificationEvent> events = new ArrayList<>();
     events.add(notificationEvent);
 
@@ -612,7 +612,7 @@ public class TestHMSFollower {
     StorageDescriptor sd = new StorageDescriptor();
     sd.setLocation("hdfs:///db1.db/table1");
     NotificationEvent notificationEvent = new NotificationEvent(1, 0,
-        HCatEventMessage.EventType.DROP_TABLE.toString(),
+        EventMessage.EventType.DROP_TABLE.toString(),
         messageFactory.buildDropTableMessage(
             new Table(tableName, dbName, null, 0, 0, 0, sd, null, null, null, null, null))
             .toString());
@@ -650,7 +650,7 @@ public class TestHMSFollower {
     StorageDescriptor sd = new StorageDescriptor();
     sd.setLocation("hdfs:///db1.db/table1");
     NotificationEvent notificationEvent = new NotificationEvent(1, 0,
-        HCatEventMessage.EventType.ALTER_TABLE.toString(),
+        EventMessage.EventType.ALTER_TABLE.toString(),
         messageFactory.buildAlterTableMessage(
             new Table(tableName, dbName, null, 0, 0, 0, sd, null, null, null, null, null),
             new Table(newTableName, newDbName, null, 0, 0, 0, sd, null, null, null, null, null))
@@ -714,8 +714,8 @@ public class TestHMSFollower {
     Table table = new Table(tableName1, dbName, null, 0, 0, 0, sd, partCols, null, null, null,
         null);
     notificationEvent = new NotificationEvent(inputEventId, 0,
-        HCatEventMessage.EventType.CREATE_TABLE.toString(),
-        messageFactory.buildCreateTableMessage(table).toString());
+        EventMessage.EventType.CREATE_TABLE.toString(),
+        messageFactory.buildCreateTableMessage(table, Collections.emptyIterator()).toString());
     notificationEvent.setDbName(dbName);
     notificationEvent.setTableName(tableName1);
     events.add(notificationEvent);
@@ -739,7 +739,7 @@ public class TestHMSFollower {
         0, 0, sd, null);
     partitions.add(partition);
     notificationEvent = new NotificationEvent(inputEventId, 0, EventType.ADD_PARTITION.toString(),
-       messageFactory.buildAddPartitionMessage(table, partitions).toString());
+       messageFactory.buildAddPartitionMessage(table, partitions.iterator(), Collections.emptyIterator()).toString());
     notificationEvent.setDbName(dbName);
     notificationEvent.setTableName(tableName1);
     events.add(notificationEvent);
@@ -800,8 +800,8 @@ public class TestHMSFollower {
     Table table1 = new Table(tableName2, dbName, null, 0, 0, 0, sd, partCols, null, null, null,
         null);
     notificationEvent = new NotificationEvent(inputEventId, 0,
-        HCatEventMessage.EventType.CREATE_TABLE.toString(),
-        messageFactory.buildCreateTableMessage(table1).toString());
+        EventMessage.EventType.CREATE_TABLE.toString(),
+        messageFactory.buildCreateTableMessage(table1, Collections.emptyIterator()).toString());
     notificationEvent.setDbName(dbName);
     notificationEvent.setTableName(tableName2);
     events.add(notificationEvent);
@@ -854,8 +854,8 @@ public class TestHMSFollower {
     Table table = new Table(tableName1, dbName, null, 0, 0, 0, sd, partCols, null, null, null,
         null);
     notificationEvent = new NotificationEvent(inputEventId, 0,
-        HCatEventMessage.EventType.CREATE_TABLE.toString(),
-        messageFactory.buildCreateTableMessage(table).toString());
+        EventMessage.EventType.CREATE_TABLE.toString(),
+        messageFactory.buildCreateTableMessage(table, Collections.emptyIterator()).toString());
     notificationEvent.setDbName(dbName);
     notificationEvent.setTableName(tableName1);
     events.add(notificationEvent);
@@ -875,7 +875,7 @@ public class TestHMSFollower {
     // This notification should not be processed by sentry server
     // Notification should be persisted explicitly
     notificationEvent = new NotificationEvent(1, 0,
-        HCatEventMessage.EventType.ALTER_TABLE.toString(),
+        EventMessage.EventType.ALTER_TABLE.toString(),
         messageFactory.buildAlterTableMessage(
             new Table(tableName1, dbName, null, 0, 0, 0, sd, null, null, null, null, null),
             new Table(tableName1, dbName, null, 0, 0, 0, sd, null, null, null, null, null))
@@ -907,8 +907,8 @@ public class TestHMSFollower {
     Table table1 = new Table(tableName2, dbName, null, 0, 0, 0, sd, partCols, null, null, null,
         null);
     notificationEvent = new NotificationEvent(inputEventId, 0,
-        HCatEventMessage.EventType.CREATE_TABLE.toString(),
-        messageFactory.buildCreateTableMessage(table1).toString());
+        EventMessage.EventType.CREATE_TABLE.toString(),
+        messageFactory.buildCreateTableMessage(table1, Collections.emptyIterator()).toString());
     notificationEvent.setDbName(dbName);
     notificationEvent.setTableName(tableName2);
     events.add(notificationEvent);
@@ -946,20 +946,20 @@ public class TestHMSFollower {
     StorageDescriptor invalidSd = new StorageDescriptor();
     invalidSd.setLocation(null);
     NotificationEvent invalidNotificationEvent = new NotificationEvent(inputEventId, 0,
-        HCatEventMessage.EventType.CREATE_TABLE.toString(),
+        EventMessage.EventType.CREATE_TABLE.toString(),
         messageFactory.buildCreateTableMessage(
-            new Table(tableName, dbName, null, 0, 0, 0, invalidSd, null, null, null, null, null))
-            .toString());
+            new Table(tableName, dbName, null, 0, 0, 0, invalidSd, null, null, null, null, null),
+            Collections.emptyIterator()).toString());
 
     // Create valid notification event
     StorageDescriptor sd = new StorageDescriptor();
     sd.setLocation("hdfs://db1.db/table1");
     inputEventId += 1;
     NotificationEvent notificationEvent = new NotificationEvent(inputEventId, 0,
-        HCatEventMessage.EventType.CREATE_TABLE.toString(),
+        EventMessage.EventType.CREATE_TABLE.toString(),
         messageFactory.buildCreateTableMessage(
-            new Table(tableName, dbName, null, 0, 0, 0, sd, null, null, null, null, null))
-            .toString());
+            new Table(tableName, dbName, null, 0, 0, 0, sd, null, null, null, null, null),
+            Collections.emptyIterator()).toString());
     List<NotificationEvent> events = new ArrayList<>();
     events.add(invalidNotificationEvent);
     events.add(notificationEvent);
@@ -1030,7 +1030,7 @@ public class TestHMSFollower {
     StorageDescriptor sd = new StorageDescriptor();
     sd.setLocation("hdfs:///db1.db/table1");
     NotificationEvent notificationEvent = new NotificationEvent(1, 0,
-        HCatEventMessage.EventType.ALTER_TABLE.toString(),
+        EventMessage.EventType.ALTER_TABLE.toString(),
         messageFactory.buildAlterTableMessage(
             new Table(tableName, dbName, null, 0, 0, 0, sd, null, null, null, null, null),
             new Table(newTableName, newDbName, null, 0, 0, 0, sd, null, null, null, null, null))

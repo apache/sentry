@@ -19,7 +19,10 @@
 package org.apache.sentry.service.thrift;
 
 import org.apache.hadoop.hive.metastore.api.NotificationEvent;
-import org.apache.hive.hcatalog.messaging.MessageDeserializer;
+import org.apache.hadoop.hive.metastore.api.Partition;
+import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
+import org.apache.hadoop.hive.metastore.api.Table;
+import org.apache.hadoop.hive.metastore.messaging.MessageDeserializer;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONAddPartitionMessage;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONAlterPartitionMessage;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONAlterTableMessage;
@@ -39,7 +42,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.hive.hcatalog.messaging.HCatEventMessage.EventType.*;
+import static org.apache.hadoop.hive.metastore.messaging.EventMessage.EventType.*;
 import static org.junit.Assert.*;
 
 public class TestFullUpdateModifier {
@@ -51,11 +54,37 @@ public class TestFullUpdateModifier {
   private static final String PATH = "foo/bar";
   private static final String LOCATION = uri(PATH);
 
+  private static final Table TABLE_OBJ = new Table(TABLE, DB, "", 0, 0, 0,
+      buildStorageDescriptor(LOCATION), null, null, "", "", "");
+
   /**
    * Convert path to HDFS URI
    */
   private static final String uri(String path) {
     return "hdfs:///" + path;
+  }
+
+  /**
+   * Creates a StorageDescriptor using the location as parameter.
+   *
+   * @param location The location string for the StorageDescriptor
+   * @return A StorageDescriptor object
+   */
+  private static StorageDescriptor buildStorageDescriptor(String location) {
+    return new StorageDescriptor(null, location, "", "", false, 0, null, null, null, null);
+  }
+
+  /**
+   * Creates a Table object using the db name, table name and table location as parameters.
+   *
+   * @param dbName The database name string.
+   * @param tableName The table name string.
+   * @param location The table location string.
+   * @return A Table object
+   */
+  private static Table buildTable(String dbName, String tableName, String location) {
+    return new Table(tableName, dbName, "", 0, 0, 0,
+        buildStorageDescriptor(location), null, null, "", "", "");
   }
 
   /**
@@ -155,7 +184,7 @@ public class TestFullUpdateModifier {
     MessageDeserializer deserializer = Mockito.mock(SentryJSONMessageDeserializer.class);
 
     SentryJSONCreateTableMessage message =
-            new SentryJSONCreateTableMessage(SERVER, PRINCIPAL, DB, TABLE, 0L, LOCATION);
+            new SentryJSONCreateTableMessage(SERVER, PRINCIPAL, TABLE_OBJ, Collections.emptyIterator(), 0L);
     Mockito.when(deserializer.getCreateTableMessage("")).thenReturn(message);
     FullUpdateModifier.applyEvent(update, event, deserializer);
     Map<String, Set<String>> expected = new HashMap<>();
@@ -221,9 +250,9 @@ public class TestFullUpdateModifier {
     String partLocation = uri(partPath);
 
     SentryJSONAddPartitionMessage message =
-            new SentryJSONAddPartitionMessage(SERVER, PRINCIPAL, DB, TABLE,
-                    Collections.<Map<String,String>>emptyList(), 0L,
-                    Collections.singletonList(partLocation));
+            new SentryJSONAddPartitionMessage(SERVER, PRINCIPAL, TABLE_OBJ,
+                Collections.emptyIterator(), Collections.emptyIterator(),
+                0L, Collections.singletonList(partLocation));
     Mockito.when(deserializer.getAddPartitionMessage("")).thenReturn(message);
     FullUpdateModifier.applyEvent(update, event, deserializer);
     Set<String> expected = new HashSet<>(2);
@@ -250,7 +279,7 @@ public class TestFullUpdateModifier {
     MessageDeserializer deserializer = Mockito.mock(SentryJSONMessageDeserializer.class);
 
     SentryJSONDropPartitionMessage message =
-            new SentryJSONDropPartitionMessage(SERVER, PRINCIPAL, DB, TABLE,
+            new SentryJSONDropPartitionMessage(SERVER, PRINCIPAL, TABLE_OBJ,
                     Collections.<Map<String,String>>emptyList(), 0L, Collections.singletonList(partLocation));
     Mockito.when(deserializer.getDropPartitionMessage("")).thenReturn(message);
     FullUpdateModifier.applyEvent(update, event, deserializer);
@@ -278,9 +307,12 @@ public class TestFullUpdateModifier {
     NotificationEvent event = new NotificationEvent(0, 0, ALTER_PARTITION.toString(), "");
     MessageDeserializer deserializer = Mockito.mock(SentryJSONMessageDeserializer.class);
 
+    Partition partitionObjBefore = new Partition(null, DB, TABLE, 0, 0, buildStorageDescriptor(partLocation), null);
+    Partition partitionObjAfter = new Partition(null, DB, TABLE, 0, 0, buildStorageDescriptor(newLocation), null);
+
     SentryJSONAlterPartitionMessage message =
-            new SentryJSONAlterPartitionMessage(SERVER, PRINCIPAL, DB, TABLE,
-                    0L, partLocation, newLocation);
+            new SentryJSONAlterPartitionMessage(SERVER, PRINCIPAL, TABLE_OBJ,
+                    partitionObjBefore, partitionObjAfter, 0L);
 
     Mockito.when(deserializer.getAlterPartitionMessage("")).thenReturn(message);
     FullUpdateModifier.applyEvent(update, event, deserializer);
@@ -308,8 +340,7 @@ public class TestFullUpdateModifier {
     MessageDeserializer deserializer = Mockito.mock(SentryJSONMessageDeserializer.class);
 
     SentryJSONAlterTableMessage message =
-            new SentryJSONAlterTableMessage(SERVER, PRINCIPAL, DB, TABLE, 0L,
-                    LOCATION, LOCATION);
+            new SentryJSONAlterTableMessage(SERVER, PRINCIPAL, TABLE_OBJ, TABLE_OBJ, 0L);
 
     Mockito.when(deserializer.getAlterTableMessage("")).thenReturn(message);
     FullUpdateModifier.applyEvent(update, event, deserializer);
@@ -340,8 +371,7 @@ public class TestFullUpdateModifier {
     MessageDeserializer deserializer = Mockito.mock(SentryJSONMessageDeserializer.class);
 
     SentryJSONAlterTableMessage message =
-            new SentryJSONAlterTableMessage(SERVER, PRINCIPAL, DB, TABLE, 0L,
-                    LOCATION, LOCATION);
+            new SentryJSONAlterTableMessage(SERVER, PRINCIPAL, TABLE_OBJ, TABLE_OBJ, 0L);
 
     Mockito.when(deserializer.getAlterTableMessage("")).thenReturn(message);
     FullUpdateModifier.applyEvent(update, event, deserializer);
@@ -373,8 +403,7 @@ public class TestFullUpdateModifier {
     MessageDeserializer deserializer = Mockito.mock(SentryJSONMessageDeserializer.class);
 
     SentryJSONAlterTableMessage message =
-            new SentryJSONAlterTableMessage(SERVER, PRINCIPAL, DB, TABLE, 0L,
-                    LOCATION, LOCATION);
+            new SentryJSONAlterTableMessage(SERVER, PRINCIPAL, TABLE_OBJ, TABLE_OBJ, 0L);
 
     Mockito.when(deserializer.getAlterTableMessage("")).thenReturn(message);
     FullUpdateModifier.applyEvent(update, event, deserializer);
@@ -405,9 +434,9 @@ public class TestFullUpdateModifier {
 
     MessageDeserializer deserializer = Mockito.mock(SentryJSONMessageDeserializer.class);
 
+    Table tableWithNewLocation = buildTable(DB, TABLE, newLocation);
     SentryJSONAlterTableMessage message =
-            new SentryJSONAlterTableMessage(SERVER, PRINCIPAL, DB, TABLE, 0L,
-                    LOCATION, newLocation);
+            new SentryJSONAlterTableMessage(SERVER, PRINCIPAL, TABLE_OBJ, tableWithNewLocation, 0L);
 
     Mockito.when(deserializer.getAlterTableMessage("")).thenReturn(message);
     FullUpdateModifier.applyEvent(update, event, deserializer);

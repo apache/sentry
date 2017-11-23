@@ -18,13 +18,19 @@
 
 package org.apache.sentry.binding.metastore.messaging.json;
 
-import org.apache.hive.hcatalog.messaging.*;
-import org.apache.hive.hcatalog.messaging.json.JSONAlterIndexMessage;
-import org.apache.hive.hcatalog.messaging.json.JSONCreateFunctionMessage;
-import org.apache.hive.hcatalog.messaging.json.JSONCreateIndexMessage;
-import org.apache.hive.hcatalog.messaging.json.JSONDropFunctionMessage;
-import org.apache.hive.hcatalog.messaging.json.JSONDropIndexMessage;
-import org.apache.hive.hcatalog.messaging.json.JSONInsertMessage;
+import org.apache.hadoop.hive.metastore.messaging.AlterIndexMessage;
+import org.apache.hadoop.hive.metastore.messaging.CreateFunctionMessage;
+import org.apache.hadoop.hive.metastore.messaging.CreateIndexMessage;
+import org.apache.hadoop.hive.metastore.messaging.DropFunctionMessage;
+import org.apache.hadoop.hive.metastore.messaging.DropIndexMessage;
+import org.apache.hadoop.hive.metastore.messaging.InsertMessage;
+import org.apache.hadoop.hive.metastore.messaging.MessageDeserializer;
+import org.apache.hadoop.hive.metastore.messaging.json.JSONAlterIndexMessage;
+import org.apache.hadoop.hive.metastore.messaging.json.JSONCreateFunctionMessage;
+import org.apache.hadoop.hive.metastore.messaging.json.JSONCreateIndexMessage;
+import org.apache.hadoop.hive.metastore.messaging.json.JSONDropFunctionMessage;
+import org.apache.hadoop.hive.metastore.messaging.json.JSONDropIndexMessage;
+import org.apache.hadoop.hive.metastore.messaging.json.JSONInsertMessage;
 import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.ObjectMapper;
 

@@ -28,6 +28,7 @@ import org.apache.hadoop.hive.metastore.api.CurrentNotificationEventId;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.NotificationEvent;
 import org.apache.hadoop.hive.metastore.api.NotificationEventResponse;
+import org.apache.hadoop.hive.metastore.messaging.MessageDeserializer;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageDeserializer;
 import org.apache.sentry.provider.db.service.persistent.PathsImage;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
@@ -171,7 +172,7 @@ class SentryHMSClient implements AutoCloseable {
       // While we were taking snapshot, HMS made some changes, so now we need to apply all
       // extra events to the snapshot
       long currentEventId = eventIdBefore.getEventId();
-      SentryJSONMessageDeserializer deserializer = new SentryJSONMessageDeserializer();
+      MessageDeserializer deserializer = new SentryJSONMessageDeserializer();
 
       while (currentEventId < eventIdAfter.getEventId()) {
         NotificationEventResponse response =

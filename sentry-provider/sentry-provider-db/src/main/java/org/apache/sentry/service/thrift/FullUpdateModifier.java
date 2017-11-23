@@ -20,8 +20,8 @@ package org.apache.sentry.service.thrift;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.hadoop.hive.metastore.api.NotificationEvent;
-import org.apache.hive.hcatalog.messaging.HCatEventMessage;
-import org.apache.hive.hcatalog.messaging.MessageDeserializer;
+import org.apache.hadoop.hive.metastore.messaging.MessageDeserializer;
+import org.apache.hadoop.hive.metastore.messaging.EventMessage;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONAddPartitionMessage;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONAlterPartitionMessage;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONAlterTableMessage;
@@ -71,8 +71,8 @@ final class FullUpdateModifier {
   // Tests use mock serializers and thus we do not have to construct proper events.
   static void applyEvent(Map<String, Collection<String>> image, NotificationEvent event,
                          MessageDeserializer deserializer) {
-    HCatEventMessage.EventType eventType =
-            HCatEventMessage.EventType.valueOf(event.getEventType());
+    EventMessage.EventType eventType =
+            EventMessage.EventType.valueOf(event.getEventType());
 
     switch (eventType) {
       case CREATE_DATABASE:

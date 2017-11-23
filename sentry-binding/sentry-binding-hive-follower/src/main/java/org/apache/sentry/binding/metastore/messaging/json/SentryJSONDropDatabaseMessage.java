@@ -18,7 +18,7 @@
 
 package org.apache.sentry.binding.metastore.messaging.json;
 
-import org.apache.hive.hcatalog.messaging.json.JSONDropDatabaseMessage;
+import org.apache.hadoop.hive.metastore.messaging.json.JSONDropDatabaseMessage;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 public class SentryJSONDropDatabaseMessage extends JSONDropDatabaseMessage {

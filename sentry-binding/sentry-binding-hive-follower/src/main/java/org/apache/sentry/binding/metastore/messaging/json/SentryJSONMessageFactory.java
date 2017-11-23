@@ -26,15 +26,26 @@ import org.apache.hadoop.hive.metastore.api.Function;
 import org.apache.hadoop.hive.metastore.api.Index;
 import org.apache.hadoop.hive.metastore.api.Partition;
 import org.apache.hadoop.hive.metastore.api.Table;
-import org.apache.hive.hcatalog.messaging.*;
-import org.apache.hive.hcatalog.messaging.json.JSONAlterIndexMessage;
-import org.apache.hive.hcatalog.messaging.json.JSONCreateFunctionMessage;
-import org.apache.hive.hcatalog.messaging.json.JSONCreateIndexMessage;
-import org.apache.hive.hcatalog.messaging.json.JSONDropFunctionMessage;
-import org.apache.hive.hcatalog.messaging.json.JSONDropIndexMessage;
-import org.apache.hive.hcatalog.messaging.json.JSONInsertMessage;
 
 import java.util.*;
+import org.apache.hadoop.hive.metastore.messaging.AddPartitionMessage;
+import org.apache.hadoop.hive.metastore.messaging.AlterIndexMessage;
+import org.apache.hadoop.hive.metastore.messaging.CreateFunctionMessage;
+import org.apache.hadoop.hive.metastore.messaging.CreateIndexMessage;
+import org.apache.hadoop.hive.metastore.messaging.DropFunctionMessage;
+import org.apache.hadoop.hive.metastore.messaging.DropIndexMessage;
+import org.apache.hadoop.hive.metastore.messaging.DropPartitionMessage;
+import org.apache.hadoop.hive.metastore.messaging.DropTableMessage;
+import org.apache.hadoop.hive.metastore.messaging.InsertMessage;
+import org.apache.hadoop.hive.metastore.messaging.MessageDeserializer;
+import org.apache.hadoop.hive.metastore.messaging.MessageFactory;
+import org.apache.hadoop.hive.metastore.messaging.PartitionFiles;
+import org.apache.hadoop.hive.metastore.messaging.json.JSONAlterIndexMessage;
+import org.apache.hadoop.hive.metastore.messaging.json.JSONCreateFunctionMessage;
+import org.apache.hadoop.hive.metastore.messaging.json.JSONCreateIndexMessage;
+import org.apache.hadoop.hive.metastore.messaging.json.JSONDropFunctionMessage;
+import org.apache.hadoop.hive.metastore.messaging.json.JSONDropIndexMessage;
+import org.apache.hadoop.hive.metastore.messaging.json.JSONInsertMessage;
 
 public class SentryJSONMessageFactory extends MessageFactory {
   private static final Log LOG = LogFactory.getLog(SentryJSONMessageFactory.class.getName());
@@ -72,46 +83,50 @@ public class SentryJSONMessageFactory extends MessageFactory {
     return "json";
   }
 
+  @Override
   public SentryJSONCreateDatabaseMessage buildCreateDatabaseMessage(Database db) {
-    return new SentryJSONCreateDatabaseMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, db.getName(),
+    return new SentryJSONCreateDatabaseMessage(MS_SERVER_URL, MS_SERVICE_PRINCIPAL, db.getName(),
         now(), db.getLocationUri());
   }
 
+  @Override
   public SentryJSONDropDatabaseMessage buildDropDatabaseMessage(Database db) {
-    return new SentryJSONDropDatabaseMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, db.getName(),
+    return new SentryJSONDropDatabaseMessage(MS_SERVER_URL, MS_SERVICE_PRINCIPAL, db.getName(),
         now(), db.getLocationUri());
   }
 
-  public SentryJSONCreateTableMessage buildCreateTableMessage(Table table) {
-    return new SentryJSONCreateTableMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, table.getDbName(),
-        table.getTableName(), now(), table.getSd().getLocation());
+  @Override
+  public SentryJSONCreateTableMessage buildCreateTableMessage(Table table, Iterator<String> fileIter) {
+    // fileIter is used to iterate through a full list of files that partition have. This
+    // may be too verbose and it is overloading the Sentry store. Sentry does not use these files
+    // so it is safe to ignore them.
+    return new SentryJSONCreateTableMessage(MS_SERVER_URL, MS_SERVICE_PRINCIPAL, table, Collections.emptyIterator(), now());
   }
 
+  @Override
   public SentryJSONAlterTableMessage buildAlterTableMessage(Table before, Table after) {
-    return new SentryJSONAlterTableMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, before.getDbName(),
-        before.getTableName(), now(), before.getSd().getLocation(), after.getSd().getLocation());
+    return new SentryJSONAlterTableMessage(MS_SERVER_URL, MS_SERVICE_PRINCIPAL, before, after, now());
   }
 
-  public SentryJSONDropTableMessage buildDropTableMessage(Table table) {
-    return new SentryJSONDropTableMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, table.getDbName(),
+  @Override
+  public DropTableMessage buildDropTableMessage(Table table) {
+    return new SentryJSONDropTableMessage(MS_SERVER_URL, MS_SERVICE_PRINCIPAL, table.getDbName(),
         table.getTableName(), now(), table.getSd().getLocation());
   }
 
   @Override
   public SentryJSONAlterPartitionMessage buildAlterPartitionMessage(Table table,
       Partition before, Partition after) {
-    return new SentryJSONAlterPartitionMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL,
-        before.getDbName(), before.getTableName(), getPartitionKeyValues(table, before),
-        after.getValues(), now(), before.getSd().getLocation(), after.getSd().getLocation());
+    return new SentryJSONAlterPartitionMessage(MS_SERVER_URL, MS_SERVICE_PRINCIPAL,
+        table, before, after, now());
   }
 
   @Override
   public DropPartitionMessage buildDropPartitionMessage(Table table, Iterator<Partition> partitions) {
     PartitionBasicInfo partitionBasicInfo = getPartitionBasicInfo(table, partitions);
 
-    return new SentryJSONDropPartitionMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL,
-        table.getDbName(), table.getTableName(), partitionBasicInfo.getPartitionList(),
-        now(), partitionBasicInfo.getLocations());
+    return new SentryJSONDropPartitionMessage(MS_SERVER_URL, MS_SERVICE_PRINCIPAL,
+        table, partitionBasicInfo.getPartitionList(), now(), partitionBasicInfo.getLocations());
   }
 
   @Override
@@ -119,7 +134,7 @@ public class SentryJSONMessageFactory extends MessageFactory {
     // Sentry would be not be interested in CreateFunctionMessage as these are generated when is data is
     // added inserted. This method is implemented for completeness. This is reason why, new sentry
     // JSON class is not defined for CreateFunctionMessage
-    return new JSONCreateFunctionMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, function, now());
+    return new JSONCreateFunctionMessage(MS_SERVER_URL, MS_SERVICE_PRINCIPAL, function, now());
   }
 
   @Override
@@ -127,7 +142,7 @@ public class SentryJSONMessageFactory extends MessageFactory {
     // Sentry would be not be interested in DropFunctionMessage as these are generated when is data is
     // added inserted. This method is implemented for completeness. This is reason why, new sentry
     // JSON class is not defined for DropFunctionMessage
-    return new JSONDropFunctionMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, function, now());
+    return new JSONDropFunctionMessage(MS_SERVER_URL, MS_SERVICE_PRINCIPAL, function, now());
 
   }
 
@@ -136,7 +151,7 @@ public class SentryJSONMessageFactory extends MessageFactory {
     // Sentry would be not be interested in CreateIndexMessage as these are generated when is data is
     // added inserted. This method is implemented for completeness. This is reason why, new sentry
     // JSON class is not defined for CreateIndexMessage
-    return new JSONCreateIndexMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, index, now());
+    return new JSONCreateIndexMessage(MS_SERVER_URL, MS_SERVICE_PRINCIPAL, index, now());
   }
 
   @Override
@@ -144,7 +159,7 @@ public class SentryJSONMessageFactory extends MessageFactory {
     // Sentry would be not be interested in DropIndexMessage as these are generated when is data is
     // added inserted. This method is implemented for completeness. This is reason why, new sentry
     // JSON class is not defined for DropIndexMessage
-    return new JSONDropIndexMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, index, now());
+    return new JSONDropIndexMessage(MS_SERVER_URL, MS_SERVICE_PRINCIPAL, index, now());
   }
 
   @Override
@@ -152,32 +167,29 @@ public class SentryJSONMessageFactory extends MessageFactory {
     // Sentry would be not be interested in AlterIndexMessage as these are generated when is data is
     // added inserted. This method is implemented for completeness. This is reason why, new sentry
     // JSON class is not defined for AlterIndexMessage
-    return new JSONAlterIndexMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, before, after, now());
+    return new JSONAlterIndexMessage(MS_SERVER_URL, MS_SERVICE_PRINCIPAL, before, after, now());
   }
 
   @Override
-  public InsertMessage buildInsertMessage(String db, String table, Map<String,String> partKeyVals,
-      List<String> files) {
+  public InsertMessage buildInsertMessage(String db, String table, Map<String, String> partKeyVals,
+      Iterator<String> fileIter) {
     // Sentry would be not be interested in InsertMessage as these are generated when is data is
     // added inserted. This method is implemented for completeness. This is reason why, new sentry
     // JSON class is not defined for InsertMessage.
-    return new JSONInsertMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, db, table, partKeyVals,
-        files, now());
+    return new JSONInsertMessage(MS_SERVER_URL, MS_SERVICE_PRINCIPAL, db, table, partKeyVals,
+        fileIter, now());
   }
 
   @Override
   public AddPartitionMessage buildAddPartitionMessage(Table table,
-      Iterator<Partition> partitionsIterator) {
+      Iterator<Partition> partitionsIterator, Iterator<PartitionFiles> partitionFileIter) {
     PartitionBasicInfo partitionBasicInfo = getPartitionBasicInfo(table, partitionsIterator);
 
-    return new SentryJSONAddPartitionMessage(HCAT_SERVER_URL, HCAT_SERVICE_PRINCIPAL, table.getDbName(),
-        table.getTableName(), partitionBasicInfo.getPartitionList(), now(),
-        partitionBasicInfo.getLocations());
-  }
-
-  public AddPartitionMessage buildAddPartitionMessage(Table table,
-                                                      List<Partition> partitions) {
-    return buildAddPartitionMessage (table, partitions.iterator());
+    // partitionFileIter is used to iterate through a full list of files that partition have. This
+    // may be too verbose and it is overloading the Sentry store. Sentry does not use these files
+    // so it is safe to ignore them.
+    return new SentryJSONAddPartitionMessage(MS_SERVER_URL, MS_SERVICE_PRINCIPAL, table,
+        partitionsIterator, Collections.emptyIterator(), now(), partitionBasicInfo.getLocations());
   }
 
   private PartitionBasicInfo getPartitionBasicInfo(Table table, Iterator<Partition> iterator) {

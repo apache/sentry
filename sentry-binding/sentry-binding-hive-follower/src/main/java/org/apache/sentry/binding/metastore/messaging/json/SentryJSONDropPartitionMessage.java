@@ -18,7 +18,8 @@
 
 package org.apache.sentry.binding.metastore.messaging.json;
 
-import org.apache.hive.hcatalog.messaging.json.JSONDropPartitionMessage;
+import org.apache.hadoop.hive.metastore.api.Table;
+import org.apache.hadoop.hive.metastore.messaging.json.JSONDropPartitionMessage;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 import java.util.List;
@@ -29,13 +30,22 @@ public class SentryJSONDropPartitionMessage extends JSONDropPartitionMessage {
   private List<String> locations;
 
   public SentryJSONDropPartitionMessage() {
+    super();
   }
 
-  public SentryJSONDropPartitionMessage(String server, String servicePrincipal,
-                                        String db, String table,
-                                        List<Map<String, String>> partitions,
-                                        Long timestamp, List<String> locations) {
+  public SentryJSONDropPartitionMessage(String server, String servicePrincipal, String db, String table,
+      List<Map<String, String>> partitions, Long timestamp) {
     super(server, servicePrincipal, db, table, partitions, timestamp);
+  }
+
+  public SentryJSONDropPartitionMessage(String server, String servicePrincipal, Table tableObj,
+      List<Map<String, String>> partitionKeyValues, long timestamp) {
+    super(server, servicePrincipal, tableObj, partitionKeyValues, timestamp);
+  }
+
+  public SentryJSONDropPartitionMessage(String server, String servicePrincipal, Table tableObj,
+      List<Map<String, String>> partitionKeyValues, long timestamp, List<String> locations) {
+    super(server, servicePrincipal, tableObj, partitionKeyValues, timestamp);
     this.locations = locations;
   }
 

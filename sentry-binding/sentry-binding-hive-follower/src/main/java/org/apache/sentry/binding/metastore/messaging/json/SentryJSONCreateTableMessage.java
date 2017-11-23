@@ -18,7 +18,9 @@
 
 package org.apache.sentry.binding.metastore.messaging.json;
 
-import org.apache.hive.hcatalog.messaging.json.JSONCreateTableMessage;
+import java.util.Iterator;
+import org.apache.hadoop.hive.metastore.api.Table;
+import org.apache.hadoop.hive.metastore.messaging.json.JSONCreateTableMessage;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 public class SentryJSONCreateTableMessage extends JSONCreateTableMessage {
@@ -31,6 +33,11 @@ public class SentryJSONCreateTableMessage extends JSONCreateTableMessage {
   public SentryJSONCreateTableMessage(String server, String servicePrincipal, String db, String table, Long timestamp, String location) {
     super(server, servicePrincipal, db, table, timestamp);
     this.location = location;
+  }
+
+  public SentryJSONCreateTableMessage(String server, String servicePrincipal, Table tableObj, Iterator<String> fileIter, Long timestamp) {
+    super(server, servicePrincipal, tableObj, fileIter, timestamp);
+    this.location = tableObj.getSd().getLocation();
   }
 
   public String getLocation() {

@@ -18,7 +18,7 @@
 
 package org.apache.sentry.binding.metastore.messaging.json;
 
-import org.apache.hive.hcatalog.messaging.json.JSONDropTableMessage;
+import org.apache.hadoop.hive.metastore.messaging.json.JSONDropTableMessage;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 

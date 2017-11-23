@@ -22,6 +22,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.api.Database;
@@ -29,7 +30,7 @@ import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.NotificationEvent;
 import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.metastore.api.Table;
-import org.apache.hive.hcatalog.messaging.HCatEventMessage;
+import org.apache.hadoop.hive.metastore.messaging.EventMessage;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageFactory;
 import org.apache.sentry.hdfs.UniquePathsUpdate;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
@@ -86,7 +87,7 @@ public class TestNotificationProcessor {
 
     // Create notification event
     notificationEvent = new NotificationEvent(seqNum, 0,
-        HCatEventMessage.EventType.CREATE_DATABASE.toString(),
+        EventMessage.EventType.CREATE_DATABASE.toString(),
         messageFactory.buildCreateDatabaseMessage(new Database(dbName,
             null, uriPrefix + location, null)).toString());
 
@@ -107,7 +108,7 @@ public class TestNotificationProcessor {
     notificationProcessor.setSyncStoreOnCreate(false);
     dbName = "db2";
     notificationEvent = new NotificationEvent(1, 0,
-        HCatEventMessage.EventType.CREATE_DATABASE.toString(),
+        EventMessage.EventType.CREATE_DATABASE.toString(),
         messageFactory.buildCreateDatabaseMessage(new Database(dbName,
             null, "hdfs:///db2", null)).toString());
 
@@ -141,7 +142,7 @@ public class TestNotificationProcessor {
 
     // Create notification event
     NotificationEvent notificationEvent = new NotificationEvent(1, 0,
-        HCatEventMessage.EventType.DROP_DATABASE.toString(),
+        EventMessage.EventType.DROP_DATABASE.toString(),
         messageFactory.buildDropDatabaseMessage(new Database(dbName, null,
             "hdfs:///db1", null)).toString());
 
@@ -163,7 +164,7 @@ public class TestNotificationProcessor {
     dbName = "db2";
     // Create notification event
     notificationEvent = new NotificationEvent(1, 0,
-        HCatEventMessage.EventType.DROP_DATABASE.toString(),
+        EventMessage.EventType.DROP_DATABASE.toString(),
         messageFactory.buildDropDatabaseMessage(new Database(dbName, null,
             "hdfs:///db2", null)).toString());
 
@@ -198,9 +199,10 @@ public class TestNotificationProcessor {
     StorageDescriptor sd = new StorageDescriptor();
     sd.setLocation("hdfs:///db1.db/table1");
     NotificationEvent notificationEvent =
-        new NotificationEvent(1, 0, HCatEventMessage.EventType.CREATE_TABLE.toString(),
+        new NotificationEvent(1, 0, EventMessage.EventType.CREATE_TABLE.toString(),
             messageFactory.buildCreateTableMessage(new Table(tableName,
-                dbName, null, 0, 0, 0, sd, null, null, null, null, null)).toString());
+                dbName, null, 0, 0, 0, sd, null, null, null, null, null),
+                Collections.emptyIterator()).toString());
 
     notificationProcessor.processNotificationEvent(notificationEvent);
 
@@ -226,9 +228,10 @@ public class TestNotificationProcessor {
     sd = new StorageDescriptor();
     sd.setLocation("hdfs:///db1.db/table2");
     notificationEvent =
-        new NotificationEvent(1, 0, HCatEventMessage.EventType.CREATE_TABLE.toString(),
+        new NotificationEvent(1, 0, EventMessage.EventType.CREATE_TABLE.toString(),
             messageFactory.buildCreateTableMessage(new Table(tableName,
-                dbName, null, 0, 0, 0, sd, null, null, null, null, null)).toString());
+                dbName, null, 0, 0, 0, sd, null, null, null, null, null),
+                Collections.emptyIterator()).toString());
 
     notificationProcessor.processNotificationEvent(notificationEvent);
 
@@ -268,7 +271,7 @@ public class TestNotificationProcessor {
     StorageDescriptor sd = new StorageDescriptor();
     sd.setLocation("hdfs:///db1.db/table1");
     NotificationEvent notificationEvent = new NotificationEvent(1, 0,
-        HCatEventMessage.EventType.DROP_TABLE.toString(),
+        EventMessage.EventType.DROP_TABLE.toString(),
         messageFactory.buildDropTableMessage(new Table(tableName,
             dbName, null, 0, 0, 0, sd, null, null, null, null, null)).toString());
 
@@ -310,7 +313,7 @@ public class TestNotificationProcessor {
     StorageDescriptor sd = new StorageDescriptor();
     sd.setLocation("hdfs:///db1.db/table1");
     NotificationEvent notificationEvent = new NotificationEvent(1, 0,
-        HCatEventMessage.EventType.ALTER_TABLE.toString(),
+        EventMessage.EventType.ALTER_TABLE.toString(),
         messageFactory.buildAlterTableMessage(
             new Table(tableName, dbName, null, 0, 0, 0, sd, null, null, null, null, null),
             new Table(newTableName, newDbName, null, 0, 0, 0, sd, null, null, null, null, null))
@@ -363,7 +366,7 @@ public class TestNotificationProcessor {
     StorageDescriptor new_sd = new StorageDescriptor();
     new_sd.setLocation("hdfs:///db1.db/table2");
     NotificationEvent notificationEvent = new NotificationEvent(1, 0,
-        HCatEventMessage.EventType.ALTER_TABLE.toString(),
+        EventMessage.EventType.ALTER_TABLE.toString(),
         messageFactory.buildAlterTableMessage(
             new Table(tableName, dbName, null, 0, 0, 0, sd, null, null, null, null, null),
             new Table(newTableName, newDbName, null, 0, 0, 0, new_sd, null, null, null, null, null))
@@ -424,8 +427,8 @@ public class TestNotificationProcessor {
     Table table = new Table(tableName1, dbName, null, 0, 0, 0, sd, partCols,
         null, null, null, null);
     notificationEvent = new NotificationEvent(inputEventId, 0,
-        HCatEventMessage.EventType.CREATE_TABLE.toString(),
-        messageFactory.buildCreateTableMessage(table).toString());
+        EventMessage.EventType.CREATE_TABLE.toString(),
+        messageFactory.buildCreateTableMessage(table, Collections.emptyIterator()).toString());
     notificationEvent.setDbName(dbName);
     notificationEvent.setTableName(tableName1);
     inputEventId += 1;
@@ -442,7 +445,7 @@ public class TestNotificationProcessor {
     // This notification should not be processed by sentry server
     // Notification should be persisted explicitly
     notificationEvent = new NotificationEvent(1, 0,
-        HCatEventMessage.EventType.ALTER_TABLE.toString(),
+        EventMessage.EventType.ALTER_TABLE.toString(),
         messageFactory.buildAlterTableMessage(
             new Table(tableName1, dbName, null, 0, 0, 0, sd, null, null, null, null, null),
             new Table(tableName1, dbName, null, 0, 0, 0, sd, null,
@@ -470,8 +473,8 @@ public class TestNotificationProcessor {
     Table table1 = new Table(tableName2, dbName, null, 0, 0, 0, sd,
         partCols, null, null, null, null);
     notificationEvent = new NotificationEvent(inputEventId, 0,
-        HCatEventMessage.EventType.CREATE_TABLE.toString(),
-        messageFactory.buildCreateTableMessage(table1).toString());
+        EventMessage.EventType.CREATE_TABLE.toString(),
+        messageFactory.buildCreateTableMessage(table1, Collections.emptyIterator()).toString());
     notificationEvent.setDbName(dbName);
     notificationEvent.setTableName(tableName2);
     // Process the notification

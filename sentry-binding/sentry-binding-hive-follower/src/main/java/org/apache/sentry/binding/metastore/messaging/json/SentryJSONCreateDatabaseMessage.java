@@ -18,7 +18,7 @@
 
 package org.apache.sentry.binding.metastore.messaging.json;
 
-import org.apache.hive.hcatalog.messaging.json.JSONCreateDatabaseMessage;
+import org.apache.hadoop.hive.metastore.messaging.json.JSONCreateDatabaseMessage;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 public class SentryJSONCreateDatabaseMessage extends JSONCreateDatabaseMessage {

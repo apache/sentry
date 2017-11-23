@@ -21,18 +21,18 @@ package org.apache.sentry.tests.e2e.metastore;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.*;
-import org.apache.hive.hcatalog.messaging.CreateDatabaseMessage;
-import org.apache.hive.hcatalog.messaging.HCatEventMessage;
-import org.apache.hive.hcatalog.messaging.MessageDeserializer;
-import org.apache.hive.hcatalog.messaging.MessageFactory;
-import org.apache.hive.hcatalog.messaging.CreateTableMessage;
-import org.apache.hive.hcatalog.messaging.DropTableMessage;
-import org.apache.hive.hcatalog.messaging.AlterTableMessage;
-import org.apache.hive.hcatalog.messaging.AlterPartitionMessage;
-import org.apache.hive.hcatalog.messaging.DropDatabaseMessage;
-import org.apache.hive.hcatalog.messaging.AddPartitionMessage;
-import org.apache.hive.hcatalog.messaging.DropPartitionMessage;
+import org.apache.hadoop.hive.metastore.messaging.EventMessage;
+import org.apache.hadoop.hive.metastore.messaging.CreateDatabaseMessage;
+import org.apache.hadoop.hive.metastore.messaging.MessageDeserializer;
+import org.apache.hadoop.hive.metastore.messaging.CreateTableMessage;
+import org.apache.hadoop.hive.metastore.messaging.DropTableMessage;
+import org.apache.hadoop.hive.metastore.messaging.AlterTableMessage;
+import org.apache.hadoop.hive.metastore.messaging.AlterPartitionMessage;
+import org.apache.hadoop.hive.metastore.messaging.DropDatabaseMessage;
+import org.apache.hadoop.hive.metastore.messaging.AddPartitionMessage;
+import org.apache.hadoop.hive.metastore.messaging.DropPartitionMessage;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONAlterPartitionMessage;
+import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageDeserializer;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import org.apache.sentry.tests.e2e.hive.hiveserver.HiveServerFactory;
 import org.hamcrest.text.IsEqualIgnoringCase;
@@ -61,14 +61,16 @@ public class TestDBNotificationListenerInBuiltDeserializer extends AbstractMetas
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
     setMetastoreListener = true;
-    useDbNotificationListener = true;
     beforeClass();
   }
 
   protected static void beforeClass() throws Exception {
     AbstractMetastoreTestWithStaticConfiguration.setupTestStaticConfiguration();
     client = context.getMetaStoreClient(ADMIN1);
-    deserializer = MessageFactory.getDeserializer("json", "");
+
+    // The MessageFactory.getDeserializer() has a bug and we cannot use. Set this to the default
+    // Sentry deserializer instead.
+    deserializer = new SentryJSONMessageDeserializer();
     writePolicyFile(setAdminOnServer1(ADMINGROUP).setUserGroupMapping(StaticUserGroup.getStaticMapping()));
   }
 
@@ -101,7 +103,7 @@ public class TestDBNotificationListenerInBuiltDeserializer extends AbstractMetas
     latestID = client.getCurrentNotificationEventId();
     response = client.getNextNotification(latestID.getEventId() - 1, 1, null);
     CreateDatabaseMessage createDatabaseMessage = deserializer.getCreateDatabaseMessage(response.getEvents().get(0).getMessage());
-    assertEquals(HCatEventMessage.EventType.CREATE_DATABASE, createDatabaseMessage.getEventType()); //Validate EventType
+    assertEquals(EventMessage.EventType.CREATE_DATABASE, createDatabaseMessage.getEventType()); //Validate EventType
     assertEquals(testDB, createDatabaseMessage.getDB()); //dbName
     //Location information is not available
 
@@ -117,7 +119,7 @@ public class TestDBNotificationListenerInBuiltDeserializer extends AbstractMetas
     assertEquals(previousID.getEventId() + 1, latestID.getEventId()); //Validate monotonically increasing eventID
     response = client.getNextNotification(latestID.getEventId() - 1, 1, null);
     DropDatabaseMessage dropDatabaseMessage = deserializer.getDropDatabaseMessage(response.getEvents().get(0).getMessage());
-    assertEquals(HCatEventMessage.EventType.DROP_DATABASE, dropDatabaseMessage.getEventType()); //Event type
+    assertEquals(EventMessage.EventType.DROP_DATABASE, dropDatabaseMessage.getEventType()); //Event type
     assertThat(dropDatabaseMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB)); // dbName
     //Location information is not available, but we might not really need it as we can drop all paths associated with
     //the object when we drop
@@ -144,7 +146,7 @@ public class TestDBNotificationListenerInBuiltDeserializer extends AbstractMetas
     latestID = client.getCurrentNotificationEventId();
     response = client.getNextNotification(latestID.getEventId() - 1, 1, null);
     CreateTableMessage createTableMessage = deserializer.getCreateTableMessage(response.getEvents().get(0).getMessage());
-    assertEquals(HCatEventMessage.EventType.CREATE_TABLE, createTableMessage.getEventType());
+    assertEquals(EventMessage.EventType.CREATE_TABLE, createTableMessage.getEventType());
     assertEquals(testDB, createTableMessage.getDB()); //dbName
     assertEquals(testTable, createTableMessage.getTable()); //tableName
     //Location information is not available
@@ -160,7 +162,7 @@ public class TestDBNotificationListenerInBuiltDeserializer extends AbstractMetas
     assertEquals(previousID.getEventId() + 1, latestID.getEventId());
     response = client.getNextNotification(latestID.getEventId() - 1, 1, null);
     DropTableMessage dropTableMessage = deserializer.getDropTableMessage(response.getEvents().get(0).getMessage());
-    assertEquals(HCatEventMessage.EventType.DROP_TABLE, dropTableMessage.getEventType());
+    assertEquals(EventMessage.EventType.DROP_TABLE, dropTableMessage.getEventType());
     assertThat(dropTableMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB));//dbName
     assertThat(dropTableMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));//tableName
     //Location information is not available, but we might not really need it as we can drop all paths associated with
@@ -186,7 +188,7 @@ public class TestDBNotificationListenerInBuiltDeserializer extends AbstractMetas
     latestID = client.getCurrentNotificationEventId();
     response = client.getNextNotification(latestID.getEventId() - 1, 1, null);
     CreateTableMessage createTableMessage = deserializer.getCreateTableMessage(response.getEvents().get(0).getMessage());
-    assertEquals(HCatEventMessage.EventType.CREATE_TABLE, createTableMessage.getEventType());
+    assertEquals(EventMessage.EventType.CREATE_TABLE, createTableMessage.getEventType());
     assertEquals(testDB, createTableMessage.getDB()); //dbName
     assertEquals(testTable, createTableMessage.getTable()); //tableName
     //Location information is not available
@@ -202,7 +204,7 @@ public class TestDBNotificationListenerInBuiltDeserializer extends AbstractMetas
     assertEquals(previousID.getEventId() + 1, latestID.getEventId());
     response = client.getNextNotification(latestID.getEventId() - 1, 1, null);
     DropTableMessage dropTableMessage = deserializer.getDropTableMessage(response.getEvents().get(0).getMessage());
-    assertEquals(HCatEventMessage.EventType.DROP_TABLE, dropTableMessage.getEventType());
+    assertEquals(EventMessage.EventType.DROP_TABLE, dropTableMessage.getEventType());
     assertThat(dropTableMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB));//dbName
     assertThat(dropTableMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));//tableName
     //Location information is not available, but we might not really need it as we can drop all paths associated with
@@ -232,7 +234,7 @@ public class TestDBNotificationListenerInBuiltDeserializer extends AbstractMetas
     latestID = client.getCurrentNotificationEventId();
     response = client.getNextNotification(latestID.getEventId() - 1, 1, null);
     AddPartitionMessage addPartitionMessage = deserializer.getAddPartitionMessage(response.getEvents().get(0).getMessage());
-    assertEquals(HCatEventMessage.EventType.ADD_PARTITION, addPartitionMessage.getEventType());
+    assertEquals(EventMessage.EventType.ADD_PARTITION, addPartitionMessage.getEventType());
     assertThat(addPartitionMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB));// dbName (returns lowered version)
     assertThat(addPartitionMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));// tableName (returns lowered version)
     //Location information is not available
@@ -248,7 +250,7 @@ public class TestDBNotificationListenerInBuiltDeserializer extends AbstractMetas
     assertEquals(previousID.getEventId() + 1, latestID.getEventId());
     response = client.getNextNotification(latestID.getEventId() - 1, 1, null);
     DropPartitionMessage dropPartitionMessage = deserializer.getDropPartitionMessage(response.getEvents().get(0).getMessage());
-    assertEquals(HCatEventMessage.EventType.DROP_PARTITION, dropPartitionMessage.getEventType());
+    assertEquals(EventMessage.EventType.DROP_PARTITION, dropPartitionMessage.getEventType());
     assertThat(dropPartitionMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB)); //dbName
     assertThat(dropPartitionMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable)); //tableName
     //Location information is not available
@@ -283,7 +285,7 @@ public class TestDBNotificationListenerInBuiltDeserializer extends AbstractMetas
     latestID = client.getCurrentNotificationEventId();
     response = client.getNextNotification(latestID.getEventId()-1, 1, null);
     AlterTableMessage alterTableMessage = deserializer.getAlterTableMessage(response.getEvents().get(0).getMessage());
-    assertEquals(HCatEventMessage.EventType.ALTER_TABLE, alterTableMessage.getEventType());
+    assertEquals(EventMessage.EventType.ALTER_TABLE, alterTableMessage.getEventType());
     assertThat(alterTableMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB));//dbName
     assertThat(alterTableMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));//tableName
     //Old location is not available: This information is lost if not captured at the time of event.
@@ -307,7 +309,7 @@ public class TestDBNotificationListenerInBuiltDeserializer extends AbstractMetas
     assertEquals(previousID.getEventId() + 1, latestID.getEventId());
     response = client.getNextNotification(latestID.getEventId()-1, 1, null);
     alterTableMessage = deserializer.getAlterTableMessage(response.getEvents().get(0).getMessage());
-    assertEquals(HCatEventMessage.EventType.ALTER_TABLE, alterTableMessage.getEventType());
+    assertEquals(EventMessage.EventType.ALTER_TABLE, alterTableMessage.getEventType());
     assertThat(alterTableMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB));//oldDbName
     assertThat(alterTableMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));//oldTableName
     assertThat(response.getEvents().get(0).getDbName(), IsEqualIgnoringCase.equalToIgnoringCase(newDBName));//newDbName
@@ -345,7 +347,7 @@ public class TestDBNotificationListenerInBuiltDeserializer extends AbstractMetas
     latestID = client.getCurrentNotificationEventId();
     response = client.getNextNotification(latestID.getEventId()-1, 1, null);
     AlterPartitionMessage alterPartitionMessage = deserializer.getAlterPartitionMessage(response.getEvents().get(0).getMessage());
-    assertEquals(HCatEventMessage.EventType.ALTER_PARTITION, alterPartitionMessage.getEventType());
+    assertEquals(EventMessage.EventType.ALTER_PARTITION, alterPartitionMessage.getEventType());
     assertThat(alterPartitionMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB));// dbName
     assertThat(alterPartitionMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));// tableName
     assertEquals(partVals1, alterPartitionMessage.getKeyValues());
@@ -361,7 +363,7 @@ public class TestDBNotificationListenerInBuiltDeserializer extends AbstractMetas
     latestID = client.getCurrentNotificationEventId();
     response = client.getNextNotification(latestID.getEventId()-1, 1, null);
     alterPartitionMessage = deserializer.getAlterPartitionMessage(response.getEvents().get(0).getMessage());
-    assertEquals(HCatEventMessage.EventType.ALTER_PARTITION, alterPartitionMessage.getEventType());
+    assertEquals(EventMessage.EventType.ALTER_PARTITION, alterPartitionMessage.getEventType());
     assertThat(alterPartitionMessage.getDB(), IsEqualIgnoringCase.equalToIgnoringCase(testDB));// dbName
     assertThat(alterPartitionMessage.getTable(), IsEqualIgnoringCase.equalToIgnoringCase(testTable));// tableName
     assertEquals(partVals1, alterPartitionMessage.getKeyValues());

@@ -18,11 +18,14 @@
 
 package org.apache.sentry.binding.metastore.messaging.json;
 
-import org.apache.hive.hcatalog.messaging.json.JSONAddPartitionMessage;
+import java.util.Iterator;
+import org.apache.hadoop.hive.metastore.api.Partition;
+import org.apache.hadoop.hive.metastore.api.Table;
+import org.apache.hadoop.hive.metastore.messaging.PartitionFiles;
+import org.apache.hadoop.hive.metastore.messaging.json.JSONAddPartitionMessage;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 import java.util.List;
-import java.util.Map;
 
 public class SentryJSONAddPartitionMessage extends JSONAddPartitionMessage {
   @JsonProperty
@@ -31,9 +34,14 @@ public class SentryJSONAddPartitionMessage extends JSONAddPartitionMessage {
   public SentryJSONAddPartitionMessage() {
   }
 
-  public SentryJSONAddPartitionMessage(String server, String servicePrincipal, String db, String table,
-                                       List<Map<String, String>> partitions, Long timestamp, List<String> locations) {
-    super(server, servicePrincipal, db, table, partitions, timestamp);
+  public SentryJSONAddPartitionMessage(String server, String servicePrincipal, Table tableObj,
+      Iterator<Partition> partitionsIterator, Iterator<PartitionFiles> partitionFileIter, Long timestamp) {
+    super(server, servicePrincipal, tableObj, partitionsIterator, partitionFileIter, timestamp);
+  }
+
+  public SentryJSONAddPartitionMessage(String server, String servicePrincipal, Table tableObj,
+                                       Iterator<Partition> partitionsIterator, Iterator<PartitionFiles> partitionFileIter, Long timestamp, List<String> locations) {
+    super(server, servicePrincipal, tableObj, partitionsIterator, partitionFileIter, timestamp);
     this.locations = locations;
   }
 
