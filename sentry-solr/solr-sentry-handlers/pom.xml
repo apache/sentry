@@ -72,6 +72,7 @@ limitations under the License.
     <dependency>
       <groupId>org.apache.solr</groupId>
       <artifactId>solr-test-framework</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.solr</groupId>
