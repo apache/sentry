@@ -85,7 +85,6 @@ limitations under the License.
     <maven.antrun.plugin.version>1.7</maven.antrun.plugin.version>
     <maven.eclipse.plugin.version>2.9</maven.eclipse.plugin.version>
     <maven.enforcer.plugin.version>1.3.1</maven.enforcer.plugin.version>
-    <maven.shade.plugin.version>2.4.3</maven.shade.plugin.version>
     <metrics.version>3.0.2</metrics.version>
     <mockito.version>1.8.5</mockito.version>
     <objenesis.version>1.2</objenesis.version>
@@ -447,10 +446,6 @@ limitations under the License.
             <groupId>org.eclipse.jetty.aggregate</groupId>
             <artifactId>jetty-all</artifactId>
           </exclusion>
-          <exclusion>
-            <groupId>org.apache.curator</groupId>
-            <artifactId>curator-client</artifactId>
-          </exclusion>
         </exclusions>
       </dependency>
       <dependency>
@@ -633,11 +628,6 @@ limitations under the License.
       <dependency>
         <groupId>org.apache.curator</groupId>
         <artifactId>curator-framework</artifactId>
-        <version>${curator.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.curator</groupId>
-        <artifactId>curator-client</artifactId>
         <version>${curator.version}</version>
       </dependency>
       <dependency>
@@ -828,6 +818,35 @@ limitations under the License.
           </execution>
         </executions>
       </plugin>
+
+<!---
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>2.1</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <artifactSet>
+                <includes>
+                  <include>org.apache.thrift:libthrift</include>
+                </includes>
+              </artifactSet>
+              <relocations>
+                <relocation>
+                  <pattern>org.apache.thrift</pattern>
+                  <shadedPattern>sentry.org.apache.thrift</shadedPattern>
+                </relocation>
+              </relocations>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+-->
     </plugins>
 
     <pluginManagement>
