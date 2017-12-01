@@ -731,6 +731,19 @@ limitations under the License.
         <artifactId>jetty-servlet</artifactId>
         <version>${jetty.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.apache.hive.hcatalog</groupId>
+        <artifactId>hive-hcatalog-server-extensions</artifactId>
+        <version>${hive.version}</version>
+        <exclusions>
+          <!-- It is a transitive dependency and doesn't have proper license information,
+          so not distributing it.-->
+          <exclusion>
+            <groupId>javax.jms</groupId>
+            <artifactId>jms</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
