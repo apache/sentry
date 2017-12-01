@@ -292,6 +292,10 @@ limitations under the License.
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-web</artifactId>
           </exclusion>
+          <exclusion>
+            <groupId>org.eclipse.jetty.orbit</groupId>
+            <artifactId>javax.servlet</artifactId>
+          </exclusion>
         </exclusions>
       </dependency>
       <dependency>
