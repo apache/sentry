@@ -86,7 +86,6 @@
   <fileSets>
     <fileSet>
       <directory>${project.parent.basedir}</directory>
-
       <excludes>
         <exclude>**/target/**</exclude>
         <exclude>**/.classpath</exclude>
@@ -111,7 +110,6 @@
         <include>lib/**</include>
         <include>CHANGELOG*</include>
         <include>DISCLAIMER*</include>
-        <include>LICENSE*</include>
         <include>NOTICE*</include>
         <include>README*</include>
       </includes>
@@ -133,6 +131,20 @@
         <include>**/*</include>
       </includes>
       <outputDirectory>scripts/sentrystore/upgrade</outputDirectory>
+    </fileSet>
+    <fileSet>
+      <directory>${project.basedir}/src/main/resources/licences</directory>
+      <includes>
+        <include>**/*</include>
+      </includes>
+      <outputDirectory>/licences</outputDirectory>
+    </fileSet>
+    <fileSet>
+      <directory>${project.build.directory}/</directory>
+      <includes>
+        <include>LICENSE.txt</include>
+      </includes>
+      <outputDirectory>/</outputDirectory>
     </fileSet>
   </fileSets>
 

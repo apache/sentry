@@ -962,6 +962,10 @@ limitations under the License.
                   <exclude>**/*.jks</exclude>
                   <!-- Exclude Apache reviewboard config-->
                   <exclude>**/.reviewboardrc</exclude>
+                  <exclude>**/override-THIRD-PARTY.properties</exclude>
+                  <exclude>**/THIRD-PARTY.properties</exclude>
+                  <exclude>**/THIRD-PARTY.ftl</exclude>
+                  <exclude>**/resources/licences/*</exclude>
                 </excludes>
               </configuration>
             </execution>
