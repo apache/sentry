@@ -22,3 +22,4 @@ maven-repo/
 .DS_Store
 **/thirdparty/*
 **/metastore_db/*
+*dependency-reduced-pom.xml
