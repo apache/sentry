@@ -226,6 +226,10 @@ limitations under the License.
       <artifactId>curator-test</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.apache.curator</groupId>
+      <artifactId>curator-client</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-pool2</artifactId>
     </dependency>
@@ -356,6 +360,39 @@ limitations under the License.
         <configuration>
             <reuseForks>false</reuseForks>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>${maven.shade.plugin.version}</version>
+        <executions>
+          <execution>
+            <id>curator-shade</id>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <artifactSet>
+                <includes>
+                  <!-- This is needed to support projects running on different versions of curator -->
+                  <include>org.apache.curator:curator-recipes</include>
+                  <include>org.apache.curator:curator-x-discovery</include>
+                  <include>org.apache.curator:curator-framework</include>
+                  <include>org.apache.curator:curator-client</include>
+                </includes>
+              </artifactSet>
+              <relocations>
+                <!-- Adding prefix to the package to make it unique -->
+                <relocation>
+                  <pattern>org.apache.curator</pattern>
+                  <shadedPattern>sentry.org.apache.curator</shadedPattern>
+                </relocation>
+              </relocations>
+              <shadedArtifactAttached>false</shadedArtifactAttached>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
