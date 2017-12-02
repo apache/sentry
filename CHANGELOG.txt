@@ -84,6 +84,7 @@ Release Notes - Sentry - Version 2.0.0
     * [SENTRY-2042] - Support file based Sentry provider for Solr plugin
     * [SENTRY-2048] - Bump Hive version to 2.3.2
     * [SENTRY-2062] - Support the new Hive 2.3.2 DbNotificationListener
+    * [SENTRY-2076] - Some test artifacts are not defined at test scope
 
 
 ** Sub-task
@@ -426,6 +427,12 @@ Release Notes - Sentry - Version 2.0.0
     * [SENTRY-2047] - isTableEmptyCore method in SentryStore has references to MAuthzPathsMapping when it should be generic
     * [SENTRY-2066] - DB name is not set for AlterTable 
     * [SENTRY-2068] - Disable HTTP TRACE method from the Sentry Web Server
+    * [SENTRY-2072] - log4j2 dependencies brought by Hive 2 are causing conflicts with Sentry log4j
+    * [SENTRY-2073] - Remove snapshot from version 2.0.0-SNAPSHOT in SentryService.html
+    * [SENTRY-2079] - Sentry HA leader monitor does not work due to a mix of curator versions in the classpath
+    * [SENTRY-2081] - Automate the generation LICENSE.txt based on distributed jars
+    * [SENTRY-2082] - Exclude javax.servlet-3.0.0.v201112011016.jar from Sentry dist
+    * [SENTRY-2084] - Exclude javax.jms:jms from sentry distribution
 
 ** Task
     * [SENTRY-1480] - A upgrade tool to migrate Solr/Sentry permissions 
