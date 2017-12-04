@@ -52,6 +52,7 @@
         <include>LICENSE*</include>
         <include>NOTICE*</include>
         <include>README*</include>
+        <include>build-tools/**</include>
         <include>dev-support/**</include>
         <include>sentry-binding/**</include>
         <include>sentry-core/**</include>
@@ -61,6 +62,7 @@
         <include>sentry-tests/**</include>
         <include>sentry-hdfs/**</include>
         <include>sentry-solr/**</include>
+        <include>sentry-tools/**</include>
       </includes>
       <outputDirectory>/</outputDirectory>
     </fileSet>
