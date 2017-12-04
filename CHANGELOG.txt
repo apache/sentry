@@ -433,6 +433,7 @@ Release Notes - Sentry - Version 2.0.0
     * [SENTRY-2081] - Automate the generation LICENSE.txt based on distributed jars
     * [SENTRY-2082] - Exclude javax.servlet-3.0.0.v201112011016.jar from Sentry dist
     * [SENTRY-2084] - Exclude javax.jms:jms from sentry distribution
+    * [SENTRY-2086] - Sentry distribution source does not build due to missing modules
 
 ** Task
     * [SENTRY-1480] - A upgrade tool to migrate Solr/Sentry permissions 
