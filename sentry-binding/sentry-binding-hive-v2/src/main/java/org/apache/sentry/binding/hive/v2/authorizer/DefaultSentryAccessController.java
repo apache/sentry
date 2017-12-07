@@ -123,7 +123,7 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
       HiveOperation hiveOp = HiveOperation.CREATEROLE;
       executeOnFailureHooks(hiveOp, e);
     } catch (SentryUserException e) {
-      String msg = "Error occurred when Sentry client creating role: " + e.getMessage();
+      String msg = "Sentry failed to create role: " + e.getMessage();
       executeOnErrorHooks(msg, e);
     } finally {
       closeClient();
@@ -144,7 +144,7 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
       HiveOperation hiveOp = HiveOperation.DROPROLE;
       executeOnFailureHooks(hiveOp, e);
     } catch (SentryUserException e) {
-      String msg = "Error occurred when Sentry client creating role: " + e.getMessage();
+      String msg = "Sentry failed to drop role: " + e.getMessage();
       executeOnErrorHooks(msg, e);
     } finally {
       closeClient();
