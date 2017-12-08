@@ -222,7 +222,7 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
       // Continue with processing new notifications if no snapshots are done.
       processNotifications(notifications);
     } catch (TException e) {
-      LOGGER.error("An error occurred while fetching HMS notifications: {}", e.getMessage());
+      LOGGER.error("An error occurred while fetching HMS notifications: ", e);
       close();
     } catch (Throwable t) {
       // catching errors to prevent the executor to halt.
@@ -248,6 +248,8 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
    */
   private boolean isFullSnapshotRequired(long latestSentryNotificationId) throws Exception {
     if (sentryStore.isHmsNotificationEmpty()) {
+      LOGGER.debug("Sentry Store has no HMS Notifications. Create Full HMS Snapshot. "
+          + "latest sentry notification Id = {}", latestSentryNotificationId);
       return true;
     }
 
@@ -260,8 +262,9 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
 
     long currentHmsNotificationId = notificationFetcher.getCurrentNotificationId();
     if (currentHmsNotificationId < latestSentryNotificationId) {
-      LOGGER.info("The latest notification ID on HMS is less than the latest notification ID "
-          + "processed by Sentry. Need to request a full HMS snapshot.");
+      LOGGER.info("The current notification ID on HMS = {} is less than the latest processed Sentry "
+          + "notification ID = {}. Need to request a full HMS snapshot",
+          currentHmsNotificationId, latestSentryNotificationId);
       return true;
     }
 
@@ -313,8 +316,8 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
     long firstNotificationId = eventList.get(0).getEventId();
 
     if (firstNotificationId > (latestProcessedId + 1)) {
-      LOGGER.info("Current HMS notifications are out-of-sync with latest Sentry processed"
-          + "notifications. Need to request a full HMS snapshot.");
+      LOGGER.info("First HMS event notification Id = {} is greater than latest Sentry processed"
+          + "notification Id = {} + 1. Need to request a full HMS snapshot.", firstNotificationId, latestProcessedId);
       return true;
     }
 
@@ -340,20 +343,23 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
 
       PathsImage snapshotInfo = client.getFullSnapshot();
       if (snapshotInfo.getPathImage().isEmpty()) {
+        LOGGER.debug("Received empty path image from HMS while taking a full snapshot");
         return snapshotInfo.getId();
       }
 
       // Check we're still the leader before persisting the new snapshot
       if (!isLeader()) {
+        LOGGER.info("Not persisting full snapshot since not a leader");
         return SentryStore.EMPTY_NOTIFICATION_ID;
       }
       try {
-        LOGGER.debug("Persisting HMS path full snapshot");
-
         if (hdfsSyncEnabled) {
+          LOGGER.info("Persisting full snapshot for notification Id = {}", snapshotInfo.getId());
           sentryStore.persistFullPathsImage(snapshotInfo.getPathImage(), snapshotInfo.getId());
         } else {
           // We need to persist latest notificationID for next poll
+          LOGGER.info("HDFSSync is disabled. Not Persisting full snapshot, "
+              + "but only setting last processed notification Id = {}", snapshotInfo.getId());
           sentryStore.setLastProcessedNotificationID(snapshotInfo.getId());
         }
       } catch (Exception failure) {
@@ -367,6 +373,9 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
       // Log this message only once
       LOGGER.info("Sentry HMS support is ready");
       return snapshotInfo.getId();
+    } catch(Exception failure) {
+      LOGGER.error("Received exception while creating HMS path full snapshot ");
+      throw failure;
     } finally {
       SentryStateBank
           .disableState(SentryServiceState.COMPONENT, SentryServiceState.FULL_UPDATE_RUNNING);
@@ -391,6 +400,7 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
       try {
         // Only the leader should process the notifications
         if (!isLeader()) {
+          LOGGER.debug("Not processing notifications since not a leader");
           return;
         }
         isNotificationProcessed = notificationProcessor.processNotificationEvent(event);
@@ -414,11 +424,10 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
           // Update the notification ID in the persistent store even when the notification is
           // not processed as the content in in the notification is not valid.
           // Continue processing the next notification.
-          LOGGER.debug("Explicitly Persisting Notification ID:{}", event.getEventId());
+          LOGGER.debug("Explicitly Persisting Notification ID = {} ", event.getEventId());
           sentryStore.persistLastProcessedNotificationID(event.getEventId());
         } catch (Exception failure) {
-          LOGGER.error("Received exception while persisting the notification ID "
-              + event.getEventId());
+          LOGGER.error("Received exception while persisting the notification ID = {}", event.getEventId());
           throw failure;
         }
       }
@@ -439,6 +448,7 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
   private void wakeUpWaitingClientsForSync(long eventId) {
     CounterWait counterWait = sentryStore.getCounterWait();
 
+    LOGGER.debug("wakeUpWaitingClientsForSync: eventId = {}, hmsImageId = {}", eventId, hmsImageId);
     // Wake up any HMS waiters that are waiting for this ID.
     // counterWait should never be null, but tests mock SentryStore and a mocked one
     // doesn't have it.
@@ -450,6 +460,7 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
     try {
       // Read actual HMS image ID
       lastHMSSnapshotId = sentryStore.getLastProcessedImageID();
+      LOGGER.debug("wakeUpWaitingClientsForSync: lastHMSSnapshotId = {}", lastHMSSnapshotId);
     } catch (Exception e) {
       counterWait.update(eventId);
       LOGGER.error("Failed to get the last processed HMS image id from sentry store");
@@ -460,8 +471,10 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
     if (lastHMSSnapshotId > hmsImageId) {
       counterWait.reset(eventId);
       hmsImageId = lastHMSSnapshotId;
+      LOGGER.debug("wakeUpWaitingClientsForSync: reset counterWait with eventId = {}, new hmsImageId = {}", eventId, hmsImageId);
     }
 
+    LOGGER.debug("wakeUpWaitingClientsForSync: update counterWait with eventId = {}, hmsImageId = {}", eventId, hmsImageId);
     counterWait.update(eventId);
   }
 

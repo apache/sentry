@@ -22,6 +22,7 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.CurrentNotificationEventId;
@@ -149,6 +150,7 @@ class SentryHMSClient implements AutoCloseable {
       CurrentNotificationEventId eventIdBefore = client.getCurrentNotificationEventId();
       Map<String, Collection<String>> pathsFullSnapshot = fetchFullUpdate();
       if (pathsFullSnapshot.isEmpty()) {
+        LOGGER.info("Received empty paths when getting full snapshot. NotificationID Before Snapshot: {}", eventIdBefore.getEventId());
         return new PathsImage(pathsFullSnapshot, SentryStore.EMPTY_NOTIFICATION_ID,
             SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
       }
@@ -185,6 +187,7 @@ class SentryHMSClient implements AutoCloseable {
         }
 
         for (NotificationEvent event : response.getEvents()) {
+          LOGGER.info("Received event = {} currentEventId = {}, eventIdAfter = {}", event.getEventId(), currentEventId, eventIdAfter);
           if (event.getEventId() <= eventIdBefore.getEventId()) {
             LOGGER.error("Received stray event with eventId {} which is less then {}",
                     event.getEventId(), eventIdBefore);
@@ -192,12 +195,18 @@ class SentryHMSClient implements AutoCloseable {
           }
           if (event.getEventId() > eventIdAfter.getEventId()) {
             // Enough events processed
+            LOGGER.debug("Received eventId = {} is greater than eventIdAfter = {}", event.getEventId(), eventIdAfter);
             break;
           }
           try {
             FullUpdateModifier.applyEvent(pathsFullSnapshot, event, deserializer);
           } catch (Exception e) {
             LOGGER.warn("Failed to apply operation", e);
+          }
+
+          //Log warning message if event id increments are not sequential
+          if( event.getEventId() != (currentEventId + 1) ) {
+            LOGGER.warn("Received non-sequential event. currentEventId = {} received eventId = {} ", currentEventId, event.getEventId());
           }
           currentEventId = event.getEventId();
         }
@@ -211,7 +220,8 @@ class SentryHMSClient implements AutoCloseable {
           SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
     } catch (TException failure) {
       LOGGER.error("Fetching a new HMS snapshot cannot continue because an error occurred during "
-          + "the HMS communication: ", failure.getMessage());
+          + "the HMS communication: ", failure);
+      LOGGER.error("Root Exception", ExceptionUtils.getRootCause(failure));
       return new PathsImage(Collections.<String, Collection<String>>emptyMap(),
           SentryStore.EMPTY_NOTIFICATION_ID, SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
     }

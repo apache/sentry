@@ -130,7 +130,7 @@ public final class CounterWait {
   public synchronized void update(long newValue) {
     // update() is synchronized so the value can't change.
     long oldValue = currentId.get();
-
+    LOGGER.debug("CounterWait update: oldValue = {}, newValue = {}", oldValue, newValue);
     // Avoid doing extra work if not needed
     if (oldValue == newValue) {
       return; // no-op
@@ -160,6 +160,7 @@ public final class CounterWait {
    */
   public synchronized void reset(long newValue) {
     long oldValue = currentId.get();
+    LOGGER.debug("CounterWait reset: oldValue = {}, newValue = {}", oldValue, newValue);
 
     if (newValue > oldValue) {
       update(newValue);
@@ -209,6 +210,7 @@ public final class CounterWait {
     // will not block, so it is safe to wake up before the wait.
     // So sit tight and wait patiently.
     eid.waitFor();
+    LOGGER.debug("CounterWait added new value to waitFor: value = {}, currentId = {}", value, currentId.get());
     return currentId.get();
   }
 
@@ -238,6 +240,7 @@ public final class CounterWait {
         return;
       }
       // Due for wake-up call
+      LOGGER.debug("CounterWait wakeup: event = {} is less than value = {}", e.getValue(), value);
       e.wakeup();
     }
   }
