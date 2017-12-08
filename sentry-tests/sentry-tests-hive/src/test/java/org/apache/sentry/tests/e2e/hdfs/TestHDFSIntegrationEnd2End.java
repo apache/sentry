@@ -223,8 +223,7 @@ public class TestHDFSIntegrationEnd2End extends TestHDFSIntegrationBase {
     stmt.execute("drop table ext101");
     stmt.execute("use default");
     stmt.execute("drop database extdb");
-
-    //TODO: SENTRY-795: HDFS permissions do not sync when Sentry restarts in HA mode.
+    
     if(!testSentryHA) {
       long beforeStop = System.currentTimeMillis();
       sentryServer.stopAll();

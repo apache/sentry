@@ -344,10 +344,6 @@ limitations under the License.
           <systemPropertyVariables>
             <buildDirectory>${project.build.directory}</buildDirectory>
           </systemPropertyVariables>
-          <excludes>
-            <exclude>**/TestHDFSIntegration.java</exclude>
-            <exclude>**/TestHDFSIntegrationWithHA.java</exclude>
-          </excludes>
         </configuration>
       </plugin>
     </plugins>

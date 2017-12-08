@@ -18,10 +18,8 @@
 package org.apache.sentry.tests.e2e.hdfs;
 
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
-@Ignore ("Disable sentry HA tests for now")
-public class TestHDFSIntegrationWithHA extends TestHDFSIntegrationBase {
+public class TestHDFSIntegrationWithHA extends TestHDFSIntegrationEnd2End {
   @BeforeClass
   public static void setup() throws Exception {
     TestHDFSIntegrationBase.testSentryHA = true;
