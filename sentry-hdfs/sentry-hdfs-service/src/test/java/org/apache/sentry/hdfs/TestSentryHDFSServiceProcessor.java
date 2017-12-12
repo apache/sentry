@@ -25,7 +25,6 @@ import org.apache.sentry.hdfs.service.thrift.TAuthzUpdateResponse;
 import org.apache.sentry.provider.db.SentryPolicyStorePlugin;
 import org.apache.sentry.provider.db.service.model.MSentryPathChange;
 import org.apache.sentry.provider.db.service.model.MSentryPermChange;
-import org.apache.sentry.provider.db.service.persistent.PathsImage;
 import org.apache.sentry.provider.db.service.persistent.PermissionsImage;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.junit.BeforeClass;
@@ -58,8 +57,9 @@ public class TestSentryHDFSServiceProcessor {
   public void testInitialHDFSSyncReturnsAFullImage() throws Exception {
     Mockito.when(sentryStoreMock.getLastProcessedImageID())
         .thenReturn(1L);
-    Mockito.when(sentryStoreMock.retrieveFullPathsImage())
-        .thenReturn(new PathsImage(new HashMap<String, Collection<String>>(), 1, 1));
+    String[]prefixes = {"/"};
+    Mockito.when(sentryStoreMock.retrieveFullPathsImageUpdate(prefixes))
+        .thenReturn(new PathsUpdate(1, 1, true));
 
     Mockito.when(sentryStoreMock.getLastProcessedPermChangeID())
         .thenReturn(1L);
@@ -84,8 +84,9 @@ public class TestSentryHDFSServiceProcessor {
   public void testRequestSyncUpdatesWhenNewImagesArePersistedReturnsANewFullImage() throws Exception {
     Mockito.when(sentryStoreMock.getLastProcessedImageID())
         .thenReturn(2L);
-    Mockito.when(sentryStoreMock.retrieveFullPathsImage())
-        .thenReturn(new PathsImage(new HashMap<String, Collection<String>>(), 3, 2));
+    String[]prefixes = {"/"};
+    Mockito.when(sentryStoreMock.retrieveFullPathsImageUpdate(prefixes))
+        .thenReturn(new PathsUpdate(3, 2, true));
 
     Mockito.when(sentryStoreMock.getLastProcessedPermChangeID())
         .thenReturn(3L);

@@ -20,7 +20,6 @@ package org.apache.sentry.hdfs;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang.StringUtils;
 import org.apache.sentry.hdfs.service.thrift.TPathChanges;
-import org.apache.sentry.provider.db.service.persistent.PathsImage;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -54,8 +53,8 @@ public class TestImageRetriever {
     fullPathsImage.put("db1", Sets.newHashSet("/user/db1"));
     fullPathsImage.put("db1.table1", Sets.newHashSet("/user/db1/table1"));
 
-    Mockito.when(sentryStoreMock.retrieveFullPathsImage())
-        .thenReturn(new PathsImage(fullPathsImage, 1, 1));
+    Mockito.when(sentryStoreMock.retrieveFullPathsImageUpdate(root))
+        .thenReturn(new PathsUpdate(1, 1, true));
 
     imageRetriever = new PathImageRetriever(sentryStoreMock, root);
     pathsUpdate = imageRetriever.retrieveFullImage();
