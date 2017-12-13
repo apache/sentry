@@ -25,7 +25,7 @@ limitations under the License.
 
   <groupId>org.apache.sentry</groupId>
   <artifactId>sentry</artifactId>
-  <version>1.7.0</version>
+  <version>1.7.1</version>
   <description>Sentry component</description>
   <name>Sentry</name>
   <packaging>pom</packaging>
