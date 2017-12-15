@@ -146,7 +146,7 @@ def find_all_files(top):
             yield os.path.join(root, f)
 
 def mvn_test(result, mvn_repo, output_dir, mvn_profile):
-  rc = execute("mvn verify -Dmaven.repo.local=%s %s 1>%s/test.txt 2>&1" % (mvn_repo, mvn_profile, output_dir))
+  rc = execute("mvn verify --fail-at-end -Dmaven.repo.local=%s %s 1>%s/test.txt 2>&1" % (mvn_repo, mvn_profile, output_dir))
   if rc == 0:
     result.success("all tests passed")
   else:
