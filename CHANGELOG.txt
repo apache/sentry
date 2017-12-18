@@ -1,3 +1,10 @@
+Release Notes - Sentry - Version 1.7.1
+
+** Improvement
+
+    * [SENTRY-2101] - Upgrade 1.7 branch to use libthrift 0.9.3
+
+
 Release Notes - Sentry - Version 1.7.0
 
 ** Sub-task
