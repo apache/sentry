@@ -206,6 +206,10 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
   @Override
   public Update onAlterSentryRoleAddGroups(
       TAlterSentryRoleAddGroupsRequest request) throws SentryPluginException {
+    Preconditions.checkNotNull(request, "request");
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("onAlterSentryRoleAddGroups: {}", request); // request.toString() provides all details
+    }
     PermissionsUpdate update = new PermissionsUpdate();
     TRoleChanges rUpdate = update.addRoleUpdate(request.getRoleName());
     for (TSentryGroup group : request.getGroups()) {
@@ -214,6 +218,9 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
 
     LOGGER.debug(String.format("onAlterSentryRoleAddGroups, Authz Perm preUpdate[ %s ]",
                   request.getRoleName()));
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("onAlterSentryRoleAddGroups: {}", update); // update.toString() provides all details
+    }
     return update;
   }
 
@@ -221,6 +228,10 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
   public Update onAlterSentryRoleDeleteGroups(
       TAlterSentryRoleDeleteGroupsRequest request)
           throws SentryPluginException {
+    Preconditions.checkNotNull(request, "request");
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("onAlterSentryRoleDeleteGroups: {}", request); // request.toString() provides all details
+    }
     PermissionsUpdate update = new PermissionsUpdate();
     TRoleChanges rUpdate = update.addRoleUpdate(request.getRoleName());
     for (TSentryGroup group : request.getGroups()) {
@@ -229,12 +240,19 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
 
     LOGGER.debug(String.format("onAlterSentryRoleDeleteGroups, Authz Perm preUpdate [ %s ]",
                   request.getRoleName()));
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("onAlterSentryRoleDeleteGroups: {}", update); // update.toString() provides all details
+    }
     return update;
   }
 
   @Override
   public void onAlterSentryRoleGrantPrivilege(TAlterSentryRoleGrantPrivilegeRequest request,
           Map<TSentryPrivilege, Update> privilegesUpdateMap) throws SentryPluginException {
+    Preconditions.checkNotNull(request, "request");
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("onAlterSentryRoleGrantPrivilege: {}", request); // request.toString() provides all details
+    }
 
     if (request.isSetPrivileges()) {
       String roleName = request.getRoleName();
@@ -247,6 +265,10 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
           }
         }
       }
+    }
+    if (LOGGER.isTraceEnabled()) {
+      // TSentryPrivilege.toString() and update.toString() provides all details
+      LOGGER.trace("onAlterSentryRoleGrantPrivilege: {}", privilegesUpdateMap);
     }
   }
 
@@ -269,6 +291,10 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
   @Override
   public Update onRenameSentryPrivilege(TRenamePrivilegesRequest request)
       throws SentryPluginException, SentryInvalidInputException{
+    Preconditions.checkNotNull(request, "request");
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("onRenameSentryPrivilege: {}", request); // request.toString() provides all details
+    }
     String oldAuthz = null;
     String newAuthz = null;
     try {
@@ -284,6 +310,9 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     privUpdate.putToDelPrivileges(oldAuthz, oldAuthz);
 
     LOGGER.debug("onRenameSentryPrivilege, Authz Perm preUpdate [ {} ]", oldAuthz);
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("onRenameSentryPrivilege: {}", update); // update.toString() provides all details
+    }
     return update;
   }
 
@@ -291,6 +320,10 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
   public void onAlterSentryRoleRevokePrivilege(TAlterSentryRoleRevokePrivilegeRequest request,
       Map<TSentryPrivilege, Update> privilegesUpdateMap)
           throws SentryPluginException {
+    Preconditions.checkNotNull(request, "request");
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("onAlterSentryRoleRevokePrivilege: {}", request); // request.toString() provides all details
+    }
 
     if (request.isSetPrivileges()) {
       String roleName = request.getRoleName();
@@ -303,6 +336,10 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
           }
         }
       }
+    }
+    if (LOGGER.isTraceEnabled()) {
+      // TSentryPrivilege.toString() and Update.toString() provides all details
+      LOGGER.trace("onAlterSentryRoleRevokePrivilege: {}", privilegesUpdateMap);
     }
   }
 
@@ -324,18 +361,30 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
   @Override
   public Update onDropSentryRole(TDropSentryRoleRequest request)
       throws SentryPluginException {
+    Preconditions.checkNotNull(request, "request");
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("onDropSentryRole: {}", request); // request.toString() provides all details
+    }
     PermissionsUpdate update = new PermissionsUpdate();
     update.addPrivilegeUpdate(PermissionsUpdate.ALL_AUTHZ_OBJ).putToDelPrivileges(
         request.getRoleName(), PermissionsUpdate.ALL_AUTHZ_OBJ);
     update.addRoleUpdate(request.getRoleName()).addToDelGroups(PermissionsUpdate.ALL_GROUPS);
 
     LOGGER.debug("onDropSentryRole, Authz Perm preUpdate [ {} ]", request.getRoleName());
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("onDropSentryRole: {}", update); // update.toString() provides all details
+    }
     return update;
   }
 
   @Override
   public Update onDropSentryPrivilege(TDropPrivilegesRequest request)
       throws SentryPluginException {
+    Preconditions.checkNotNull(request, "request");
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("onDropSentryPrivilege: {}", request); // request.toString() provides all details
+    }
+
     PermissionsUpdate update = new PermissionsUpdate();
     String authzObj = null;
     try {
@@ -349,6 +398,9 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
         PermissionsUpdate.ALL_ROLES, PermissionsUpdate.ALL_ROLES);
 
     LOGGER.debug("onDropSentryPrivilege, Authz Perm preUpdate [ {} ]", authzObj);
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("onDropSentryPrivilege: {}", update); // update.toString() provides all details
+    }
     return update;
   }
 
