@@ -309,7 +309,7 @@ public class TestSolrAuthzBinding {
   }
 
   /**
-   * Test that a user that doesn't exist throws an exception
+   * Test that a user that doesn't exist gets an AuthException
    * when trying to authorize
    */
   @Test
@@ -317,11 +317,8 @@ public class TestSolrAuthzBinding {
     SolrAuthzConf solrAuthzConf =
         new SolrAuthzConf(Collections.singletonList(Resources.getResource("sentry-site.xml")));
     setUsableAuthzConf(solrAuthzConf);
-    try (SolrAuthzBinding binding = new SolrAuthzBinding(solrAuthzConf)) {
-      binding.authorizeCollection(new Subject("bogus"), infoCollection, querySet);
-      Assert.fail("Expected SentryGroupNotFoundException");
-    } catch (SentryGroupNotFoundException e) {
-    }
+    SolrAuthzBinding binding = new SolrAuthzBinding(solrAuthzConf);
+    expectAuthException(binding, new Subject("bogus"), infoCollection, querySet);
   }
 
   /**

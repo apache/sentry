@@ -22,6 +22,7 @@ import static org.apache.sentry.core.common.utils.SentryConstants.KV_JOINER;
 import static org.apache.sentry.core.common.utils.SentryConstants.PRIVILEGE_NAME;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -31,6 +32,7 @@ import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.Model;
 import org.apache.sentry.core.common.exception.SentryConfigurationException;
+import org.apache.sentry.core.common.exception.SentryGroupNotFoundException;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.policy.common.Privilege;
@@ -91,13 +93,21 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
     Preconditions.checkNotNull(actions, "Actions cannot be null");
     Preconditions.checkArgument(!actions.isEmpty(), "Actions cannot be empty");
     Preconditions.checkNotNull(roleSet, "ActiveRoleSet cannot be null");
-    return doHasAccess(subject, authorizableHierarchy, actions, roleSet);
+    boolean hasAccess = false;
+    hasAccess = doHasAccess(subject, authorizableHierarchy, actions, roleSet);
+    return hasAccess;
   }
 
   private boolean doHasAccess(Subject subject,
       List<? extends Authorizable> authorizables, Set<? extends Action> actions,
       ActiveRoleSet roleSet) {
-    Set<String> groups =  getGroups(subject);
+    Set<String> groups;
+    try {
+      groups = getGroups(subject);
+    } catch (SentryGroupNotFoundException e) {
+      groups = Collections.emptySet();
+      LOGGER.debug("Groups not found for " + subject);
+    }
     Set<String> users = Sets.newHashSet(subject.getName());
     Set<String> hierarchy = new HashSet<String>();
     for (Authorizable authorizable : authorizables) {
@@ -169,7 +179,7 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
     return groupService;
   }
 
-  private Set<String> getGroups(Subject subject) {
+  private Set<String> getGroups(Subject subject) throws SentryGroupNotFoundException {
     return groupService.getGroups(subject.getName());
   }
 
@@ -179,7 +189,8 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
   }
 
   @Override
-  public Set<String> listPrivilegesForSubject(Subject subject) throws SentryConfigurationException {
+  public Set<String> listPrivilegesForSubject(Subject subject)
+      throws SentryConfigurationException, SentryGroupNotFoundException {
     return policy.getPrivileges(getGroups(subject), Sets.newHashSet(subject.getName()),
         ActiveRoleSet.ALL, (Authorizable[]) null);
   }

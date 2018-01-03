@@ -39,6 +39,7 @@ import org.apache.hadoop.security.authentication.util.KerberosName;
 import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.sentry.binding.solr.conf.SolrAuthzConf;
 import org.apache.sentry.core.common.Subject;
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.model.solr.AdminOperation;
 import org.apache.sentry.core.model.solr.Collection;
 import org.apache.sentry.core.model.solr.SolrConstants;
@@ -268,7 +269,7 @@ public class SentrySolrPluginImpl implements AuthorizationPlugin {
   /**
    * This method returns the roles associated with the specified user name.
    */
-  public Set<String> getRoles (String userName) {
+  public Set<String> getRoles (String userName) throws SentryUserException {
     return binding.getRoles(userName);
   }
 

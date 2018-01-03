@@ -53,6 +53,9 @@ import com.google.common.collect.Sets;
 public class TestSentryGenericPolicyProcessor extends org.junit.Assert {
   private static final String ADMIN_GROUP = "admin_group";
   private static final String ADMIN_USER = "admin_user";
+  private static final String NOT_ADMIN_USER = "not_admin_user";
+  private static final String NOT_ADMIN_GROUP = "not_admin_group";
+  private static final String NO_GROUP_USER = "no_group_user";
 
   private SentryStoreLayer mockStore = Mockito.mock(SentryStoreLayer.class);
   private SentryGenericPolicyProcessor processor;
@@ -67,7 +70,7 @@ public class TestSentryGenericPolicyProcessor extends org.junit.Assert {
 
   @Test
   public void testNotAdminOperation() throws Exception {
-    String requestUser = "not_" + ADMIN_USER;
+    String requestUser = NOT_ADMIN_USER;
     Status validateStatus = Status.ACCESS_DENIED;
     testOperation(requestUser, validateStatus);
   }
@@ -217,6 +220,45 @@ public class TestSentryGenericPolicyProcessor extends org.junit.Assert {
   }
 
   @Test
+  public void testUserWithNoGroup() throws Exception {
+    setup();
+
+    TCreateSentryRoleRequest createrequest = new TCreateSentryRoleRequest();
+    createrequest.setRequestorUserName(NO_GROUP_USER);
+    createrequest.setRoleName("r1");
+    assertEquals(Status.ACCESS_DENIED, fromTSentryStatus(processor.create_sentry_role(createrequest).getStatus()));
+
+    TDropSentryRoleRequest dropRequest = new TDropSentryRoleRequest();
+    dropRequest.setRequestorUserName(NO_GROUP_USER);
+    dropRequest.setRoleName("r1");
+    assertEquals(Status.ACCESS_DENIED, fromTSentryStatus(processor.drop_sentry_role(dropRequest).getStatus()));
+
+    TAlterSentryRoleAddGroupsRequest addRequest = new TAlterSentryRoleAddGroupsRequest();
+    addRequest.setRequestorUserName(NO_GROUP_USER);
+    addRequest.setRoleName("r1");
+    addRequest.setGroups(Sets.newHashSet("g1"));
+    assertEquals(Status.ACCESS_DENIED, fromTSentryStatus(processor.alter_sentry_role_add_groups(addRequest).getStatus()));
+
+    TAlterSentryRoleDeleteGroupsRequest delRequest = new TAlterSentryRoleDeleteGroupsRequest();
+    delRequest.setRequestorUserName(NO_GROUP_USER);
+    delRequest.setRoleName("r1");
+    delRequest.setGroups(Sets.newHashSet("g1"));
+    assertEquals(Status.ACCESS_DENIED, fromTSentryStatus(processor.alter_sentry_role_delete_groups(delRequest).getStatus()));
+
+    TDropPrivilegesRequest dropPrivRequest = new TDropPrivilegesRequest();
+    dropPrivRequest.setRequestorUserName(NO_GROUP_USER);
+    dropPrivRequest.setPrivilege(new TSentryPrivilege("test", "test", new ArrayList<TAuthorizable>(), "test"));
+    assertEquals(Status.ACCESS_DENIED, fromTSentryStatus(processor.drop_sentry_privilege(dropPrivRequest).getStatus()));
+
+    TRenamePrivilegesRequest renameRequest = new TRenamePrivilegesRequest();
+    renameRequest.setRequestorUserName(NO_GROUP_USER);
+    assertEquals(Status.ACCESS_DENIED, fromTSentryStatus(processor.rename_sentry_privilege(renameRequest).getStatus()));
+
+    // Can't test GrantPrivilege / RevokePrivilege since the authorization happens
+    // in the persistence layer, which isn't setup in this test.
+  }
+
+  @Test
   public void testGetRolesAndPrivileges() throws Exception {
     String roleName = "r1";
     String groupName = "g1";
@@ -311,8 +353,10 @@ public class TestSentryGenericPolicyProcessor extends org.junit.Assert {
     public Set<String> getGroups(String user) {
       if (user.equalsIgnoreCase(ADMIN_USER)) {
         return Sets.newHashSet(ADMIN_GROUP);
+      } else if (user.equalsIgnoreCase(NOT_ADMIN_USER)){
+        return Sets.newHashSet(NOT_ADMIN_GROUP);
       } else {
-        return Sets.newHashSet("not" + ADMIN_GROUP);
+        return Collections.emptySet();
       }
     }
   }

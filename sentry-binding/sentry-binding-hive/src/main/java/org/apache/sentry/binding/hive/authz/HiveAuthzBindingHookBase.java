@@ -53,6 +53,7 @@ import org.apache.sentry.binding.hive.authz.HiveAuthzPrivileges.HiveOperationSco
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivileges.HiveOperationType;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.core.common.Subject;
+import org.apache.sentry.core.common.exception.SentryGroupNotFoundException;
 import org.apache.sentry.core.common.utils.PathUtils;
 import org.apache.sentry.core.model.db.AccessURI;
 import org.apache.sentry.core.model.db.Column;
@@ -74,6 +75,7 @@ import java.net.URL;
 import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -823,14 +825,20 @@ public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerH
       String userName) throws SemanticException {
     // get the original HiveAuthzBinding, and get the user's privileges by AuthorizationProvider
     AuthorizationProvider authProvider = hiveAuthzBinding.getCurrentAuthProvider();
-    Set<String> userPrivileges =
-        authProvider.getPolicyEngine().getPrivileges(
-            authProvider.getGroupMapping().getGroups(userName), Sets.newHashSet(userName),
-            hiveAuthzBinding.getActiveRoleSet(), hiveAuthzBinding.getAuthServer());
-
-    // create PrivilegeCache using user's privileges
-    PrivilegeCache privilegeCache = new SimplePrivilegeCache(userPrivileges);
     try {
+      Set<String> groups;
+      try {
+        groups = authProvider.getGroupMapping().getGroups(userName);
+      } catch (SentryGroupNotFoundException e) {
+        groups = Collections.emptySet();
+        LOG.debug("Could not find groups for user: " + userName);
+      }
+      Set<String> userPrivileges =
+          authProvider.getPolicyEngine().getPrivileges(groups, Sets.newHashSet(userName),
+              hiveAuthzBinding.getActiveRoleSet(), hiveAuthzBinding.getAuthServer());
+
+      // create PrivilegeCache using user's privileges
+      PrivilegeCache privilegeCache = new SimplePrivilegeCache(userPrivileges);
       // create new instance of HiveAuthzBinding whose backend provider should be SimpleCacheProviderBackend
       return new HiveAuthzBinding(HiveAuthzBinding.HiveHook.HiveServer2, hiveAuthzBinding.getHiveConf(),
               hiveAuthzBinding.getAuthzConf(), privilegeCache);

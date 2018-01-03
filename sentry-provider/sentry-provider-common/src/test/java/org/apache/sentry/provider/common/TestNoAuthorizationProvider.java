@@ -19,6 +19,8 @@ package org.apache.sentry.provider.common;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
+import org.apache.sentry.core.common.exception.SentryGroupNotFoundException;
+import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -32,8 +34,12 @@ public class TestNoAuthorizationProvider {
     assertFalse(nap.hasAccess(null, null, null, null));
 
     GroupMappingService gms = nap.getGroupMapping();
-    assertEquals(gms.getGroups(null).size(), 0);
-    assertEquals(gms.getGroups("").size(), 0);
-    assertEquals(gms.getGroups("a").size(), 0);
+    try {
+      assertEquals(gms.getGroups(null).size(), 0);
+      assertEquals(gms.getGroups("").size(), 0);
+      assertEquals(gms.getGroups("a").size(), 0);
+    } catch (SentryGroupNotFoundException e) {
+      Assert.fail("SentryGroupsNotFoundException should not be thrown");
+    }
   }
 }

@@ -34,6 +34,7 @@ import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.Model;
 import org.apache.sentry.core.common.Subject;
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.model.solr.SolrPrivilegeModel;
 import org.apache.sentry.core.model.solr.AdminOperation;
 import org.apache.sentry.core.model.solr.Collection;
@@ -214,7 +215,7 @@ public class SolrAuthzBinding implements Closeable {
    * @deprecated use getRoles instead
    */
   @Deprecated
-  public Set<String> getGroups(String user) {
+  public Set<String> getGroups(String user) throws SentryUserException {
     return groupMapping.getGroups(user);
   }
 
@@ -222,8 +223,9 @@ public class SolrAuthzBinding implements Closeable {
    * Get the roles associated with the user
    * @param user
    * @return The roles associated with the user
+   * @throws SentryUserException
    */
-  public Set<String> getRoles(String user) {
+  public Set<String> getRoles(String user) throws SentryUserException {
     return providerBackend.getRoles(getGroups(user), ActiveRoleSet.ALL);
   }
 

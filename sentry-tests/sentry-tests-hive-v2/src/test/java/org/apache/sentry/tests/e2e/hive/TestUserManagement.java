@@ -19,7 +19,6 @@ package org.apache.sentry.tests.e2e.hive;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -28,7 +27,6 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 
 import org.apache.hadoop.mapreduce.JobContext;
-import org.apache.hive.service.cli.HiveSQLException;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.junit.After;
 import org.junit.Before;
@@ -364,23 +362,12 @@ public class TestUserManagement extends AbstractTestWithStaticConfiguration {
     statement.close();
     connection.close();
 
-    // user1 hasn't any group
+    // user1 has no group
     connection = context.createConnection("user1");
     statement = context.createStatement(connection);
-    // for any sql need to be authorized, exception will be thrown if the uer hasn't any group
-    // information
-    try {
-      statement.execute("CREATE TABLE db1.t1 (under_col int, value string)");
-      fail("User without group configuration, SentryGroupNotFoundException should be thrown ");
-    } catch (HiveSQLException hse) {
-      assertTrue(hse.getMessage().indexOf("SentryGroupNotFoundException") >= 0);
-    }
-    try {
-      statement.execute("SELECT under_col from db1.t1");
-      fail("User without group configuration, SentryGroupNotFoundException should be thrown ");
-    } catch (HiveSQLException hse) {
-      assertTrue(hse.getMessage().indexOf("SentryGroupNotFoundException") >= 0);
-    }
+    context.assertAuthzException(statement,
+        "CREATE TABLE db1.t1 (under_col int, value string)");
+    context.assertAuthzException(statement, "SELECT under_col from db1.t1");
     statement.close();
     connection.close();
   }

@@ -391,7 +391,7 @@ public class HiveAuthzBinding {
     return activeRoleSet;
   }
 
-  public Set<String> getGroups(Subject subject) {
+  public Set<String> getGroups(Subject subject) throws SentryUserException {
     return authProvider.getGroupMapping().getGroups(subject.getName());
   }
 

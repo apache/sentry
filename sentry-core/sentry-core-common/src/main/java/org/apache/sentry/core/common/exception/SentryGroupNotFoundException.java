@@ -17,45 +17,26 @@
 
 package org.apache.sentry.core.common.exception;
 
-public class SentryGroupNotFoundException extends RuntimeException {
+public class SentryGroupNotFoundException extends SentryUserException {
   private static final long serialVersionUID = -116202866086371881L;
 
   /**
-   * Creates a new SentryGroupNotFoundException.
+   * Constructs a new SentryGroupNotFoundException.
+   *
+   * @param msg  The reason for the exception
    */
-  public SentryGroupNotFoundException() {
-    super();
+  public SentryGroupNotFoundException(String msg) {
+    super(msg);
   }
 
   /**
    * Constructs a new SentryGroupNotFoundException.
    *
-   * @param message
-   *        the reason for the exception
-   */
-  public SentryGroupNotFoundException(String message) {
-    super(message);
-  }
-
-  /**
-   * Constructs a new SentryGroupNotFoundException.
+   * @param msg  The message to send
+   * @param t    The underlying exception
    *
-   * @param cause
-   *        the underlying Throwable that caused this exception to be thrown.
    */
-  public SentryGroupNotFoundException(Throwable cause) {
-    super(cause);
-  }
-
-  /**
-   * Constructs a new SentryGroupNotFoundException.
-   *
-   * @param message
-   *        the reason for the exception
-   * @param cause
-   *        the underlying Throwable that caused this exception to be thrown.
-   */
-  public SentryGroupNotFoundException(String message, Throwable cause) {
-    super(message, cause);
+  public SentryGroupNotFoundException(String msg, Throwable t) {
+    super(msg, t);
   }
 }

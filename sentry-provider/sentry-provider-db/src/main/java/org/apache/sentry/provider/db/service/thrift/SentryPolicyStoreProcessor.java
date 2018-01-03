@@ -211,6 +211,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     } catch (SentryAccessDeniedException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (SentryGroupNotFoundException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
     } catch (SentryThriftAPIMismatchException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.THRIFT_VERSION_MISMATCH(e.getMessage(), e));
@@ -280,6 +283,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.InvalidInput(e.getMessage(), e));
     } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (SentryGroupNotFoundException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.AccessDenied(e.getMessage(), e));
     } catch (SentryThriftAPIMismatchException e) {
@@ -368,6 +374,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     } catch (SentryAccessDeniedException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (SentryGroupNotFoundException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
     } catch (SentryThriftAPIMismatchException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.THRIFT_VERSION_MISMATCH(e.getMessage(), e));
@@ -426,6 +435,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     } catch (SentryAccessDeniedException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (SentryGroupNotFoundException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
     } catch (SentryThriftAPIMismatchException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.THRIFT_VERSION_MISMATCH(e.getMessage(), e));
@@ -482,6 +494,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     } catch (SentryAccessDeniedException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (SentryGroupNotFoundException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
     } catch (SentryThriftAPIMismatchException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.THRIFT_VERSION_MISMATCH(e.getMessage(), e));
@@ -520,6 +535,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       LOGGER.error(msg, e);
       response.setStatus(Status.NoSuchObject(msg, e));
     } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (SentryGroupNotFoundException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.AccessDenied(e.getMessage(), e));
     } catch (SentryThriftAPIMismatchException e) {
@@ -561,6 +579,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       LOGGER.error(msg, e);
       response.setStatus(Status.NoSuchObject(msg, e));
     } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (SentryGroupNotFoundException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.AccessDenied(e.getMessage(), e));
     } catch (SentryThriftAPIMismatchException e) {
@@ -620,6 +641,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     } catch (SentryAccessDeniedException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (SentryGroupNotFoundException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
     } catch (SentryThriftAPIMismatchException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.THRIFT_VERSION_MISMATCH(e.getMessage(), e));
@@ -663,7 +687,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
         //Non admin users are only allowed to list only groups which they belong to
         if(!admin && (request.getGroupName() == null || !groups.contains(request.getGroupName()))) {
           throw new SentryAccessDeniedException("Access denied to " + subject);
-        }else {
+        } else {
           groups.clear();
           groups.add(request.getGroupName());
         }
@@ -677,6 +701,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       LOGGER.error(msg, e);
       response.setStatus(Status.NoSuchObject(msg, e));
     } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (SentryGroupNotFoundException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.AccessDenied(e.getMessage(), e));
     } catch (SentryThriftAPIMismatchException e) {
@@ -708,8 +735,24 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
         throw new SentryAccessDeniedException("The user name can't be empty.");
       }
 
-      Set<String> requestorGroups = getRequestorGroups(requestor);
-      Set<String> userGroups = getRequestorGroups(userName);
+      Set<String> requestorGroups;
+      try {
+        requestorGroups = getRequestorGroups(requestor);
+      } catch (SentryGroupNotFoundException e) {
+        LOGGER.error(e.getMessage(), e);
+        response.setStatus(Status.AccessDenied(e.getMessage(), e));
+        return response;
+      }
+
+      Set<String> userGroups;
+      try {
+        userGroups = getRequestorGroups(userName);
+      } catch (SentryGroupNotFoundException e) {
+        LOGGER.error(e.getMessage(), e);
+        String msg = "Groups for user " + userName + " do not exist: " + e.getMessage();
+        response.setStatus(Status.AccessDenied(msg, e));
+        return response;
+      }
       boolean isAdmin = inAdminGroups(requestorGroups);
 
       // Only admin users can list other user's roles in the system
@@ -720,10 +763,6 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       roleSet = sentryStore.getTSentryRolesByUserNames(Sets.newHashSet(userName));
       response.setRoles(roleSet);
       response.setStatus(Status.OK());
-    } catch (SentryGroupNotFoundException e) {
-      LOGGER.error(e.getMessage(), e);
-      String msg = "Group couldn't be retrieved for " + requestor + " or " + userName + ".";
-      response.setStatus(Status.AccessDenied(msg, e));
     } catch (SentryNoSuchObjectException e) {
       response.setRoles(roleSet);
       String msg = "Role: " + request + " couldn't be retrieved.";
@@ -777,6 +816,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       LOGGER.error(msg, e);
       response.setStatus(Status.NoSuchObject(msg, e));
     } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (SentryGroupNotFoundException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.AccessDenied(e.getMessage(), e));
     } catch (SentryThriftAPIMismatchException e) {
@@ -901,6 +943,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     } catch (SentryAccessDeniedException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (SentryGroupNotFoundException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
     } catch (SentryThriftAPIMismatchException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.THRIFT_VERSION_MISMATCH(e.getMessage(), e));
@@ -940,6 +985,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       }
       response.setStatus(Status.OK());
     } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (SentryGroupNotFoundException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.AccessDenied(e.getMessage(), e));
     } catch (SentryThriftAPIMismatchException e) {
@@ -1008,6 +1056,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       response.setStatus(Status.OK());
       // TODO : Sentry - HDFS : Have to handle this
     } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (SentryGroupNotFoundException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.AccessDenied(e.getMessage(), e));
     } catch (SentryThriftAPIMismatchException e) {
@@ -1113,6 +1164,12 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
 
       response.setMappingData(tSentryMappingData);
       response.setStatus(Status.OK());
+    } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (SentryGroupNotFoundException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
     } catch (Exception e) {
       String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
       LOGGER.error(msg, e);
@@ -1137,6 +1194,12 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       }
       sentryStore.importSentryMetaData(request.getMappingData(), request.isOverwriteRole());
       response.setStatus(Status.OK());
+    } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (SentryGroupNotFoundException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
     } catch (SentryInvalidInputException e) {
       String msg = "Invalid input privilege object";
       LOGGER.error(msg, e);

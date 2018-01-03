@@ -59,10 +59,20 @@ public class TestLocalGroupMapping {
 
   @Test
   public void testGroupMapping() {
-    Set<String> fooGroupsFromResource = localGroupMapping.getGroups("foo");
+    Set<String> fooGroupsFromResource = null;
+    try {
+      fooGroupsFromResource = localGroupMapping.getGroups("foo");
+    } catch (SentryGroupNotFoundException e) {
+      Assert.fail("SentryGroupNotFoundException should not be thrown");
+    }
     Assert.assertEquals(fooGroupsFromResource, fooGroups);
 
-    Set<String> barGroupsFromResource = localGroupMapping.getGroups("bar");
+    Set<String> barGroupsFromResource = null;
+    try {
+      barGroupsFromResource = localGroupMapping.getGroups("bar");
+    } catch (SentryGroupNotFoundException e) {
+      Assert.fail("SentryGroupNotFoundException should not be thrown");
+    }
     Assert.assertEquals(barGroupsFromResource, barGroups);
 
     try {

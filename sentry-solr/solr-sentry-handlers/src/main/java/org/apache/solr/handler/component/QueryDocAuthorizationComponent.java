@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.sentry.binding.solr.authz.SentrySolrPluginImpl;
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -166,8 +167,13 @@ public class QueryDocAuthorizationComponent extends SearchComponent
       throw new SolrException(SolrException.ErrorCode.UNAUTHORIZED, getClass().getSimpleName() +
           " can only be used with Sentry authorization plugin for Solr");
     }
-
-    return ((SentrySolrPluginImpl)plugin).getRoles(userName);
+    try {
+      return ((SentrySolrPluginImpl)plugin).getRoles(userName);
+    } catch (SentryUserException e) {
+      throw new SolrException(SolrException.ErrorCode.UNAUTHORIZED,
+        "Request from user: " + userName +
+        " rejected due to SentryUserException: ", e);
+    }
   }
 
 }

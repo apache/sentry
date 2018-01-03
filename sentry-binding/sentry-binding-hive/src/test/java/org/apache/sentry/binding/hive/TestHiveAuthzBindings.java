@@ -42,7 +42,6 @@ import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.core.model.db.Table;
-import org.apache.sentry.core.common.exception.SentryGroupNotFoundException;
 import org.apache.sentry.core.common.utils.PolicyFiles;
 import org.junit.After;
 import org.junit.Before;
@@ -299,7 +298,7 @@ public class TestHiveAuthzBindings {
         inputTabHierarcyList, outputTabHierarcyList);
   }
 
-  @Test(expected = SentryGroupNotFoundException.class)
+  @Test(expected = AuthorizationException.class)
   public void testValidateCreateFunctionRejectionForUnknownUser() throws Exception {
     inputTabHierarcyList.add(Arrays.asList(new DBModelAuthorizable[] {
         new Server(SERVER1), new AccessURI("file:///path/to/some/lib/dir/my.jar")

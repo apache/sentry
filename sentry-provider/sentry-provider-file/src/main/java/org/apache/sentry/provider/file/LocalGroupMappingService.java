@@ -85,7 +85,7 @@ public class LocalGroupMappingService implements GroupMappingService {
   }
 
   @Override
-  public Set<String> getGroups(String user) {
+  public Set<String> getGroups(String user) throws SentryGroupNotFoundException {
     Set<String> groups = groupMap.get(user);
     if (groups == null || groups.isEmpty()) {
       throw new SentryGroupNotFoundException("Unable to obtain groups for " + user);

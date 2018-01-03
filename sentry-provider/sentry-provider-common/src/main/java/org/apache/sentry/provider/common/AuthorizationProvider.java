@@ -25,6 +25,7 @@ import org.apache.sentry.core.common.Action;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.exception.SentryConfigurationException;
+import org.apache.sentry.core.common.exception.SentryGroupNotFoundException;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.policy.common.PolicyEngine;
 
@@ -71,7 +72,8 @@ public interface AuthorizationProvider {
    * @return
    * @throws SentryConfigurationException
    */
-  Set<String> listPrivilegesForSubject(Subject subject) throws SentryConfigurationException;
+  Set<String> listPrivilegesForSubject(Subject subject)
+      throws SentryConfigurationException, SentryGroupNotFoundException;
 
   /**
    * Returns the list privileges for the given group

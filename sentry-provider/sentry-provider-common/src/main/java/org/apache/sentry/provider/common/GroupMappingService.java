@@ -17,8 +17,9 @@
 package org.apache.sentry.provider.common;
 
 import java.util.Set;
-
 import javax.annotation.concurrent.ThreadSafe;
+
+import org.apache.sentry.core.common.exception.SentryGroupNotFoundException;
 
 /**
  * Interface so the Groups class is easier to unit test with.
@@ -31,5 +32,5 @@ public interface GroupMappingService {
   /**
    * @return non-null list of groups for user
    */
-  Set<String> getGroups(String user);
+  Set<String> getGroups(String user) throws SentryGroupNotFoundException;
 }

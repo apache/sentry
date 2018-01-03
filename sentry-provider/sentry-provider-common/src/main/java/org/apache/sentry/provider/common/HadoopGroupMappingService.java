@@ -54,7 +54,7 @@ public class HadoopGroupMappingService implements GroupMappingService {
   }
 
   @Override
-  public Set<String> getGroups(String user) {
+  public Set<String> getGroups(String user) throws SentryGroupNotFoundException {
     List<String> groupList = Lists.newArrayList();
     try {
       groupList = groups.getGroups(user);
