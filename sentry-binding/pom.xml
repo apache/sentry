@@ -34,6 +34,7 @@ limitations under the License.
     <module>sentry-binding-hive-common</module>
     <module>sentry-binding-solr</module>
     <module>sentry-binding-sqoop</module>
+    <module>sentry-binding-hbase-indexer</module>
     <module>sentry-binding-hive-conf</module>
     <module>sentry-binding-hive-follower</module>
   </modules>
