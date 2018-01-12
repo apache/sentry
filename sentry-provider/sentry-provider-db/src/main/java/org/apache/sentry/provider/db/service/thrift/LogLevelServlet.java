@@ -107,11 +107,11 @@ public class LogLevelServlet extends HttpServlet {
         logInstance.setLevel(Level.toLevel(level));
         out.write(String.format(FORMS_SET,
                 escapeHtml(logName),
-                level,
-                level,
+                escapeHtml(level),
+                escapeHtml(level),
                 logInstance.getEffectiveLevel().toString()));
       } else {
-        response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid log level: " + level);
+        response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid log level: " + escapeHtml(level));
         return;
       }
     }
