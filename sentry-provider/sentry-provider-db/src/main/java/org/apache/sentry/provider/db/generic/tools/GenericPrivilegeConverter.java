@@ -35,6 +35,8 @@ import org.apache.sentry.core.common.utils.PolicyFileConstants;
 import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.common.validator.PrivilegeValidator;
 import org.apache.sentry.core.common.validator.PrivilegeValidatorContext;
+import org.apache.sentry.core.model.indexer.IndexerModelAuthorizables;
+import org.apache.sentry.core.model.indexer.IndexerPrivilegeModel;
 import org.apache.sentry.core.model.kafka.KafkaAuthorizable;
 import org.apache.sentry.core.model.kafka.KafkaModelAuthorizables;
 import org.apache.sentry.core.model.kafka.KafkaPrivilegeModel;
@@ -158,25 +160,29 @@ public class GenericPrivilegeConverter implements TSentryPrivilegeConverter {
     }
   }
 
-  private List<PrivilegeValidator> getPrivilegeValidators() throws SentryUserException {
+  protected List<PrivilegeValidator> getPrivilegeValidators() throws SentryUserException {
     if (AuthorizationComponent.KAFKA.equals(component)) {
       return KafkaPrivilegeModel.getInstance().getPrivilegeValidators();
     } else if ("SOLR".equals(component)) {
       return SolrPrivilegeModel.getInstance().getPrivilegeValidators();
     } else if (AuthorizationComponent.SQOOP.equals(component)) {
       return SqoopPrivilegeModel.getInstance().getPrivilegeValidators(service);
+    } else if (AuthorizationComponent.HBASE_INDEXER.equals(component)) {
+      return IndexerPrivilegeModel.getInstance().getPrivilegeValidators();
     }
 
     throw new SentryUserException("Invalid component specified for GenericPrivilegeCoverter: " + component);
   }
 
-  private Authorizable getAuthorizable(KeyValue keyValue) throws SentryUserException {
+  protected Authorizable getAuthorizable(KeyValue keyValue) throws SentryUserException {
     if (AuthorizationComponent.KAFKA.equals(component)) {
       return KafkaModelAuthorizables.from(keyValue);
     } else if ("SOLR".equals(component)) {
       return SolrModelAuthorizables.from(keyValue);
     } else if (AuthorizationComponent.SQOOP.equals(component)) {
       return SqoopModelAuthorizables.from(keyValue);
+    } else if (AuthorizationComponent.HBASE_INDEXER.equals(component)) {
+      return IndexerModelAuthorizables.from(keyValue);
     }
 
     throw new SentryUserException("Invalid component specified for GenericPrivilegeCoverter: " + component);

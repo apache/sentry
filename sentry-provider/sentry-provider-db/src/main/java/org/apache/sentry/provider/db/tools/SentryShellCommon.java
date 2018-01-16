@@ -43,11 +43,13 @@ abstract public class SentryShellCommon {
   public static final String OPTION_DESC_ROLE_NAME = "Role name";
   public static final String OPTION_DESC_GROUP_NAME = "Group name";
   public static final String OPTION_DESC_PRIVILEGE = "Privilege string";
+  public final static String OPTION_DESC_SERVICE = "Name of the service being managed";
   public static final String PREFIX_MESSAGE_MISSING_OPTION = "Missing required option: ";
 
   public static final String GROUP_SPLIT_CHAR = ",";
 
   protected String roleName;
+  protected String serviceName;
   protected String groupName;
   protected String privilegeStr;
   protected String confPath;
@@ -90,6 +92,78 @@ abstract public class SentryShellCommon {
   protected boolean parseArgs(String[] args) {
     Options simpleShellOptions = new Options();
 
+    setupOptions(simpleShellOptions);
+
+
+
+    // help option
+    Option helpOpt = new Option("h", "help", false, OPTION_DESC_HELP);
+    helpOpt.setRequired(false);
+    simpleShellOptions.addOption(helpOpt);
+
+    // this Options is parsed first for help option
+    Options helpOptions = new Options();
+    helpOptions.addOption(helpOpt);
+
+    try {
+      Parser parser = new GnuParser();
+
+      // parse help option first
+      CommandLine cmd = parser.parse(helpOptions, args, true);
+      for (Option opt : cmd.getOptions()) {
+        if (opt.getOpt().equals("h")) {
+          // get the help option, print the usage and exit
+          usage(simpleShellOptions);
+          return false;
+        }
+      }
+
+      // without help option
+      cmd = parser.parse(simpleShellOptions, args);
+
+      parseOptions(cmd);
+    } catch (ParseException pe) {
+      System.out.println(pe.getMessage());
+      usage(simpleShellOptions);
+      return false;
+    }
+    return true;
+  }
+
+  protected void setupOptions(Options simpleShellOptions) {
+    OptionGroup simpleShellOptGroup = getMainOptions();
+    simpleShellOptions.addOptionGroup(simpleShellOptGroup);
+
+    Option sOpt = new Option("s", "service", true, OPTION_DESC_SERVICE);
+    sOpt.setRequired(false);
+    simpleShellOptions.addOption(sOpt);
+
+    // optional args
+    Option pOpt = new Option("p", "privilege", true, OPTION_DESC_PRIVILEGE);
+    pOpt.setRequired(false);
+    simpleShellOptions.addOption(pOpt);
+
+    Option gOpt = new Option("g", "groupname", true, OPTION_DESC_GROUP_NAME);
+    gOpt.setRequired(false);
+    simpleShellOptions.addOption(gOpt);
+
+    Option rOpt = new Option("r", "rolename", true, OPTION_DESC_ROLE_NAME);
+    rOpt.setRequired(false);
+    simpleShellOptions.addOption(rOpt);
+
+    // this argument should also be parsed in the bin/sentryShell
+    Option tOpt = new Option("t", "type", true, "[hive|solr|sqoop|.....]");
+    tOpt.setRequired(false);
+    simpleShellOptions.addOption(tOpt);
+
+    // file path of sentry-site
+    Option sentrySitePathOpt = new Option("conf", "sentry_conf", true, OPTION_DESC_CONF);
+    sentrySitePathOpt.setRequired(true);
+    simpleShellOptions.addOption(sentrySitePathOpt);
+  }
+
+  protected OptionGroup getMainOptions() {
+    OptionGroup simpleShellOptGroup = new OptionGroup();
     Option crOpt = new Option("cr", "create_role", false, "Create role");
     crOpt.setRequired(false);
 
@@ -117,8 +191,8 @@ abstract public class SentryShellCommon {
     Option lgOpt = new Option("lg", "list_group", false, "List groups");
     lgOpt.setRequired(false);
 
+
     // required args group
-    OptionGroup simpleShellOptGroup = new OptionGroup();
     simpleShellOptGroup.addOption(crOpt);
     simpleShellOptGroup.addOption(drOpt);
     simpleShellOptGroup.addOption(argOpt);
@@ -129,110 +203,60 @@ abstract public class SentryShellCommon {
     simpleShellOptGroup.addOption(lpOpt);
     simpleShellOptGroup.addOption(lgOpt);
     simpleShellOptGroup.setRequired(true);
-    simpleShellOptions.addOptionGroup(simpleShellOptGroup);
-
-    // optional args
-    Option pOpt = new Option("p", "privilege", true, OPTION_DESC_PRIVILEGE);
-    pOpt.setRequired(false);
-    simpleShellOptions.addOption(pOpt);
-
-    Option gOpt = new Option("g", "groupname", true, OPTION_DESC_GROUP_NAME);
-    gOpt.setRequired(false);
-    simpleShellOptions.addOption(gOpt);
-
-    Option rOpt = new Option("r", "rolename", true, OPTION_DESC_ROLE_NAME);
-    rOpt.setRequired(false);
-    simpleShellOptions.addOption(rOpt);
-
-    // this argument should also be parsed in the bin/sentryShell
-    Option tOpt = new Option("t", "type", true, "[hive|solr|sqoop|.....]");
-    tOpt.setRequired(false);
-    simpleShellOptions.addOption(tOpt);
-
-    // file path of sentry-site
-    Option sentrySitePathOpt = new Option("conf", "sentry_conf", true, OPTION_DESC_CONF);
-    sentrySitePathOpt.setRequired(true);
-    simpleShellOptions.addOption(sentrySitePathOpt);
-
-    // help option
-    Option helpOpt = new Option("h", "help", false, OPTION_DESC_HELP);
-    helpOpt.setRequired(false);
-    simpleShellOptions.addOption(helpOpt);
-
-    // this Options is parsed first for help option
-    Options helpOptions = new Options();
-    helpOptions.addOption(helpOpt);
-
-    try {
-      Parser parser = new GnuParser();
-
-      // parse help option first
-      CommandLine cmd = parser.parse(helpOptions, args, true);
-      for (Option opt : cmd.getOptions()) {
-        if (opt.getOpt().equals("h")) {
-          // get the help option, print the usage and exit
-          usage(simpleShellOptions);
-          return false;
-        }
-      }
-
-      // without help option
-      cmd = parser.parse(simpleShellOptions, args);
-
-      for (Option opt : cmd.getOptions()) {
-        if (opt.getOpt().equals("p")) {
-          privilegeStr = opt.getValue();
-        } else if (opt.getOpt().equals("g")) {
-          groupName = opt.getValue();
-        } else if (opt.getOpt().equals("r")) {
-          roleName = opt.getValue();
-        } else if (opt.getOpt().equals("cr")) {
-          isCreateRole = true;
-          roleNameRequired = true;
-        } else if (opt.getOpt().equals("dr")) {
-          isDropRole = true;
-          roleNameRequired = true;
-        } else if (opt.getOpt().equals("arg")) {
-          isAddRoleGroup = true;
-          roleNameRequired = true;
-          groupNameRequired = true;
-        } else if (opt.getOpt().equals("drg")) {
-          isDeleteRoleGroup = true;
-          roleNameRequired = true;
-          groupNameRequired = true;
-        } else if (opt.getOpt().equals("gpr")) {
-          isGrantPrivilegeRole = true;
-          roleNameRequired = true;
-          privilegeStrRequired = true;
-        } else if (opt.getOpt().equals("rpr")) {
-          isRevokePrivilegeRole = true;
-          roleNameRequired = true;
-          privilegeStrRequired = true;
-        } else if (opt.getOpt().equals("lr")) {
-          isListRole = true;
-        } else if (opt.getOpt().equals("lp")) {
-          isListPrivilege = true;
-          roleNameRequired = true;
-        } else if (opt.getOpt().equals("lg")) {
-          isListGroup = true;
-        } else if (opt.getOpt().equals("conf")) {
-          confPath = opt.getValue();
-        } else if (opt.getOpt().equals("t")) {
-          type = TYPE.valueOf(opt.getValue());
-        }
-      }
-      checkRequiredParameter(roleNameRequired, roleName, OPTION_DESC_ROLE_NAME);
-      checkRequiredParameter(groupNameRequired, groupName, OPTION_DESC_GROUP_NAME);
-      checkRequiredParameter(privilegeStrRequired, privilegeStr, OPTION_DESC_PRIVILEGE);
-    } catch (ParseException pe) {
-      System.out.println(pe.getMessage());
-      usage(simpleShellOptions);
-      return false;
-    }
-    return true;
+    return simpleShellOptGroup;
   }
 
-  private void checkRequiredParameter(boolean isRequired, String paramValue, String paramName) throws ParseException {
+  protected void parseOptions(CommandLine cmd) throws ParseException {
+    for (Option opt : cmd.getOptions()) {
+      if (opt.getOpt().equals("p")) {
+        privilegeStr = opt.getValue();
+      } else if (opt.getOpt().equals("g")) {
+        groupName = opt.getValue();
+      } else if (opt.getOpt().equals("r")) {
+        roleName = opt.getValue();
+      } else if (opt.getOpt().equals("s")) {
+        serviceName = opt.getValue();
+      } else if (opt.getOpt().equals("cr")) {
+        isCreateRole = true;
+        roleNameRequired = true;
+      } else if (opt.getOpt().equals("dr")) {
+        isDropRole = true;
+        roleNameRequired = true;
+      } else if (opt.getOpt().equals("arg")) {
+        isAddRoleGroup = true;
+        roleNameRequired = true;
+        groupNameRequired = true;
+      } else if (opt.getOpt().equals("drg")) {
+        isDeleteRoleGroup = true;
+        roleNameRequired = true;
+        groupNameRequired = true;
+      } else if (opt.getOpt().equals("gpr")) {
+        isGrantPrivilegeRole = true;
+        roleNameRequired = true;
+        privilegeStrRequired = true;
+      } else if (opt.getOpt().equals("rpr")) {
+        isRevokePrivilegeRole = true;
+        roleNameRequired = true;
+        privilegeStrRequired = true;
+      } else if (opt.getOpt().equals("lr")) {
+        isListRole = true;
+      } else if (opt.getOpt().equals("lp")) {
+        isListPrivilege = true;
+        roleNameRequired = true;
+      } else if (opt.getOpt().equals("lg")) {
+        isListGroup = true;
+      } else if (opt.getOpt().equals("conf")) {
+        confPath = opt.getValue();
+      } else if (opt.getOpt().equals("t")) {
+        type = TYPE.valueOf(opt.getValue());
+      }
+    }
+    checkRequiredParameter(roleNameRequired, roleName, OPTION_DESC_ROLE_NAME);
+    checkRequiredParameter(groupNameRequired, groupName, OPTION_DESC_GROUP_NAME);
+    checkRequiredParameter(privilegeStrRequired, privilegeStr, OPTION_DESC_PRIVILEGE);
+  }
+
+  protected void checkRequiredParameter(boolean isRequired, String paramValue, String paramName) throws ParseException {
     if (isRequired && StringUtils.isEmpty(paramValue)) {
       throw new ParseException(PREFIX_MESSAGE_MISSING_OPTION + paramName);
     }

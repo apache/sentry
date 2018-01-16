@@ -18,9 +18,7 @@
 
 package org.apache.sentry.provider.db.generic.tools;
 
-import java.util.List;
-import java.util.Set;
-
+import com.google.common.collect.Sets;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -35,7 +33,8 @@ import org.apache.sentry.provider.db.tools.ShellCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Sets;
+import java.util.List;
+import java.util.Set;
 
 /**
  * SentryShellGeneric is an admin tool, and responsible for the management of repository.
@@ -60,7 +59,7 @@ public class SentryShellGeneric extends SentryShellCommon {
                 SentryGenericServiceClientFactory.create(conf)) {
       UserGroupInformation ugi = UserGroupInformation.getLoginUser();
       String requestorName = ugi.getShortUserName();
-      TSentryPrivilegeConverter converter = new GenericPrivilegeConverter(component, service);
+      TSentryPrivilegeConverter converter = getPrivilegeConverter(component, service);
       ShellCommand command = new GenericShellCommand(client, component, service, converter);
 
       // check the requestor name
@@ -102,7 +101,11 @@ public class SentryShellGeneric extends SentryShellCommon {
     }
   }
 
-  private String getComponent() throws Exception {
+  protected GenericPrivilegeConverter getPrivilegeConverter(String component, String service) {
+    return new GenericPrivilegeConverter(component, service);
+  }
+
+  protected String getComponent() throws Exception {
     if (type == TYPE.kafka) {
       return AuthorizationComponent.KAFKA;
     } else if (type == TYPE.solr) {
@@ -114,7 +117,7 @@ public class SentryShellGeneric extends SentryShellCommon {
     throw new Exception("Invalid type specified for SentryShellGeneric: " + type);
   }
 
-  private String getService(Configuration conf) throws Exception {
+  protected String getService(Configuration conf) throws Exception {
     if (type == TYPE.kafka) {
       return conf.get(KAFKA_SERVICE_NAME, AuthorizationComponent.KAFKA);
     } else if (type == TYPE.solr) {

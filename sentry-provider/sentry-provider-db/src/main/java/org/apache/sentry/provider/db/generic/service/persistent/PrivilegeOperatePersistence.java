@@ -34,6 +34,7 @@ import org.apache.sentry.core.common.Action;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.BitFieldAction;
 import org.apache.sentry.core.common.BitFieldActionFactory;
+import org.apache.sentry.core.model.indexer.IndexerActionFactory;
 import org.apache.sentry.core.model.kafka.KafkaActionFactory;
 import org.apache.sentry.core.model.solr.SolrActionFactory;
 import org.apache.sentry.core.model.sqoop.SqoopActionFactory;
@@ -70,6 +71,7 @@ public class PrivilegeOperatePersistence {
     actionFactories.put("solr", new SolrActionFactory());
     actionFactories.put("sqoop", new SqoopActionFactory());
     actionFactories.put("kafka", KafkaActionFactory.getInstance());
+    actionFactories.put("hbaseindexer", new IndexerActionFactory());
   }
 
   private final Configuration conf;
