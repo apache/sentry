@@ -18,7 +18,6 @@
 
 package org.apache.sentry.provider.db.generic.tools;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
@@ -30,8 +29,6 @@ import org.apache.sentry.core.common.Action;
 import org.apache.sentry.core.common.exception.SentryConfigurationException;
 import org.apache.sentry.core.common.utils.KeyValue;
 import org.apache.sentry.core.common.utils.SentryConstants;
-import org.apache.sentry.core.common.validator.PrivilegeValidator;
-import org.apache.sentry.core.model.solr.SolrModelAuthorizables;
 import org.apache.sentry.core.model.solr.SolrPrivilegeModel;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
@@ -95,8 +92,7 @@ public class SentryConfigToolSolr extends SentryConfigToolCommon {
     SimpleFileProviderBackend policyFileBackend =
         new SimpleFileProviderBackend(conf, policyFile);
     ProviderBackendContext context = new ProviderBackendContext();
-    ImmutableList<PrivilegeValidator> privilegeValidators = SolrPrivilegeModel.getInstance().getPrivilegeValidators();
-    context.setValidators(privilegeValidators);
+    context.setValidators(SolrPrivilegeModel.getInstance().getPrivilegeValidators());
     policyFileBackend.initialize(context);
     if (validate) {
       validatePolicy(policyFileBackend);
@@ -110,8 +106,7 @@ public class SentryConfigToolSolr extends SentryConfigToolCommon {
     Set<String> roles = Sets.newHashSet();
     Table<String, String, Set<String>> groupRolePrivilegeTable =
         policyFileBackend.getGroupRolePrivilegeTable();
-    SolrModelAuthorizables authorizableFactory = new SolrModelAuthorizables();
-    GenericPrivilegeConverter converter = new GenericPrivilegeConverter(component, service, privilegeValidators, authorizableFactory, false);
+    GenericPrivilegeConverter converter = new GenericPrivilegeConverter(component, service, false);
 
     for (String groupName : groupRolePrivilegeTable.rowKeySet()) {
       for (String roleName : groupRolePrivilegeTable.columnKeySet()) {

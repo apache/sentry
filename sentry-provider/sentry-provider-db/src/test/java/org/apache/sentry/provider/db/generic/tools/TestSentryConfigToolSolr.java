@@ -33,8 +33,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.sentry.core.model.solr.SolrModelAuthorizables;
-import org.apache.sentry.core.model.solr.SolrPrivilegeModel;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceIntegrationBase;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryRole;
 import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
@@ -135,12 +133,7 @@ public class TestSentryConfigToolSolr extends SentryGenericServiceIntegrationBas
         }
 
         // check privileges
-        GenericPrivilegeConverter convert = new GenericPrivilegeConverter(
-                SOLR,
-                service,
-                SolrPrivilegeModel.getInstance().getPrivilegeValidators(),
-                new SolrModelAuthorizables(),
-                true);
+        GenericPrivilegeConverter convert = new GenericPrivilegeConverter(SOLR, service);
         for (String role : roles) {
           Set<TSentryPrivilege> privileges = client.listAllPrivilegesByRoleName(
               requestorName, role, SOLR, service);

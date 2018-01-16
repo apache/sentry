@@ -25,11 +25,12 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.sentry.provider.common.AuthorizationComponent;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
 import org.apache.sentry.provider.db.generic.tools.command.GenericShellCommand;
+import org.apache.sentry.provider.db.generic.tools.command.TSentryPrivilegeConverter;
 import org.apache.sentry.provider.db.tools.SentryShellCommon;
-import org.apache.sentry.service.thrift.ServiceConstants;
 import org.apache.sentry.provider.db.tools.ShellCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,26 +43,25 @@ import com.google.common.collect.Sets;
  * create role, drop role, add group to role, grant privilege to role,
  * revoke privilege from role, list roles, list privilege for role.
  */
-abstract public class SentryShellGeneric extends SentryShellCommon {
+public class SentryShellGeneric extends SentryShellCommon {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryShellGeneric.class);
-
-  abstract protected GenericPrivilegeConverter getPrivilegeConverter(String component, String service);
-
-  abstract protected String getComponent(Configuration conf);
+  private static final String KAFKA_SERVICE_NAME = "sentry.service.client.kafka.service.name";
+  private static final String SOLR_SERVICE_NAME = "sentry.service.client.solr.service.name";
+  private static final String SQOOP_SERVICE_NAME = "sentry.service.client.sqoop.service.name";
 
   @Override
   public void run() throws Exception {
+    String component = getComponent();
     Configuration conf = getSentryConf();
 
-    String component = getComponent(conf);
-    String service = getServiceName(conf);
-
+    String service = getService(conf);
     try (SentryGenericServiceClient client =
-                 SentryGenericServiceClientFactory.create(conf)) {
+                SentryGenericServiceClientFactory.create(conf)) {
       UserGroupInformation ugi = UserGroupInformation.getLoginUser();
       String requestorName = ugi.getShortUserName();
-      ShellCommand command = new GenericShellCommand(client, component, service, getPrivilegeConverter(component, service));
+      TSentryPrivilegeConverter converter = new GenericPrivilegeConverter(component, service);
+      ShellCommand command = new GenericShellCommand(client, component, service, converter);
 
       // check the requestor name
       if (StringUtils.isEmpty(requestorName)) {
@@ -102,12 +102,28 @@ abstract public class SentryShellGeneric extends SentryShellCommon {
     }
   }
 
-  protected String getServiceName(Configuration conf) {
-    return getServiceNameGeneric(conf);
+  private String getComponent() throws Exception {
+    if (type == TYPE.kafka) {
+      return AuthorizationComponent.KAFKA;
+    } else if (type == TYPE.solr) {
+      return "SOLR";
+    } else if (type == TYPE.sqoop) {
+      return AuthorizationComponent.SQOOP;
+    }
+
+    throw new Exception("Invalid type specified for SentryShellGeneric: " + type);
   }
 
-  protected String getServiceNameGeneric(Configuration conf) {
-    return conf.get(ServiceConstants.ClientConfig.SERVICE_NAME);
+  private String getService(Configuration conf) throws Exception {
+    if (type == TYPE.kafka) {
+      return conf.get(KAFKA_SERVICE_NAME, AuthorizationComponent.KAFKA);
+    } else if (type == TYPE.solr) {
+      return conf.get(SOLR_SERVICE_NAME, "service1");
+    } else if (type == TYPE.sqoop) {
+      return conf.get(SQOOP_SERVICE_NAME, "sqoopServer1");
+    }
+
+    throw new Exception("Invalid type specified for SentryShellGeneric: " + type);
   }
 
   private Configuration getSentryConf() {
@@ -116,9 +132,10 @@ abstract public class SentryShellGeneric extends SentryShellCommon {
     return conf;
   }
 
-  protected void doMain(String[] args) throws Exception {
+  public static void main(String[] args) throws Exception {
+    SentryShellGeneric sentryShell = new SentryShellGeneric();
     try {
-      executeShell(args);
+      sentryShell.executeShell(args);
     } catch (Exception e) {
       LOGGER.error(e.getMessage(), e);
       Throwable current = e;
