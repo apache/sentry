@@ -22,13 +22,15 @@ import com.google.common.annotations.VisibleForTesting;
 
 public abstract class SolrModelAuthorizable implements Authorizable {
 
-  public enum AuthorizableType {
+  public enum AuthorizableType implements org.apache.sentry.core.common.AuthorizableType<SolrModelAuthorizable> {
     Collection,
     Field,
     Admin,
     Config,
     Schema
-  };
+  }
+
+  ;
 
   private final AuthorizableType type;
   private final String name;

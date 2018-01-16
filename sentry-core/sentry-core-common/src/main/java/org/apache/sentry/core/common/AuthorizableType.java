@@ -14,22 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.core.model.sqoop;
+package org.apache.sentry.core.common;
 
-import org.apache.sentry.core.common.Authorizable;
-
-/**
- * This interface represents authorizable resource in the sqoop component.
- * It used conjunction with the generic authorization model(SENTRY-398).
- */
-public interface SqoopAuthorizable extends Authorizable {
-  String ALL = "*";
-  enum AuthorizableType implements org.apache.sentry.core.common.AuthorizableType<SqoopAuthorizable> {
-    SERVER,
-    CONNECTOR,
-    LINK,
-    JOB
-  };
-
-  AuthorizableType getAuthzType();
+public interface AuthorizableType<T extends Authorizable> {
+  String name();
 }
