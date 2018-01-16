@@ -41,6 +41,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.base.Preconditions;
 
+import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
@@ -96,6 +97,7 @@ import com.google.common.io.Files;
 import com.google.common.io.Resources;
 
 import static org.apache.sentry.hdfs.ServiceConstants.ServerConfig.SENTRY_HDFS_INTEGRATION_PATH_PREFIXES;
+import static org.junit.Assert.assertFalse;
 
 /**
  * Base abstract class for HDFS Sync integration
@@ -170,6 +172,9 @@ public abstract class TestHDFSIntegrationBase {
           ServerConfig.SENTRY_HMSFOLLOWER_INIT_DELAY_MILLS_DEFAULT +
               ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS_DEFAULT * 2 + CACHE_REFRESH * 2;
 
+  protected static final long HMSFOLLOWER_INTERVAL_MILLS = 50;
+  protected static final long WAIT_FOR_NOTIFICATION_PROCESSING = HMSFOLLOWER_INTERVAL_MILLS * 3;
+
   // Time to wait before running next tests. The unit is milliseconds.
   // Deleting HDFS may finish, but HDFS may not be ready for creating the same file again.
   // We need to to make sure that creating the same file in the next test will succeed
@@ -194,7 +199,11 @@ public abstract class TestHDFSIntegrationBase {
   protected String[] dbNames;
   protected String[] roles;
   protected String admin;
+  protected static Boolean hdfsSyncEnabled = true;
+  protected static Boolean hiveSyncOnCreate = false;
+  protected static Boolean hiveSyncOnDrop = true;
   protected static Configuration hadoopConf;
+  protected static final Map<String, String> sentryProperties = Maps.newHashMap();
 
   protected static File assertCreateDir(File dir) {
     if(!dir.isDirectory()) {
@@ -251,7 +260,7 @@ public abstract class TestHDFSIntegrationBase {
       if (groupShouldExist) {
         Assert.assertEquals("Error at verifying Path action : " + p + " ;", fsAction, getAcls(p).get(group));
       } else {
-        Assert.assertFalse("Error at verifying Path : " + p + " ," +
+        assertFalse("Error at verifying Path : " + p + " ," +
             " group : " + group + " ;", getAcls(p).containsKey(group));
       }
       LOGGER.info("Successfully found acls for path = " + p.getName());
@@ -347,7 +356,7 @@ public abstract class TestHDFSIntegrationBase {
     try {
       fs.listFiles(p, true);
       if(!hasPermission) {
-        Assert.assertFalse("Expected listing files to fail", false);
+        assertFalse("Expected listing files to fail", false);
       }
     } catch (Exception e) {
       if(hasPermission) {
@@ -413,6 +422,30 @@ public abstract class TestHDFSIntegrationBase {
       }
     });
 
+  }
+
+  // verify given table/DB has no longer permissions
+  protected void verifyIfAllPrivilegeAreDropped(Statement statement, List<String> roles,
+                                                String objectName, int resultPos) throws Exception {
+    for (String roleName : roles) {
+      ResultSet resultSet = statement.executeQuery("SHOW GRANT ROLE "
+              + roleName);
+      while (resultSet.next()) {
+        String returned = resultSet.getString(resultPos);
+        assertFalse("value " + objectName + " shouldn't be detected, but actually " + returned + " is found from resultSet",
+                objectName.equalsIgnoreCase(returned));
+      }
+      resultSet.close();
+    }
+  }
+
+  protected List<String> getRoles(Statement statement) throws Exception {
+    ArrayList<String> roleList = Lists.newArrayList();
+    ResultSet resultSet = statement.executeQuery("SHOW ROLES ");
+    while (resultSet.next()) {
+      roleList.add(resultSet.getString(1));
+    }
+    return roleList;
   }
 
   protected void loadDataTwoCols(Statement stmt) throws IOException, SQLException {
@@ -800,37 +833,48 @@ public abstract class TestHDFSIntegrationBase {
         public Void run() throws Exception {
           Configuration sentryConf = new Configuration(false);
           sentryConf.set(SENTRY_HDFS_INTEGRATION_PATH_PREFIXES, MANAGED_PREFIXES);
-          Map<String, String> properties = Maps.newHashMap();
-          properties.put(HiveServerFactory.AUTHZ_PROVIDER_BACKEND,
+          sentryProperties.put(HiveServerFactory.AUTHZ_PROVIDER_BACKEND,
               SimpleDBProviderBackend.class.getName());
-          properties.put(ConfVars.HIVE_AUTHORIZATION_TASK_FACTORY.varname,
+          sentryProperties.put(ConfVars.HIVE_AUTHORIZATION_TASK_FACTORY.varname,
               SentryHiveAuthorizationTaskFactoryImpl.class.getName());
-          properties
+          sentryProperties
               .put(ConfVars.HIVE_SERVER2_THRIFT_MIN_WORKER_THREADS.varname, "2");
-          properties.put("hive.exec.local.scratchdir", Files.createTempDir().getAbsolutePath());
-          properties.put(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_NONE);
-//        properties.put("sentry.service.server.compact.transport", "true");
-          properties.put("sentry.hive.testing.mode", "true");
-          properties.put("sentry.service.reporting", "JMX");
-          properties.put(ServerConfig.ADMIN_GROUPS, "hive,admin");
-          properties.put(ServerConfig.RPC_ADDRESS, "localhost");
-          properties.put(ServerConfig.RPC_PORT, String.valueOf(sentryPort > 0 ? sentryPort : 0));
-          properties.put(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
-          properties.put("sentry.hive.server", "server1");
+          sentryProperties.put("hive.exec.local.scratchdir", Files.createTempDir().getAbsolutePath());
+          sentryProperties.put(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_NONE);
+//        sentryProperties.put("sentry.service.server.compact.transport", "true");
+          sentryProperties.put("sentry.hive.testing.mode", "true");
+          sentryProperties.put("sentry.service.reporting", "JMX");
+          sentryProperties.put(ServerConfig.ADMIN_GROUPS, "hive,admin");
+          sentryProperties.put(ServerConfig.RPC_ADDRESS, "localhost");
+          sentryProperties.put(ServerConfig.RPC_PORT, String.valueOf(sentryPort > 0 ? sentryPort : 0));
+          sentryProperties.put(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
+          sentryProperties.put("sentry.hive.server", "server1");
 
-          properties.put(ServerConfig.SENTRY_STORE_GROUP_MAPPING, ServerConfig.SENTRY_STORE_LOCAL_GROUP_MAPPING);
-          properties.put(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE, policyFileLocation.getPath());
-          properties.put(ServerConfig.SENTRY_STORE_JDBC_URL,
+          sentryProperties.put(ServerConfig.SENTRY_STORE_GROUP_MAPPING, ServerConfig.SENTRY_STORE_LOCAL_GROUP_MAPPING);
+          sentryProperties.put(ServerConfig.SENTRY_STORE_GROUP_MAPPING_RESOURCE, policyFileLocation.getPath());
+          sentryProperties.put(ServerConfig.SENTRY_STORE_JDBC_URL,
               "jdbc:derby:;databaseName=" + baseDir.getPath()
                   + "/sentrystore_db;create=true");
-          properties.put(ServerConfig.SENTRY_STORE_JDBC_PASS, "dummy");
-          properties.put("sentry.service.processor.factories",
-              "org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessorFactory,org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
-          properties.put("sentry.policy.store.plugins", "org.apache.sentry.hdfs.SentryPlugin");
-          properties.put(ServerConfig.SENTRY_HMSFOLLOWER_INIT_DELAY_MILLS, "10000");
-          properties.put(ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS, "50");
-          properties.put(ServerConfig.RPC_MIN_THREADS, "3");
-          for (Map.Entry<String, String> entry : properties.entrySet()) {
+          sentryProperties.put(ServerConfig.SENTRY_STORE_JDBC_PASS, "dummy");
+          sentryProperties.put(ServerConfig.SENTRY_HMSFOLLOWER_INIT_DELAY_MILLS, "10000");
+          sentryProperties.put(ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS, String.valueOf(HMSFOLLOWER_INTERVAL_MILLS));
+          sentryProperties.put(ServerConfig.RPC_MIN_THREADS, "3");
+          if(hiveSyncOnCreate) {
+            sentryProperties.put("sentry.hive.sync.create", "true");
+          } else {
+            sentryProperties.put("sentry.hive.sync.create", "false");
+          }
+          if(hiveSyncOnDrop) {
+            sentryProperties.put("sentry.hive.sync.drop", "true");
+          } else {
+            sentryProperties.put("sentry.hive.sync.drop", "false");
+          }
+          if(hdfsSyncEnabled) {
+            sentryProperties.put("sentry.service.processor.factories",
+                    "org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessorFactory,org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
+            sentryProperties.put("sentry.policy.store.plugins", "org.apache.sentry.hdfs.SentryPlugin");
+          }
+            for (Map.Entry<String, String> entry : sentryProperties.entrySet()) {
             sentryConf.set(entry.getKey(), entry.getValue());
           }
           sentryServer = SentrySrvFactory.create(SentrySrvFactory.SentrySrvType.INTERNAL_SERVER,

@@ -18,7 +18,6 @@
 package org.apache.sentry.tests.e2e.dbprovider;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -26,7 +25,6 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.sentry.tests.e2e.hdfs.TestHDFSIntegrationBase;
@@ -58,8 +56,6 @@ public class TestDbPrivilegeCleanupOnDrop extends TestHDFSIntegrationBase {
           USERGROUP3 = StaticUserGroup.USERGROUP3,
           DB1 = "db_1",
           DB2 = "db_2";
-
-  static final long WAIT_FOR_NOTIFICATION_PROCESSING = 5000;
 
   private Connection connection;
   private Statement statement;
@@ -326,13 +322,13 @@ public class TestDbPrivilegeCleanupOnDrop extends TestHDFSIntegrationBase {
   private void verifyTablePrivilegesDropped(Statement statement)
       throws Exception {
     List<String> roles = getRoles(statement);
-    verifyPrivilegeDropped(statement, roles, tableName1,
+    verifyIfAllPrivilegeAreDropped(statement, roles, tableName1,
         SHOW_GRANT_TABLE_POSITION);
-    verifyPrivilegeDropped(statement, roles, tableName2,
+    verifyIfAllPrivilegeAreDropped(statement, roles, tableName2,
         SHOW_GRANT_TABLE_POSITION);
-    verifyPrivilegeDropped(statement, roles, tableName3,
+    verifyIfAllPrivilegeAreDropped(statement, roles, tableName3,
         SHOW_GRANT_TABLE_POSITION);
-    verifyPrivilegeDropped(statement, roles, tableName4,
+    verifyIfAllPrivilegeAreDropped(statement, roles, tableName4,
         SHOW_GRANT_TABLE_POSITION);
 
   }
@@ -340,24 +336,9 @@ public class TestDbPrivilegeCleanupOnDrop extends TestHDFSIntegrationBase {
   // verify all the test privileges are dropped as we drop the objects
   private void verifyDbPrivilegesDropped(Statement statement) throws Exception {
     List<String> roles = getRoles(statement);
-    verifyPrivilegeDropped(statement, roles, DB2, SHOW_GRANT_DB_POSITION);
-    verifyPrivilegeDropped(statement, roles, DB1, SHOW_GRANT_DB_POSITION);
+    verifyIfAllPrivilegeAreDropped(statement, roles, DB2, SHOW_GRANT_DB_POSITION);
+    verifyIfAllPrivilegeAreDropped(statement, roles, DB1, SHOW_GRANT_DB_POSITION);
 
-  }
-
-  // verify given table/DB has no longer permissions
-  private void verifyPrivilegeDropped(Statement statement, List<String> roles,
-      String objectName, int resultPos) throws Exception {
-    for (String roleName : roles) {
-      ResultSet resultSet = statement.executeQuery("SHOW GRANT ROLE "
-          + roleName);
-      while (resultSet.next()) {
-        String returned = resultSet.getString(resultPos);
-        assertFalse("value " + objectName + " shouldn't be detected, but actually " + returned + " is found from resultSet",
-                objectName.equalsIgnoreCase(returned));
-          }
-      resultSet.close();
-    }
   }
 
   // verify given table is part of the role
@@ -369,14 +350,5 @@ public class TestDbPrivilegeCleanupOnDrop extends TestHDFSIntegrationBase {
       assertTrue(resultSet.next());
       resultSet.close();
     }
-  }
-
-  private List<String> getRoles(Statement statement) throws Exception {
-    ArrayList<String> roleList = Lists.newArrayList();
-    ResultSet resultSet = statement.executeQuery("SHOW ROLES ");
-    while (resultSet.next()) {
-      roleList.add(resultSet.getString(1));
-    }
-    return roleList;
   }
 }

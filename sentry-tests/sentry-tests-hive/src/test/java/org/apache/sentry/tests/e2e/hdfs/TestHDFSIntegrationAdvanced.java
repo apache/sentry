@@ -31,6 +31,7 @@ import org.apache.sentry.hdfs.PathsUpdate;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.slf4j.Logger;
@@ -46,6 +47,11 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
   private static final Logger LOGGER = LoggerFactory
       .getLogger(TestHDFSIntegrationAdvanced.class);
 
+  @BeforeClass
+  public static void setup() throws Exception{
+    hdfsSyncEnabled = true;
+    TestHDFSIntegrationBase.setup();
+  }
   @Test
   public void testNoPartitionInsert() throws Throwable {
     dbNames = new String[]{"db1"};

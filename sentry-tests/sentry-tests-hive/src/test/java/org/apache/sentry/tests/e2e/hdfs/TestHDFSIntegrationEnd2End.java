@@ -26,6 +26,7 @@ import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -46,7 +47,11 @@ public class TestHDFSIntegrationEnd2End extends TestHDFSIntegrationBase {
 
   private static String adminRole = "admin_role";
 
-
+  @BeforeClass
+  public static void setup() throws Exception{
+    hdfsSyncEnabled = true;
+    TestHDFSIntegrationBase.setup();
+  }
   @Test
   public void testEnd2EndManagedPaths() throws Throwable {
     tmpHDFSDir = new Path("/tmp/external");

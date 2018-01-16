@@ -22,6 +22,7 @@ import org.junit.BeforeClass;
 public class TestHDFSIntegrationWithHA extends TestHDFSIntegrationEnd2End {
   @BeforeClass
   public static void setup() throws Exception {
+    hdfsSyncEnabled = true;
     TestHDFSIntegrationBase.testSentryHA = true;
     TestHDFSIntegrationBase.setup();
   }
