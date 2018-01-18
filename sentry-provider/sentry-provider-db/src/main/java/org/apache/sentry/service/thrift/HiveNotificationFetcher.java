@@ -46,7 +46,7 @@ public final class HiveNotificationFetcher implements AutoCloseable {
   private long lastIdFiltered = 0;
   private Set<String> cache = new HashSet<>();
 
-  HiveNotificationFetcher(SentryStore sentryStore, HiveConnectionFactory hmsConnectionFactory) {
+  public HiveNotificationFetcher(SentryStore sentryStore, HiveConnectionFactory hmsConnectionFactory) {
     this.sentryStore = sentryStore;
     this.hmsConnectionFactory = hmsConnectionFactory;
   }
@@ -59,7 +59,7 @@ public final class HiveNotificationFetcher implements AutoCloseable {
    * @return A list of newer notifications unseen by Sentry.
    * @throws Exception If an error occurs on the HMS communication.
    */
-  List<NotificationEvent> fetchNotifications(long lastEventId) throws Exception {
+  public List<NotificationEvent> fetchNotifications(long lastEventId) throws Exception {
     return fetchNotifications(lastEventId, Integer.MAX_VALUE);
   }
 
@@ -178,7 +178,7 @@ public final class HiveNotificationFetcher implements AutoCloseable {
    * @return the latest notification Id logged by the HMS
    * @throws Exception when an error occurs when talking to the HMS client
    */
-  long getCurrentNotificationId() throws Exception {
+  public long getCurrentNotificationId() throws Exception {
     CurrentNotificationEventId eventId;
     try {
       eventId = getHmsClient().getCurrentNotificationEventId();

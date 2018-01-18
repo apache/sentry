@@ -70,7 +70,7 @@ public final class HiveSimpleConnectionFactory implements HiveConnectionFactory 
    * @throws IOException
    * @throws LoginException
    */
-  void init() throws IOException, LoginException {
+  public void init() throws IOException, LoginException {
     if (insecure) {
       LOGGER.info("Using insecure connection to HMS");
       return;

@@ -16,7 +16,7 @@
   limitations under the License.
  */
 
-package org.apache.sentry.service.thrift;
+package org.apache.sentry.provider.db.service.persistent;
 
 import org.apache.sentry.core.common.utils.PubSub;
 import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
@@ -32,9 +32,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.jdo.JDODataStoreException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.api.NotificationEvent;
-import org.apache.sentry.provider.db.service.persistent.PathsImage;
-import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.thrift.TException;
+import org.apache.sentry.service.thrift.SentryHMSClient;
+import org.apache.sentry.service.thrift.HiveConnectionFactory;
+import org.apache.sentry.service.thrift.HiveNotificationFetcher;
+import org.apache.sentry.service.thrift.SentryServiceUtil;
+import org.apache.sentry.service.thrift.SentryStateBank;
+import org.apache.sentry.service.thrift.SentryServiceState;
+import org.apache.sentry.service.thrift.HMSFollowerState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,7 +79,7 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
    * @param store sentry store
    * @param leaderMonitor singleton instance of LeaderStatusMonitor
    */
-  HMSFollower(Configuration conf, SentryStore store, LeaderStatusMonitor leaderMonitor,
+  public HMSFollower(Configuration conf, SentryStore store, LeaderStatusMonitor leaderMonitor,
               HiveConnectionFactory hiveConnectionFactory) {
     this(conf, store, leaderMonitor, hiveConnectionFactory, null);
   }

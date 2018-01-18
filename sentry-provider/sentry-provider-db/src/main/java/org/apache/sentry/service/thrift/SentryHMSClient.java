@@ -52,7 +52,7 @@ import static java.util.Collections.emptyMap;
  * <p>Abstracts communication with HMS and exposes APi's to connect/disconnect to HMS and to
  * request HMS snapshots and also for new notifications.
  */
-class SentryHMSClient implements AutoCloseable {
+public class SentryHMSClient implements AutoCloseable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryHMSClient.class);
   private static final String NOT_CONNECTED_MSG = "Client is not connected to HMS";
@@ -69,7 +69,7 @@ class SentryHMSClient implements AutoCloseable {
   private final Counter failedSnapshotsCount = SentryMetrics.getInstance()
       .getCounter(name(FullUpdateInitializer.class, "failed"));
 
-  SentryHMSClient(Configuration conf, HiveConnectionFactory hiveConnectionFactory) {
+  public SentryHMSClient(Configuration conf, HiveConnectionFactory hiveConnectionFactory) {
     this.conf = conf;
     this.hiveConnectionFactory = hiveConnectionFactory;
   }
@@ -100,7 +100,7 @@ class SentryHMSClient implements AutoCloseable {
    * @throws InterruptedException if connection was interrupted
    * @throws MetaException        if other errors happened
    */
-  void connect()
+  public void connect()
       throws IOException, InterruptedException, MetaException {
     if (client != null) {
       return;
@@ -139,7 +139,7 @@ class SentryHMSClient implements AutoCloseable {
    *
    * @return Full path snapshot and the last notification id on success
    */
-  PathsImage getFullSnapshot() {
+  public PathsImage getFullSnapshot() {
     if (client == null) {
       LOGGER.error(NOT_CONNECTED_MSG);
       return new PathsImage(Collections.<String, Collection<String>>emptyMap(),

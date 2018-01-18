@@ -26,11 +26,11 @@ import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
  * It is only used to provide try-with-resource semantics for
  * {@link HiveMetaStoreClient}.
  */
-class HMSClient implements AutoCloseable {
+public class HMSClient implements AutoCloseable {
   private final HiveMetaStoreClient client;
   private boolean valid;
 
-  HMSClient(HiveMetaStoreClient client) {
+  public HMSClient(HiveMetaStoreClient client) {
     this.client = Preconditions.checkNotNull(client);
     valid = true;
   }

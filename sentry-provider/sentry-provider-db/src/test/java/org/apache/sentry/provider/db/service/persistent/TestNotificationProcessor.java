@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.service.thrift;
+package  org.apache.sentry.provider.db.service.persistent;
 
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
@@ -33,7 +33,7 @@ import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.hadoop.hive.metastore.messaging.EventMessage;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageFactory;
 import org.apache.sentry.hdfs.UniquePathsUpdate;
-import org.apache.sentry.provider.db.service.persistent.SentryStore;
+import org.apache.sentry.service.thrift.ServiceConstants;
 import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
 import org.junit.After;
 import org.junit.BeforeClass;

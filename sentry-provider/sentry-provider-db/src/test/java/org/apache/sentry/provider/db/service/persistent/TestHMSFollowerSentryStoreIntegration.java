@@ -36,7 +36,6 @@ import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageFacto
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.service.thrift.HiveSimpleConnectionFactory;
 import org.apache.sentry.provider.file.PolicyFile;
-import org.apache.sentry.service.thrift.HMSFollower;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.junit.After;
 import org.junit.AfterClass;

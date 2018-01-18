@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.sentry.service.thrift;
+package org.apache.sentry.provider.db.service.persistent;
 
 import org.apache.http.annotation.ThreadSafe;
 import org.slf4j.Logger;

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.service.thrift;
+package org.apache.sentry.provider.db.service.persistent;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.curator.framework.CuratorFramework;
@@ -22,7 +22,6 @@ import org.apache.curator.framework.recipes.leader.LeaderSelector;
 import org.apache.curator.framework.recipes.leader.LeaderSelectorListener;
 import org.apache.curator.framework.recipes.leader.LeaderSelectorListenerAdapter;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.provider.db.service.persistent.HAContext;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.lang.management.ManagementFactory;
@@ -83,7 +82,7 @@ import static org.apache.sentry.service.thrift.ServiceConstants.ServerConfig.*;
  * already use the {@link #lock} this is more straightforward.
  */
 @ThreadSafe
-final class LeaderStatusMonitor
+public final class LeaderStatusMonitor
       extends LeaderSelectorListenerAdapter implements AutoCloseable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(LeaderStatusMonitor.class);
@@ -183,7 +182,7 @@ final class LeaderStatusMonitor
    * @throws Exception
    */
   @SuppressWarnings("LawOfDemeter")
-  static synchronized LeaderStatusMonitor getLeaderStatusMonitor(Configuration conf)
+  public static synchronized LeaderStatusMonitor getLeaderStatusMonitor(Configuration conf)
           throws Exception {
     if (leaderStatusMonitor == null) {
       leaderStatusMonitor = new LeaderStatusMonitor(conf);
@@ -195,7 +194,7 @@ final class LeaderStatusMonitor
   /**
    * @return number of times this leader was elected. Used for metrics.
    */
-  long getLeaderCount() {
+  public long getLeaderCount() {
     return leaderCount.get();
   }
 
@@ -215,7 +214,7 @@ final class LeaderStatusMonitor
    * Deactivate the current client, if it is active.
    * In non-HA case this is a no-op.
    */
-  void deactivate() {
+  public void deactivate() {
     if (isSingleNodeMode) {
       return;
     }
@@ -231,7 +230,7 @@ final class LeaderStatusMonitor
    * @return true iff we are the leader.
    * In non-HA case always returns true
    */
-  boolean isLeader() {
+  public boolean isLeader() {
     if (isSingleNodeMode) {
       return true;
     }

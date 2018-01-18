@@ -16,11 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.sentry.service.thrift;
+package  org.apache.sentry.provider.db.service.persistent;
 
 import org.apache.curator.test.TestingServer;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.provider.db.service.persistent.HAContext;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

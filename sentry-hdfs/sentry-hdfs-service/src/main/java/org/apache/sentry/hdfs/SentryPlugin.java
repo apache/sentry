@@ -41,7 +41,7 @@ import org.apache.sentry.provider.db.service.thrift.TDropSentryRoleRequest;
 import org.apache.sentry.provider.db.service.thrift.TRenamePrivilegesRequest;
 import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
-import org.apache.sentry.service.thrift.HMSFollower;
+import org.apache.sentry.provider.db.service.persistent.HMSFollower;
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

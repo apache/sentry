@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.sentry.service.thrift;
+package  org.apache.sentry.provider.db.service.persistent;
 
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
@@ -51,8 +51,11 @@ import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageFactory;
 import org.apache.sentry.core.common.utils.PubSub;
 import org.apache.sentry.hdfs.UniquePathsUpdate;
-import org.apache.sentry.provider.db.service.persistent.PathsImage;
-import org.apache.sentry.provider.db.service.persistent.SentryStore;
+import org.apache.sentry.service.thrift.SentryHMSClient;
+import org.apache.sentry.service.thrift.HiveConnectionFactory;
+import org.apache.sentry.service.thrift.HiveSimpleConnectionFactory;
+import org.apache.sentry.service.thrift.ServiceConstants;
+import org.apache.sentry.service.thrift.HMSClient;
 import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
 import static org.apache.sentry.hdfs.ServiceConstants.ServerConfig.SENTRY_SERVICE_FULL_UPDATE_PUBSUB;
 

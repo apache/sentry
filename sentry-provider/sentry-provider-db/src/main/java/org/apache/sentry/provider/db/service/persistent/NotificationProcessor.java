@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.sentry.service.thrift;
+package org.apache.sentry.provider.db.service.persistent;
 
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
@@ -45,9 +45,9 @@ import org.apache.sentry.hdfs.SentryMalformedPathException;
 import org.apache.sentry.hdfs.UniquePathsUpdate;
 import org.apache.sentry.hdfs.Updateable.Update;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
-import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
 import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
+import org.apache.sentry.service.thrift.SentryServiceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
