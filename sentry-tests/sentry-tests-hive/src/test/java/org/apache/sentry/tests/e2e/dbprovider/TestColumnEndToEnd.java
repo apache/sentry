@@ -451,7 +451,7 @@ public class TestColumnEndToEnd extends AbstractTestWithStaticConfiguration {
     connection =context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("use " + DB1);
-    statement.execute("CREATE table db_1.t1 as select tb1.id, tb3.val, tb2.num from db_1.tb1,db_2.tb3,db_2.tb2");
+    statement.execute("CREATE table db_1.t1 as select tb1.id, tb2.num from db_1.tb1,db_2.tb2");
     statement.close();
     connection.close();
 
