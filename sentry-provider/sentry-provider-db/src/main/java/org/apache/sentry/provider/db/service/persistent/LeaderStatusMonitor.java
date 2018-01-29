@@ -280,7 +280,7 @@ public final class LeaderStatusMonitor
   public String toString() {
     return isSingleNodeMode?"Leader election disabled":
         String.format("{isSingleNodeMode=%b, incarnationId=%s, isLeader=%b, leaderCount=%d}",
-        isSingleNodeMode, incarnationId, isLeader, leaderCount);
+        isSingleNodeMode, incarnationId, isLeader, leaderCount.longValue());
   }
 
 }
