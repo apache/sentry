@@ -241,6 +241,12 @@ public class ServiceConstants {
     public static final int SENTRY_DELTA_KEEP_COUNT_DEFAULT = 200;
 
     /**
+     * Number of notifications that HMSFollower should re-fetch in periodic pull from HMS.
+     */
+    public static final String SENTRY_HMS_NOTIFICATION_REFETCH_COUNT = "sentry_hms_notification_refetch_count";
+    public static final int SENTRY_HMS_NOTIFICATION_REFETCH_COUNT_DEFAULT = 100;
+
+    /**
      * Number of notification id's to keep around during cleaning
      */
     public static final String SENTRY_HMS_NOTIFICATION_ID_KEEP_COUNT = "sentry.server.delta.keep.count";

@@ -642,4 +642,8 @@ public class SentryService implements Callable, SigUtils.SigListener {
     // Become follower
     leaderMonitor.deactivate();
   }
+  @VisibleForTesting
+  public long getCurrentAuthzPathsSnapshotID() throws Exception {
+    return sentryStore.getCurrentAuthzPathsSnapshotID();
+  }
 }

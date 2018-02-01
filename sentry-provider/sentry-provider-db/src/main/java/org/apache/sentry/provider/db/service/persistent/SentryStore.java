@@ -40,6 +40,7 @@ import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
 import javax.jdo.Query;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.exception.SentryAccessDeniedException;
@@ -467,7 +468,7 @@ public class SentryStore {
       @Override
       public Long getValue() {
         try {
-          return getLastProcessedNotificationID();
+          return getMaxNotificationID();
         } catch (Exception e) {
           LOGGER.error("Can not read current notificationId", e);
           return NOTIFICATION_UNKNOWN;
@@ -552,7 +553,7 @@ public class SentryStore {
   }
 
   @VisibleForTesting
-  void clearAllTables() {
+  public void clearAllTables() {
     try {
       tm.executeTransaction(
           new TransactionBlock<Object>() {
@@ -2803,7 +2804,7 @@ public class SentryStore {
    *
    * @return the last persisted snapshot ID. It returns 0 if no rows are found.
    */
-  private long getCurrentAuthzPathsSnapshotID() throws Exception {
+  public long getCurrentAuthzPathsSnapshotID() throws Exception {
     return tm.executeTransaction(
         new TransactionBlock<Long>() {
           @Override
@@ -3886,7 +3887,7 @@ public class SentryStore {
    * @return the notification ID of latest path change. If no change
    *         found then return 0.
    */
-  public Long getLastProcessedNotificationID() throws Exception {
+  public Long getMaxNotificationID() throws Exception {
     long notificationId = tm.executeTransaction(
     new TransactionBlock<Long>() {
       public Long execute(PersistenceManager pm) throws Exception {
@@ -4232,6 +4233,27 @@ public class SentryStore {
         MSentryPathChange changes = (MSentryPathChange) query.execute(hash);
 
         return changes != null;
+      }
+    });
+  }
+
+  /**
+   * Checks if notification with particular ID was already processed by searching
+   * for the ID on the MSentryHmsNotification table.
+   *
+   * @param id: event_id of the notification event.
+   * @return True if the notification was already processed; False otherwise
+   */
+  public boolean isNotificationIdProcessed(long id) throws Exception {
+    return tm.executeTransactionWithRetry(new TransactionBlock<Boolean>() {
+      @Override
+      public Boolean execute(PersistenceManager pm) throws Exception {
+        pm.setDetachAllOnCommit(false);
+        Query query = pm.newQuery(MSentryHmsNotification.class);
+        query.setFilter("this.notificationId == id");
+        query.declareParameters("long id");
+        List<MSentryHmsNotification> ids = (List<MSentryHmsNotification>) query.execute(id);
+        return (CollectionUtils.isEmpty(ids)) ? false : true;
       }
     });
   }

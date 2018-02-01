@@ -158,6 +158,8 @@ public abstract class TestHDFSIntegrationBase {
   protected static SentrySrv sentryServer;
   protected static boolean testSentryHA = false;
   protected static final long STALE_THRESHOLD = 5000;
+  protected static Boolean shorterMetaStoreEventDbTtl = false;
+  protected static Boolean longerHMSFollowerInterval = false;
 
   // It is the interval in milliseconds that hdfs uses to get acl from sentry. Default is 500, but
   // we want it to be low in our tests so that changes reflect soon
@@ -540,6 +542,9 @@ public abstract class TestHDFSIntegrationBase {
         hiveConf.set("hive.metastore.authorization.storage.checks", "true");
         hiveConf.set("hive.metastore.uris", "thrift://localhost:" + hmsPort);
         hiveConf.set("sentry.metastore.service.users", "hive");// queries made by hive user (beeline) skip meta store check
+        if(shorterMetaStoreEventDbTtl) {
+          hiveConf.set("hive.metastore.event.db.listener.timetolive", "5s");
+        }
 
         File confDir = assertCreateDir(new File(baseDir, "etc"));
         File hiveSite = new File(confDir, "hive-site.xml");
@@ -874,7 +879,14 @@ public abstract class TestHDFSIntegrationBase {
                     "org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessorFactory,org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
             sentryProperties.put("sentry.policy.store.plugins", "org.apache.sentry.hdfs.SentryPlugin");
           }
-            for (Map.Entry<String, String> entry : sentryProperties.entrySet()) {
+
+          if(longerHMSFollowerInterval) {
+            // Idea of increasing HMSFollower interval is to fetching after HMS notifications are evicted.
+            //This configuration is dependent on hive.metastore.event.db.listener.timetolive.
+            // HMS runs cleaner every 60 sec. Below configuration should be 60 + TTL + buffer-time
+            sentryProperties.put(ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS, "120000");
+          }
+          for (Map.Entry<String, String> entry : sentryProperties.entrySet()) {
             sentryConf.set(entry.getKey(), entry.getValue());
           }
           sentryServer = SentrySrvFactory.create(SentrySrvFactory.SentrySrvType.INTERNAL_SERVER,
@@ -890,7 +902,28 @@ public abstract class TestHDFSIntegrationBase {
     }
   }
 
-  @After
+  /**
+   * Method calculates the maximun time it could take to fetch a notification that is inserted to
+   * NOTIFICATION_LOG table of HMS database.
+   * @return maximum delay in fetching notification logged by HMS.
+   */
+  protected long maxDelayInFetchingHMSNotifications() {
+    long interval;
+    long initDelay;
+    if (sentryProperties.containsKey(ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS)) {
+      interval = Long.parseLong(sentryProperties.get(ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS));
+    } else {
+      interval = ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS_DEFAULT;
+    }
+    if (sentryProperties.containsKey(ServerConfig.SENTRY_HMSFOLLOWER_INIT_DELAY_MILLS)) {
+      initDelay = Long.parseLong(sentryProperties.get(ServerConfig.SENTRY_HMSFOLLOWER_INIT_DELAY_MILLS));
+    } else {
+      initDelay = ServerConfig.SENTRY_HMSFOLLOWER_INIT_DELAY_MILLS_DEFAULT;
+    }
+    return (interval + initDelay);
+  }
+
+ @After
   public void cleanAfterTest() throws Exception {
     //Clean up database
     Connection conn;
@@ -911,7 +944,11 @@ public abstract class TestHDFSIntegrationBase {
     stmt = conn.createStatement();
     LOGGER.info("About to clear all roles");
     for( String role:roles) {
-      stmt.execute("drop role " + role);
+      try {
+        stmt.execute("drop role " + role);
+      } catch (Exception e) {
+        LOGGER.info("Exception while dropping role", e.getMessage());
+      }
     }
     stmt.close();
     conn.close();
