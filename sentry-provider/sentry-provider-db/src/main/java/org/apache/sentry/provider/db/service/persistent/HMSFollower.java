@@ -18,19 +18,18 @@
 
 package org.apache.sentry.provider.db.service.persistent;
 
+import org.apache.sentry.core.common.utils.PubSub;
+import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
+
 import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SERVER_NAME;
 import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SERVER_NAME_DEPRECATED;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.jdo.JDODataStoreException;
-
-import org.apache.sentry.core.common.exception.SentryOutOfSyncException;
-import org.apache.sentry.core.common.utils.PubSub;
-import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.api.NotificationEvent;
 import org.apache.thrift.TException;
@@ -110,7 +109,7 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
     notificationProcessor = new NotificationProcessor(sentryStore, authServerName, authzConf);
     client = new SentryHMSClient(authzConf, hiveConnectionFactory);
     hdfsSyncEnabled = SentryServiceUtil.isHDFSSyncEnabledNoCache(authzConf); // no cache to test different settings for hdfs sync
-    notificationFetcher = new HiveNotificationFetcher(sentryStore, hiveConnectionFactory, authzConf);
+    notificationFetcher = new HiveNotificationFetcher(sentryStore, hiveConnectionFactory);
 
     // subscribe to full update notification
     if (conf.getBoolean(ServerConfig.SENTRY_SERVICE_FULL_UPDATE_PUBSUB, false)) {
@@ -148,25 +147,25 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
   @Override
   public void run() {
     SentryStateBank.enableState(HMSFollowerState.COMPONENT,HMSFollowerState.STARTED);
-    long maxNotificationId;
+    long lastProcessedNotificationId;
     try {
       try {
-        // Initializing maxNotificationId based on the latest persisted notification ID.
-        maxNotificationId = sentryStore.getMaxNotificationID();
+        // Initializing lastProcessedNotificationId based on the latest persisted notification ID.
+        lastProcessedNotificationId = sentryStore.getLastProcessedNotificationID();
       } catch (Exception e) {
         LOGGER.error("Failed to get the last processed notification id from sentry store, "
             + "Skipping the processing", e);
         return;
       }
       // Wake any clients connected to this service waiting for HMS already processed notifications.
-      wakeUpWaitingClientsForSync(maxNotificationId);
+      wakeUpWaitingClientsForSync(lastProcessedNotificationId);
       // Only the leader should listen to HMS updates
       if (!isLeader()) {
         // Close any outstanding connections to HMS
         close();
         return;
       }
-      syncupWithHms(maxNotificationId);
+      syncupWithHms(lastProcessedNotificationId);
     } finally {
       SentryStateBank.disableState(HMSFollowerState.COMPONENT,HMSFollowerState.STARTED);
     }
@@ -190,9 +189,8 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
    *
    * <p>Clients connections waiting for an event notification will be
    * woken up afterwards.
-   * @param maxNotificationId Max of all event-id's that sentry has processed.
    */
-  private void syncupWithHms(long maxNotificationId) {
+  private void syncupWithHms(long notificationId) {
     try {
       client.connect();
       connectedToHms = true;
@@ -203,17 +201,18 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
     }
 
     try {
-      Collection<NotificationEvent> notifications;
       /* Before getting notifications, it checks if a full HMS snapshot is required. */
-      if (isFullSnapshotRequired(maxNotificationId)) {
+      if (isFullSnapshotRequired(notificationId)) {
         createFullSnapshot();
         return;
       }
-      try {
-        notifications = notificationFetcher.fetchNotifications(maxNotificationId);
-      } catch (SentryOutOfSyncException e) {
-        LOGGER.error("An error occurred while fetching HMS notifications: {}",
-                e.getMessage());
+
+      Collection<NotificationEvent> notifications =
+          notificationFetcher.fetchNotifications(notificationId);
+
+      // After getting notifications, it checks if the HMS did some clean-up and notifications
+      // are out-of-sync with Sentry.
+      if (areNotificationsOutOfSync(notifications, notificationId)) {
         createFullSnapshot();
         return;
       }
@@ -226,7 +225,7 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
       }
 
       // Continue with processing new notifications if no snapshots are done.
-      processNotifications(notifications, maxNotificationId);
+      processNotifications(notifications);
     } catch (TException e) {
       LOGGER.error("An error occurred while fetching HMS notifications: ", e);
       close();
@@ -278,6 +277,52 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
     // to only do it once per forced full update request.
     if (fullUpdateHMS.compareAndSet(true, false)) {
       LOGGER.info(FULL_UPDATE_TRIGGER + "initiating full HMS snapshot request");
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Checks if the HMS and Sentry processed notifications are out-of-sync.
+   * This could happen because the HMS did some clean-up of old notifications
+   * and Sentry was not requesting notifications during that time.
+   *
+   * @param events All new notifications to check for an out-of-sync.
+   * @param latestProcessedId The latest notification processed by Sentry to check against the
+   *        list of notifications events.
+   * @return True if an out-of-sync is found; False otherwise.
+   */
+  private boolean areNotificationsOutOfSync(Collection<NotificationEvent> events,
+      long latestProcessedId) {
+    if (events.isEmpty()) {
+      return false;
+    }
+
+    /*
+     * If the sequence of notifications has a gap, then an out-of-sync might
+     * have happened due to the following issue:
+     *
+     * - HDFS sync was disabled or Sentry was shutdown for a time period longer than
+     * the HMS notification clean-up thread causing old notifications to be deleted.
+     *
+     * HMS notifications may contain both gaps in the sequence and duplicates
+     * (the same ID repeated more then once for different events).
+     *
+     * To accept duplicates (see NotificationFetcher for more info), then a gap is found
+     * if the 1st notification received is higher than the current ID processed + 1.
+     * i.e.
+     *   1st ID = 3, latest ID = 3 (duplicate found but no gap detected)
+     *   1st ID = 4, latest ID = 3 (consecutive ID found but no gap detected)
+     *   1st ID = 5, latest ID = 3 (a gap is detected)
+     */
+
+    List<NotificationEvent> eventList = (List<NotificationEvent>) events;
+    long firstNotificationId = eventList.get(0).getEventId();
+
+    if (firstNotificationId > (latestProcessedId + 1)) {
+      LOGGER.info("First HMS event notification Id = {} is greater than latest Sentry processed"
+          + "notification Id = {} + 1. Need to request a full HMS snapshot.", firstNotificationId, latestProcessedId);
       return true;
     }
 
@@ -347,27 +392,16 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
    * Also, persists the notification ID regardless of processing result.
    *
    * @param events list of event to be processed
-   * @param notificationId Max event-id that sentry processed so far.
    * @throws Exception if the complete notification list is not processed because of JDO Exception
    */
-  public void processNotifications(Collection<NotificationEvent> events, long notificationId) throws Exception {
+  public void processNotifications(Collection<NotificationEvent> events) throws Exception {
     boolean isNotificationProcessed;
-    long eventIdProcessed = notificationId;
     if (events.isEmpty()) {
       return;
     }
 
     for (NotificationEvent event : events) {
       isNotificationProcessed = false;
-      if (eventIdProcessed > 0) {
-        if (eventIdProcessed == event.getEventId()) {
-          LOGGER.info("Processing event with Duplicate event-id: {}", eventIdProcessed);
-        } else if (eventIdProcessed != event.getEventId() - 1) {
-          LOGGER.info("Events between ID's " + eventIdProcessed + " and "
-                  + event.getEventId() + " are either missing OR out of order");
-        }
-      }
-      eventIdProcessed = event.getEventId();
       try {
         // Only the leader should process the notifications
         if (!isLeader()) {
@@ -375,12 +409,11 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
           return;
         }
         isNotificationProcessed = notificationProcessor.processNotificationEvent(event);
-        notificationFetcher.updateCache(event);
       } catch (Exception e) {
         if (e.getCause() instanceof JDODataStoreException) {
           LOGGER.info("Received JDO Storage Exception, Could be because of processing "
               + "duplicate notification");
-          if (event.getEventId() <= sentryStore.getMaxNotificationID()) {
+          if (event.getEventId() <= sentryStore.getLastProcessedNotificationID()) {
             // Rest of the notifications need not be processed.
             LOGGER.error("Received event with Id: {} which is smaller then the ID "
                 + "persisted in store", event.getEventId());
@@ -398,7 +431,6 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
           // Continue processing the next notification.
           LOGGER.debug("Explicitly Persisting Notification ID = {} ", event.getEventId());
           sentryStore.persistLastProcessedNotificationID(event.getEventId());
-          notificationFetcher.updateCache(event);
         } catch (Exception failure) {
           LOGGER.error("Received exception while persisting the notification ID = {}", event.getEventId());
           throw failure;

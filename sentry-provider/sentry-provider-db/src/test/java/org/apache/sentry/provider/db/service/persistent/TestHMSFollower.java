@@ -64,8 +64,6 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import javax.security.auth.login.LoginException;
 
@@ -130,7 +128,7 @@ public class TestHMSFollower {
     hmsFollower.setSentryHmsClient(sentryHmsClient);
 
     // 1st run should get a full snapshot because AuthzPathsMapping is empty
-    when(sentryStore.getMaxNotificationID()).thenReturn(SENTRY_PROCESSED_EVENT_ID);
+    when(sentryStore.getLastProcessedNotificationID()).thenReturn(SENTRY_PROCESSED_EVENT_ID);
     when(sentryStore.isAuthzPathsMappingEmpty()).thenReturn(true);
     when(sentryStore.isHmsNotificationEmpty()).thenReturn(true);
     hmsFollower.run();
@@ -142,7 +140,7 @@ public class TestHMSFollower {
     reset(sentryStore);
 
     // 2nd run should not get a snapshot because is already processed
-    when(sentryStore.getMaxNotificationID()).thenReturn(fullSnapshot.getId());
+    when(sentryStore.getLastProcessedNotificationID()).thenReturn(fullSnapshot.getId());
     when(sentryStore.isAuthzPathsMappingEmpty()).thenReturn(false);
     hmsFollower.run();
     verify(sentryStore, times(0)).persistFullPathsImage(Mockito.anyMap(), Mockito.anyLong());
@@ -200,7 +198,7 @@ public class TestHMSFollower {
     hmsFollower.setSentryHmsClient(sentryHmsClient);
 
     // 1st run should get a full snapshot because AuthzPathsMapping is empty
-    when(sentryStore.getMaxNotificationID()).thenReturn(SENTRY_PROCESSED_EVENT_ID);
+    when(sentryStore.getLastProcessedNotificationID()).thenReturn(SENTRY_PROCESSED_EVENT_ID);
     when(sentryStore.isAuthzPathsMappingEmpty()).thenReturn(true);
     when(sentryStore.isHmsNotificationEmpty()).thenReturn(true);
     hmsFollower.run();
@@ -212,7 +210,7 @@ public class TestHMSFollower {
     reset(sentryStore);
 
     // 2nd run should not get a snapshot because is already processed
-    when(sentryStore.getMaxNotificationID()).thenReturn(fullSnapshot.getId());
+    when(sentryStore.getLastProcessedNotificationID()).thenReturn(fullSnapshot.getId());
     when(sentryStore.isAuthzPathsMappingEmpty()).thenReturn(false);
     hmsFollower.run();
     verify(sentryStore, times(0)).persistFullPathsImage(Mockito.anyMap(), Mockito.anyLong());
@@ -224,7 +222,7 @@ public class TestHMSFollower {
     // but because of full update trigger it will, as in the first run
     PubSub.getInstance().publish(PubSub.Topic.HDFS_SYNC_HMS, "message");
 
-    when(sentryStore.getMaxNotificationID()).thenReturn(fullSnapshot.getId());
+    when(sentryStore.getLastProcessedNotificationID()).thenReturn(fullSnapshot.getId());
     when(sentryStore.isAuthzPathsMappingEmpty()).thenReturn(false);
     hmsFollower.run();
     verify(sentryStore, times(1)).persistFullPathsImage(
@@ -235,7 +233,7 @@ public class TestHMSFollower {
 
     // 4th run should not get a snapshot because is already processed and publish-subscribe
     // trigger is only supposed to work once. This is exactly as 2nd run.
-    when(sentryStore.getMaxNotificationID()).thenReturn(fullSnapshot.getId());
+    when(sentryStore.getLastProcessedNotificationID()).thenReturn(fullSnapshot.getId());
     when(sentryStore.isAuthzPathsMappingEmpty()).thenReturn(false);
     hmsFollower.run();
     verify(sentryStore, times(0)).persistFullPathsImage(Mockito.anyMap(), Mockito.anyLong());
@@ -286,7 +284,7 @@ public class TestHMSFollower {
 
     // 1st run should get a full snapshot because hms notificaions is empty
     // but it should never be persisted because HDFS sync is disabled
-    when(sentryStore.getMaxNotificationID()).thenReturn(SENTRY_PROCESSED_EVENT_ID);
+    when(sentryStore.getLastProcessedNotificationID()).thenReturn(SENTRY_PROCESSED_EVENT_ID);
     when(sentryStore.isHmsNotificationEmpty()).thenReturn(true);
     hmsFollower.run();
     verify(sentryStore, times(0)).persistFullPathsImage(
@@ -311,7 +309,7 @@ public class TestHMSFollower {
 
     //Set last processed notification Id to match the full new value 1L
     final long LATEST_EVENT_ID = 1L;
-    when(sentryStore.getMaxNotificationID()).thenReturn(LATEST_EVENT_ID);
+    when(sentryStore.getLastProcessedNotificationID()).thenReturn(LATEST_EVENT_ID);
     //Mock that sets isHmsNotificationEmpty to false
     when(sentryStore.isHmsNotificationEmpty()).thenReturn(false);
     // Mock that sets the current HMS notification ID. Set it to match
@@ -371,7 +369,7 @@ public class TestHMSFollower {
     hmsFollower.setSentryHmsClient(sentryHmsClient);
 
     // 1st run should get a full snapshot
-    when(sentryStore.getMaxNotificationID()).thenReturn(SENTRY_PROCESSED_EVENT_ID);
+    when(sentryStore.getLastProcessedNotificationID()).thenReturn(SENTRY_PROCESSED_EVENT_ID);
     when(sentryStore.isAuthzPathsMappingEmpty()).thenReturn(false);
     hmsFollower.run();
     verify(sentryStore, times(1)).persistFullPathsImage(Mockito.anyMap(), Mockito.anyLong());
@@ -380,7 +378,7 @@ public class TestHMSFollower {
     reset(sentryStore);
 
     // 2nd run should not get a snapshot because is already processed
-    when(sentryStore.getMaxNotificationID()).thenReturn(HMS_PROCESSED_EVENT_ID);
+    when(sentryStore.getLastProcessedNotificationID()).thenReturn(HMS_PROCESSED_EVENT_ID);
     when(sentryStore.isAuthzPathsMappingEmpty()).thenReturn(false);
     hmsFollower.run();
     verify(sentryStore, times(0)).persistFullPathsImage(Mockito.anyMap(), Mockito.anyLong());
@@ -418,33 +416,20 @@ public class TestHMSFollower {
     SentryHMSClient sentryHmsClient = Mockito.mock(SentryHMSClient.class);
     when(sentryHmsClient.getFullSnapshot()).thenReturn(fullSnapshot);
 
-    when(hmsClientMock.getNextNotification(Mockito.anyLong(), Mockito.eq(Integer.MAX_VALUE),
-            (NotificationFilter) Mockito.notNull())).thenAnswer(new Answer<NotificationEventResponse>() {
-      @Override
-      public NotificationEventResponse answer(InvocationOnMock invocation)
-              throws Throwable {
-        NotificationFilter filter = (NotificationFilter) invocation.getArguments()[2];
-        NotificationEventResponse response = new NotificationEventResponse();
-
-        List<NotificationEvent> events = Arrays.<NotificationEvent>asList(
+    when(hmsClientMock.getNextNotification(Mockito.eq(SENTRY_PROCESSED_EVENT_ID - 1), Mockito.eq(Integer.MAX_VALUE),
+        (NotificationFilter) Mockito.notNull()))
+        .thenReturn(new NotificationEventResponse(
+            Arrays.<NotificationEvent>asList(
                 new NotificationEvent(fullSnapshot.getId(), 0, "", "")
-        );
+            )
+        ));
 
-        for (NotificationEvent event : events) {
-          if (filter.accept(event)) {
-            response.addToEvents(event);
-          }
-        }
-
-        return response;
-      }
-    });
     HMSFollower hmsFollower = new HMSFollower(configuration, sentryStore, null,
         hmsConnectionMock, hiveInstance);
     hmsFollower.setSentryHmsClient(sentryHmsClient);
 
     // 1st run should get a full snapshot
-    when(sentryStore.getMaxNotificationID())
+    when(sentryStore.getLastProcessedNotificationID())
         .thenReturn(SENTRY_PROCESSED_EVENT_ID);
     when(sentryStore.isHmsNotificationEmpty()).thenReturn(false);
     hmsFollower.run();
@@ -454,11 +439,8 @@ public class TestHMSFollower {
     reset(sentryStore);
 
     // 2nd run should not get a snapshot because is already processed
-    when(sentryStore.getMaxNotificationID()).thenReturn(HMS_PROCESSED_EVENT_ID);
+    when(sentryStore.getLastProcessedNotificationID()).thenReturn(HMS_PROCESSED_EVENT_ID);
     when(sentryStore.isAuthzPathsMappingEmpty()).thenReturn(false);
-    when(sentryStore.isNotificationIdProcessed(fullSnapshot.getId())).thenReturn(true);
-    when(sentryStore.isNotificationProcessed(UniquePathsUpdate.sha1(new NotificationEvent(
-            fullSnapshot.getId(), 0, "", "")))).thenReturn(true);
     hmsFollower.run();
     verify(sentryStore, times(0)).persistFullPathsImage(Mockito.anyMap(), Mockito.anyLong());
     verify(sentryStore, times(0)).persistLastProcessedNotificationID(Mockito.anyLong());
@@ -543,7 +525,7 @@ public class TestHMSFollower {
     events.add(notificationEvent);
     HMSFollower hmsFollower = new HMSFollower(configuration, sentryStore, null,
         hiveConnectionFactory, hiveInstance);
-    hmsFollower.processNotifications(events, 0);
+    hmsFollower.processNotifications(events);
 
     TSentryAuthorizable authorizable = new TSentryAuthorizable(hiveInstance);
     authorizable.setServer(hiveInstance);
@@ -573,7 +555,7 @@ public class TestHMSFollower {
 
     HMSFollower hmsFollower = new HMSFollower(configuration, sentryStore, null,
         hiveConnectionFactory, hiveInstance);
-    hmsFollower.processNotifications(events, 0);
+    hmsFollower.processNotifications(events);
 
     TSentryAuthorizable authorizable = new TSentryAuthorizable(hiveInstance);
     authorizable.setServer(hiveInstance);
@@ -607,7 +589,7 @@ public class TestHMSFollower {
 
     HMSFollower hmsFollower = new HMSFollower(configuration, sentryStore, null,
         hiveConnectionFactory, hiveInstance);
-    hmsFollower.processNotifications(events, 0);
+    hmsFollower.processNotifications(events);
 
     TSentryAuthorizable authorizable = new TSentryAuthorizable(hiveInstance);
     authorizable.setServer(hiveInstance);
@@ -642,7 +624,7 @@ public class TestHMSFollower {
 
     HMSFollower hmsFollower = new HMSFollower(configuration, sentryStore, null,
         hiveConnectionFactory, hiveInstance);
-    hmsFollower.processNotifications(events, 0);
+    hmsFollower.processNotifications(events);
 
     TSentryAuthorizable authorizable = new TSentryAuthorizable(hiveInstance);
     authorizable.setServer(hiveInstance);
@@ -683,7 +665,7 @@ public class TestHMSFollower {
 
     HMSFollower hmsFollower = new HMSFollower(configuration, sentryStore, null,
         hiveConnectionFactory, hiveInstance);
-    hmsFollower.processNotifications(events, 0);
+    hmsFollower.processNotifications(events);
 
     TSentryAuthorizable authorizable = new TSentryAuthorizable(hiveInstance);
     authorizable.setServer(hiveInstance);
@@ -742,7 +724,7 @@ public class TestHMSFollower {
     events.add(notificationEvent);
     inputEventId += 1;
     // Process the notification
-    hmsFollower.processNotifications(events, 0);
+    hmsFollower.processNotifications(events);
     // Make sure that addAuthzPathsMapping was invoked once to handle CREATE_TABLE notification
     // and persistLastProcessedNotificationID was not invoked.
     //noinspection unchecked
@@ -766,7 +748,7 @@ public class TestHMSFollower {
     events.add(notificationEvent);
     inputEventId += 1;
     //Process the notification
-    hmsFollower.processNotifications(events, 0);
+    hmsFollower.processNotifications(events);
     // Make sure that addAuthzPathsMapping was invoked once to handle ADD_PARTITION notification
     // and persistLastProcessedNotificationID was not invoked.
     //noinspection unchecked
@@ -786,7 +768,7 @@ public class TestHMSFollower {
     events.add(notificationEvent);
     inputEventId += 1;
     // Process the notification
-    hmsFollower.processNotifications(events, 0);
+    hmsFollower.processNotifications(events);
     // Make sure that persistLastProcessedNotificationID is invoked explicitly.
     verify(sentryStore, times(1)).persistLastProcessedNotificationID(inputEventId - 1);
     reset(sentryStore);
@@ -804,7 +786,7 @@ public class TestHMSFollower {
     events.add(notificationEvent);
     inputEventId += 1;
     // Process the notification
-    hmsFollower.processNotifications(events, 0);
+    hmsFollower.processNotifications(events);
     // Make sure that updateAuthzPathsMapping was invoked once to handle ALTER_PARTITION
     // notification and persistLastProcessedNotificationID was not invoked.
     verify(sentryStore, times(1)).updateAuthzPathsMapping(Mockito.anyString(),
@@ -827,7 +809,7 @@ public class TestHMSFollower {
     notificationEvent.setTableName(tableName2);
     events.add(notificationEvent);
     // Process the notification
-    hmsFollower.processNotifications(events, 0);
+    hmsFollower.processNotifications(events);
     // Make sure that addAuthzPathsMapping was invoked once to handle CREATE_TABLE notification
     // and persistLastProcessedNotificationID was not invoked.
     //noinspection unchecked
@@ -882,7 +864,7 @@ public class TestHMSFollower {
     events.add(notificationEvent);
     inputEventId += 1;
     // Process the notification
-    hmsFollower.processNotifications(events, 0);
+    hmsFollower.processNotifications(events);
     // Make sure that addAuthzPathsMapping was invoked once to handle CREATE_TABLE notification
     // and persistLastProcessedNotificationID was not invoked.
     //noinspection unchecked
@@ -907,7 +889,7 @@ public class TestHMSFollower {
     events.add(notificationEvent);
     inputEventId += 1;
     // Process the notification
-    hmsFollower.processNotifications(events, 0);
+    hmsFollower.processNotifications(events);
     // Make sure that renameAuthzObj and deleteAuthzPathsMapping were  not invoked
     // to handle CREATE_TABLE notification
     // and persistLastProcessedNotificationID is explicitly invoked
@@ -934,7 +916,7 @@ public class TestHMSFollower {
     notificationEvent.setTableName(tableName2);
     events.add(notificationEvent);
     // Process the notification
-    hmsFollower.processNotifications(events, 0);
+    hmsFollower.processNotifications(events);
     // Make sure that addAuthzPathsMapping was invoked once to handle CREATE_TABLE notification
     // and persistLastProcessedNotificationID was not invoked.
     //noinspection unchecked
@@ -988,7 +970,7 @@ public class TestHMSFollower {
     Configuration configuration = new Configuration();
     HMSFollower hmsFollower = new HMSFollower(configuration, sentryStore, null,
         hiveConnectionFactory, hiveInstance);
-    hmsFollower.processNotifications(events, 0);
+    hmsFollower.processNotifications(events);
 
     // invalid event updates notification ID directly
     verify(sentryStore, times(1)).persistLastProcessedNotificationID(inputEventId - 1);
@@ -1030,7 +1012,7 @@ public class TestHMSFollower {
     hmsFollower.setSentryHmsClient(sentryHmsClient);
 
     // 1st run should get a full snapshot because AuthzPathsMapping is empty
-    when(sentryStore.getMaxNotificationID()).thenReturn(SENTRY_PROCESSED_EVENT_ID);
+    when(sentryStore.getLastProcessedNotificationID()).thenReturn(SENTRY_PROCESSED_EVENT_ID);
     when(sentryStore.isAuthzPathsMappingEmpty()).thenReturn(false);
     when(sentryStore.isHmsNotificationEmpty()).thenReturn(true);
     hmsFollower.run();
@@ -1064,7 +1046,7 @@ public class TestHMSFollower {
     Configuration configuration = new Configuration();
     HMSFollower hmsFollower = new HMSFollower(configuration, sentryStore, null,
         hiveConnectionFactory, hiveInstance);
-    hmsFollower.processNotifications(events, 0);
+    hmsFollower.processNotifications(events);
 
     TSentryAuthorizable authorizable = new TSentryAuthorizable(hiveInstance);
     authorizable.setServer(hiveInstance);

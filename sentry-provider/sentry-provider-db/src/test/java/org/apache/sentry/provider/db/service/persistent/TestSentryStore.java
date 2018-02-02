@@ -2466,7 +2466,7 @@ public class TestSentryStore extends org.junit.Assert {
     long notificationID = 11;
     sentryStore.persistFullPathsImage(authzPaths, notificationID);
     PathsUpdate pathsUpdate = sentryStore.retrieveFullPathsImageUpdate(prefixes);
-    long savedNotificationID = sentryStore.getMaxNotificationID();
+    long savedNotificationID = sentryStore.getLastProcessedNotificationID();
     assertEquals(1, pathsUpdate.getImgNum());
     TPathsDump pathDump = pathsUpdate.toThrift().getPathsDump();
     Map<Integer, TPathEntry> nodeMap = pathDump.getNodeMap();
@@ -2519,7 +2519,7 @@ public class TestSentryStore extends org.junit.Assert {
     sentryStore.addAuthzPathsMapping("db2", Arrays.asList("/hive/db2"), update2);
 
     // Check the latest persisted ID matches to both the path updates
-    long latestID = sentryStore.getMaxNotificationID();
+    long latestID = sentryStore.getLastProcessedNotificationID();
     assertEquals(notificationID, latestID);
 
     String []prefixes = {"/hive"};
@@ -2585,7 +2585,7 @@ public class TestSentryStore extends org.junit.Assert {
     sentryStore.persistLastProcessedNotificationID(notificationID);
 
     // Retrieving latest peristed ID should match with the previous persisted ID
-    long latestID = sentryStore.getMaxNotificationID();
+    long latestID = sentryStore.getLastProcessedNotificationID();
     assertEquals(notificationID, latestID);
   }
 
@@ -2597,7 +2597,7 @@ public class TestSentryStore extends org.junit.Assert {
     sentryStore.persistFullPathsImage(new HashMap<String, Collection<String>>(), notificationID);
 
     // Add "db1.table1" authzObj
-    Long lastNotificationId = sentryStore.getMaxNotificationID();
+    Long lastNotificationId = sentryStore.getLastProcessedNotificationID();
     UniquePathsUpdate addUpdate = new UniquePathsUpdate("u1", 1, false);
     addUpdate.newPathChange("db1.table").
           addToAddPaths(Arrays.asList("db1", "tbl1"));
@@ -2624,7 +2624,7 @@ public class TestSentryStore extends org.junit.Assert {
     long lastChangeID = sentryStore.getLastProcessedPathChangeID();
     MSentryPathChange addPathChange = sentryStore.getMSentryPathChangeByID(lastChangeID);
     assertEquals(addUpdate.JSONSerialize(), addPathChange.getPathChange());
-    lastNotificationId = sentryStore.getMaxNotificationID();
+    lastNotificationId = sentryStore.getLastProcessedNotificationID();
     assertEquals(1, lastNotificationId.longValue());
 
     // Delete path 'db1.db/tbl1' from "db1.table1" authzObj.
@@ -2649,7 +2649,7 @@ public class TestSentryStore extends org.junit.Assert {
     lastChangeID = sentryStore.getLastProcessedPathChangeID();
     MSentryPathChange delPathChange = sentryStore.getMSentryPathChangeByID(lastChangeID);
     assertEquals(delUpdate.JSONSerialize(), delPathChange.getPathChange());
-    lastNotificationId = sentryStore.getMaxNotificationID();
+    lastNotificationId = sentryStore.getLastProcessedNotificationID();
     assertEquals(2, lastNotificationId.longValue());
 
     // Delete "db1.table" authzObj from the authzObj -> [Paths] mapping.
@@ -2674,7 +2674,7 @@ public class TestSentryStore extends org.junit.Assert {
     MSentryPathChange delAllPathChange = sentryStore.getMSentryPathChangeByID(lastChangeID);
     assertEquals(delAllupdate.JSONSerialize(), delAllPathChange.getPathChange());
 
-    lastNotificationId = sentryStore.getMaxNotificationID();
+    lastNotificationId = sentryStore.getLastProcessedNotificationID();
     assertEquals(3, lastNotificationId.longValue());
 
   }
@@ -2682,7 +2682,7 @@ public class TestSentryStore extends org.junit.Assert {
   @Test
   public void testRenameUpdateAuthzPathsMapping() throws Exception {
     Map<String, Collection<String>> authzPaths = new HashMap<>();
-    Long lastNotificationId = sentryStore.getMaxNotificationID();
+    Long lastNotificationId = sentryStore.getLastProcessedNotificationID();
     authzPaths.put("db1.table1", Sets.newHashSet("user/hive/warehouse/db1.db/table1",
                                                 "user/hive/warehouse/db1.db/table1/p1"));
     authzPaths.put("db1.table2", Sets.newHashSet("user/hive/warehouse/db1.db/table2"));
@@ -2728,7 +2728,7 @@ public class TestSentryStore extends org.junit.Assert {
     long lastChangeID = sentryStore.getLastProcessedPathChangeID();
     MSentryPathChange renamePathChange = sentryStore.getMSentryPathChangeByID(lastChangeID);
     assertEquals(renameUpdate.JSONSerialize(), renamePathChange.getPathChange());
-    lastNotificationId = sentryStore.getMaxNotificationID();
+    lastNotificationId = sentryStore.getLastProcessedNotificationID();
     assertEquals(1, lastNotificationId.longValue());
     // Rename 'db1.table1' to "db1.table2" but did not change its location.
     renameUpdate = new UniquePathsUpdate("u2",2, false);
@@ -2752,7 +2752,7 @@ public class TestSentryStore extends org.junit.Assert {
     assertTrue(CollectionUtils.isEqualCollection(Lists.newArrayList("user/hive/warehouse/db1.db/table1/p1",
             "user/hive/warehouse/db1.db/newTable1"),
             pathsImage.get("db1.newTable2")));
-    lastNotificationId = sentryStore.getMaxNotificationID();
+    lastNotificationId = sentryStore.getLastProcessedNotificationID();
     assertEquals(2, lastNotificationId.longValue());
 
     // Query the persisted path change and ensure it equals to the original one
@@ -2790,7 +2790,7 @@ public class TestSentryStore extends org.junit.Assert {
     lastChangeID = sentryStore.getLastProcessedPathChangeID();
     MSentryPathChange updatePathChange = sentryStore.getMSentryPathChangeByID(lastChangeID);
     assertEquals(update.JSONSerialize(), updatePathChange.getPathChange());
-    lastNotificationId = sentryStore.getMaxNotificationID();
+    lastNotificationId = sentryStore.getLastProcessedNotificationID();
     assertEquals(3, lastNotificationId.longValue());
   }
 
@@ -2914,7 +2914,7 @@ public class TestSentryStore extends org.junit.Assert {
     assertEquals(1, pathImage.get("db2.table").size());
     assertEquals(3, sentryStore.getMPaths().size());
 
-    Long lastNotificationId = sentryStore.getMaxNotificationID();
+    Long lastNotificationId = sentryStore.getLastProcessedNotificationID();
     assertEquals(notificationID, lastNotificationId.longValue());
   }
 
@@ -3419,7 +3419,7 @@ public class TestSentryStore extends org.junit.Assert {
   @Test
   public void testDuplicateNotification() throws Exception {
     Map<String, Collection<String>> authzPaths = new HashMap<>();
-    Long lastNotificationId = sentryStore.getMaxNotificationID();
+    Long lastNotificationId = sentryStore.getLastProcessedNotificationID();
 
     lastNotificationId ++;
     authzPaths.put("db1.table1", Sets.newHashSet("user/hive/warehouse/db1.db/table1",
@@ -3471,7 +3471,7 @@ public class TestSentryStore extends org.junit.Assert {
     long lastChangeID = sentryStore.getLastProcessedPathChangeID();
     MSentryPathChange renamePathChange = sentryStore.getMSentryPathChangeByID(lastChangeID);
     assertEquals(renameUpdate.JSONSerialize(), renamePathChange.getPathChange());
-    Long savedLastNotificationId = sentryStore.getMaxNotificationID();
+    Long savedLastNotificationId = sentryStore.getLastProcessedNotificationID();
     assertEquals(lastNotificationId.longValue(), savedLastNotificationId.longValue());
 
 
@@ -3531,7 +3531,7 @@ public class TestSentryStore extends org.junit.Assert {
     localSentryStore.persistFullPathsImage(new HashMap<String, Collection<String>>(), 0);
 
     // Add "db1.table1" authzObj
-    Long lastNotificationId = sentryStore.getMaxNotificationID();
+    Long lastNotificationId = sentryStore.getLastProcessedNotificationID();
     UniquePathsUpdate addUpdate = new UniquePathsUpdate("u1",1, false);
     addUpdate.newPathChange("db1.table").
         addToAddPaths(Arrays.asList("db1", "tbl1"));
@@ -3601,7 +3601,7 @@ public class TestSentryStore extends org.junit.Assert {
     lastChangeID = localSentryStore.getLastProcessedPathChangeID();
     assertEquals(0, lastChangeID);
 
-    lastNotificationId = localSentryStore.getMaxNotificationID();
+    lastNotificationId = localSentryStore.getLastProcessedNotificationID();
     assertEquals(0, lastNotificationId.longValue());
 
     // enable HDFS for other tests

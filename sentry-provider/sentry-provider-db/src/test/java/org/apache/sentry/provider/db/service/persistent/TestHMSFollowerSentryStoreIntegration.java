@@ -190,7 +190,7 @@ public class TestHMSFollowerSentryStoreIntegration {
     List<NotificationEvent> events = new ArrayList<>();
     events.add(notificationEvent);
 
-    hmsFollower.processNotifications(events, 0);
+    hmsFollower.processNotifications(events);
 
     Assert.assertEquals(1, sentryStore.getAllTSentryPrivilegesByRoleName(roleName1)
         .size());
@@ -248,7 +248,7 @@ public class TestHMSFollowerSentryStoreIntegration {
     List<NotificationEvent> events = new ArrayList<>();
     events.add(notificationEvent);
 
-    hmsFollower.processNotifications(events, 0);
+    hmsFollower.processNotifications(events);
 
     Assert.assertEquals(1, sentryStore.getAllTSentryPrivilegesByRoleName(roleName1)
         .size());
