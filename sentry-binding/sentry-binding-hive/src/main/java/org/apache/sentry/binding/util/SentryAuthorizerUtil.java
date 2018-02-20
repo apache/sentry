@@ -20,6 +20,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.common.JavaUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -220,8 +221,15 @@ public class SentryAuthorizerUtil {
     HivePrincipal grantor = new HivePrincipal(UNKONWN_GRANTOR, HivePrincipalType.ROLE);
     boolean grantOption =
         tPrivilege.getGrantOption().equals(TSentryGrantOption.TRUE) ? true : false;
+
+    // Convert the timestamp in sentry, which is in milliseconds, to the timestamp in
+    // hive, which is in seconds
+    // The timestamp is the difference between the current time and midnight, January 1, 1970 UTC.
+    int hiveCreateTimeSeconds = (int)TimeUnit.SECONDS.convert(tPrivilege.getCreateTime(),
+        TimeUnit.MILLISECONDS);
+
     return new HivePrivilegeInfo(principal, hivePrivilege, hivePrivilegeObject, grantor,
-        grantOption, (int) tPrivilege.getCreateTime());
+        grantOption, hiveCreateTimeSeconds);
   }
 
   /**
