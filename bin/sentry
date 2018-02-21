@@ -61,7 +61,7 @@ while [ $# -gt 0 ]; do    # Until you run out of parameters . . .
   esac
 done
 
-export _CMD_JAR=sentry-core-common-*.jar
+export _CMD_JAR=sentry-tools-*.jar
 for f in ${SENTRY_HOME}/lib/*.jar; do
   HADOOP_CLASSPATH=${HADOOP_CLASSPATH}:${f}
 done
