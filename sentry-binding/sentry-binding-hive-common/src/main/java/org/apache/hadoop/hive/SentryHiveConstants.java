@@ -28,6 +28,7 @@ public final class SentryHiveConstants {
   public static final String PARTITION_PRIVS_NOT_SUPPORTED = "Sentry does not support partition level authorization";
   public static final String GRANT_REVOKE_NOT_SUPPORTED_ON_OBJECT = "Sentry does not allow grant/revoke on: ";
   public static final String GRANT_REVOKE_NOT_SUPPORTED_FOR_PRINCIPAL = "Sentry does not allow privileges to be granted/revoked to/from: ";
+  public static final String SHOW_NOT_SUPPORTED_FOR_PRINCIPAL = "Sentry does not allow privileges to be shown for: ";
 
   private SentryHiveConstants() {
     // Make constructor private to avoid instantiation

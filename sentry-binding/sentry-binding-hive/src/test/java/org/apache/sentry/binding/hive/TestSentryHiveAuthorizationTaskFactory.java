@@ -361,7 +361,7 @@ public class TestSentryHiveAuthorizationTaskFactory {
   @Test
   public void testShowRoleGrantRole() throws Exception {
     expectSemanticException("SHOW ROLE GRANT ROLE " + ROLE,
-        SentryHiveConstants.GRANT_REVOKE_NOT_SUPPORTED_FOR_PRINCIPAL + "ROLE");
+        SentryHiveConstants.SHOW_NOT_SUPPORTED_FOR_PRINCIPAL + "ROLE");
   }
 
   /**
@@ -383,7 +383,7 @@ public class TestSentryHiveAuthorizationTaskFactory {
   @Test
   public void testShowGrantUserOnTable() throws Exception {
     expectSemanticException("SHOW GRANT USER " + USER + " ON TABLE " + TABLE,
-        SentryHiveConstants.GRANT_REVOKE_NOT_SUPPORTED_FOR_PRINCIPAL + "USER");
+        SentryHiveConstants.SHOW_NOT_SUPPORTED_FOR_PRINCIPAL + "USER");
   }
 
   /**
@@ -407,7 +407,7 @@ public class TestSentryHiveAuthorizationTaskFactory {
   @Test
   public void testShowGrantGroupOnTable() throws Exception {
     expectSemanticException("SHOW GRANT GROUP " + GROUP + " ON TABLE " + TABLE,
-        SentryHiveConstants.GRANT_REVOKE_NOT_SUPPORTED_FOR_PRINCIPAL + "GROUP");
+        SentryHiveConstants.SHOW_NOT_SUPPORTED_FOR_PRINCIPAL + "GROUP");
   }
 
   /**
