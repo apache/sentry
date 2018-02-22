@@ -642,4 +642,15 @@ public class SentryService implements Callable, SigUtils.SigListener {
     // Become follower
     leaderMonitor.deactivate();
   }
+
+  /**
+   * Restart HMSFollower with new configuration
+   * @param newConf Configuration
+   * @throws Exception
+   */
+  @VisibleForTesting
+  public void restartHMSFollower(Configuration newConf) throws Exception{
+    stopHMSFollower(conf);
+    startHMSFollower(newConf);
+  }
 }

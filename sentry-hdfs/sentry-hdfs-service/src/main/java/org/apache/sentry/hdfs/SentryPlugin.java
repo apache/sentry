@@ -158,7 +158,7 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
   public List<PathsUpdate> getAllPathsUpdatesFrom(long pathSeqNum, long pathImgNum) throws Exception {
     if (!fullUpdateNN.get()) {
       // Most common case - Sentry is NOT handling a full update.
-      LOGGER.debug("Sending partial PATH update to NameNode for pathSeqNum {} and pathImgNum {}", pathSeqNum, pathImgNum);
+      LOGGER.debug("Received request for PATH update from NameNode for pathSeqNum {} and pathImgNum {}", pathSeqNum, pathImgNum);
       return pathsUpdater.getAllUpdatesFrom(pathSeqNum, pathImgNum);
     }
 
@@ -199,7 +199,7 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
   }
 
   public List<PermissionsUpdate> getAllPermsUpdatesFrom(long permSeqNum) throws Exception {
-    LOGGER.debug("Sending partial PERM update to NameNode for permSeqNum {}", permSeqNum);
+    LOGGER.debug("Received request for PERM update from NameNode for permSeqNum {}", permSeqNum);
     return permsUpdater.getAllUpdatesFrom(permSeqNum, UNUSED_PATH_UPDATE_IMG_NUM);
   }
 

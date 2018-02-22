@@ -151,6 +151,17 @@ public class InternalSentrySrv implements SentrySrv {
   }
 
   @Override
+  public void restartHMSFollower(Configuration newConf, int serverNum,
+      long sleepTime) throws Exception {
+    if (!isActive) {
+      throw new IllegalStateException("SentrySrv is no longer active");
+    }
+    SentryService sentryServer = sentryServers.get(serverNum);
+    sentryServer.restartHMSFollower(newConf);
+    Thread.sleep(sleepTime);
+  }
+
+  @Override
   public void stopAll() throws Exception {
     boolean cleanStop = true;
     if (!isActive) {

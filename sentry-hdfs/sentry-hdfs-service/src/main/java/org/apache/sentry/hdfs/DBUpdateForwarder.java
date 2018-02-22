@@ -108,6 +108,7 @@ class DBUpdateForwarder<K extends Updateable.Update> {
 
     if (seqNum > curSeqNum) {
       // No new notifications were processed.
+      LOGGER.debug("{}, No new updates", retrieverType);
       return Collections.emptyList();
     }
 

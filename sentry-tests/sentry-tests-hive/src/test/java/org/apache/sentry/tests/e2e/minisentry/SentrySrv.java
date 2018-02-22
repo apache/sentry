@@ -17,6 +17,7 @@
  */
 package org.apache.sentry.tests.e2e.minisentry;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.service.thrift.SentryService;
 
 public interface SentrySrv {
@@ -34,6 +35,15 @@ public interface SentrySrv {
    * @throws Exception
    */
   void start(int serverNum) throws Exception ;
+
+  /**
+   * retart HMSFollower with new configuration
+   * @param newConf new configuration
+   * @param serverNum Server number
+   * @throws Exception
+   */
+  void restartHMSFollower(Configuration newConf, int serverNum,
+      long sleepTime) throws Exception ;
 
   /**
    * Stop all the Sentry servers

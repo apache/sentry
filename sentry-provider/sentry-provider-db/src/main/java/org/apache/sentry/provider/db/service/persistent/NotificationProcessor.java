@@ -99,7 +99,7 @@ final class NotificationProcessor {
             AUTHZ_SYNC_CREATE_WITH_POLICY_STORE.getDefault()));
     syncStoreOnDrop = Boolean.parseBoolean(conf.get(AUTHZ_SYNC_DROP_WITH_POLICY_STORE.getVar(),
         AUTHZ_SYNC_DROP_WITH_POLICY_STORE.getDefault()));
-    hdfsSyncEnabled = SentryServiceUtil.isHDFSSyncEnabled(conf);
+    hdfsSyncEnabled = SentryServiceUtil.isHDFSSyncEnabledNoCache(conf);
   }
 
   /**

@@ -577,6 +577,25 @@ public class SentryStore {
   }
 
   /**
+   * Removes all the information related to HMS Objects from sentry store.
+   */
+  @VisibleForTesting
+  public void clearHmsPathInformation() throws Exception {
+    tm.executeTransactionWithRetry(
+            new TransactionBlock<Object>() {
+              public Object execute(PersistenceManager pm) throws Exception {
+                // Data in MAuthzPathsSnapshotId.class is not cleared intentionally.
+                // This data will help sentry retain the history of snapshots taken before
+                // and help in picking appropriate ID even when hdfs sync is enabled/disabled.
+                pm.newQuery(MSentryPathChange.class).deletePersistentAll();
+                pm.newQuery(MAuthzPathsMapping.class).deletePersistentAll();
+                pm.newQuery(MPath.class).deletePersistentAll();
+                return null;
+              }
+            });
+  }
+
+  /**
    * Purge a given delta change table, with a specified number of changes to be kept.
    *
    * @param cls the class of a perm/path delta change {@link MSentryPermChange} or
@@ -3101,9 +3120,9 @@ public class SentryStore {
   }
 
   /**
-   * Tells if there are any records in MAuthzPathsSnapshotId
+   * Tells if there are any records in MAuthzPathsMapping
    *
-   * @return true if there are no entries in <code>MAuthzPathsSnapshotId</code>
+   * @return true if there are no entries in <code>MAuthzPathsMapping</code>
    * false if there are entries
    * @throws Exception
    */
@@ -3112,7 +3131,7 @@ public class SentryStore {
         new TransactionBlock<Boolean>() {
           public Boolean execute(PersistenceManager pm) throws Exception {
             pm.setDetachAllOnCommit(false); // No need to detach objects
-            return isTableEmptyCore(pm, MAuthzPathsSnapshotId.class);
+            return isTableEmptyCore(pm, MAuthzPathsMapping.class);
           }
         });
   }

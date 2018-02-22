@@ -116,7 +116,17 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
       LOGGER.info(FULL_UPDATE_TRIGGER + "subscribing to topic " + PubSub.Topic.HDFS_SYNC_HMS.getName());
       PubSub.getInstance().subscribe(PubSub.Topic.HDFS_SYNC_HMS, this);
     }
-
+    if(!hdfsSyncEnabled) {
+      try {
+        // Clear all the HMS metadata learned so far and learn it fresh when the feature
+        // is enabled back.
+        store.clearHmsPathInformation();
+      } catch (Exception ex) {
+        LOGGER.error("Failed to clear HMS path info", ex);
+        LOGGER.error("Please manually clear data from SENTRY_PATH_CHANGE/AUTHZ_PATH/AUTHZ_PATHS_MAPPING tables." +
+                "If not, HDFS ACL's will be inconsistent when HDFS sync feature is enabled back.");
+      }
+    }
   }
 
   @VisibleForTesting
@@ -190,7 +200,7 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
    * <p>Clients connections waiting for an event notification will be
    * woken up afterwards.
    */
-  private void syncupWithHms(long notificationId) {
+   void syncupWithHms(long notificationId) {
     try {
       client.connect();
       connectedToHms = true;
@@ -201,18 +211,27 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
     }
 
     try {
-      /* Before getting notifications, it checks if a full HMS snapshot is required. */
-      if (isFullSnapshotRequired(notificationId)) {
-        createFullSnapshot();
-        return;
+      if (hdfsSyncEnabled) {
+        // Before getting notifications, checking if a full HMS snapshot is required.
+        if (isFullSnapshotRequired(notificationId)) {
+          createFullSnapshot();
+          return;
+        }
+      } else if (isSentryOutOfSync(notificationId)) {
+        // Out-of-sync, fetching all the notifications
+        // in HMS NOTIFICATION_LOG.
+        sentryStore.setLastProcessedNotificationID(0L);
+        notificationId = 0L;
       }
 
       Collection<NotificationEvent> notifications =
           notificationFetcher.fetchNotifications(notificationId);
 
-      // After getting notifications, it checks if the HMS did some clean-up and notifications
+      // After getting notifications, check if HMS did some clean-up and notifications
       // are out-of-sync with Sentry.
-      if (areNotificationsOutOfSync(notifications, notificationId)) {
+      if (hdfsSyncEnabled &&
+              areNotificationsOutOfSync(notifications, notificationId)) {
+        // Out-of-sync, taking a HMS full snapshot.
         createFullSnapshot();
         return;
       }
@@ -258,18 +277,15 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
       return true;
     }
 
-    // Once HDFS sync is enabled, and if MAuthzPathsSnapshotId
+    // Once HDFS sync is enabled, and if MAuthzPathsMapping
     // table is still empty, we need to request a full snapshot
-    if(hdfsSyncEnabled && sentryStore.isAuthzPathsSnapshotEmpty()) {
-      LOGGER.debug("HDFSSync is enabled and MAuthzPathsSnapshotId table is empty. Need to request a full snapshot");
+    if (sentryStore.isAuthzPathsSnapshotEmpty()) {
+      LOGGER.debug("HDFSSync is enabled and MAuthzPathsMapping table is empty." +
+              " Need to request a full snapshot");
       return true;
     }
 
-    long currentHmsNotificationId = notificationFetcher.getCurrentNotificationId();
-    if (currentHmsNotificationId < latestSentryNotificationId) {
-      LOGGER.info("The current notification ID on HMS = {} is less than the latest processed Sentry "
-          + "notification ID = {}. Need to request a full HMS snapshot",
-          currentHmsNotificationId, latestSentryNotificationId);
+    if(isSentryOutOfSync(latestSentryNotificationId)) {
       return true;
     }
 
@@ -280,6 +296,25 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
       return true;
     }
 
+    return false;
+  }
+
+  /**
+   * Checks the last notification processed by sentry and the current event-id of
+   * HMS to see if sentry is out of sync.
+   *
+   * @param latestSentryNotificationId The notification Id to check against the HMS
+   * @return True, sentry is out-of-sync, False otherwise
+   * @throws Exception If an error occurs while fetching the current notification from HMS
+   */
+  private boolean isSentryOutOfSync(long latestSentryNotificationId) throws Exception {
+    long currentHmsNotificationId = notificationFetcher.getCurrentNotificationId();
+    if (currentHmsNotificationId < latestSentryNotificationId) {
+      LOGGER.info("The current notification ID on HMS = {} is less than the latest processed Sentry "
+                      + "notification ID = {}. Sentry, Out-of-sync",
+              currentHmsNotificationId, latestSentryNotificationId);
+      return true;
+    }
     return false;
   }
 

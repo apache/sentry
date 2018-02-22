@@ -204,6 +204,7 @@ public abstract class TestHDFSIntegrationBase {
   protected static Boolean hiveSyncOnDrop = true;
   protected static Configuration hadoopConf;
   protected static final Map<String, String> sentryProperties = Maps.newHashMap();
+  protected static Configuration sentryConf = new Configuration(false);
 
   protected static File assertCreateDir(File dir) {
     if(!dir.isDirectory()) {
@@ -831,7 +832,6 @@ public abstract class TestHDFSIntegrationBase {
       hiveUgi.doAs(new PrivilegedExceptionAction<Void>() {
         @Override
         public Void run() throws Exception {
-          Configuration sentryConf = new Configuration(false);
           sentryConf.set(SENTRY_HDFS_INTEGRATION_PATH_PREFIXES, MANAGED_PREFIXES);
           sentryProperties.put(HiveServerFactory.AUTHZ_PROVIDER_BACKEND,
               SimpleDBProviderBackend.class.getName());
