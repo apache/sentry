@@ -34,7 +34,7 @@ import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
  * In order to use this class, the hive-site.xml should be configured in the following way:
  * <p>
  * <property>
- *   <name>hive.security.authorization.enable</name>
+ *   <name>hive.security.authorization.manager</name>
  *   <value>org.apache.sentry.binding.hive.authz.SentryHiveAuthorizerFactory</value>
  * </property>
  */
