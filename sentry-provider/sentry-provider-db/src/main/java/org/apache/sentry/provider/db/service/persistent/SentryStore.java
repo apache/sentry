@@ -361,17 +361,15 @@ public class SentryStore {
    */
   public void createSentryRole(final String roleName) throws Exception {
     tm.executeTransactionWithRetry(
-        new TransactionBlock<Object>() {
-          public Object execute(PersistenceManager pm) throws Exception {
-            pm.setDetachAllOnCommit(false); // No need to detach objects
-            String trimmedRoleName = trimAndLower(roleName);
-            if (getRole(pm, trimmedRoleName) != null) {
-              throw new SentryAlreadyExistsException("Role: " + trimmedRoleName);
-            }
-            pm.makePersistent(new MSentryRole(trimmedRoleName));
-            return null;
-            }
-        });
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              String trimmedRoleName = trimAndLower(roleName);
+              if (getRole(pm, trimmedRoleName) != null) {
+                throw new SentryAlreadyExistsException("Role: " + trimmedRoleName);
+              }
+              pm.makePersistent(new MSentryRole(trimmedRoleName));
+              return null;
+              });
   }
 
   /**
@@ -383,17 +381,15 @@ public class SentryStore {
   private <T> Long getCount(final Class<T> tClass) {
     try {
       return tm.executeTransaction(
-          new TransactionBlock<Long>() {
-            public Long execute(PersistenceManager pm) throws Exception {
-              pm.setDetachAllOnCommit(false); // No need to detach objects
-              Query query = pm.newQuery();
-              query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
-              query.setClass(tClass);
-              query.setResult("count(this)");
-              Long result = (Long)query.execute();
-              return result;
-            }
-          });
+              pm -> {
+                pm.setDetachAllOnCommit(false); // No need to detach objects
+                Query query = pm.newQuery();
+                query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
+                query.setClass(tClass);
+                query.setResult("count(this)");
+                Long result = (Long)query.execute();
+                return result;
+              });
     } catch (Exception e) {
        return COUNT_VALUE_UNKNOWN;
     }
@@ -403,75 +399,47 @@ public class SentryStore {
    * @return number of roles
    */
   public Gauge<Long> getRoleCountGauge() {
-    return new Gauge< Long >() {
-      @Override
-      public Long getValue() {
-        return getCount(MSentryRole.class);
-      }
-    };
+    return () -> getCount(MSentryRole.class);
   }
 
   /**
    * @return Number of privileges
    */
   public Gauge<Long> getPrivilegeCountGauge() {
-    return new Gauge< Long >() {
-      @Override
-      public Long getValue() {
-        return getCount(MSentryPrivilege.class);
-      }
-    };
+    return () -> getCount(MSentryPrivilege.class);
   }
 
   /**
    * @return number of groups
    */
   public Gauge<Long> getGroupCountGauge() {
-    return new Gauge< Long >() {
-      @Override
-      public Long getValue() {
-        return getCount(MSentryGroup.class);
-      }
-    };
+    return () -> getCount(MSentryGroup.class);
   }
 
   /**
    * @return Number of users
    */
   Gauge<Long> getUserCountGauge() {
-    return new Gauge<Long>() {
-      @Override
-      public Long getValue() {
-        return getCount(MSentryUser.class);
-      }
-    };
+    return () -> getCount(MSentryUser.class);
   }
 
   /**
    * @return number of threads waiting for HMS notifications to be processed
    */
   public Gauge<Integer> getHMSWaitersCountGauge() {
-    return new Gauge<Integer>() {
-      @Override
-      public Integer getValue() {
-        return counterWait.waitersCount();
-      }
-    };
+    return () -> counterWait.waitersCount();
   }
 
   /**
    * @return current value of last processed notification ID
    */
   public Gauge<Long> getLastNotificationIdGauge() {
-    return new Gauge<Long>() {
-      @Override
-      public Long getValue() {
-        try {
-          return getLastProcessedNotificationID();
-        } catch (Exception e) {
-          LOGGER.error("Can not read current notificationId", e);
-          return NOTIFICATION_UNKNOWN;
-        }
+    return () -> {
+      try {
+        return getLastProcessedNotificationID();
+      } catch (Exception e) {
+        LOGGER.error("Can not read current notificationId", e);
+        return NOTIFICATION_UNKNOWN;
       }
     };
   }
@@ -480,15 +448,12 @@ public class SentryStore {
    * @return ID of the path snapshot
    */
   public Gauge<Long> getLastPathsSnapshotIdGauge() {
-    return new Gauge<Long>() {
-      @Override
-      public Long getValue() {
-        try {
-          return getCurrentAuthzPathsSnapshotID();
-        } catch (Exception e) {
-          LOGGER.error("Can not read current paths snapshot ID", e);
-          return NOTIFICATION_UNKNOWN;
-        }
+    return () -> {
+      try {
+        return getCurrentAuthzPathsSnapshotID();
+      } catch (Exception e) {
+        LOGGER.error("Can not read current paths snapshot ID", e);
+        return NOTIFICATION_UNKNOWN;
       }
     };
   }
@@ -502,12 +467,7 @@ public class SentryStore {
       public Long getValue() {
         try {
           return tm.executeTransaction(
-              new TransactionBlock<Long>() {
-                @Override
-                public Long execute(PersistenceManager pm) throws Exception {
-                  return getLastProcessedChangeIDCore(pm, MSentryPermChange.class);
-                }
-              }
+                  pm -> getLastProcessedChangeIDCore(pm, MSentryPermChange.class)
           );
         } catch (Exception e) {
           LOGGER.error("Can not read current permissions change ID", e);
@@ -521,22 +481,14 @@ public class SentryStore {
    * @return Path change id
    */
   public Gauge<Long> getPathChangeIdGauge() {
-    return new Gauge<Long>() {
-      @Override
-      public Long getValue() {
-        try {
-          return tm.executeTransaction(
-              new TransactionBlock<Long>() {
-                @Override
-                public Long execute(PersistenceManager pm) throws Exception {
-                  return getLastProcessedChangeIDCore(pm, MSentryPathChange.class);
-                }
-              }
-          );
-        } catch (Exception e) {
-          LOGGER.error("Can not read current path change ID", e);
-          return NOTIFICATION_UNKNOWN;
-        }
+    return () -> {
+      try {
+        return tm.executeTransaction(
+                pm -> getLastProcessedChangeIDCore(pm, MSentryPathChange.class)
+        );
+      } catch (Exception e) {
+        LOGGER.error("Can not read current path change ID", e);
+        return NOTIFICATION_UNKNOWN;
       }
     };
   }
@@ -555,21 +507,19 @@ public class SentryStore {
   void clearAllTables() {
     try {
       tm.executeTransaction(
-          new TransactionBlock<Object>() {
-            public Object execute(PersistenceManager pm) throws Exception {
-              pm.newQuery(MSentryRole.class).deletePersistentAll();
-              pm.newQuery(MSentryGroup.class).deletePersistentAll();
-              pm.newQuery(MSentryUser.class).deletePersistentAll();
-              pm.newQuery(MSentryPrivilege.class).deletePersistentAll();
-              pm.newQuery(MSentryPermChange.class).deletePersistentAll();
-              pm.newQuery(MSentryPathChange.class).deletePersistentAll();
-              pm.newQuery(MAuthzPathsMapping.class).deletePersistentAll();
-              pm.newQuery(MPath.class).deletePersistentAll();
-              pm.newQuery(MSentryHmsNotification.class).deletePersistentAll();
-              pm.newQuery(MAuthzPathsSnapshotId.class).deletePersistentAll();
-              return null;
-            }
-          });
+              pm -> {
+                pm.newQuery(MSentryRole.class).deletePersistentAll();
+                pm.newQuery(MSentryGroup.class).deletePersistentAll();
+                pm.newQuery(MSentryUser.class).deletePersistentAll();
+                pm.newQuery(MSentryPrivilege.class).deletePersistentAll();
+                pm.newQuery(MSentryPermChange.class).deletePersistentAll();
+                pm.newQuery(MSentryPathChange.class).deletePersistentAll();
+                pm.newQuery(MAuthzPathsMapping.class).deletePersistentAll();
+                pm.newQuery(MPath.class).deletePersistentAll();
+                pm.newQuery(MSentryHmsNotification.class).deletePersistentAll();
+                pm.newQuery(MAuthzPathsSnapshotId.class).deletePersistentAll();
+                return null;
+              });
     } catch (Exception e) {
       // the method only for test, log the error and ignore the exception
       LOGGER.error(e.getMessage(), e);
@@ -582,16 +532,14 @@ public class SentryStore {
   @VisibleForTesting
   public void clearHmsPathInformation() throws Exception {
     tm.executeTransactionWithRetry(
-            new TransactionBlock<Object>() {
-              public Object execute(PersistenceManager pm) throws Exception {
-                // Data in MAuthzPathsSnapshotId.class is not cleared intentionally.
-                // This data will help sentry retain the history of snapshots taken before
-                // and help in picking appropriate ID even when hdfs sync is enabled/disabled.
-                pm.newQuery(MSentryPathChange.class).deletePersistentAll();
-                pm.newQuery(MAuthzPathsMapping.class).deletePersistentAll();
-                pm.newQuery(MPath.class).deletePersistentAll();
-                return null;
-              }
+            pm -> {
+              // Data in MAuthzPathsSnapshotId.class is not cleared intentionally.
+              // This data will help sentry retain the history of snapshots taken before
+              // and help in picking appropriate ID even when hdfs sync is enabled/disabled.
+              pm.newQuery(MSentryPathChange.class).deletePersistentAll();
+              pm.newQuery(MAuthzPathsMapping.class).deletePersistentAll();
+              pm.newQuery(MPath.class).deletePersistentAll();
+              return null;
             });
   }
 
@@ -662,16 +610,13 @@ public class SentryStore {
     LOGGER.info("Purging MSentryPathUpdate and MSentyPermUpdate tables, leaving {} entries",
             changesToKeep);
     try {
-      tm.executeTransaction(new TransactionBlock<Object>() {
-        @Override
-        public Object execute(PersistenceManager pm) throws Exception {
-          pm.setDetachAllOnCommit(false); // No need to detach objects
-          purgeDeltaChangeTableCore(MSentryPermChange.class, pm, changesToKeep);
-          LOGGER.info("MSentryPermChange table has been purged.");
-          purgeDeltaChangeTableCore(MSentryPathChange.class, pm, changesToKeep);
-          LOGGER.info("MSentryPathUpdate table has been purged.");
-          return null;
-        }
+      tm.executeTransaction(pm -> {
+        pm.setDetachAllOnCommit(false); // No need to detach objects
+        purgeDeltaChangeTableCore(MSentryPermChange.class, pm, changesToKeep);
+        LOGGER.info("MSentryPermChange table has been purged.");
+        purgeDeltaChangeTableCore(MSentryPathChange.class, pm, changesToKeep);
+        LOGGER.info("MSentryPathUpdate table has been purged.");
+        return null;
       });
     } catch (Exception e) {
       LOGGER.error("Delta change cleaning process encountered an error", e);
@@ -689,13 +634,10 @@ public class SentryStore {
     LOGGER.debug("Purging MSentryHmsNotification table, leaving {} entries",
       changesToKeep);
     try {
-      tm.executeTransaction(new TransactionBlock<Object>() {
-        @Override
-        public Object execute(PersistenceManager pm) throws Exception {
-          pm.setDetachAllOnCommit(false); // No need to detach objects
-          purgeNotificationIdTableCore(pm, changesToKeep);
-          return null;
-        }
+      tm.executeTransaction(pm -> {
+        pm.setDetachAllOnCommit(false); // No need to detach objects
+        purgeNotificationIdTableCore(pm, changesToKeep);
+        return null;
       });
     } catch (Exception e) {
       LOGGER.error("MSentryHmsNotification cleaning process encountered an error", e);
@@ -712,24 +654,22 @@ public class SentryStore {
   void alterSentryRoleGrantPrivilege(final String grantorPrincipal,
       final String roleName, final TSentryPrivilege privilege) throws Exception {
     tm.executeTransactionWithRetry(
-      new TransactionBlock<Object>() {
-        public Object execute(PersistenceManager pm) throws Exception {
-          pm.setDetachAllOnCommit(false); // No need to detach objects
-          String trimmedRoleName = trimAndLower(roleName);
-          // first do grant check
-          grantOptionCheck(pm, grantorPrincipal, privilege);
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              String trimmedRoleName = trimAndLower(roleName);
+              // first do grant check
+              grantOptionCheck(pm, grantorPrincipal, privilege);
 
-          // Alter sentry Role and grant Privilege.
-          MSentryPrivilege mPrivilege = alterSentryRoleGrantPrivilegeCore(
-            pm, trimmedRoleName, privilege);
+              // Alter sentry Role and grant Privilege.
+              MSentryPrivilege mPrivilege = alterSentryRoleGrantPrivilegeCore(
+                pm, trimmedRoleName, privilege);
 
-          if (mPrivilege != null) {
-            // update the privilege to be the one actually updated.
-            convertToTSentryPrivilege(mPrivilege, privilege);
-          }
-          return null;
-        }
-      });
+              if (mPrivilege != null) {
+                // update the privilege to be the one actually updated.
+                convertToTSentryPrivilege(mPrivilege, privilege);
+              }
+              return null;
+            });
   }
 
   /**
@@ -763,23 +703,21 @@ public class SentryStore {
       final String roleName, final TSentryPrivilege privilege,
       final Update update) throws Exception {
 
-    execute(update, new TransactionBlock<Object>() {
-      public Object execute(PersistenceManager pm) throws Exception {
-        pm.setDetachAllOnCommit(false); // No need to detach objects
-        String trimmedRoleName = trimAndLower(roleName);
-        // first do grant check
-        grantOptionCheck(pm, grantorPrincipal, privilege);
+    execute(update, pm -> {
+      pm.setDetachAllOnCommit(false); // No need to detach objects
+      String trimmedRoleName = trimAndLower(roleName);
+      // first do grant check
+      grantOptionCheck(pm, grantorPrincipal, privilege);
 
-        // Alter sentry Role and grant Privilege.
-        MSentryPrivilege mPrivilege = alterSentryRoleGrantPrivilegeCore(pm,
-          trimmedRoleName, privilege);
+      // Alter sentry Role and grant Privilege.
+      MSentryPrivilege mPrivilege = alterSentryRoleGrantPrivilegeCore(pm,
+        trimmedRoleName, privilege);
 
-        if (mPrivilege != null) {
-          // update the privilege to be the one actually updated.
-          convertToTSentryPrivilege(mPrivilege, privilege);
-        }
-        return null;
+      if (mPrivilege != null) {
+        // update the privilege to be the one actually updated.
+        convertToTSentryPrivilege(mPrivilege, privilege);
       }
+      return null;
     });
   }
 
@@ -878,17 +816,15 @@ public class SentryStore {
       final String roleName, final TSentryPrivilege tPrivilege) throws Exception {
 
     tm.executeTransactionWithRetry(
-      new TransactionBlock<Object>() {
-        public Object execute(PersistenceManager pm) throws Exception {
-          pm.setDetachAllOnCommit(false); // No need to detach objects
-          String trimmedRoleName = safeTrimLower(roleName);
-          // first do revoke check
-          grantOptionCheck(pm, grantorPrincipal, tPrivilege);
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              String trimmedRoleName = safeTrimLower(roleName);
+              // first do revoke check
+              grantOptionCheck(pm, grantorPrincipal, tPrivilege);
 
-          alterSentryRoleRevokePrivilegeCore(pm, trimmedRoleName, tPrivilege);
-          return null;
-        }
-      });
+              alterSentryRoleRevokePrivilegeCore(pm, trimmedRoleName, tPrivilege);
+              return null;
+            });
   }
 
   /**
@@ -922,16 +858,14 @@ public class SentryStore {
   private synchronized void alterSentryRoleRevokePrivilege(final String grantorPrincipal,
                                               final String roleName, final TSentryPrivilege tPrivilege,
                                               final Update update) throws Exception {
-    execute(update, new TransactionBlock<Object>() {
-      public Object execute(PersistenceManager pm) throws Exception {
-        pm.setDetachAllOnCommit(false); // No need to detach objects
-        String trimmedRoleName = safeTrimLower(roleName);
-        // first do revoke check
-        grantOptionCheck(pm, grantorPrincipal, tPrivilege);
+    execute(update, pm -> {
+      pm.setDetachAllOnCommit(false); // No need to detach objects
+      String trimmedRoleName = safeTrimLower(roleName);
+      // first do revoke check
+      grantOptionCheck(pm, grantorPrincipal, tPrivilege);
 
-        alterSentryRoleRevokePrivilegeCore(pm, trimmedRoleName, tPrivilege);
-        return null;
-      }
+      alterSentryRoleRevokePrivilegeCore(pm, trimmedRoleName, tPrivilege);
+      return null;
     });
   }
 
@@ -1238,13 +1172,11 @@ public class SentryStore {
    */
   public void dropSentryRole(final String roleName) throws Exception {
     tm.executeTransactionWithRetry(
-        new TransactionBlock<Object>() {
-          public Object execute(PersistenceManager pm) throws Exception {
-            pm.setDetachAllOnCommit(false); // No need to detach objects
-            dropSentryRoleCore(pm, roleName);
-            return null;
-          }
-        });
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              dropSentryRoleCore(pm, roleName);
+              return null;
+            });
   }
 
   /**
@@ -1257,12 +1189,10 @@ public class SentryStore {
    */
   public synchronized void dropSentryRole(final String roleName,
       final Update update) throws Exception {
-    execute(update, new TransactionBlock<Object>() {
-      public Object execute(PersistenceManager pm) throws Exception {
-        pm.setDetachAllOnCommit(false); // No need to detach objects
-        dropSentryRoleCore(pm, roleName);
-        return null;
-      }
+    execute(update, pm -> {
+      pm.setDetachAllOnCommit(false); // No need to detach objects
+      dropSentryRoleCore(pm, roleName);
+      return null;
     });
   }
 
@@ -1312,13 +1242,11 @@ public class SentryStore {
   public void alterSentryRoleAddGroups(final String grantorPrincipal,
       final String roleName, final Set<TSentryGroup> groupNames) throws Exception {
     tm.executeTransactionWithRetry(
-        new TransactionBlock<Object>() {
-          public Object execute(PersistenceManager pm) throws Exception {
-            pm.setDetachAllOnCommit(false); // No need to detach objects
-            alterSentryRoleAddGroupsCore(pm, roleName, groupNames);
-            return null;
-          }
-        });
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              alterSentryRoleAddGroupsCore(pm, roleName, groupNames);
+              return null;
+            });
   }
 
   /**
@@ -1335,12 +1263,10 @@ public class SentryStore {
       final String roleName, final Set<TSentryGroup> groupNames,
       final Update update) throws Exception {
 
-    execute(update, new TransactionBlock<Object>() {
-      public Object execute(PersistenceManager pm) throws Exception {
-        pm.setDetachAllOnCommit(false); // No need to detach objects
-        alterSentryRoleAddGroupsCore(pm, roleName, groupNames);
-        return null;
-      }
+    execute(update, pm -> {
+      pm.setDetachAllOnCommit(false); // No need to detach objects
+      alterSentryRoleAddGroupsCore(pm, roleName, groupNames);
+      return null;
     });
   }
 
@@ -1374,13 +1300,11 @@ public class SentryStore {
   public void alterSentryRoleAddUsers(final String roleName,
       final Set<String> userNames) throws Exception {
     tm.executeTransactionWithRetry(
-        new TransactionBlock<Object>() {
-          public Object execute(PersistenceManager pm) throws Exception {
-            pm.setDetachAllOnCommit(false); // No need to detach objects
-            alterSentryRoleAddUsersCore(pm, roleName, userNames);
-            return null;
-          }
-        });
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              alterSentryRoleAddUsersCore(pm, roleName, userNames);
+              return null;
+            });
   }
 
   private void alterSentryRoleAddUsersCore(PersistenceManager pm, String roleName,
@@ -1409,31 +1333,29 @@ public class SentryStore {
   public void alterSentryRoleDeleteUsers(final String roleName,
       final Set<String> userNames) throws Exception {
     tm.executeTransactionWithRetry(
-        new TransactionBlock<Object>() {
-          public Object execute(PersistenceManager pm) throws Exception {
-            pm.setDetachAllOnCommit(false); // No need to detach objects
-            String trimmedRoleName = trimAndLower(roleName);
-            MSentryRole role = getRole(pm, trimmedRoleName);
-            if (role == null) {
-              throw noSuchRole(trimmedRoleName);
-            } else {
-              Query query = pm.newQuery(MSentryUser.class);
-              query.setFilter("this.userName == :userName");
-              query.setUnique(true);
-              List<MSentryUser> users = Lists.newArrayList();
-              for (String userName : userNames) {
-                userName = userName.trim();
-                MSentryUser user = (MSentryUser) query.execute(userName);
-                if (user != null) {
-                  user.removeRole(role);
-                  users.add(user);
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              String trimmedRoleName = trimAndLower(roleName);
+              MSentryRole role = getRole(pm, trimmedRoleName);
+              if (role == null) {
+                throw noSuchRole(trimmedRoleName);
+              } else {
+                Query query = pm.newQuery(MSentryUser.class);
+                query.setFilter("this.userName == :userName");
+                query.setUnique(true);
+                List<MSentryUser> users = Lists.newArrayList();
+                for (String userName : userNames) {
+                  userName = userName.trim();
+                  MSentryUser user = (MSentryUser) query.execute(userName);
+                  if (user != null) {
+                    user.removeRole(role);
+                    users.add(user);
+                  }
                 }
+                pm.makePersistentAll(users);
               }
-              pm.makePersistentAll(users);
-            }
-            return null;
-          }
-        });
+              return null;
+            });
   }
 
   /**
@@ -1446,30 +1368,28 @@ public class SentryStore {
   public void alterSentryRoleDeleteGroups(final String roleName,
       final Set<TSentryGroup> groupNames) throws Exception {
     tm.executeTransactionWithRetry(
-        new TransactionBlock<Object>() {
-          public Object execute(PersistenceManager pm) throws Exception {
-            pm.setDetachAllOnCommit(false); // No need to detach objects
-            String trimmedRoleName = trimAndLower(roleName);
-            MSentryRole role = getRole(pm, trimmedRoleName);
-            if (role == null) {
-              throw noSuchRole(trimmedRoleName);
-            }
-            Query query = pm.newQuery(MSentryGroup.class);
-            query.setFilter("this.groupName == :groupName");
-            query.setUnique(true);
-            List<MSentryGroup> groups = Lists.newArrayList();
-            for (TSentryGroup tGroup : groupNames) {
-              String groupName = tGroup.getGroupName().trim();
-              MSentryGroup group = (MSentryGroup) query.execute(groupName);
-              if (group != null) {
-                group.removeRole(role);
-                groups.add(group);
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              String trimmedRoleName = trimAndLower(roleName);
+              MSentryRole role = getRole(pm, trimmedRoleName);
+              if (role == null) {
+                throw noSuchRole(trimmedRoleName);
               }
-            }
-            pm.makePersistentAll(groups);
-            return null;
-          }
-        });
+              Query query = pm.newQuery(MSentryGroup.class);
+              query.setFilter("this.groupName == :groupName");
+              query.setUnique(true);
+              List<MSentryGroup> groups = Lists.newArrayList();
+              for (TSentryGroup tGroup : groupNames) {
+                String groupName = tGroup.getGroupName().trim();
+                MSentryGroup group = (MSentryGroup) query.execute(groupName);
+                if (group != null) {
+                  group.removeRole(role);
+                  groups.add(group);
+                }
+              }
+              pm.makePersistentAll(groups);
+              return null;
+            });
   }
 
   /**
@@ -1484,47 +1404,43 @@ public class SentryStore {
   public synchronized void alterSentryRoleDeleteGroups(final String roleName,
       final Set<TSentryGroup> groupNames, final Update update)
           throws Exception {
-    execute(update, new TransactionBlock<Object>() {
-      public Object execute(PersistenceManager pm) throws Exception {
-        pm.setDetachAllOnCommit(false); // No need to detach objects
-        String trimmedRoleName = trimAndLower(roleName);
-        MSentryRole role = getRole(pm, trimmedRoleName);
-        if (role == null) {
-          throw noSuchRole(trimmedRoleName);
-        }
-
-        // Remove the group from the specified role if it belongs to the role.
-        Query query = pm.newQuery(MSentryGroup.class);
-        query.setFilter("this.groupName == :groupName");
-        query.setUnique(true);
-        List<MSentryGroup> groups = Lists.newArrayList();
-        for (TSentryGroup tGroup : groupNames) {
-          String groupName = tGroup.getGroupName().trim();
-          MSentryGroup group = (MSentryGroup) query.execute(groupName);
-          if (group != null) {
-            group.removeRole(role);
-            groups.add(group);
-          }
-        }
-        pm.makePersistentAll(groups);
-        return null;
+    execute(update, pm -> {
+      pm.setDetachAllOnCommit(false); // No need to detach objects
+      String trimmedRoleName = trimAndLower(roleName);
+      MSentryRole role = getRole(pm, trimmedRoleName);
+      if (role == null) {
+        throw noSuchRole(trimmedRoleName);
       }
+
+      // Remove the group from the specified role if it belongs to the role.
+      Query query = pm.newQuery(MSentryGroup.class);
+      query.setFilter("this.groupName == :groupName");
+      query.setUnique(true);
+      List<MSentryGroup> groups = Lists.newArrayList();
+      for (TSentryGroup tGroup : groupNames) {
+        String groupName = tGroup.getGroupName().trim();
+        MSentryGroup group = (MSentryGroup) query.execute(groupName);
+        if (group != null) {
+          group.removeRole(role);
+          groups.add(group);
+        }
+      }
+      pm.makePersistentAll(groups);
+      return null;
     });
   }
 
   @VisibleForTesting
   public MSentryRole getMSentryRoleByName(final String roleName) throws Exception {
     return tm.executeTransaction(
-        new TransactionBlock<MSentryRole>() {
-          public MSentryRole execute(PersistenceManager pm) throws Exception {
-            String trimmedRoleName = trimAndLower(roleName);
-            MSentryRole sentryRole = getRole(pm, trimmedRoleName);
-            if (sentryRole == null) {
-              throw noSuchRole(trimmedRoleName);
-            }
-            return sentryRole;
-          }
-        });
+            pm -> {
+              String trimmedRoleName = trimAndLower(roleName);
+              MSentryRole sentryRole = getRole(pm, trimmedRoleName);
+              if (sentryRole == null) {
+                throw noSuchRole(trimmedRoleName);
+              }
+              return sentryRole;
+            });
   }
 
   /**
@@ -1540,11 +1456,7 @@ public class SentryStore {
   @VisibleForTesting
   MSentryPrivilege findMSentryPrivilegeFromTSentryPrivilege(final TSentryPrivilege tPrivilege) throws Exception {
     return tm.executeTransaction(
-      new TransactionBlock<MSentryPrivilege>() {
-        public MSentryPrivilege execute(PersistenceManager pm) throws Exception {
-          return getMSentryPrivilege(tPrivilege, pm);
-        }
-      });
+            pm -> getMSentryPrivilege(tPrivilege, pm));
   }
 
   /**
@@ -1557,11 +1469,7 @@ public class SentryStore {
   @VisibleForTesting
   List<MSentryPrivilege> getAllMSentryPrivileges () throws Exception {
     return tm.executeTransaction(
-      new TransactionBlock<List<MSentryPrivilege>>() {
-        public List<MSentryPrivilege> execute(PersistenceManager pm) throws Exception {
-          return getAllMSentryPrivilegesCore(pm);
-        }
-      });
+            pm -> getAllMSentryPrivilegesCore(pm));
   }
 
   /**
@@ -1579,19 +1487,17 @@ public class SentryStore {
       return false;
     }
     return tm.executeTransaction(
-      new TransactionBlock<Boolean>() {
-        public Boolean execute(PersistenceManager pm) throws Exception {
-          pm.setDetachAllOnCommit(false); // No need to detach objects
-          Query query = pm.newQuery(MSentryPrivilege.class);
-          query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
-          QueryParamBuilder paramBuilder = QueryParamBuilder.addRolesFilter(query,null, roleNames);
-          paramBuilder.add(SERVER_NAME, serverName);
-          query.setFilter(paramBuilder.toString());
-          query.setResult("count(this)");
-          Long numPrivs = (Long) query.executeWithMap(paramBuilder.getArguments());
-          return numPrivs > 0;
-        }
-      });
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              Query query = pm.newQuery(MSentryPrivilege.class);
+              query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
+              QueryParamBuilder paramBuilder = QueryParamBuilder.addRolesFilter(query,null, roleNames);
+              paramBuilder.add(SERVER_NAME, serverName);
+              query.setFilter(paramBuilder.toString());
+              query.setResult("count(this)");
+              Long numPrivs = (Long) query.executeWithMap(paramBuilder.getArguments());
+              return numPrivs > 0;
+            });
   }
 
   private List<MSentryPrivilege> getMSentryPrivileges(final Set<String> roleNames,
@@ -1603,102 +1509,97 @@ public class SentryStore {
     }
 
     return tm.executeTransaction(
-      new TransactionBlock<List<MSentryPrivilege>>() {
-        public List<MSentryPrivilege> execute(PersistenceManager pm)
-                throws Exception {
-          Query query = pm.newQuery(MSentryPrivilege.class);
-          QueryParamBuilder paramBuilder = QueryParamBuilder.addRolesFilter(query, null, roleNames);
+            pm -> {
+              Query query = pm.newQuery(MSentryPrivilege.class);
+              QueryParamBuilder paramBuilder = QueryParamBuilder.addRolesFilter(query, null, roleNames);
 
-          if (authHierarchy != null && authHierarchy.getServer() != null) {
-            paramBuilder.add(SERVER_NAME, authHierarchy.getServer());
-            if (authHierarchy.getDb() != null) {
-              paramBuilder.addNull(URI)
-                      .newChild()
-                        .add(DB_NAME, authHierarchy.getDb())
-                        .addNull(DB_NAME);
-              if (authHierarchy.getTable() != null
-                  && !AccessConstants.ALL.equalsIgnoreCase(authHierarchy.getTable())) {
-                if (!AccessConstants.SOME.equalsIgnoreCase(authHierarchy.getTable())) {
+              if (authHierarchy != null && authHierarchy.getServer() != null) {
+                paramBuilder.add(SERVER_NAME, authHierarchy.getServer());
+                if (authHierarchy.getDb() != null) {
                   paramBuilder.addNull(URI)
                           .newChild()
-                            .add(TABLE_NAME, authHierarchy.getTable())
-                            .addNull(TABLE_NAME);
+                            .add(DB_NAME, authHierarchy.getDb())
+                            .addNull(DB_NAME);
+                  if (authHierarchy.getTable() != null
+                      && !AccessConstants.ALL.equalsIgnoreCase(authHierarchy.getTable())) {
+                    if (!AccessConstants.SOME.equalsIgnoreCase(authHierarchy.getTable())) {
+                      paramBuilder.addNull(URI)
+                              .newChild()
+                                .add(TABLE_NAME, authHierarchy.getTable())
+                                .addNull(TABLE_NAME);
+                    }
+                    if (authHierarchy.getColumn() != null
+                        && !AccessConstants.ALL.equalsIgnoreCase(authHierarchy.getColumn())
+                        && !AccessConstants.SOME.equalsIgnoreCase(authHierarchy.getColumn())) {
+                      paramBuilder.addNull(URI)
+                              .newChild()
+                                .add(COLUMN_NAME, authHierarchy.getColumn())
+                                .addNull(COLUMN_NAME);
+                    }
+                  }
                 }
-                if (authHierarchy.getColumn() != null
-                    && !AccessConstants.ALL.equalsIgnoreCase(authHierarchy.getColumn())
-                    && !AccessConstants.SOME.equalsIgnoreCase(authHierarchy.getColumn())) {
-                  paramBuilder.addNull(URI)
+                if (authHierarchy.getUri() != null) {
+                  paramBuilder.addNull(DB_NAME)
                           .newChild()
-                            .add(COLUMN_NAME, authHierarchy.getColumn())
-                            .addNull(COLUMN_NAME);
+                            .addNull(URI)
+                            .newChild()
+                              .addNotNull(URI)
+                              .addCustomParam("\"" + authHierarchy.getUri() +
+                                      "\".startsWith(:URI)", URI, authHierarchy.getUri());
                 }
               }
-            }
-            if (authHierarchy.getUri() != null) {
-              paramBuilder.addNull(DB_NAME)
-                      .newChild()
-                        .addNull(URI)
-                        .newChild()
-                          .addNotNull(URI)
-                          .addCustomParam("\"" + authHierarchy.getUri() +
-                                  "\".startsWith(:URI)", URI, authHierarchy.getUri());
-            }
-          }
 
-          query.setFilter(paramBuilder.toString());
-          @SuppressWarnings("unchecked")
-          List<MSentryPrivilege> result =
-                  (List<MSentryPrivilege>)
-                          query.executeWithMap(paramBuilder.getArguments());
-          return result;
-        }
-      });
+              query.setFilter(paramBuilder.toString());
+              @SuppressWarnings("unchecked")
+              List<MSentryPrivilege> result =
+                      (List<MSentryPrivilege>)
+                              query.executeWithMap(paramBuilder.getArguments());
+              return result;
+            });
   }
 
   private List<MSentryPrivilege> getMSentryPrivilegesByAuth(final Set<String> roleNames,
                                                             final TSentryAuthorizable
                                                                     authHierarchy) throws Exception {
       return tm.executeTransaction(
-        new TransactionBlock<List<MSentryPrivilege>>() {
-          public List<MSentryPrivilege> execute(PersistenceManager pm) throws Exception {
-            Query query = pm.newQuery(MSentryPrivilege.class);
-            QueryParamBuilder paramBuilder = newQueryParamBuilder();
-            if (roleNames == null || roleNames.isEmpty()) {
-              paramBuilder.addString("!roles.isEmpty()");
-            } else {
-              QueryParamBuilder.addRolesFilter(query, paramBuilder, roleNames);
-            }
-            if (authHierarchy.getServer() != null) {
-              paramBuilder.add(SERVER_NAME, authHierarchy.getServer());
-              if (authHierarchy.getDb() != null) {
-                paramBuilder.add(DB_NAME, authHierarchy.getDb()).addNull(URI);
-                if (authHierarchy.getTable() != null) {
-                  paramBuilder.add(TABLE_NAME, authHierarchy.getTable());
+              pm -> {
+                Query query = pm.newQuery(MSentryPrivilege.class);
+                QueryParamBuilder paramBuilder = newQueryParamBuilder();
+                if (roleNames == null || roleNames.isEmpty()) {
+                  paramBuilder.addString("!roles.isEmpty()");
                 } else {
-                  paramBuilder.addNull(TABLE_NAME);
+                  QueryParamBuilder.addRolesFilter(query, paramBuilder, roleNames);
                 }
-              } else if (authHierarchy.getUri() != null) {
-                paramBuilder.addNotNull(URI)
-                        .addNull(DB_NAME)
-                        .addCustomParam("(:authURI.startsWith(URI))", "authURI", authHierarchy.getUri());
-              } else {
-                paramBuilder.addNull(DB_NAME)
-                      .addNull(URI);
-              }
-            } else {
-              // if no server, then return empty result
-              return Collections.emptyList();
-            }
-            FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchRole");
-            grp.addMember("roles");
-            pm.getFetchPlan().addGroup("fetchRole");
-            query.setFilter(paramBuilder.toString());
-            @SuppressWarnings("unchecked")
-            List<MSentryPrivilege> result = (List<MSentryPrivilege>)query.
-                    executeWithMap(paramBuilder.getArguments());
-            return result;
-          }
-        });
+                if (authHierarchy.getServer() != null) {
+                  paramBuilder.add(SERVER_NAME, authHierarchy.getServer());
+                  if (authHierarchy.getDb() != null) {
+                    paramBuilder.add(DB_NAME, authHierarchy.getDb()).addNull(URI);
+                    if (authHierarchy.getTable() != null) {
+                      paramBuilder.add(TABLE_NAME, authHierarchy.getTable());
+                    } else {
+                      paramBuilder.addNull(TABLE_NAME);
+                    }
+                  } else if (authHierarchy.getUri() != null) {
+                    paramBuilder.addNotNull(URI)
+                            .addNull(DB_NAME)
+                            .addCustomParam("(:authURI.startsWith(URI))", "authURI", authHierarchy.getUri());
+                  } else {
+                    paramBuilder.addNull(DB_NAME)
+                          .addNull(URI);
+                  }
+                } else {
+                  // if no server, then return empty result
+                  return Collections.emptyList();
+                }
+                FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchRole");
+                grp.addMember("roles");
+                pm.getFetchPlan().addGroup("fetchRole");
+                query.setFilter(paramBuilder.toString());
+                @SuppressWarnings("unchecked")
+                List<MSentryPrivilege> result = (List<MSentryPrivilege>)query.
+                        executeWithMap(paramBuilder.getArguments());
+                return result;
+              });
   }
 
   public TSentryPrivilegeMap listSentryPrivilegesByAuthorizable(Set<String> groups,
@@ -1812,50 +1713,46 @@ public class SentryStore {
     }
 
     return tm.executeTransaction(
-            new TransactionBlock<Set<TSentryRole>>() {
-              @Override
-              public Set<TSentryRole> execute(PersistenceManager pm) throws Exception {
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
 
-                pm.setDetachAllOnCommit(false); // No need to detach objects
+              // Pre-allocate large sets for role names and results.
+              // roleNames is used to avoid adding the same role mutiple times into
+              // result. The result is set, but comparisons between TSentryRole objects
+              // is more expensive then String comparisons.
+              Set<String> roleNames = new HashSet<>(1024);
+              Set<TSentryRole> result = new HashSet<>(1024);
 
-                // Pre-allocate large sets for role names and results.
-                // roleNames is used to avoid adding the same role mutiple times into
-                // result. The result is set, but comparisons between TSentryRole objects
-                // is more expensive then String comparisons.
-                Set<String> roleNames = new HashSet<>(1024);
-                Set<TSentryRole> result = new HashSet<>(1024);
+              for(String group: groupNames) {
+                if (group == null) {
+                  // Special case - return all roles
+                  List<MSentryRole> roles = getAllRoles(pm);
+                  for (MSentryRole role: roles) {
+                    result.add(convertToTSentryRole(role));
+                  }
+                  return result;
+                }
 
-                for(String group: groupNames) {
-                  if (group == null) {
-                    // Special case - return all roles
-                    List<MSentryRole> roles = getAllRoles(pm);
-                    for (MSentryRole role: roles) {
+                // Find group by name and all roles belonging to this group
+                String trimmedGroup = group.trim();
+                Query query = pm.newQuery(MSentryGroup.class);
+                query.setFilter("this.groupName == :groupName");
+                query.setUnique(true);
+                MSentryGroup mGroup = (MSentryGroup) query.execute(trimmedGroup);
+                if (mGroup != null) {
+                  // For each unique role found, add a new TSentryRole version of the role to result.
+                  for (MSentryRole role: mGroup.getRoles()) {
+                    String roleName = role.getRoleName();
+                    if (roleNames.add(roleName)) {
                       result.add(convertToTSentryRole(role));
                     }
-                    return result;
                   }
-
-                  // Find group by name and all roles belonging to this group
-                  String trimmedGroup = group.trim();
-                  Query query = pm.newQuery(MSentryGroup.class);
-                  query.setFilter("this.groupName == :groupName");
-                  query.setUnique(true);
-                  MSentryGroup mGroup = (MSentryGroup) query.execute(trimmedGroup);
-                  if (mGroup != null) {
-                    // For each unique role found, add a new TSentryRole version of the role to result.
-                    for (MSentryRole role: mGroup.getRoles()) {
-                      String roleName = role.getRoleName();
-                      if (roleNames.add(roleName)) {
-                        result.add(convertToTSentryRole(role));
-                      }
-                    }
-                  } else if (!checkAllGroups) {
-                      throw noSuchGroup(trimmedGroup);
-                  }
-                  query.closeAll();
+                } else if (!checkAllGroups) {
+                    throw noSuchGroup(trimmedGroup);
                 }
-                return result;
+                query.closeAll();
               }
+              return result;
             });
   }
 
@@ -1865,12 +1762,10 @@ public class SentryStore {
     }
 
     return tm.executeTransaction(
-        new TransactionBlock<Set<String>>() {
-          public Set<String>execute(PersistenceManager pm) throws Exception {
-            pm.setDetachAllOnCommit(false); // No need to detach objects
-            return getRoleNamesForGroupsCore(pm, groups);
-          }
-        });
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              return getRoleNamesForGroupsCore(pm, groups);
+            });
   }
 
   private Set<String> getRoleNamesForGroupsCore(PersistenceManager pm, Set<String> groups) {
@@ -1883,12 +1778,10 @@ public class SentryStore {
     }
 
     return tm.executeTransaction(
-          new TransactionBlock<Set<String>>() {
-            public Set<String> execute(PersistenceManager pm) throws Exception {
+            pm -> {
               pm.setDetachAllOnCommit(false); // No need to detach objects
               return getRoleNamesForUsersCore(pm,users);
-            }
-          });
+            });
   }
 
   private Set<String> getRoleNamesForUsersCore(PersistenceManager pm, Set<String> users) {
@@ -1898,15 +1791,13 @@ public class SentryStore {
   public Set<TSentryRole> getTSentryRolesByUserNames(final Set<String> users)
           throws Exception {
     return tm.executeTransaction(
-      new TransactionBlock<Set<TSentryRole>>() {
-      public Set<TSentryRole> execute(PersistenceManager pm) throws Exception {
-        pm.setDetachAllOnCommit(false); // No need to detach objects
-        Set<MSentryRole> mSentryRoles = getRolesForUsers(pm, users);
-        // Since {@link MSentryRole#getGroups()} is lazy-loading,
-        // the conversion should be done before transaction is committed.
-        return convertToTSentryRoles(mSentryRoles);
-        }
-      });
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              Set<MSentryRole> mSentryRoles = getRolesForUsers(pm, users);
+              // Since {@link MSentryRole#getGroups()} is lazy-loading,
+              // the conversion should be done before transaction is committed.
+              return convertToTSentryRoles(mSentryRoles);
+              });
   }
 
   public Set<MSentryRole> getRolesForGroups(PersistenceManager pm, Set<String> groups) {
@@ -1968,18 +1859,16 @@ public class SentryStore {
   private Set<String> getRolesToQuery(final Set<String> groups, final Set<String> users,
       final TSentryActiveRoleSet roleSet) throws Exception {
       return tm.executeTransaction(
-        new TransactionBlock<Set<String>>() {
-          public Set<String> execute(PersistenceManager pm) throws Exception {
-            pm.setDetachAllOnCommit(false); // No need to detach objects
-            Set<String> activeRoleNames = toTrimedLower(roleSet.getRoles());
+              pm -> {
+                pm.setDetachAllOnCommit(false); // No need to detach objects
+                Set<String> activeRoleNames = toTrimedLower(roleSet.getRoles());
 
-            Set<String> roleNames = Sets.newHashSet();
-            roleNames.addAll(toTrimedLower(getRoleNamesForGroupsCore(pm, groups)));
-            roleNames.addAll(toTrimedLower(getRoleNamesForUsersCore(pm, users)));
-            return roleSet.isAll() ? roleNames : Sets.intersection(activeRoleNames,
-                roleNames);
-          }
-        });
+                Set<String> roleNames = Sets.newHashSet();
+                roleNames.addAll(toTrimedLower(getRoleNamesForGroupsCore(pm, groups)));
+                roleNames.addAll(toTrimedLower(getRoleNamesForUsersCore(pm, users)));
+                return roleSet.isAll() ? roleNames : Sets.intersection(activeRoleNames,
+                    roleNames);
+              });
   }
 
   @VisibleForTesting
@@ -2018,6 +1907,7 @@ public class SentryStore {
     if (s == null || s.isEmpty()) {
       return Collections.emptySet();
     }
+
     Set<String> result = Sets.newHashSet();
     for (String v : s) {
       result.add(v.trim().toLowerCase());
@@ -2151,55 +2041,51 @@ public class SentryStore {
   void setSentryVersion(final String newVersion, final String verComment)
       throws Exception {
     tm.executeTransaction(
-        new TransactionBlock<Object>() {
-          public Object execute(PersistenceManager pm) throws Exception {
-            MSentryVersion mVersion;
-            try {
-              mVersion = getMSentryVersion();
-              if (newVersion.equals(mVersion.getSchemaVersion())) {
-                // specified version already in there
-                return null;
+            pm -> {
+              MSentryVersion mVersion;
+              try {
+                mVersion = getMSentryVersion();
+                if (newVersion.equals(mVersion.getSchemaVersion())) {
+                  // specified version already in there
+                  return null;
+                }
+              } catch (SentryNoSuchObjectException e) {
+                // if the version doesn't exist, then create it
+                mVersion = new MSentryVersion();
               }
-            } catch (SentryNoSuchObjectException e) {
-              // if the version doesn't exist, then create it
-              mVersion = new MSentryVersion();
-            }
-            mVersion.setSchemaVersion(newVersion);
-            mVersion.setVersionComment(verComment);
-            pm.makePersistent(mVersion);
-            return null;
-          }
-        });
+              mVersion.setSchemaVersion(newVersion);
+              mVersion.setVersionComment(verComment);
+              pm.makePersistent(mVersion);
+              return null;
+            });
   }
 
   private MSentryVersion getMSentryVersion() throws Exception {
     return tm.executeTransaction(
-      new TransactionBlock<MSentryVersion>() {
-        public MSentryVersion execute(PersistenceManager pm) throws Exception {
-          try {
-            Query query = pm.newQuery(MSentryVersion.class);
-            @SuppressWarnings("unchecked")
-            List<MSentryVersion> mSentryVersions = (List<MSentryVersion>) query
-                .execute();
-            pm.retrieveAll(mSentryVersions);
-            if (mSentryVersions.isEmpty()) {
-              throw new SentryNoSuchObjectException("Matching Version");
-            }
-            if (mSentryVersions.size() > 1) {
-              throw new SentryAccessDeniedException(
-                  "Metastore contains multiple versions");
-            }
-            return mSentryVersions.get(0);
-          } catch (JDODataStoreException e) {
-            if (e.getCause() instanceof MissingTableException) {
-              throw new SentryAccessDeniedException("Version table not found. "
-                  + "The sentry store is not set or corrupt ");
-            } else {
-              throw e;
-            }
-          }
-        }
-      });
+            pm -> {
+              try {
+                Query query = pm.newQuery(MSentryVersion.class);
+                @SuppressWarnings("unchecked")
+                List<MSentryVersion> mSentryVersions = (List<MSentryVersion>) query
+                    .execute();
+                pm.retrieveAll(mSentryVersions);
+                if (mSentryVersions.isEmpty()) {
+                  throw new SentryNoSuchObjectException("Matching Version");
+                }
+                if (mSentryVersions.size() > 1) {
+                  throw new SentryAccessDeniedException(
+                      "Metastore contains multiple versions");
+                }
+                return mSentryVersions.get(0);
+              } catch (JDODataStoreException e) {
+                if (e.getCause() instanceof MissingTableException) {
+                  throw new SentryAccessDeniedException("Version table not found. "
+                      + "The sentry store is not set or corrupt ");
+                } else {
+                  throw e;
+                }
+              }
+            });
   }
 
   /**
@@ -2210,29 +2096,27 @@ public class SentryStore {
    */
   public void dropPrivilege(final TSentryAuthorizable tAuthorizable) throws Exception {
     tm.executeTransactionWithRetry(
-        new TransactionBlock<Object>() {
-          public Object execute(PersistenceManager pm) throws Exception {
-            pm.setDetachAllOnCommit(false); // No need to detach objects
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
 
-            // Drop the give privilege for all possible actions from all roles.
-            TSentryPrivilege tPrivilege = toSentryPrivilege(tAuthorizable);
+              // Drop the give privilege for all possible actions from all roles.
+              TSentryPrivilege tPrivilege = toSentryPrivilege(tAuthorizable);
 
-            try {
-              if (isMultiActionsSupported(tPrivilege)) {
-                for (String privilegeAction : ALL_ACTIONS) {
-                  tPrivilege.setAction(privilegeAction);
+              try {
+                if (isMultiActionsSupported(tPrivilege)) {
+                  for (String privilegeAction : ALL_ACTIONS) {
+                    tPrivilege.setAction(privilegeAction);
+                    dropPrivilegeForAllRoles(pm, new TSentryPrivilege(tPrivilege));
+                  }
+                } else {
                   dropPrivilegeForAllRoles(pm, new TSentryPrivilege(tPrivilege));
                 }
-              } else {
-                dropPrivilegeForAllRoles(pm, new TSentryPrivilege(tPrivilege));
+              } catch (JDODataStoreException e) {
+                throw new SentryInvalidInputException("Failed to get privileges: "
+                    + e.getMessage());
               }
-            } catch (JDODataStoreException e) {
-              throw new SentryInvalidInputException("Failed to get privileges: "
-                  + e.getMessage());
-            }
-            return null;
-          }
-        });
+              return null;
+            });
   }
 
   /**
@@ -2245,28 +2129,26 @@ public class SentryStore {
    */
   public synchronized void dropPrivilege(final TSentryAuthorizable tAuthorizable,
       final Update update) throws Exception {
-    execute(update, new TransactionBlock<Object>() {
-      public Object execute(PersistenceManager pm) throws Exception {
-        pm.setDetachAllOnCommit(false); // No need to detach objects
+    execute(update, pm -> {
+      pm.setDetachAllOnCommit(false); // No need to detach objects
 
-        // Drop the give privilege for all possible actions from all roles.
-        TSentryPrivilege tPrivilege = toSentryPrivilege(tAuthorizable);
+      // Drop the give privilege for all possible actions from all roles.
+      TSentryPrivilege tPrivilege = toSentryPrivilege(tAuthorizable);
 
-        try {
-          if (isMultiActionsSupported(tPrivilege)) {
-            for (String privilegeAction : ALL_ACTIONS) {
-              tPrivilege.setAction(privilegeAction);
-              dropPrivilegeForAllRoles(pm, new TSentryPrivilege(tPrivilege));
-            }
-          } else {
+      try {
+        if (isMultiActionsSupported(tPrivilege)) {
+          for (String privilegeAction : ALL_ACTIONS) {
+            tPrivilege.setAction(privilegeAction);
             dropPrivilegeForAllRoles(pm, new TSentryPrivilege(tPrivilege));
           }
-        } catch (JDODataStoreException e) {
-          throw new SentryInvalidInputException("Failed to get privileges: "
-          + e.getMessage());
+        } else {
+          dropPrivilegeForAllRoles(pm, new TSentryPrivilege(tPrivilege));
         }
-        return null;
+      } catch (JDODataStoreException e) {
+        throw new SentryInvalidInputException("Failed to get privileges: "
+        + e.getMessage());
       }
+      return null;
     });
   }
 
@@ -2281,32 +2163,30 @@ public class SentryStore {
   public void renamePrivilege(final TSentryAuthorizable oldTAuthorizable,
       final TSentryAuthorizable newTAuthorizable) throws Exception {
     tm.executeTransactionWithRetry(
-        new TransactionBlock<Object>() {
-          public Object execute(PersistenceManager pm) throws Exception {
-            pm.setDetachAllOnCommit(false); // No need to detach objects
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
 
-            // Drop the give privilege for all possible actions from all roles.
-            TSentryPrivilege tPrivilege = toSentryPrivilege(oldTAuthorizable);
-            TSentryPrivilege newPrivilege = toSentryPrivilege(newTAuthorizable);
+              // Drop the give privilege for all possible actions from all roles.
+              TSentryPrivilege tPrivilege = toSentryPrivilege(oldTAuthorizable);
+              TSentryPrivilege newPrivilege = toSentryPrivilege(newTAuthorizable);
 
-            try {
-              // In case of tables or DBs, check all actions
-              if (isMultiActionsSupported(tPrivilege)) {
-                for (String privilegeAction : ALL_ACTIONS) {
-                  tPrivilege.setAction(privilegeAction);
-                  newPrivilege.setAction(privilegeAction);
+              try {
+                // In case of tables or DBs, check all actions
+                if (isMultiActionsSupported(tPrivilege)) {
+                  for (String privilegeAction : ALL_ACTIONS) {
+                    tPrivilege.setAction(privilegeAction);
+                    newPrivilege.setAction(privilegeAction);
+                    renamePrivilegeForAllRoles(pm, tPrivilege, newPrivilege);
+                  }
+                } else {
                   renamePrivilegeForAllRoles(pm, tPrivilege, newPrivilege);
                 }
-              } else {
-                renamePrivilegeForAllRoles(pm, tPrivilege, newPrivilege);
+              } catch (JDODataStoreException e) {
+                throw new SentryInvalidInputException("Failed to get privileges: "
+                    + e.getMessage());
               }
-            } catch (JDODataStoreException e) {
-              throw new SentryInvalidInputException("Failed to get privileges: "
-                  + e.getMessage());
-            }
-            return null;
-          }
-        });
+              return null;
+            });
   }
 
   /**
@@ -2324,31 +2204,29 @@ public class SentryStore {
       final TSentryAuthorizable newTAuthorizable, final Update update)
         throws Exception {
 
-    execute(update, new TransactionBlock<Object>() {
-      public Object execute(PersistenceManager pm) throws Exception {
-        pm.setDetachAllOnCommit(false); // No need to detach objects
+    execute(update, pm -> {
+      pm.setDetachAllOnCommit(false); // No need to detach objects
 
-        // Drop the give privilege for all possible actions from all roles.
-        TSentryPrivilege tPrivilege = toSentryPrivilege(oldTAuthorizable);
-        TSentryPrivilege newPrivilege = toSentryPrivilege(newTAuthorizable);
+      // Drop the give privilege for all possible actions from all roles.
+      TSentryPrivilege tPrivilege = toSentryPrivilege(oldTAuthorizable);
+      TSentryPrivilege newPrivilege = toSentryPrivilege(newTAuthorizable);
 
-        try {
-          // In case of tables or DBs, check all actions
-          if (isMultiActionsSupported(tPrivilege)) {
-            for (String privilegeAction : ALL_ACTIONS) {
-              tPrivilege.setAction(privilegeAction);
-              newPrivilege.setAction(privilegeAction);
-              renamePrivilegeForAllRoles(pm, tPrivilege, newPrivilege);
-            }
-          } else {
+      try {
+        // In case of tables or DBs, check all actions
+        if (isMultiActionsSupported(tPrivilege)) {
+          for (String privilegeAction : ALL_ACTIONS) {
+            tPrivilege.setAction(privilegeAction);
+            newPrivilege.setAction(privilegeAction);
             renamePrivilegeForAllRoles(pm, tPrivilege, newPrivilege);
           }
-        } catch (JDODataStoreException e) {
-          throw new SentryInvalidInputException("Failed to get privileges: "
-          + e.getMessage());
+        } else {
+          renamePrivilegeForAllRoles(pm, tPrivilege, newPrivilege);
         }
-        return null;
+      } catch (JDODataStoreException e) {
+        throw new SentryInvalidInputException("Failed to get privileges: "
+        + e.getMessage());
       }
+      return null;
     });
   }
 
@@ -2589,19 +2467,16 @@ public class SentryStore {
    */
   public PermissionsImage retrieveFullPermssionsImage() throws Exception {
     return tm.executeTransaction(
-    new TransactionBlock<PermissionsImage>() {
-      public PermissionsImage execute(PersistenceManager pm)
-      throws Exception {
-        pm.setDetachAllOnCommit(false); // No need to detach objects
-        // curChangeID could be 0, if Sentry server has been running before
-        // enable SentryPlugin(HDFS Sync feature).
-        long curChangeID = getLastProcessedChangeIDCore(pm, MSentryPermChange.class);
-        Map<String, List<String>> roleImage = retrieveFullRoleImageCore(pm);
-        Map<String, Map<String, String>> privilegeMap = retrieveFullPrivilegeImageCore(pm);
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              // curChangeID could be 0, if Sentry server has been running before
+              // enable SentryPlugin(HDFS Sync feature).
+              long curChangeID = getLastProcessedChangeIDCore(pm, MSentryPermChange.class);
+              Map<String, List<String>> roleImage = retrieveFullRoleImageCore(pm);
+              Map<String, Map<String, String>> privilegeMap = retrieveFullPrivilegeImageCore(pm);
 
-        return new PermissionsImage(roleImage, privilegeMap, curChangeID);
-      }
-    });
+              return new PermissionsImage(roleImage, privilegeMap, curChangeID);
+            });
   }
 
   /**
@@ -2702,19 +2577,17 @@ public class SentryStore {
    */
   public PathsUpdate retrieveFullPathsImageUpdate(final String[] prefixes) throws Exception {
     return tm.executeTransaction(
-            new TransactionBlock<PathsUpdate>() {
-              public PathsUpdate execute(PersistenceManager pm) throws Exception {
-                pm.setDetachAllOnCommit(false); // No need to detach objects
-                long curImageID = getCurrentAuthzPathsSnapshotID(pm);
-                long curChangeID = getLastProcessedChangeIDCore(pm, MSentryPathChange.class);
-                PathsUpdate pathUpdate = new PathsUpdate(curChangeID, curImageID, true);
-                // We ignore anything in the update and set it later to the assembled PathsDump
-                UpdateableAuthzPaths authzPaths = new UpdateableAuthzPaths(prefixes);
-                // Extract all paths and put them into authzPaths
-                retrieveFullPathsImageCore(pm, curImageID, authzPaths);
-                pathUpdate.toThrift().setPathsDump(authzPaths.getPathsDump().createPathsDump(true));
-                return pathUpdate;
-              }
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              long curImageID = getCurrentAuthzPathsSnapshotID(pm);
+              long curChangeID = getLastProcessedChangeIDCore(pm, MSentryPathChange.class);
+              PathsUpdate pathUpdate = new PathsUpdate(curChangeID, curImageID, true);
+              // We ignore anything in the update and set it later to the assembled PathsDump
+              UpdateableAuthzPaths authzPaths = new UpdateableAuthzPaths(prefixes);
+              // Extract all paths and put them into authzPaths
+              retrieveFullPathsImageCore(pm, curImageID, authzPaths);
+              pathUpdate.toThrift().setPathsDump(authzPaths.getPathsDump().createPathsDump(true));
+              return pathUpdate;
             });
   }
 
@@ -2782,25 +2655,23 @@ public class SentryStore {
   public void persistFullPathsImage(final Map<String, Collection<String>> authzPaths,
       final long notificationID) throws Exception {
     tm.executeTransactionWithRetry(
-      new TransactionBlock() {
-        public Object execute(PersistenceManager pm) throws Exception {
-          pm.setDetachAllOnCommit(false); // No need to detach objects
-          deleteNotificationsSince(pm, notificationID + 1);
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              deleteNotificationsSince(pm, notificationID + 1);
 
-          // persist the notidicationID
-          pm.makePersistent(new MSentryHmsNotification(notificationID));
+              // persist the notidicationID
+              pm.makePersistent(new MSentryHmsNotification(notificationID));
 
-          // persist the full snapshot
-          long snapshotID = getCurrentAuthzPathsSnapshotID(pm);
-          long nextSnapshotID = snapshotID + 1;
-          pm.makePersistent(new MAuthzPathsSnapshotId(nextSnapshotID));
-          LOGGER.info("Attempting to commit new HMS snapshot with ID = {}", nextSnapshotID);
-          for (Map.Entry<String, Collection<String>> authzPath : authzPaths.entrySet()) {
-            pm.makePersistent(new MAuthzPathsMapping(nextSnapshotID, authzPath.getKey(), authzPath.getValue()));
-          }
-          return null;
-        }
-      });
+              // persist the full snapshot
+              long snapshotID = getCurrentAuthzPathsSnapshotID(pm);
+              long nextSnapshotID = snapshotID + 1;
+              pm.makePersistent(new MAuthzPathsSnapshotId(nextSnapshotID));
+              LOGGER.info("Attempting to commit new HMS snapshot with ID = {}", nextSnapshotID);
+              for (Map.Entry<String, Collection<String>> authzPath : authzPaths.entrySet()) {
+                pm.makePersistent(new MAuthzPathsMapping(nextSnapshotID, authzPath.getKey(), authzPath.getValue()));
+              }
+              return null;
+            });
   }
 
   /**
@@ -2824,12 +2695,7 @@ public class SentryStore {
    */
   private long getCurrentAuthzPathsSnapshotID() throws Exception {
     return tm.executeTransaction(
-        new TransactionBlock<Long>() {
-          @Override
-          public Long execute(PersistenceManager pm) throws Exception {
-            return getCurrentAuthzPathsSnapshotID(pm);
-          }
-        }
+            SentryStore::getCurrentAuthzPathsSnapshotID
     );
   }
 
@@ -2845,12 +2711,10 @@ public class SentryStore {
    */
   public void addAuthzPathsMapping(final String authzObj, final Collection<String> paths,
       final UniquePathsUpdate update) throws Exception {
-    execute(update, new TransactionBlock<Object>() {
-      public Object execute(PersistenceManager pm) throws Exception {
-        pm.setDetachAllOnCommit(false); // No need to detach objects
-        addAuthzPathsMappingCore(pm, authzObj, paths);
-        return null;
-      }
+    execute(update, pm -> {
+      pm.setDetachAllOnCommit(false); // No need to detach objects
+      addAuthzPathsMappingCore(pm, authzObj, paths);
+      return null;
     });
   }
 
@@ -2892,12 +2756,10 @@ public class SentryStore {
    */
   public void deleteAuthzPathsMapping(final String authzObj, final Iterable<String> paths,
       final UniquePathsUpdate update) throws Exception {
-    execute(update, new TransactionBlock<Object>() {
-      public Object execute(PersistenceManager pm) throws Exception {
-        pm.setDetachAllOnCommit(false); // No need to detach objects
-        deleteAuthzPathsMappingCore(pm, authzObj, paths);
-        return null;
-      }
+    execute(update, pm -> {
+      pm.setDetachAllOnCommit(false); // No need to detach objects
+      deleteAuthzPathsMappingCore(pm, authzObj, paths);
+      return null;
     });
   }
 
@@ -2944,12 +2806,10 @@ public class SentryStore {
    */
   public void deleteAllAuthzPathsMapping(final String authzObj, final UniquePathsUpdate update)
         throws Exception {
-    execute(update, new TransactionBlock<Object>() {
-      public Object execute(PersistenceManager pm) throws Exception {
-        pm.setDetachAllOnCommit(false); // No need to detach objects
-        deleteAllAuthzPathsMappingCore(pm, authzObj);
-        return null;
-      }
+    execute(update, pm -> {
+      pm.setDetachAllOnCommit(false); // No need to detach objects
+      deleteAllAuthzPathsMappingCore(pm, authzObj);
+      return null;
     });
   }
 
@@ -2993,12 +2853,10 @@ public class SentryStore {
    */
   public void renameAuthzPathsMapping(final String oldObj, final String newObj,
       final String oldPath, final String newPath, final UniquePathsUpdate update) throws Exception {
-    execute(update, new TransactionBlock<Object>() {
-      public Object execute(PersistenceManager pm) throws Exception {
-        pm.setDetachAllOnCommit(false); // No need to detach objects
-        renameAuthzPathsMappingCore(pm, oldObj, newObj, oldPath, newPath);
-        return null;
-      }
+    execute(update, pm -> {
+      pm.setDetachAllOnCommit(false); // No need to detach objects
+      renameAuthzPathsMappingCore(pm, oldObj, newObj, oldPath, newPath);
+      return null;
     });
   }
 
@@ -3050,12 +2908,10 @@ public class SentryStore {
    */
   public void renameAuthzObj(final String oldObj, final String newObj,
       final UniquePathsUpdate update) throws Exception {
-    execute(update, new TransactionBlock<Object>() {
-      public Object execute(PersistenceManager pm) throws Exception {
-        pm.setDetachAllOnCommit(false); // No need to detach objects
-        renameAuthzObjCore(pm, oldObj, newObj);
-        return null;
-      }
+    execute(update, pm -> {
+      pm.setDetachAllOnCommit(false); // No need to detach objects
+      renameAuthzObjCore(pm, oldObj, newObj);
+      return null;
     });
   }
 
@@ -3094,12 +2950,10 @@ public class SentryStore {
    */
   public boolean isAuthzPathsMappingEmpty() throws Exception {
     return tm.executeTransactionWithRetry(
-      new TransactionBlock<Boolean>() {
-        public Boolean execute(PersistenceManager pm) throws Exception {
-          pm.setDetachAllOnCommit(false); // No need to detach objects
-          return isTableEmptyCore(pm, MAuthzPathsMapping.class);
-        }
-      });
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              return isTableEmptyCore(pm, MAuthzPathsMapping.class);
+            });
   }
 
   /**
@@ -3111,12 +2965,10 @@ public class SentryStore {
    */
   public boolean isHmsNotificationEmpty() throws Exception {
     return tm.executeTransactionWithRetry(
-        new TransactionBlock<Boolean>() {
-          public Boolean execute(PersistenceManager pm) throws Exception {
-            pm.setDetachAllOnCommit(false); // No need to detach objects
-            return isTableEmptyCore(pm, MSentryHmsNotification.class);
-          }
-        });
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              return isTableEmptyCore(pm, MSentryHmsNotification.class);
+            });
   }
 
   /**
@@ -3128,12 +2980,10 @@ public class SentryStore {
    */
   public boolean isAuthzPathsSnapshotEmpty() throws Exception {
     return tm.executeTransactionWithRetry(
-        new TransactionBlock<Boolean>() {
-          public Boolean execute(PersistenceManager pm) throws Exception {
-            pm.setDetachAllOnCommit(false); // No need to detach objects
-            return isTableEmptyCore(pm, MAuthzPathsMapping.class);
-          }
-        });
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              return isTableEmptyCore(pm, MAuthzPathsMapping.class);
+            });
   }
 
   /**
@@ -3149,12 +2999,10 @@ public class SentryStore {
    */
   public void updateAuthzPathsMapping(final String authzObj, final String oldPath,
         final String newPath, final UniquePathsUpdate update) throws Exception {
-    execute(update, new TransactionBlock<Object>() {
-      public Object execute(PersistenceManager pm) throws Exception {
-        pm.setDetachAllOnCommit(false); // No need to detach objects
-        updateAuthzPathsMappingCore(pm, authzObj, oldPath, newPath);
-        return null;
-      }
+    execute(update, pm -> {
+      pm.setDetachAllOnCommit(false); // No need to detach objects
+      updateAuthzPathsMappingCore(pm, authzObj, oldPath, newPath);
+      return null;
     });
   }
 
@@ -3244,18 +3092,16 @@ public class SentryStore {
 
   @VisibleForTesting
   List<MPath> getMPaths() throws Exception {
-    return tm.executeTransaction(new TransactionBlock<List<MPath>>() {
-      public List<MPath> execute(PersistenceManager pm) throws Exception {
-        long currentSnapshotID = getCurrentAuthzPathsSnapshotID(pm);
+    return tm.executeTransaction(pm -> {
+      long currentSnapshotID = getCurrentAuthzPathsSnapshotID(pm);
 
-        Query query = pm.newQuery("SQL",
-            "SELECT p.PATH_NAME FROM AUTHZ_PATH p " +
-               "JOIN AUTHZ_PATHS_MAPPING a ON a.AUTHZ_OBJ_ID = p.AUTHZ_OBJ_ID " +
-               "WHERE a.AUTHZ_SNAPSHOT_ID = ?"
-        );
-        query.setResultClass(MPath.class);
-        return (List<MPath>) query.execute(currentSnapshotID);
-      }
+      Query query = pm.newQuery("SQL",
+          "SELECT p.PATH_NAME FROM AUTHZ_PATH p " +
+             "JOIN AUTHZ_PATHS_MAPPING a ON a.AUTHZ_OBJ_ID = p.AUTHZ_OBJ_ID " +
+             "WHERE a.AUTHZ_SNAPSHOT_ID = ?"
+      );
+      query.setResultClass(MPath.class);
+      return (List<MPath>) query.execute(currentSnapshotID);
     });
   }
 
@@ -3273,11 +3119,7 @@ public class SentryStore {
   @VisibleForTesting
   Boolean findOrphanedPrivileges() throws Exception {
     return tm.executeTransaction(
-      new TransactionBlock<Boolean>() {
-        public Boolean execute(PersistenceManager pm) throws Exception {
-          return findOrphanedPrivilegesCore(pm);
-        }
-      });
+            pm -> findOrphanedPrivilegesCore(pm));
   }
 
   Boolean findOrphanedPrivilegesCore(PersistenceManager pm) {
@@ -3307,30 +3149,28 @@ public class SentryStore {
   public List<Map<String, Set<String>>> getGroupUserRoleMapList(final Collection<String> roleNames)
           throws Exception {
       return tm.executeTransaction(
-        new TransactionBlock<List<Map<String, Set<String>>>>() {
-          public List<Map<String, Set<String>>> execute(PersistenceManager pm) throws Exception {
-            pm.setDetachAllOnCommit(false); // No need to detach objects
+              pm -> {
+                pm.setDetachAllOnCommit(false); // No need to detach objects
 
-            Query query = pm.newQuery(MSentryRole.class);
-            query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
-            List<MSentryRole> mSentryRoles;
-            if ((roleNames == null) || roleNames.isEmpty()) {
-              mSentryRoles = (List<MSentryRole>)query.execute();
-            } else {
-              QueryParamBuilder paramBuilder = newQueryParamBuilder(QueryParamBuilder.Op.OR);
-              paramBuilder.addSet("roleName == ", roleNames);
-              query.setFilter(paramBuilder.toString());
-              mSentryRoles =
-                      (List<MSentryRole>) query.executeWithMap(paramBuilder.getArguments());
-            }
-            Map<String, Set<String>> groupRolesMap = getGroupRolesMap(mSentryRoles);
-            Map<String, Set<String>> userRolesMap = getUserRolesMap(mSentryRoles);
-            List<Map<String, Set<String>>> mapsList = new ArrayList<>();
-            mapsList.add(INDEX_GROUP_ROLES_MAP, groupRolesMap);
-            mapsList.add(INDEX_USER_ROLES_MAP, userRolesMap);
-            return mapsList;
-          }
-        });
+                Query query = pm.newQuery(MSentryRole.class);
+                query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
+                List<MSentryRole> mSentryRoles;
+                if ((roleNames == null) || roleNames.isEmpty()) {
+                  mSentryRoles = (List<MSentryRole>)query.execute();
+                } else {
+                  QueryParamBuilder paramBuilder = newQueryParamBuilder(QueryParamBuilder.Op.OR);
+                  paramBuilder.addSet("roleName == ", roleNames);
+                  query.setFilter(paramBuilder.toString());
+                  mSentryRoles =
+                          (List<MSentryRole>) query.executeWithMap(paramBuilder.getArguments());
+                }
+                Map<String, Set<String>> groupRolesMap = getGroupRolesMap(mSentryRoles);
+                Map<String, Set<String>> userRolesMap = getUserRolesMap(mSentryRoles);
+                List<Map<String, Set<String>>> mapsList = new ArrayList<>();
+                mapsList.add(INDEX_GROUP_ROLES_MAP, groupRolesMap);
+                mapsList.add(INDEX_USER_ROLES_MAP, userRolesMap);
+                return mapsList;
+              });
   }
 
   private Map<String, Set<String>> getGroupRolesMap(Collection<MSentryRole> mSentryRoles) {
@@ -3388,28 +3228,25 @@ public class SentryStore {
   public Map<String, Set<TSentryPrivilege>> getRoleNameTPrivilegesMap(final String dbName,
         final String tableName) throws Exception {
     return tm.executeTransaction(
-      new TransactionBlock<Map<String, Set<TSentryPrivilege>>>() {
-        public Map<String, Set<TSentryPrivilege>> execute(PersistenceManager pm)
-                throws Exception {
-          pm.setDetachAllOnCommit(false); // No need to detach objects
-          Query query = pm.newQuery(MSentryPrivilege.class);
-          query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
-          QueryParamBuilder paramBuilder = newQueryParamBuilder();
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              Query query = pm.newQuery(MSentryPrivilege.class);
+              query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
+              QueryParamBuilder paramBuilder = newQueryParamBuilder();
 
-          if (!StringUtils.isEmpty(dbName)) {
-              paramBuilder.add(DB_NAME, dbName);
-          }
-          if (!StringUtils.isEmpty(tableName)) {
-              paramBuilder.add(TABLE_NAME, tableName);
-          }
-          query.setFilter(paramBuilder.toString());
-          @SuppressWarnings("unchecked")
-          List<MSentryPrivilege> mSentryPrivileges =
-                  (List<MSentryPrivilege>) query.
-                          executeWithMap(paramBuilder.getArguments());
-          return getRolePrivilegesMap(mSentryPrivileges);
-        }
-      });
+              if (!StringUtils.isEmpty(dbName)) {
+                  paramBuilder.add(DB_NAME, dbName);
+              }
+              if (!StringUtils.isEmpty(tableName)) {
+                  paramBuilder.add(TABLE_NAME, tableName);
+              }
+              query.setFilter(paramBuilder.toString());
+              @SuppressWarnings("unchecked")
+              List<MSentryPrivilege> mSentryPrivileges =
+                      (List<MSentryPrivilege>) query.
+                              executeWithMap(paramBuilder.getArguments());
+              return getRolePrivilegesMap(mSentryPrivileges);
+            });
   }
 
   private Map<String, Set<TSentryPrivilege>> getRolePrivilegesMap(
@@ -3440,12 +3277,10 @@ public class SentryStore {
    */
   public Set<String> getAllRoleNames() throws Exception {
     return tm.executeTransaction(
-        new TransactionBlock<Set<String>>() {
-          public Set<String> execute(PersistenceManager pm) throws Exception {
-            pm.setDetachAllOnCommit(false); // No need to detach objects
-            return getAllRoleNamesCore(pm);
-          }
-        });
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              return getAllRoleNamesCore(pm);
+            });
   }
 
   /**
@@ -3507,55 +3342,42 @@ public class SentryStore {
   @VisibleForTesting
   Map<String, MSentryRole> getRolesMap() throws Exception {
     return tm.executeTransaction(
-        new TransactionBlock<Map<String, MSentryRole>>() {
-          public Map<String, MSentryRole> execute(PersistenceManager pm) throws Exception {
-            pm.setDetachAllOnCommit(false); // No need to detach objects
-            List<MSentryRole> mSentryRoles = getAllRoles(pm);
-            if (mSentryRoles.isEmpty()) {
-              return Collections.emptyMap();
-            }
-            Map<String, MSentryRole> existRolesMap =
-                    new HashMap<>(mSentryRoles.size());
-            // change the List<MSentryRole> -> Map<roleName, Set<MSentryRole>>
-            for (MSentryRole mSentryRole : mSentryRoles) {
-              existRolesMap.put(mSentryRole.getRoleName(), mSentryRole);
-            }
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              List<MSentryRole> mSentryRoles = getAllRoles(pm);
+              if (mSentryRoles.isEmpty()) {
+                return Collections.emptyMap();
+              }
+              Map<String, MSentryRole> existRolesMap =
+                      new HashMap<>(mSentryRoles.size());
+              // change the List<MSentryRole> -> Map<roleName, Set<MSentryRole>>
+              for (MSentryRole mSentryRole : mSentryRoles) {
+                existRolesMap.put(mSentryRole.getRoleName(), mSentryRole);
+              }
 
-            return existRolesMap;
-          }
-        });
+              return existRolesMap;
+            });
   }
 
   @VisibleForTesting
   Map<String, MSentryGroup> getGroupNameToGroupMap() throws Exception {
     return tm.executeTransaction(
-      new TransactionBlock<Map<String, MSentryGroup>>() {
-        public Map<String, MSentryGroup> execute(PersistenceManager pm) throws Exception {
-          return getGroupNameTGroupMap(pm);
-        }
-      });
+            this::getGroupNameTGroupMap);
   }
 
   @VisibleForTesting
   Map<String, MSentryUser> getUserNameToUserMap() throws Exception {
     return tm.executeTransaction(
-        new TransactionBlock<Map<String, MSentryUser>>() {
-          public Map<String, MSentryUser> execute(PersistenceManager pm) throws Exception {
-            return getUserNameToUserMap(pm);
-          }
-        });
+            this::getUserNameToUserMap);
   }
 
   @VisibleForTesting
   List<MSentryPrivilege> getPrivilegesList() throws Exception {
     return tm.executeTransaction(
-      new TransactionBlock<List<MSentryPrivilege>>() {
-        public List<MSentryPrivilege> execute(PersistenceManager pm)
-                throws Exception {
-          Query query = pm.newQuery(MSentryPrivilege.class);
-          return (List<MSentryPrivilege>) query.execute();
-        }
-      });
+            pm -> {
+              Query query = pm.newQuery(MSentryPrivilege.class);
+              return (List<MSentryPrivilege>) query.execute();
+            });
   }
 
   /**
@@ -3597,39 +3419,37 @@ public class SentryStore {
   public void importSentryMetaData(final TSentryMappingData tSentryMappingData,
       final boolean isOverwriteForRole) throws Exception {
     tm.executeTransaction(
-        new TransactionBlock<Object>() {
-          public Object execute(PersistenceManager pm) throws Exception {
-            pm.setDetachAllOnCommit(false); // No need to detach objects
-            TSentryMappingData mappingData = lowercaseRoleName(tSentryMappingData);
-            Set<String> roleNames = getAllRoleNamesCore(pm);
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              TSentryMappingData mappingData = lowercaseRoleName(tSentryMappingData);
+              Set<String> roleNames = getAllRoleNamesCore(pm);
 
-            Map<String, Set<TSentryGroup>> importedRoleGroupsMap = covertToRoleNameTGroupsMap(mappingData
-                .getGroupRolesMap());
-            Map<String, Set<String>> importedRoleUsersMap = covertToRoleUsersMap(mappingData
-                .getUserRolesMap());
-            Set<String> importedRoleNames = importedRoleGroupsMap.keySet();
-            // if import with overwrite role, drop the duplicated roles in current DB first.
-            if (isOverwriteForRole) {
-              dropDuplicatedRoleForImport(pm, roleNames, importedRoleNames);
-              // refresh the roleNames for the drop role
-              roleNames = getAllRoleNamesCore(pm);
-            }
+              Map<String, Set<TSentryGroup>> importedRoleGroupsMap = covertToRoleNameTGroupsMap(mappingData
+                  .getGroupRolesMap());
+              Map<String, Set<String>> importedRoleUsersMap = covertToRoleUsersMap(mappingData
+                  .getUserRolesMap());
+              Set<String> importedRoleNames = importedRoleGroupsMap.keySet();
+              // if import with overwrite role, drop the duplicated roles in current DB first.
+              if (isOverwriteForRole) {
+                dropDuplicatedRoleForImport(pm, roleNames, importedRoleNames);
+                // refresh the roleNames for the drop role
+                roleNames = getAllRoleNamesCore(pm);
+              }
 
-            // Empty roleNames is most likely the COllections.emptySet().
-            // We are going to modify roleNames below, so create an actual set.
-            if (roleNames.isEmpty()) {
-              roleNames = new HashSet<>();
-            }
+              // Empty roleNames is most likely the COllections.emptySet().
+              // We are going to modify roleNames below, so create an actual set.
+              if (roleNames.isEmpty()) {
+                roleNames = new HashSet<>();
+              }
 
-            // import the mapping data for [role,privilege], the roleNames will be updated
-            importRolePrivilegeMapping(pm, roleNames, mappingData.getRolePrivilegesMap());
-            // import the mapping data for [role,group], the roleNames will be updated
-            importRoleGroupMapping(pm, roleNames, importedRoleGroupsMap);
-            // import the mapping data for [role,user], the roleNames will be updated
-            importRoleUserMapping(pm, roleNames, importedRoleUsersMap);
-            return null;
-          }
-        });
+              // import the mapping data for [role,privilege], the roleNames will be updated
+              importRolePrivilegeMapping(pm, roleNames, mappingData.getRolePrivilegesMap());
+              // import the mapping data for [role,group], the roleNames will be updated
+              importRoleGroupMapping(pm, roleNames, importedRoleGroupsMap);
+              // import the mapping data for [role,user], the roleNames will be updated
+              importRoleUserMapping(pm, roleNames, importedRoleUsersMap);
+              return null;
+            });
   }
 
   // covert the Map[group->roles] to Map[role->groups]
@@ -3846,12 +3666,10 @@ public class SentryStore {
   public void setLastProcessedNotificationID(final Long notificationId) throws Exception {
     LOGGER.debug("Persisting Last Processed Notification ID {}", notificationId);
     tm.executeTransaction(
-      new TransactionBlock<Object>() {
-        public Object execute(PersistenceManager pm) throws Exception {
-          deleteNotificationsSince(pm, notificationId + 1);
-          return pm.makePersistent(new MSentryHmsNotification(notificationId));
-        }
-      });
+            pm -> {
+              deleteNotificationsSince(pm, notificationId + 1);
+              return pm.makePersistent(new MSentryHmsNotification(notificationId));
+            });
   }
 
   /**
@@ -3860,11 +3678,7 @@ public class SentryStore {
   public void persistLastProcessedNotificationID(final Long notificationId) throws Exception {
     LOGGER.debug("Persisting Last Processed Notification ID {}", notificationId);
     tm.executeTransaction(
-            new TransactionBlock<Object>() {
-              public Object execute(PersistenceManager pm) throws Exception {
-                return pm.makePersistent(new MSentryHmsNotification(notificationId));
-              }
-            });
+            pm -> pm.makePersistent(new MSentryHmsNotification(notificationId)));
   }
 
   /**
@@ -3876,12 +3690,10 @@ public class SentryStore {
    */
   public Long getLastProcessedPermChangeID() throws Exception {
     return tm.executeTransaction(
-      new TransactionBlock<Long>() {
-        public Long execute(PersistenceManager pm) throws Exception {
-          pm.setDetachAllOnCommit(false); // No need to detach objects
-          return getLastProcessedChangeIDCore(pm, MSentryPermChange.class);
-        }
-      });
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              return getLastProcessedChangeIDCore(pm, MSentryPermChange.class);
+            });
   }
 
   /**
@@ -3891,12 +3703,10 @@ public class SentryStore {
    */
   public Long getLastProcessedPathChangeID() throws Exception {
     return tm.executeTransaction(
-    new TransactionBlock<Long>() {
-      public Long execute(PersistenceManager pm) throws Exception {
-        pm.setDetachAllOnCommit(false); // No need to detach objects
-        return getLastProcessedChangeIDCore(pm, MSentryPathChange.class);
-      }
-    });
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              return getLastProcessedChangeIDCore(pm, MSentryPathChange.class);
+            });
   }
 
   /**
@@ -3907,12 +3717,10 @@ public class SentryStore {
    */
   public Long getLastProcessedNotificationID() throws Exception {
     long notificationId = tm.executeTransaction(
-    new TransactionBlock<Long>() {
-      public Long execute(PersistenceManager pm) throws Exception {
-        long notificationId =  getLastProcessedNotificationIDCore(pm);
-        return notificationId;
-      }
-    });
+            pm -> {
+              long notificationId1 =  getLastProcessedNotificationIDCore(pm);
+              return notificationId1;
+            });
     LOGGER.debug("Retrieving Last Processed Notification ID {}", notificationId);
     return notificationId;
   }
@@ -3923,12 +3731,9 @@ public class SentryStore {
    * @return latest path change ID.
    */
   public long getLastProcessedImageID() throws Exception {
-    return tm.executeTransaction(new TransactionBlock<Long>() {
-      @Override
-      public Long execute(PersistenceManager pm) throws Exception {
-        pm.setDetachAllOnCommit(false); // No need to detach objects
-        return getCurrentAuthzPathsSnapshotID(pm);
-      }
+    return tm.executeTransaction(pm -> {
+      pm.setDetachAllOnCommit(false); // No need to detach objects
+      return getCurrentAuthzPathsSnapshotID(pm);
     });
   }
 
@@ -3939,24 +3744,22 @@ public class SentryStore {
    * @return MSentryPermChange
    */
   public MSentryPermChange getMSentryPermChangeByID(final long changeID) throws Exception {
-    return (MSentryPermChange) tm.executeTransaction(
-      new TransactionBlock<Object>() {
-        public Object execute(PersistenceManager pm) throws Exception {
-          Query query = pm.newQuery(MSentryPermChange.class);
-          query.setFilter("this.changeID == id");
-          query.declareParameters("long id");
-          List<MSentryPermChange> permChanges = (List<MSentryPermChange>)query.execute(changeID);
-          if (permChanges == null) {
-            throw noSuchUpdate(changeID);
-          }
-          if (permChanges.size() > 1) {
-            throw new Exception("Inconsistent permission delta: " + permChanges.size()
-                + " permissions for the same id, " + changeID);
-          }
+    return tm.executeTransaction(
+            pm -> {
+              Query query = pm.newQuery(MSentryPermChange.class);
+              query.setFilter("this.changeID == id");
+              query.declareParameters("long id");
+              List<MSentryPermChange> permChanges = (List<MSentryPermChange>)query.execute(changeID);
+              if (permChanges == null) {
+                throw noSuchUpdate(changeID);
+              }
+              if (permChanges.size() > 1) {
+                throw new Exception("Inconsistent permission delta: " + permChanges.size()
+                    + " permissions for the same id, " + changeID);
+              }
 
-          return permChanges.get(0);
-        }
-      });
+              return permChanges.get(0);
+            });
   }
 
   /**
@@ -3970,12 +3773,10 @@ public class SentryStore {
   private <T extends MSentryChange> List<T> getMSentryChanges(final Class<T> cls)
       throws Exception {
     return tm.executeTransaction(
-        new TransactionBlock<List<T>>() {
-          public List<T> execute(PersistenceManager pm) throws Exception {
-            Query query = pm.newQuery(cls);
-            return (List<T>) query.execute();
-          }
-        });
+            pm -> {
+              Query query = pm.newQuery(cls);
+              return (List<T>) query.execute();
+            });
   }
 
   /**
@@ -3998,12 +3799,10 @@ public class SentryStore {
   @VisibleForTesting
   List<MSentryHmsNotification> getMSentryHmsNotificationCore() throws Exception {
     return tm.executeTransaction(
-      new TransactionBlock<List<MSentryHmsNotification>>() {
-        public List<MSentryHmsNotification> execute(PersistenceManager pm) throws Exception {
-          Query query = pm.newQuery(MSentryHmsNotification.class);
-          return (List<MSentryHmsNotification>) query.execute();
-        }
-      });
+            pm -> {
+              Query query = pm.newQuery(MSentryHmsNotification.class);
+              return (List<MSentryHmsNotification>) query.execute();
+            });
   }
 
     /**
@@ -4036,12 +3835,10 @@ public class SentryStore {
    */
   public Boolean permChangeExists(final long changeID) throws Exception {
     return tm.executeTransaction(
-    new TransactionBlock<Boolean>() {
-      public Boolean execute(PersistenceManager pm) throws Exception {
-        pm.setDetachAllOnCommit(false); // No need to detach objects
-        return changeExistsCore(pm, MSentryPermChange.class, changeID);
-      }
-    });
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              return changeExistsCore(pm, MSentryPermChange.class, changeID);
+            });
   }
 
   /**
@@ -4053,12 +3850,10 @@ public class SentryStore {
    */
   public Boolean pathChangeExists(final long changeID) throws Exception {
     return tm.executeTransaction(
-    new TransactionBlock<Boolean>() {
-      public Boolean execute(PersistenceManager pm) throws Exception {
-        pm.setDetachAllOnCommit(false); // No need to detach objects
-        return changeExistsCore(pm, MSentryPathChange.class, changeID);
-      }
-    });
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              return changeExistsCore(pm, MSentryPathChange.class, changeID);
+            });
   }
 
   /**
@@ -4069,24 +3864,22 @@ public class SentryStore {
    * @throws Exception
    */
   public MSentryPathChange getMSentryPathChangeByID(final long changeID) throws Exception {
-    return (MSentryPathChange) tm.executeTransaction(
-      new TransactionBlock<Object>() {
-        public Object execute(PersistenceManager pm) throws Exception {
-          Query query = pm.newQuery(MSentryPathChange.class);
-          query.setFilter("this.changeID == id");
-          query.declareParameters("long id");
-          List<MSentryPathChange> pathChanges = (List<MSentryPathChange>)query.execute(changeID);
-          if (pathChanges == null) {
-            throw noSuchUpdate(changeID);
-          }
-          if (pathChanges.size() > 1) {
-            throw new Exception("Inconsistent path delta: " + pathChanges.size()
-                + " paths for the same id, " + changeID);
-          }
+    return tm.executeTransaction(
+            pm -> {
+              Query query = pm.newQuery(MSentryPathChange.class);
+              query.setFilter("this.changeID == id");
+              query.declareParameters("long id");
+              List<MSentryPathChange> pathChanges = (List<MSentryPathChange>)query.execute(changeID);
+              if (pathChanges == null) {
+                throw noSuchUpdate(changeID);
+              }
+              if (pathChanges.size() > 1) {
+                throw new Exception("Inconsistent path delta: " + pathChanges.size()
+                    + " paths for the same id, " + changeID);
+              }
 
-          return pathChanges.get(0);
-        }
-      });
+              return pathChanges.get(0);
+            });
   }
 
   /**
@@ -4124,20 +3917,18 @@ public class SentryStore {
    */
   public List<MSentryPathChange> getMSentryPathChanges(final long changeID)
           throws Exception {
-    return tm.executeTransaction(new TransactionBlock<List<MSentryPathChange>>() {
-      public List<MSentryPathChange> execute(PersistenceManager pm) throws Exception {
-        // 1. We first retrieve the entire list of latest delta changes since the changeID
-        List<MSentryPathChange> pathChanges =
-                getMSentryChangesCore(pm, MSentryPathChange.class, changeID);
-        // 2. We then check for consistency issues with delta changes
-        if (validateDeltaChanges(changeID, pathChanges)) {
-          // If everything is in order, return the delta changes
-          return pathChanges;
-        }
-
-        // Looks like delta change validation failed. Return an empty list.
-        return Collections.emptyList();
+    return tm.executeTransaction(pm -> {
+      // 1. We first retrieve the entire list of latest delta changes since the changeID
+      List<MSentryPathChange> pathChanges =
+              getMSentryChangesCore(pm, MSentryPathChange.class, changeID);
+      // 2. We then check for consistency issues with delta changes
+      if (validateDeltaChanges(changeID, pathChanges)) {
+        // If everything is in order, return the delta changes
+        return pathChanges;
       }
+
+      // Looks like delta change validation failed. Return an empty list.
+      return Collections.emptyList();
     });
   }
 
@@ -4151,20 +3942,18 @@ public class SentryStore {
    */
   public List<MSentryPermChange> getMSentryPermChanges(final long changeID)
       throws Exception {
-    return tm.executeTransaction(new TransactionBlock<List<MSentryPermChange>>() {
-      public List<MSentryPermChange> execute(PersistenceManager pm) throws Exception {
-        // 1. We first retrieve the entire list of latest delta changes since the changeID
-        List<MSentryPermChange> permChanges =
-            getMSentryChangesCore(pm, MSentryPermChange.class, changeID);
-        // 2. We then check for consistency issues with delta changes
-        if (validateDeltaChanges(changeID, permChanges)) {
-          // If everything is in order, return the delta changes
-          return permChanges;
-        }
-
-        // Looks like delta change validation failed. Return an empty list.
-        return Collections.emptyList();
+    return tm.executeTransaction(pm -> {
+      // 1. We first retrieve the entire list of latest delta changes since the changeID
+      List<MSentryPermChange> permChanges =
+          getMSentryChangesCore(pm, MSentryPermChange.class, changeID);
+      // 2. We then check for consistency issues with delta changes
+      if (validateDeltaChanges(changeID, permChanges)) {
+        // If everything is in order, return the delta changes
+        return permChanges;
       }
+
+      // Looks like delta change validation failed. Return an empty list.
+      return Collections.emptyList();
     });
   }
 
@@ -4222,7 +4011,7 @@ public class SentryStore {
    */
   private void execute(Update update,
         TransactionBlock<Object> transactionBlock) throws Exception {
-    List<TransactionBlock<Object>> tbs = new ArrayList(2);
+    List<TransactionBlock<Object>> tbs = new ArrayList<>(2);
 
     if (persistUpdateDeltas) {
       tbs.add(new DeltaTransactionBlock(update));
@@ -4240,18 +4029,15 @@ public class SentryStore {
    * @return True if the notification was already processed; False otherwise
    */
   public boolean isNotificationProcessed(final String hash) throws Exception {
-    return tm.executeTransactionWithRetry(new TransactionBlock<Boolean>() {
-      @Override
-      public Boolean execute(PersistenceManager pm) throws Exception {
-        pm.setDetachAllOnCommit(false);
-        Query query = pm.newQuery(MSentryPathChange.class);
-        query.setFilter("this.notificationHash == hash");
-        query.setUnique(true);
-        query.declareParameters("java.lang.String hash");
-        MSentryPathChange changes = (MSentryPathChange) query.execute(hash);
+    return tm.executeTransactionWithRetry(pm -> {
+      pm.setDetachAllOnCommit(false);
+      Query query = pm.newQuery(MSentryPathChange.class);
+      query.setFilter("this.notificationHash == hash");
+      query.setUnique(true);
+      query.declareParameters("java.lang.String hash");
+      MSentryPathChange changes = (MSentryPathChange) query.execute(hash);
 
-        return changes != null;
-      }
+      return changes != null;
     });
   }
 }

@@ -25,6 +25,7 @@ import javax.jdo.PersistenceManager;
  * transaction. The {@link #execute(PersistenceManager)} method returns the
  * result of the transaction.
  */
+@FunctionalInterface
 public interface TransactionBlock<T> {
   /**
    * Execute some code as a single transaction, the code should not start new

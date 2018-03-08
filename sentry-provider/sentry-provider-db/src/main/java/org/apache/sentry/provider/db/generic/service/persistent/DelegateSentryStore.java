@@ -17,36 +17,33 @@
  */
 package org.apache.sentry.provider.db.generic.service.persistent;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import javax.jdo.PersistenceManager;
-
-import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.core.common.exception.SentryUserException;
-import org.apache.sentry.core.common.Authorizable;
-import org.apache.sentry.core.common.exception.SentryAccessDeniedException;
-import org.apache.sentry.core.common.exception.SentryGrantDeniedException;
-import org.apache.sentry.core.common.exception.SentryInvalidInputException;
-import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
-import org.apache.sentry.provider.db.service.model.MSentryGMPrivilege;
-import org.apache.sentry.provider.db.service.model.MSentryGroup;
-import org.apache.sentry.provider.db.service.model.MSentryRole;
-import org.apache.sentry.provider.db.service.persistent.SentryStore;
-import org.apache.sentry.provider.db.service.persistent.TransactionBlock;
-import org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessor;
-import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
-import org.apache.sentry.provider.db.service.thrift.TSentryRole;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.sentry.core.common.Authorizable;
+import org.apache.sentry.core.common.exception.SentryAccessDeniedException;
+import org.apache.sentry.core.common.exception.SentryGrantDeniedException;
+import org.apache.sentry.core.common.exception.SentryInvalidInputException;
+import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
+import org.apache.sentry.core.common.exception.SentryUserException;
+import org.apache.sentry.provider.db.service.model.MSentryGMPrivilege;
+import org.apache.sentry.provider.db.service.model.MSentryGroup;
+import org.apache.sentry.provider.db.service.model.MSentryRole;
+import org.apache.sentry.provider.db.service.persistent.SentryStore;
+import org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessor;
+import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
+import org.apache.sentry.provider.db.service.thrift.TSentryRole;
+import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
+
+import javax.jdo.PersistenceManager;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * The DelegateSentryStore will supports the generic authorizable model. It stores the authorizables
@@ -116,22 +113,20 @@ public class DelegateSentryStore implements SentryStoreLayer {
       final PrivilegeObject privilege, final String grantorPrincipal)
       throws Exception {
     delegate.getTransactionManager().executeTransactionWithRetry(
-      new TransactionBlock() {
-        public Object execute(PersistenceManager pm) throws Exception {
-          pm.setDetachAllOnCommit(false); // No need to detach objects
-          String trimmedRole = toTrimmedLower(role);
-          MSentryRole mRole = getRole(trimmedRole, pm);
-          if (mRole == null) {
-            throw new SentryNoSuchObjectException("Role: " + trimmedRole);
-          }
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              String trimmedRole = toTrimmedLower(role);
+              MSentryRole mRole = getRole(trimmedRole, pm);
+              if (mRole == null) {
+                throw new SentryNoSuchObjectException("Role: " + trimmedRole);
+              }
 
-          // check with grant option
-          grantOptionCheck(privilege, grantorPrincipal, pm);
+              // check with grant option
+              grantOptionCheck(privilege, grantorPrincipal, pm);
 
-          privilegeOperator.grantPrivilege(privilege, mRole, pm);
-          return null;
-        }
-      });
+              privilegeOperator.grantPrivilege(privilege, mRole, pm);
+              return null;
+            });
     return null;
   }
 
@@ -140,22 +135,20 @@ public class DelegateSentryStore implements SentryStoreLayer {
       final String role, final PrivilegeObject privilege, final String grantorPrincipal)
       throws Exception {
     delegate.getTransactionManager().executeTransactionWithRetry(
-      new TransactionBlock() {
-        public Object execute(PersistenceManager pm) throws Exception {
-          pm.setDetachAllOnCommit(false); // No need to detach objects
-          String trimmedRole = toTrimmedLower(role);
-          MSentryRole mRole = getRole(trimmedRole, pm);
-          if (mRole == null) {
-            throw new SentryNoSuchObjectException("Role: " + trimmedRole);
-          }
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              String trimmedRole = toTrimmedLower(role);
+              MSentryRole mRole = getRole(trimmedRole, pm);
+              if (mRole == null) {
+                throw new SentryNoSuchObjectException("Role: " + trimmedRole);
+              }
 
-          // check with grant option
-          grantOptionCheck(privilege, grantorPrincipal, pm);
+              // check with grant option
+              grantOptionCheck(privilege, grantorPrincipal, pm);
 
-          privilegeOperator.revokePrivilege(privilege, mRole, pm);
-          return null;
-        }
-      });
+              privilegeOperator.revokePrivilege(privilege, mRole, pm);
+              return null;
+            });
     return null;
   }
 
@@ -177,14 +170,12 @@ public class DelegateSentryStore implements SentryStoreLayer {
     }
 
     delegate.getTransactionManager().executeTransactionWithRetry(
-        new TransactionBlock() {
-          public Object execute(PersistenceManager pm) throws Exception {
-            pm.setDetachAllOnCommit(false); // No need to detach objects
-            privilegeOperator.renamePrivilege(toTrimmedLower(component), toTrimmedLower(service),
-                oldAuthorizables, newAuthorizables, requestor, pm);
-            return null;
-          }
-        });
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              privilegeOperator.renamePrivilege(toTrimmedLower(component), toTrimmedLower(service),
+                  oldAuthorizables, newAuthorizables, requestor, pm);
+              return null;
+            });
     return null;
   }
 
@@ -194,13 +185,11 @@ public class DelegateSentryStore implements SentryStoreLayer {
     Preconditions.checkNotNull(requestor);
 
     delegate.getTransactionManager().executeTransactionWithRetry(
-        new TransactionBlock() {
-          public Object execute(PersistenceManager pm) throws Exception {
-            pm.setDetachAllOnCommit(false); // No need to detach objects
-            privilegeOperator.dropPrivilege(privilege, pm);
-            return null;
-          }
-        });
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              privilegeOperator.dropPrivilege(privilege, pm);
+              return null;
+            });
     return null;
   }
 
@@ -286,21 +275,17 @@ public class DelegateSentryStore implements SentryStoreLayer {
       return Collections.emptySet();
     }
     return delegate.getTransactionManager().executeTransaction(
-      new TransactionBlock<Set<PrivilegeObject>>() {
-        public Set<PrivilegeObject> execute(PersistenceManager pm) throws Exception {
-          pm.setDetachAllOnCommit(false); // No need to detach objects
-          Set<PrivilegeObject> privileges = new HashSet<>();
-          Set<MSentryRole> mRoles = new HashSet<>();
-          for (String role : roles) {
-            MSentryRole mRole = getRole(toTrimmedLower(role), pm);
-            if (mRole != null) {
-              mRoles.add(mRole);
-            }
-          }
-          privileges.addAll(privilegeOperator.getPrivilegesByRole(mRoles, pm));
-          return privileges;
-        }
-      });
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              Set<MSentryRole> mRoles = new HashSet<>();
+              for (String role : roles) {
+                MSentryRole mRole = getRole(toTrimmedLower(role), pm);
+                if (mRole != null) {
+                  mRoles.add(mRole);
+                }
+              }
+              return new HashSet<>(privilegeOperator.getPrivilegesByRole(mRoles, pm));
+            });
   }
 
   @Override
@@ -311,38 +296,36 @@ public class DelegateSentryStore implements SentryStoreLayer {
     Preconditions.checkNotNull(service);
 
     return delegate.getTransactionManager().executeTransaction(
-      new TransactionBlock<Set<PrivilegeObject>>() {
-        public Set<PrivilegeObject> execute(PersistenceManager pm) throws Exception {
-          pm.setDetachAllOnCommit(false); // No need to detach objects
-          String trimmedComponent = toTrimmedLower(component);
-          String trimmedService = toTrimmedLower(service);
+            pm -> {
+              pm.setDetachAllOnCommit(false); // No need to detach objects
+              String trimmedComponent = toTrimmedLower(component);
+              String trimmedService = toTrimmedLower(service);
 
-          //CaseInsensitive roleNames
-          Set<String> trimmedRoles = SentryStore.toTrimedLower(roles);
+              //CaseInsensitive roleNames
+              Set<String> trimmedRoles = SentryStore.toTrimedLower(roles);
 
-          if (groups != null) {
-            trimmedRoles.addAll(delegate.getRoleNamesForGroups(groups));
-          }
+              if (groups != null) {
+                trimmedRoles.addAll(delegate.getRoleNamesForGroups(groups));
+              }
 
-          if (trimmedRoles.isEmpty()) {
-            return Collections.emptySet();
-          }
+              if (trimmedRoles.isEmpty()) {
+                return Collections.emptySet();
+              }
 
-          Set<MSentryRole> mRoles = new HashSet<>(trimmedRoles.size());
-          for (String role : trimmedRoles) {
-            MSentryRole mRole = getRole(role, pm);
-            if (mRole != null) {
-              mRoles.add(mRole);
-            }
-          }
-          //get the privileges
-          Set<PrivilegeObject> privileges = new HashSet<>();
-          privileges.addAll(privilegeOperator.
-                  getPrivilegesByProvider(trimmedComponent,
-                          trimmedService, mRoles, authorizables, pm));
-          return privileges;
-        }
-      });
+              Set<MSentryRole> mRoles = new HashSet<>(trimmedRoles.size());
+              for (String role : trimmedRoles) {
+                MSentryRole mRole = getRole(role, pm);
+                if (mRole != null) {
+                  mRoles.add(mRole);
+                }
+              }
+              //get the privileges
+              Set<PrivilegeObject> privileges = new HashSet<>();
+              privileges.addAll(privilegeOperator.
+                      getPrivilegesByProvider(trimmedComponent,
+                              trimmedService, mRoles, authorizables, pm));
+              return privileges;
+            });
   }
 
   @Override
@@ -357,36 +340,34 @@ public class DelegateSentryStore implements SentryStoreLayer {
     Preconditions.checkNotNull(service);
 
     return delegate.getTransactionManager().executeTransaction(
-      new TransactionBlock<Set<MSentryGMPrivilege>>() {
-        public Set<MSentryGMPrivilege> execute(PersistenceManager pm) throws Exception {
-          String lComponent = toTrimmedLower(component);
-          String lService = toTrimmedLower(service);
-          Set<MSentryRole> mRoles = new HashSet<>(validActiveRoles.size());
-          for (String role : validActiveRoles) {
-            MSentryRole mRole = getRole(role, pm);
-            if (mRole != null) {
-              mRoles.add(mRole);
-            }
-          }
+            pm -> {
+              String lComponent = toTrimmedLower(component);
+              String lService = toTrimmedLower(service);
+              Set<MSentryRole> mRoles = new HashSet<>(validActiveRoles.size());
+              for (String role : validActiveRoles) {
+                MSentryRole mRole = getRole(role, pm);
+                if (mRole != null) {
+                  mRoles.add(mRole);
+                }
+              }
 
-          //get the privileges
-          Set<MSentryGMPrivilege> mSentryGMPrivileges =
-              privilegeOperator.getPrivilegesByAuthorizable(lComponent, lService,
-                      mRoles, authorizables, pm);
+              //get the privileges
+              Set<MSentryGMPrivilege> mSentryGMPrivileges =
+                  privilegeOperator.getPrivilegesByAuthorizable(lComponent, lService,
+                          mRoles, authorizables, pm);
 
-          final Set<MSentryGMPrivilege> privileges =
-                  new HashSet<>(mSentryGMPrivileges.size());
-          for (MSentryGMPrivilege mSentryGMPrivilege : mSentryGMPrivileges) {
-            /*
-             * force to load all roles related this privilege
-             * avoid the lazy-loading
-             */
-            pm.retrieve(mSentryGMPrivilege);
-            privileges.add(mSentryGMPrivilege);
-          }
-          return privileges;
-        }
-      });
+              final Set<MSentryGMPrivilege> privileges =
+                      new HashSet<>(mSentryGMPrivileges.size());
+              for (MSentryGMPrivilege mSentryGMPrivilege : mSentryGMPrivileges) {
+                /*
+                 * force to load all roles related this privilege
+                 * avoid the lazy-loading
+                 */
+                pm.retrieve(mSentryGMPrivilege);
+                privileges.add(mSentryGMPrivilege);
+              }
+              return privileges;
+            });
   }
 
    @Override
@@ -431,13 +412,11 @@ public class DelegateSentryStore implements SentryStoreLayer {
   @VisibleForTesting
   void clearAllTables() throws Exception {
     delegate.getTransactionManager().executeTransaction(
-        new TransactionBlock() {
-          public Object execute(PersistenceManager pm) throws Exception {
-            pm.newQuery(MSentryRole.class).deletePersistentAll();
-            pm.newQuery(MSentryGroup.class).deletePersistentAll();
-            pm.newQuery(MSentryGMPrivilege.class).deletePersistentAll();
-            return null;
-          }
-        });
+            pm -> {
+              pm.newQuery(MSentryRole.class).deletePersistentAll();
+              pm.newQuery(MSentryGroup.class).deletePersistentAll();
+              pm.newQuery(MSentryGMPrivilege.class).deletePersistentAll();
+              return null;
+            });
   }
 }
