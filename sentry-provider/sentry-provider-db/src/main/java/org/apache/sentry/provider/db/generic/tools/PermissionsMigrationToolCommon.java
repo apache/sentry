@@ -17,7 +17,6 @@
  */
 package org.apache.sentry.provider.db.generic.tools;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
@@ -242,32 +241,38 @@ public abstract class PermissionsMigrationToolCommon {
         for (TSentryPrivilege p : client.listAllPrivilegesByRoleName(requestorName,
             r.getRoleName(), component, serviceName)) {
 
-          Collection<String> privileges = Collections.singleton(converter.toString(p));
+          String privilegeStr = converter.toString(p);
+          Collection<String> privileges = Collections.singleton(privilegeStr);
           Collection<String> migrated = transformPrivileges(privileges);
           if (!migrated.isEmpty()) {
             LOGGER.info("{} For role {} migrating privileges from {} to {}", getDryRunMessage(), r.getRoleName(),
                 privileges, migrated);
 
-            if (!dryRun) {
-              Collection<TSentryPrivilege> tmp = new ArrayList<>();
-              for (String perm : migrated) {
-                tmp.add(converter.fromString(perm));
+            /*
+             * Note that it is not possible to provide transactional (all-or-nothing) behavior for these configuration
+             * changes since the Sentry client/server protocol does not support. e.g. under certain failure conditions
+             * like crash of Sentry server or network disconnect between client/server, it is possible that the migration
+             * can not complete but can also not be rolled back. Hence this migration tool relies on the fact that privilege
+             * grant/revoke operations are idempotent and hence re-execution of the migration tool will fix any inconsistency
+             * due to such failures.
+             **/
+            boolean originalPermPresent = false;
+            for (String perm : migrated) {
+              if (perm.equalsIgnoreCase(privilegeStr)) {
+                originalPermPresent = true;
+                continue;
               }
-
-              /*
-               * Note that it is not possible to provide transactional (all-or-nothing) behavior for these configuration
-               * changes since the Sentry client/server protocol does not support. e.g. under certain failure conditions
-               * like crash of Sentry server or network disconnect between client/server, it is possible that the migration
-               * can not complete but can also not be rolled back. Hence this migration tool relies on the fact that privilege
-               * grant/revoke operations are idempotent and hence re-execution of the migration tool will fix any inconsistency
-               * due to such failures.
-               **/
-              for (TSentryPrivilege x : tmp) { // grant new permissions
+              TSentryPrivilege x = converter.fromString(perm);
+              LOGGER.info("{} GRANT permission {}", getDryRunMessage(), perm);
+              if (!dryRun) {
                 client.grantPrivilege(requestorName, r.getRoleName(), component, x);
               }
+            }
 
-              // Revoke old permission (only if not part of migrated permissions)
-              if (!tmp.contains(p)) {
+            // Revoke old permission (only if not part of migrated permissions)
+            if (!originalPermPresent) {
+              LOGGER.info("{} REVOKE permission {}", getDryRunMessage(), privilegeStr);
+              if (!dryRun) {
                 client.revokePrivilege(requestorName, r.getRoleName(), component, p);
               }
             }
