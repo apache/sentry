@@ -267,6 +267,9 @@
              <column name="AUTHZ_OBJ_ID"/>
            </element>
        </field>
+       <fetch-group name="includingPaths">
+         <field name="paths"/>
+       </fetch-group>
        <field name="authzSnapshotID">
          <column name="AUTHZ_SNAPSHOT_ID" jdbc-type="BIGINT" allows-null="false"/>
        </field>

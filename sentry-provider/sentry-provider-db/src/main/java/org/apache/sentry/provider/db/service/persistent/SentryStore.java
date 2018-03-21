@@ -2605,8 +2605,11 @@ public class SentryStore {
     query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
     query.setFilter("this.authzSnapshotID == currentSnapshotID");
     query.declareParameters("long currentSnapshotID");
+
+    // Get path in batch to improve performance. The fectch groups are defined in package.jdo
+    pm.getFetchPlan().addGroup("includingPaths");
     Collection<MAuthzPathsMapping> authzToPathsMappings =
-            (Collection<MAuthzPathsMapping>) query.execute(currentSnapshotID);
+        (Collection<MAuthzPathsMapping>) query.execute(currentSnapshotID);
 
     // Walk each MAuthzPathsMapping object, get set of paths and push them all
     // into HMSPaths object contained in UpdateableAuthzPaths.
