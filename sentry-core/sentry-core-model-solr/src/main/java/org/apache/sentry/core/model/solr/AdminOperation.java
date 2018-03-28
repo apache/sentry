@@ -26,15 +26,15 @@ import java.util.Collection;
  * - Solr auto-scaling operations
  */
 public class AdminOperation extends SolrModelAuthorizable {
-  public static Collection<String> ENTITY_NAMES =
+  public static final Collection<String> ENTITY_NAMES =
       Arrays.asList(SolrConstants.ALL, "collections", "cores", "security", "metrics", "autoscaling");
 
-  public static AdminOperation ALL = new AdminOperation(SolrConstants.ALL);
-  public static AdminOperation COLLECTIONS = new AdminOperation("collections");
-  public static AdminOperation CORES = new AdminOperation("cores");
-  public static AdminOperation SECURITY = new AdminOperation("security");
-  public static AdminOperation METRICS = new AdminOperation("metrics");
-  public static AdminOperation AUTOSCALING = new AdminOperation("autoscaling");
+  public static final AdminOperation ALL = new AdminOperation(SolrConstants.ALL);
+  public static final AdminOperation COLLECTIONS = new AdminOperation("collections");
+  public static final AdminOperation CORES = new AdminOperation("cores");
+  public static final AdminOperation SECURITY = new AdminOperation("security");
+  public static final AdminOperation METRICS = new AdminOperation("metrics");
+  public static final AdminOperation AUTOSCALING = new AdminOperation("autoscaling");
 
   public AdminOperation (String name) {
     super (AuthorizableType.Admin, name);

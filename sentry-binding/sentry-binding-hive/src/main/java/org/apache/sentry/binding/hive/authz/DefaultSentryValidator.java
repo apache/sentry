@@ -201,19 +201,20 @@ public class DefaultSentryValidator extends SentryHiveAuthorizationValidator {
           }
         }
       }
-      String permsRequired = "";
       SentryOnFailureHookContext hookCtx =
           new SentryOnFailureHookContextImpl(context.getCommandString(), null, null, hiveOp, db,
               tab, Collections.<AccessURI>emptyList(), null,
                   authenticator.getUserName(), context.getIpAddress(), e, authzConf);
       SentryAuthorizerUtil.executeOnFailureHooks(hookCtx, authzConf);
+      StringBuilder permsRequired = new StringBuilder();
       for (String perm : hiveAuthzBinding.getLastQueryPrivilegeErrors()) {
-        permsRequired += perm + ";";
+        permsRequired.append(perm).append(";");
       }
-      SessionState.get().getConf().set(HiveAuthzConf.HIVE_SENTRY_AUTH_ERRORS, permsRequired);
+      String permsRequiredStr = permsRequired.toString();
+      SessionState.get().getConf().set(HiveAuthzConf.HIVE_SENTRY_AUTH_ERRORS, permsRequiredStr);
       String msg =
           HiveAuthzConf.HIVE_SENTRY_PRIVILEGE_ERROR_MESSAGE
-              + "\n Required privileges for this query: " + permsRequired;
+              + "\n Required privileges for this query: " + permsRequiredStr;
       throw new HiveAccessControlException(msg, e);
     } catch (Exception e) {
       throw new HiveAuthzPluginException(e.getClass()+ ": " + e.getMessage(), e);

@@ -465,8 +465,8 @@ public class KafkaAuthBinding {
 
   private java.util.Map<Resource, scala.collection.immutable.Set<Acl>> rolePrivilegesToResourceAcls(java.util.Map<String, scala.collection.immutable.Set<TSentryPrivilege>> rolePrivilegesMap) {
     final java.util.Map<Resource, scala.collection.immutable.Set<Acl>> resourceAclsMap = new HashMap<>();
-    for (String role : rolePrivilegesMap.keySet()) {
-      scala.collection.immutable.Set<TSentryPrivilege> privileges = rolePrivilegesMap.get(role);
+    for (java.util.Map.Entry<String, scala.collection.immutable.Set<TSentryPrivilege>> rolePrivilege : rolePrivilegesMap.entrySet()) {
+      scala.collection.immutable.Set<TSentryPrivilege> privileges = rolePrivilege.getValue();
       final Iterator<TSentryPrivilege> iterator = privileges.iterator();
       while (iterator.hasNext()) {
         TSentryPrivilege privilege = iterator.next();
@@ -481,7 +481,7 @@ public class KafkaAuthBinding {
             if (operation.equals("*")) {
               operation = "All";
             }
-            Acl acl = new Acl(new KafkaPrincipal("role", role), Allow$.MODULE$, host, Operation$.MODULE$.fromString(operation));
+            Acl acl = new Acl(new KafkaPrincipal("role", rolePrivilege.getKey()), Allow$.MODULE$, host, Operation$.MODULE$.fromString(operation));
             Set<Acl> newAclsJava = new HashSet<Acl>();
             newAclsJava.add(acl);
             addExistingAclsForResource(resourceAclsMap, resource, newAclsJava);
