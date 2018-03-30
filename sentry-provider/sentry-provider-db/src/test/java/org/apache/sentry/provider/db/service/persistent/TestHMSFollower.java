@@ -1255,7 +1255,7 @@ public class TestHMSFollower {
   }
 
   @Test
-  public void testNoHdfsSyncAlterTableNotPersisted() throws Exception {
+  public void testNoHdfsSyncAlterTableIsPersisted() throws Exception {
     String dbName = "db1";
     String tableName = "table1";
     String newDbName = "db1";
@@ -1290,7 +1290,7 @@ public class TestHMSFollower {
     newAuthorizable.setDb(newDbName);
     newAuthorizable.setTable(newTableName);
 
-    verify(sentryStore, times(0)).renamePrivilege(authorizable, newAuthorizable,
+    verify(sentryStore, times(1)).renamePrivilege(authorizable, newAuthorizable,
         NotificationProcessor.getPermUpdatableOnRename(authorizable, newAuthorizable));
   }
 }

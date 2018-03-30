@@ -33,7 +33,8 @@ public class TestHmsNotificationProcessingBase  extends TestHDFSIntegrationBase{
   protected final static int SHOW_GRANT_DB_POSITION = 1;
   protected static final String DB1 = "db_1",
           DB2 = "db_2",
-          tableName1 = "tb_1";
+          tableName1 = "tb_1",
+          tableName2 = "tb_2";
 
   // verify all the test privileges are dropped as we drop the objects
   protected void verifyPrivilegesDropped(Statement statement)

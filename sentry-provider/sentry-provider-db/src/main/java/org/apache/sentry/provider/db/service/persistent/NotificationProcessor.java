@@ -366,10 +366,6 @@ final class NotificationProcessor {
    */
   private boolean processAlterTable(NotificationEvent event) throws Exception {
 
-    if (!hdfsSyncEnabled) {
-      return false;
-    }
-
     SentryJSONAlterTableMessage alterTableMessage =
         deserializer.getAlterTableMessage(event.getMessage());
     String oldDbName = alterTableMessage.getDB();
@@ -418,6 +414,10 @@ final class NotificationProcessor {
         LOGGER.info("Could not process Alter table event. Event: {}", event.toString(), e);
         return false;
       }
+    }
+
+    if (!hdfsSyncEnabled) {
+      return false;
     }
     String oldAuthzObj = oldDbName + "." + oldTableName;
     String newAuthzObj = newDbName + "." + newTableName;
