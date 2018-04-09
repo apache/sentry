@@ -74,7 +74,7 @@ public class SentryConfigToolSolr extends SentryConfigToolCommon {
 
   private Configuration getSentryConf() {
     Configuration conf = new Configuration();
-    conf.addResource(new Path(getConfPath()));
+    conf.addResource(new Path(getConfPath()), true);
     return conf;
   }
 

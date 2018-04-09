@@ -82,7 +82,7 @@ public class KafkaAuthConf extends Configuration {
 
   public KafkaAuthConf(URL kafkaAuthzSiteURL) {
     super(true);
-    addResource(kafkaAuthzSiteURL);
+    addResource(kafkaAuthzSiteURL, true);
   }
 
   @Override

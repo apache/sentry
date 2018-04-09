@@ -330,7 +330,7 @@ public abstract class PermissionsMigrationToolCommon {
   private Configuration getSentryConf() {
     Configuration conf = new Configuration();
     if (confPath.isPresent()) {
-      conf.addResource(new Path(confPath.get()));
+      conf.addResource(new Path(confPath.get()), true);
     }
     return conf;
   }

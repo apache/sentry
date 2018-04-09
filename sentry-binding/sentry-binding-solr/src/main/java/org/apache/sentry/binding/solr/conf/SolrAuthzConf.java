@@ -85,7 +85,7 @@ public class SolrAuthzConf extends Configuration {
   public SolrAuthzConf(List<URL> sentryConf) {
     super(true);
     for (URL u : sentryConf) {
-      addResource(u);
+      addResource(u, true);
     }
   }
 

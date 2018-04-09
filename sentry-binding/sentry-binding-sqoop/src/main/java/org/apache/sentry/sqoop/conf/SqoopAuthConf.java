@@ -68,7 +68,7 @@ public class SqoopAuthConf extends Configuration {
 
   public SqoopAuthConf(URL sqoopAuthzSiteURL) {
     super(true);
-    addResource(sqoopAuthzSiteURL);
+    addResource(sqoopAuthzSiteURL, true);
   }
 
   @Override

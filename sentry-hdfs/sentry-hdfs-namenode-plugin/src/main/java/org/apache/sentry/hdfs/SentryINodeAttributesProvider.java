@@ -293,7 +293,7 @@ public class SentryINodeAttributesProvider extends INodeAttributeProvider
         throw new RuntimeException("HDFS ACLs must be enabled");
       }
       Configuration conf = new Configuration(this.conf);
-      conf.addResource(SentryAuthorizationConstants.CONFIG_FILE);
+      conf.addResource(SentryAuthorizationConstants.CONFIG_FILE, true);
       user = conf.get(SentryAuthorizationConstants.HDFS_USER_KEY,
               SentryAuthorizationConstants.HDFS_USER_DEFAULT);
       group = conf.get(SentryAuthorizationConstants.HDFS_GROUP_KEY,

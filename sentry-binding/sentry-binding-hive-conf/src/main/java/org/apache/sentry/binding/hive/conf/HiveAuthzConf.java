@@ -178,7 +178,7 @@ public class HiveAuthzConf extends Configuration {
     public HiveAuthzConf(URL hiveAuthzSiteURL) {
         super();
         LOG.info("DefaultFS: " + super.get("fs.defaultFS"));
-        addResource(hiveAuthzSiteURL);
+        addResource(hiveAuthzSiteURL, true);
         applySystemProperties();
         this.hiveAuthzSiteFile = hiveAuthzSiteURL.toString();
     }

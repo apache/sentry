@@ -114,7 +114,7 @@ public class CreateSentryTestScaleData {
     try {
       url = new File(fullPath.toString()).toURI().toURL();
       System.out.println("Reading config file from url: " + url.toString());
-      scaleConfig.addResource(url);
+      scaleConfig.addResource(url, true);
     } catch (Exception ex) {
       System.err.println("Failed to load config file from local file system: " + url.toString());
       throw new RuntimeException(ex);

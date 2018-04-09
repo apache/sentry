@@ -141,7 +141,7 @@ public class SentryCli {
     Configuration conf = new Configuration();
 
     if (pathConf != null) {
-      conf.addResource(new Path(pathConf));
+      conf.addResource(new Path(pathConf), true);
     } else {
       conf.set(SECURITY_MODE, SECURITY_MODE_NONE);
     }

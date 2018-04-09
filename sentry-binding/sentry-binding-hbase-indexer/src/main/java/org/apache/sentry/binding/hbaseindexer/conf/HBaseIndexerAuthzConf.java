@@ -74,7 +74,7 @@ public class HBaseIndexerAuthzConf extends Configuration {
 
   public HBaseIndexerAuthzConf(URL hbaseIndexerAuthzSiteURL) {
     super(true);
-    addResource(hbaseIndexerAuthzSiteURL);
+    addResource(hbaseIndexerAuthzSiteURL, true);
   }
 
   @Override

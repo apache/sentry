@@ -45,7 +45,7 @@ public class HadoopGroupMappingService implements GroupMappingService {
           hadoopConf = new Configuration();
           hadoopConf.addResource(conf);
           if (!StringUtils.isEmpty(resource)) {
-            hadoopConf.addResource(resource);
+            hadoopConf.addResource(resource, true);
           }
         }
       }
