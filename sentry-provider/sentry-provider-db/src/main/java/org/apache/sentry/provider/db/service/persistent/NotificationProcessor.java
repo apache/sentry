@@ -408,7 +408,7 @@ final class NotificationProcessor {
       try {
         renamePrivileges(oldDbName, oldTableName, newDbName, newTableName);
       } catch (SentryNoSuchObjectException e) {
-        LOGGER.info("Rename Sentry privilege ignored as there are no privileges on the table:"
+        LOGGER.debug("Rename Sentry privilege ignored as there are no privileges on the table:"
             + " {}.{}", oldDbName, oldTableName);
       } catch (Exception e) {
         LOGGER.info("Could not process Alter table event. Event: {}", event.toString(), e);
@@ -688,6 +688,7 @@ final class NotificationProcessor {
         updateAuthzPathsMapping(oldAuthzObj, oldPathTree, newAuthzObj, newPathTree,event);
       }
     } else {
+      // This code should not be hit as appropriate checks are performed by the callers of this method.
       LOGGER.error("Update Notification for Auhorizable object {}, with no change, skipping",
           oldAuthzObj);
       throw new SentryInvalidHMSEventException("Update Notification for Authorizable object"
@@ -735,7 +736,7 @@ final class NotificationProcessor {
       authorizable.setDb(dbName);
       sentryStore.dropPrivilege(authorizable, getPermUpdatableOnDrop(authorizable));
     } catch (SentryNoSuchObjectException e) {
-      LOGGER.info("Drop Sentry privilege ignored as there are no privileges on the database: {}",
+      LOGGER.debug("Drop Sentry privilege ignored as there are no privileges on the database: {}",
           dbName);
     } catch (Exception e) {
       LOGGER.error("Could not process Drop database event." + "Event: " + event.toString(), e);
@@ -750,7 +751,7 @@ final class NotificationProcessor {
       authorizable.setTable(tableName);
       sentryStore.dropPrivilege(authorizable, getPermUpdatableOnDrop(authorizable));
     } catch (SentryNoSuchObjectException e) {
-      LOGGER.info("Drop Sentry privilege ignored as there are no privileges on the table: {}.{}",
+      LOGGER.debug("Drop Sentry privilege ignored as there are no privileges on the table: {}.{}",
           dbName, tableName);
     } catch (Exception e) {
       LOGGER.error("Could not process Drop table event. Event: " + event.toString(), e);
