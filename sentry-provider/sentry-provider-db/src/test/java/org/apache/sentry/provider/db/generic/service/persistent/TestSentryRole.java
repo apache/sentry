@@ -64,8 +64,6 @@ public class TestSentryRole {
     prop.setProperty(ServerConfig.JAVAX_JDO_PASS, "Sentry");
     prop.setProperty(ServerConfig.JAVAX_JDO_DRIVER_NAME, "org.apache.derby.jdbc.EmbeddedDriver");
     prop.setProperty("datanucleus.schema.autoCreateAll", "true");
-    prop.setProperty("datanucleus.autoCreateSchema", "true");
-    prop.setProperty("datanucleus.fixedDatastore", "false");
     prop.setProperty("datanucleus.NontransactionalRead", "false");
     prop.setProperty("datanucleus.NontransactionalWrite", "false");
     pmf = JDOHelper.getPersistenceManagerFactory(prop);

@@ -593,8 +593,7 @@ public abstract class TestHDFSIntegrationBase {
         hiveConf.set("javax.jdo.option.ConnectionDriverName", "org.apache.derby.jdbc.EmbeddedDriver");
         hiveConf.set("javax.jdo.option.ConnectionUserName", "hive");
         hiveConf.set("javax.jdo.option.ConnectionPassword", "hive");
-        hiveConf.set("datanucleus.autoCreateSchema", "true");
-        hiveConf.set("datanucleus.fixedDatastore", "false");
+        hiveConf.set("datanucleus.schema.autoCreateAll", "true");
         hiveConf.set("datanucleus.autoStartMechanism", "SchemaTable");
         hiveConf.set("datanucleus.schema.autoCreateTables", "true");
 

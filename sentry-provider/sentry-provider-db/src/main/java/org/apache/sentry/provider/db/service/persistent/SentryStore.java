@@ -270,8 +270,6 @@ public class SentryStore {
 
     if (!checkSchemaVersion) {
       prop.setProperty("datanucleus.schema.autoCreateAll", "true");
-      prop.setProperty("datanucleus.autoCreateSchema", "true");
-      prop.setProperty("datanucleus.fixedDatastore", "false");
     }
     pmf = JDOHelper.getPersistenceManagerFactory(prop);
     tm = new TransactionManager(pmf, conf);
