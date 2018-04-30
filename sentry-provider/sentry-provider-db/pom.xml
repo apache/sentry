@@ -398,6 +398,19 @@ limitations under the License.
           </execution>
         </executions>
       </plugin>
+      <!--This is to export SentryGenericServiceIntegrationBase across Modules -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>2.2</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
     <pluginManagement>
       <plugins>

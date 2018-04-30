@@ -54,15 +54,15 @@ for f in ${SENTRY_HOME}/lib/plugins/*.jar; do
 done
 
 args=()
-shell=org.apache.sentry.provider.db.tools.SentryShellHive
+shell=org.apache.sentry.cli.tools.SentryShellHive
 # get the type argument for the command
 while [ $# -gt 0 ]; do    # Until you run out of parameters . . .
   if [[ "$1" = "-t" || "$1" = "--type" ]]; then
     case $2 in
-      "hive") shell=org.apache.sentry.provider.db.tools.SentryShellHive ;;
-      "kafka") shell=org.apache.sentry.provider.db.generic.tools.SentryShellGeneric ;;
-      "solr") shell=org.apache.sentry.provider.db.generic.tools.SentryShellGeneric ;;
-      "sqoop") shell=org.apache.sentry.provider.db.generic.tools.SentryShellGeneric ;;
+      "hive") shell=org.apache.sentry.cli.tools.SentryShellHive ;;
+      "kafka") shell=org.apache.sentry.cli.tools.SentryShellGeneric ;;
+      "solr") shell=org.apache.sentry.cli.tools.SentryShellGeneric ;;
+      "sqoop") shell=org.apache.sentry.cli.tools.SentryShellGeneric ;;
       *) echo "Doesn't support the type $2!"; exit 1 ;;
     esac
   fi

@@ -22,11 +22,11 @@ import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.provider.common.AuthorizationComponent;
 import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
 import org.apache.sentry.provider.db.generic.tools.GenericPrivilegeConverter;
-import org.apache.sentry.provider.db.generic.tools.command.GenericShellCommand;
-import org.apache.sentry.provider.db.generic.tools.command.TSentryPrivilegeConverter;
+import org.apache.sentry.cli.tools.command.GenericShellCommand;
+import org.apache.sentry.provider.db.generic.tools.TSentryPrivilegeConverter;
 import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
-import org.apache.sentry.provider.db.tools.ShellCommand;
-import org.apache.sentry.provider.db.tools.command.hive.HiveShellCommand;
+import org.apache.sentry.cli.tools.ShellCommand;
+import org.apache.sentry.cli.tools.command.hive.HiveShellCommand;
 
 import com.budhash.cliche.Command;
 import com.budhash.cliche.Param;

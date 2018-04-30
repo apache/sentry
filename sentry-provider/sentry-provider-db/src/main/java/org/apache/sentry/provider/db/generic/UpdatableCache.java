@@ -18,7 +18,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.provider.common.TableCache;
 import org.apache.sentry.provider.db.generic.service.thrift.*;
-import org.apache.sentry.provider.db.generic.tools.command.TSentryPrivilegeConverter;
+import org.apache.sentry.provider.db.generic.tools.TSentryPrivilegeConverter;
 import org.apache.sentry.service.thrift.ServiceConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

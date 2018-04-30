@@ -23,7 +23,7 @@ import com.budhash.cliche.Shell;
 import com.budhash.cliche.ShellDependent;
 
 import org.apache.sentry.core.common.exception.SentryUserException;
-import org.apache.sentry.provider.db.tools.ShellCommand;
+import org.apache.sentry.cli.tools.ShellCommand;
 
 import java.util.Arrays;
 import java.util.Collections;

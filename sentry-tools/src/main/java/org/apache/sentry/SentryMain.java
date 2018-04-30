@@ -24,7 +24,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.log4j.PropertyConfigurator;
 import org.apache.sentry.binding.hive.authz.SentryConfigTool;
-import org.apache.sentry.provider.db.tools.SentrySchemaTool;
+import org.apache.sentry.cli.tools.SentrySchemaTool;
 import org.apache.sentry.service.thrift.SentryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
