@@ -1,2 +1,6 @@
+-- create index for foreign key AUTHZ_OBJ_ID
+CREATE INDEX AUTHZ_PATH_FK_IDX ON AUTHZ_PATH (AUTHZ_OBJ_ID);
+
 -- Version update
 UPDATE SENTRY_VERSION SET SCHEMA_VERSION='2.1.0', VERSION_COMMENT='Sentry release version 2.1.0' WHERE VER_ID=1;
+
