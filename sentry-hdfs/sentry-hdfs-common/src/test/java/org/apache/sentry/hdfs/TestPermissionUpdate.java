@@ -21,6 +21,8 @@ package org.apache.sentry.hdfs;
 import junit.framework.Assert;
 import org.apache.sentry.hdfs.service.thrift.TPermissionsUpdate;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntity;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntityType;
 import org.apache.thrift.TException;
 import org.junit.Test;
 
@@ -30,8 +32,8 @@ public class TestPermissionUpdate {
   public void testSerializeDeserializeInJSON() throws TException {
     PermissionsUpdate update = new PermissionsUpdate(0, false);
     TPrivilegeChanges privUpdate = update.addPrivilegeUpdate(PermissionsUpdate.RENAME_PRIVS);
-    privUpdate.putToAddPrivileges("newAuthz", "newAuthz");
-    privUpdate.putToDelPrivileges("oldAuthz", "oldAuthz");
+    privUpdate.putToAddPrivileges(new TPrivilegeEntity(TPrivilegeEntityType.ROLE, "newAuthz"), "newAuthz");
+    privUpdate.putToDelPrivileges(new TPrivilegeEntity(TPrivilegeEntityType.ROLE, "oldAuthz"), "oldAuthz");
 
     // Serialize and deserialize the PermssionUpdate object should equals to the original one.
     TPermissionsUpdate before = update.toThrift();

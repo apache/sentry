@@ -56,6 +56,7 @@ import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
 import org.apache.sentry.hdfs.PathsUpdate;
 import org.apache.sentry.hdfs.UniquePathsUpdate;
 import org.apache.sentry.hdfs.UpdateableAuthzPaths;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntityType;
 import org.apache.sentry.provider.db.service.model.MAuthzPathsMapping;
 import org.apache.sentry.provider.db.service.model.MAuthzPathsSnapshotId;
 import org.apache.sentry.provider.db.service.model.MSentryChange;
@@ -78,6 +79,7 @@ import org.apache.sentry.provider.db.service.thrift.TSentryMappingData;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilegeMap;
 import org.apache.sentry.provider.db.service.thrift.TSentryRole;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntity;
 import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
 import org.datanucleus.store.rdbms.exceptions.MissingTableException;
@@ -2471,7 +2473,7 @@ public class SentryStore {
               // enable SentryPlugin(HDFS Sync feature).
               long curChangeID = getLastProcessedChangeIDCore(pm, MSentryPermChange.class);
               Map<String, List<String>> roleImage = retrieveFullRoleImageCore(pm);
-              Map<String, Map<String, String>> privilegeMap = retrieveFullPrivilegeImageCore(pm);
+              Map<String, Map<TPrivilegeEntity, String>> privilegeMap = retrieveFullPrivilegeImageCore(pm);
 
               return new PermissionsImage(roleImage, privilegeMap, curChangeID);
             });
@@ -2485,11 +2487,11 @@ public class SentryStore {
    * @return a mapping of hiveObj to &lt role, privileges &gt
    * @throws Exception
    */
-   private Map<String, Map<String, String>> retrieveFullPrivilegeImageCore(PersistenceManager pm)
+   private Map<String, Map<TPrivilegeEntity, String>> retrieveFullPrivilegeImageCore(PersistenceManager pm)
         throws Exception {
      pm.setDetachAllOnCommit(false); // No need to detach objects
 
-    Map<String, Map<String, String>> retVal = new HashMap<>();
+    Map<String, Map<TPrivilegeEntity, String>> retVal = new HashMap<>();
     Query query = pm.newQuery(MSentryPrivilege.class);
     query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
 
@@ -2508,7 +2510,7 @@ public class SentryStore {
       if (!isNULL(mPriv.getTableName())) {
         authzObj = authzObj + "." + mPriv.getTableName();
       }
-      Map<String, String> pUpdate = retVal.get(authzObj);
+      Map<TPrivilegeEntity, String> pUpdate = retVal.get(authzObj);
       if (pUpdate == null) {
         pUpdate = new HashMap<>();
         retVal.put(authzObj, pUpdate);
@@ -2516,9 +2518,11 @@ public class SentryStore {
       for (MSentryRole mRole : mPriv.getRoles()) {
         String existingPriv = pUpdate.get(mRole.getRoleName());
         if (existingPriv == null) {
-          pUpdate.put(mRole.getRoleName(), mPriv.getAction().toUpperCase());
+          pUpdate.put(new TPrivilegeEntity(TPrivilegeEntityType.ROLE, mRole.getRoleName()),
+                  mPriv.getAction().toUpperCase());
         } else {
-          pUpdate.put(mRole.getRoleName(), existingPriv + "," + mPriv.getAction().toUpperCase());
+          pUpdate.put(new TPrivilegeEntity(TPrivilegeEntityType.ROLE, mRole.getRoleName()), existingPriv + "," +
+                  mPriv.getAction().toUpperCase());
         }
       }
     }

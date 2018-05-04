@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 
+import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntity;
 import org.apache.sentry.hdfs.service.thrift.TPermissionsUpdate;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
 import org.apache.sentry.hdfs.service.thrift.TRoleChanges;
@@ -82,7 +83,7 @@ public class PermissionsUpdate implements Updateable.Update {
       return tPermUpdate.getPrivilegeChanges().get(authzObj);
     }
     TPrivilegeChanges privUpdate = new TPrivilegeChanges(authzObj,
-        new HashMap<String, String>(), new HashMap<String, String>());
+        new HashMap<TPrivilegeEntity, String>(), new HashMap<TPrivilegeEntity, String>());
     tPermUpdate.getPrivilegeChanges().put(authzObj, privUpdate);
     return privUpdate;
   }

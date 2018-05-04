@@ -56,6 +56,8 @@ import org.apache.sentry.hdfs.service.thrift.TPathEntry;
 import org.apache.sentry.hdfs.service.thrift.TPathsDump;
 import org.apache.sentry.hdfs.service.thrift.TPathsUpdate;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntity;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntityType;
 import org.apache.sentry.hdfs.service.thrift.TRoleChanges;
 import org.apache.sentry.provider.db.service.model.MSentryPermChange;
 import org.apache.sentry.provider.db.service.model.MSentryPathChange;
@@ -2440,7 +2442,7 @@ public class TestSentryStore extends org.junit.Assert {
     sentryStore.alterSentryRoleAddGroups(grantor, roleName2, groups);
 
     PermissionsImage permImage = sentryStore.retrieveFullPermssionsImage();
-    Map<String, Map<String, String>> privs = permImage.getPrivilegeImage();
+    Map<String, Map<TPrivilegeEntity, String>> privs = permImage.getPrivilegeImage();
     Map<String, List<String>> roles = permImage.getRoleImage();
     assertEquals(2, privs.get("db1.tbl1").size());
     assertEquals(2, roles.size());
@@ -3084,7 +3086,7 @@ public class TestSentryStore extends org.junit.Assert {
     // Generate the permission add update authzObj "db1.tbl1"
     PermissionsUpdate addUpdate = new PermissionsUpdate(0, false);
     addUpdate.addPrivilegeUpdate(authzObj).putToAddPrivileges(
-        roleName, privilege.getAction().toUpperCase());
+        new TPrivilegeEntity(TPrivilegeEntityType.ROLE, roleName), privilege.getAction().toUpperCase());
 
     // Grant the privilege to role test-privilege and verify it has been persisted.
     Map<TSentryPrivilege, Updateable.Update> addPrivilegesUpdateMap = Maps.newHashMap();
@@ -3103,7 +3105,8 @@ public class TestSentryStore extends org.junit.Assert {
     // Generate the permission delete update authzObj "db1.tbl1"
     PermissionsUpdate delUpdate = new PermissionsUpdate(0, false);
     delUpdate.addPrivilegeUpdate(authzObj).putToDelPrivileges(
-        roleName, privilege.getAction().toUpperCase());
+            new TPrivilegeEntity(TPrivilegeEntityType.ROLE, roleName),
+            privilege.getAction().toUpperCase());
 
     // Revoke the same privilege and verify it has been removed.
     Map<TSentryPrivilege, Updateable.Update> delPrivilegesUpdateMap = Maps.newHashMap();
@@ -3184,7 +3187,8 @@ public class TestSentryStore extends org.junit.Assert {
     // Generate the permission del update for dropping role "test-drop-role"
     PermissionsUpdate delUpdate = new PermissionsUpdate(0, false);
     delUpdate.addPrivilegeUpdate(PermissionsUpdate.ALL_AUTHZ_OBJ).putToDelPrivileges(
-            roleName, PermissionsUpdate.ALL_AUTHZ_OBJ);
+            new TPrivilegeEntity(TPrivilegeEntityType.ROLE, roleName),
+            PermissionsUpdate.ALL_AUTHZ_OBJ);
     delUpdate.addRoleUpdate(roleName).addToDelGroups(PermissionsUpdate.ALL_GROUPS);
 
     // Drop the role and verify.
@@ -3217,7 +3221,8 @@ public class TestSentryStore extends org.junit.Assert {
 
     // Generate the permission drop update for dropping privilege for "db1.tbl1"
     PermissionsUpdate dropUpdate = new PermissionsUpdate(0, false);
-    dropUpdate.addPrivilegeUpdate(authzObj).putToDelPrivileges(PermissionsUpdate.ALL_ROLES,
+    dropUpdate.addPrivilegeUpdate(authzObj).putToDelPrivileges(new TPrivilegeEntity(TPrivilegeEntityType.ROLE,
+            PermissionsUpdate.ALL_ROLES),
             PermissionsUpdate.ALL_ROLES);
 
     // Drop the privilege and verify.
@@ -3254,8 +3259,8 @@ public class TestSentryStore extends org.junit.Assert {
     String newAuthz = "db1.tbl2";
     PermissionsUpdate renameUpdate = new PermissionsUpdate(0, false);
     TPrivilegeChanges privUpdate = renameUpdate.addPrivilegeUpdate(PermissionsUpdate.RENAME_PRIVS);
-    privUpdate.putToAddPrivileges(newAuthz, newAuthz);
-    privUpdate.putToDelPrivileges(oldAuthz, oldAuthz);
+    privUpdate.putToAddPrivileges(new TPrivilegeEntity(TPrivilegeEntityType.AUTHZ_OBJ, newAuthz), newAuthz);
+    privUpdate.putToDelPrivileges(new TPrivilegeEntity(TPrivilegeEntityType.AUTHZ_OBJ, oldAuthz), oldAuthz);
 
     // Rename the privilege and verify.
     TSentryAuthorizable oldTable = toTSentryAuthorizable(privilege_tbl1);

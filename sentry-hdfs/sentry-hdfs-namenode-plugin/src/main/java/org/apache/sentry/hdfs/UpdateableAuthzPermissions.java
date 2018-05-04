@@ -29,6 +29,8 @@ import org.apache.hadoop.fs.permission.AclEntry;
 import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.sentry.hdfs.SentryPermissions.PrivilegeInfo;
 import org.apache.sentry.hdfs.SentryPermissions.RoleInfo;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntity;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntityType;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
 import org.apache.sentry.hdfs.service.thrift.TRoleChanges;
 import org.apache.sentry.hdfs.service.thrift.sentry_hdfs_serviceConstants;
@@ -122,10 +124,20 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
   }
 
   private void applyPrivilegeUpdates(PermissionsUpdate update) {
+    TPrivilegeEntity addPrivEntity, delPrivEntity;
     for (TPrivilegeChanges pUpdate : update.getPrivilegeUpdates()) {
       if (pUpdate.getAuthzObj().equals(PermissionsUpdate.RENAME_PRIVS)) {
-        String newAuthzObj = pUpdate.getAddPrivileges().keySet().iterator().next();
-        String oldAuthzObj = pUpdate.getDelPrivileges().keySet().iterator().next();
+        addPrivEntity = pUpdate.getAddPrivileges().keySet().iterator().next();
+        delPrivEntity = pUpdate.getDelPrivileges().keySet().iterator().next();
+        if(addPrivEntity.getType() != TPrivilegeEntityType.AUTHZ_OBJ ||
+             delPrivEntity.getType() != TPrivilegeEntityType.AUTHZ_OBJ) {
+          LOG.warn("Invalid Permission Update, Received Rename update with wrong data, (Add) Type: {}, Value:{} " +
+            "(Del) Type: {}, Value:{}", addPrivEntity.getType(), addPrivEntity.getValue(),
+            delPrivEntity.getType(), delPrivEntity.getValue());
+          continue;
+        }
+        String newAuthzObj = addPrivEntity.getValue();
+        String oldAuthzObj = delPrivEntity.getValue();
         PrivilegeInfo privilegeInfo = perms.getPrivilegeInfo(oldAuthzObj);
         // The privilegeInfo object can be null if no explicit Privileges
         // have been granted on the object. For eg. If grants have been applied on
@@ -146,30 +158,30 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
       }
       if (pUpdate.getAuthzObj().equals(PermissionsUpdate.ALL_AUTHZ_OBJ)) {
         // Request to remove role from all Privileges
-        String roleToRemove = pUpdate.getDelPrivileges().keySet().iterator()
-            .next();
+        delPrivEntity = pUpdate.getDelPrivileges().keySet().iterator().next();
+        String roleToRemove = delPrivEntity.getValue();
         for (PrivilegeInfo pInfo : perms.getAllPrivileges()) {
           pInfo.removePermission(roleToRemove);
         }
       }
       PrivilegeInfo pInfo = perms.getPrivilegeInfo(pUpdate.getAuthzObj());
-      for (Map.Entry<String, String> aMap : pUpdate.getAddPrivileges().entrySet()) {
+      for (Map.Entry<TPrivilegeEntity, String> aMap : pUpdate.getAddPrivileges().entrySet()) {
         if (pInfo == null) {
           pInfo = new PrivilegeInfo(pUpdate.getAuthzObj());
         }
-        FsAction fsAction = pInfo.getPermission(aMap.getKey());
+        FsAction fsAction = pInfo.getPermission(aMap.getKey().getValue());
         if (fsAction == null) {
           fsAction = getFAction(aMap.getValue());
         } else {
           fsAction = fsAction.or(getFAction(aMap.getValue()));
         }
-        pInfo.setPermission(aMap.getKey(), fsAction);
+        pInfo.setPermission(aMap.getKey().getValue(), fsAction);
       }
       if (pInfo != null) {
         perms.addPrivilegeInfo(pInfo);
         perms.addParentChildMappings(pUpdate.getAuthzObj());
-        for (Map.Entry<String, String> dMap : pUpdate.getDelPrivileges().entrySet()) {
-          if (dMap.getKey().equals(PermissionsUpdate.ALL_ROLES)) {
+        for (Map.Entry<TPrivilegeEntity, String> dMap : pUpdate.getDelPrivileges().entrySet()) {
+          if (dMap.getKey().getValue().equals(PermissionsUpdate.ALL_ROLES)) {
             // Remove all privileges
             perms.delPrivilegeInfo(pUpdate.getAuthzObj());
             perms.removeParentChildMappings(pUpdate.getAuthzObj());
@@ -185,13 +197,13 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
           }
           // recursive revoke
           for (PrivilegeInfo pInfo2 : parentAndChild) {
-            FsAction fsAction = pInfo2.getPermission(dMap.getKey());
+            FsAction fsAction = pInfo2.getPermission(dMap.getKey().getValue());
             if (fsAction != null) {
               fsAction = fsAction.and(getFAction(dMap.getValue()).not());
               if (FsAction.NONE == fsAction) {
-                pInfo2.removePermission(dMap.getKey());
+                pInfo2.removePermission(dMap.getKey().getValue());
               } else {
-                pInfo2.setPermission(dMap.getKey(), fsAction);
+                pInfo2.setPermission(dMap.getKey().getValue(), fsAction);
               }
             }
           }
@@ -233,7 +245,8 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
     for (PrivilegeInfo pInfo : perms.getAllPrivileges()) {
       TPrivilegeChanges pUpdate = retVal.addPrivilegeUpdate(pInfo.getAuthzObj());
       for (Map.Entry<String, FsAction> ent : pInfo.getAllPermissions().entrySet()) {
-        pUpdate.putToAddPrivileges(ent.getKey(), ent.getValue().SYMBOL);
+        pUpdate.putToAddPrivileges(new TPrivilegeEntity(TPrivilegeEntityType.ROLE, ent.getKey()),
+                ent.getValue().SYMBOL);
       }
     }
     for (RoleInfo rInfo : perms.getAllRoles()) {

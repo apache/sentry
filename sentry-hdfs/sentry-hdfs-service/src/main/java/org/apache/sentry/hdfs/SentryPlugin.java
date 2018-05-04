@@ -28,6 +28,8 @@ import org.apache.sentry.core.common.utils.PubSub;
 import org.apache.sentry.core.common.utils.SigUtils;
 import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntity;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntityType;
 import org.apache.sentry.hdfs.service.thrift.TRoleChanges;
 import org.apache.sentry.provider.db.SentryPolicyStorePlugin;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
@@ -280,8 +282,8 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     }
 
     PermissionsUpdate update = new PermissionsUpdate();
-    update.addPrivilegeUpdate(authzObj).putToAddPrivileges(
-        roleName, privilege.getAction().toUpperCase());
+    update.addPrivilegeUpdate(authzObj).putToAddPrivileges( new TPrivilegeEntity(TPrivilegeEntityType.ROLE, roleName),
+        privilege.getAction().toUpperCase());
 
     LOGGER.debug(String.format("onAlterSentryRoleGrantPrivilegeCore, Authz Perm preUpdate [ %s ]",
                   authzObj));
@@ -306,8 +308,8 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     }
     PermissionsUpdate update = new PermissionsUpdate();
     TPrivilegeChanges privUpdate = update.addPrivilegeUpdate(PermissionsUpdate.RENAME_PRIVS);
-    privUpdate.putToAddPrivileges(newAuthz, newAuthz);
-    privUpdate.putToDelPrivileges(oldAuthz, oldAuthz);
+    privUpdate.putToAddPrivileges(new TPrivilegeEntity(TPrivilegeEntityType.AUTHZ_OBJ, newAuthz), newAuthz);
+    privUpdate.putToDelPrivileges(new TPrivilegeEntity(TPrivilegeEntityType.AUTHZ_OBJ,oldAuthz), oldAuthz);
 
     LOGGER.debug("onRenameSentryPrivilege, Authz Perm preUpdate [ {} ]", oldAuthz);
     if (LOGGER.isTraceEnabled()) {
@@ -352,7 +354,8 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
 
     PermissionsUpdate update = new PermissionsUpdate();
     update.addPrivilegeUpdate(authzObj).putToDelPrivileges(
-        roleName, privilege.getAction().toUpperCase());
+            new TPrivilegeEntity(TPrivilegeEntityType.ROLE,roleName),
+            privilege.getAction().toUpperCase());
 
     LOGGER.debug("onAlterSentryRoleRevokePrivilegeCore, Authz Perm preUpdate [ {} ]", authzObj);
     return update;
@@ -367,7 +370,8 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     }
     PermissionsUpdate update = new PermissionsUpdate();
     update.addPrivilegeUpdate(PermissionsUpdate.ALL_AUTHZ_OBJ).putToDelPrivileges(
-        request.getRoleName(), PermissionsUpdate.ALL_AUTHZ_OBJ);
+            new TPrivilegeEntity(TPrivilegeEntityType.ROLE, request.getRoleName()),
+            PermissionsUpdate.ALL_AUTHZ_OBJ);
     update.addRoleUpdate(request.getRoleName()).addToDelGroups(PermissionsUpdate.ALL_GROUPS);
 
     LOGGER.debug("onDropSentryRole, Authz Perm preUpdate [ {} ]", request.getRoleName());
@@ -395,7 +399,8 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
       throw new SentryPluginException(failure.getMessage(), failure);
     }
     update.addPrivilegeUpdate(authzObj).putToDelPrivileges(
-        PermissionsUpdate.ALL_ROLES, PermissionsUpdate.ALL_ROLES);
+            new TPrivilegeEntity(TPrivilegeEntityType.ROLE,PermissionsUpdate.ALL_ROLES),
+            PermissionsUpdate.ALL_ROLES);
 
     LOGGER.debug("onDropSentryPrivilege, Authz Perm preUpdate [ {} ]", authzObj);
     if (LOGGER.isTraceEnabled()) {

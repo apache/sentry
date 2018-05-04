@@ -22,6 +22,7 @@ import org.apache.sentry.core.common.utils.PubSub;
 import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
 import org.apache.sentry.hdfs.service.thrift.TAuthzUpdateRequest;
 import org.apache.sentry.hdfs.service.thrift.TAuthzUpdateResponse;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntity;
 import org.apache.sentry.provider.db.SentryPolicyStorePlugin;
 import org.apache.sentry.provider.db.service.model.MSentryPathChange;
 import org.apache.sentry.provider.db.service.model.MSentryPermChange;
@@ -64,7 +65,7 @@ public class TestSentryHDFSServiceProcessor {
     Mockito.when(sentryStoreMock.getLastProcessedPermChangeID())
         .thenReturn(1L);
     Mockito.when(sentryStoreMock.retrieveFullPermssionsImage())
-        .thenReturn(new PermissionsImage(new HashMap<String, List<String>>(), new HashMap<String, Map<String, String>>(), 1));
+        .thenReturn(new PermissionsImage(new HashMap<String, List<String>>(), new HashMap<String, Map<TPrivilegeEntity, String>>(), 1));
 
     TAuthzUpdateRequest updateRequest = new TAuthzUpdateRequest(1, 1, 0);
     TAuthzUpdateResponse sentryUpdates= serviceProcessor.get_authz_updates(updateRequest);
@@ -91,7 +92,7 @@ public class TestSentryHDFSServiceProcessor {
     Mockito.when(sentryStoreMock.getLastProcessedPermChangeID())
         .thenReturn(3L);
     Mockito.when(sentryStoreMock.retrieveFullPermssionsImage())
-        .thenReturn(new PermissionsImage(new HashMap<String, List<String>>(), new HashMap<String, Map<String, String>>(), 3));
+        .thenReturn(new PermissionsImage(new HashMap<String, List<String>>(), new HashMap<String, Map<TPrivilegeEntity, String>>(), 3));
 
     TAuthzUpdateRequest updateRequest = new TAuthzUpdateRequest(2, 2, 1);
     TAuthzUpdateResponse sentryUpdates= serviceProcessor.get_authz_updates(updateRequest);

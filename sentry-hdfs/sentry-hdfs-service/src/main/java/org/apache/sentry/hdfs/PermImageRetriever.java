@@ -18,6 +18,7 @@
 package org.apache.sentry.hdfs;
 
 import com.codahale.metrics.Timer.Context;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntity;
 import org.apache.sentry.hdfs.service.thrift.TPermissionsUpdate;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
 import org.apache.sentry.hdfs.service.thrift.TRoleChanges;
@@ -56,13 +57,13 @@ public class PermImageRetriever implements ImageRetriever<PermissionsUpdate> {
       // with a corresponding delta change sequence number.
       PermissionsImage permImage = sentryStore.retrieveFullPermssionsImage();
       long curSeqNum = permImage.getCurSeqNum();
-      Map<String, Map<String, String>> privilegeImage =
+      Map<String, Map<TPrivilegeEntity, String>> privilegeImage =
           permImage.getPrivilegeImage();
       Map<String, List<String>> roleImage =
           permImage.getRoleImage();
 
       // Translates the complete Sentry permission snapshot into a PermissionsUpdate.
-      // Adds the <hiveObj, <role, privileges>> mapping and the <role, groups> mapping
+      // Adds permission mapping for user/roles <role, groups> mapping
       // to be included in the permission update.
       // And label it with the latest delta change sequence number for consumer
       // to be aware of the next delta change it should continue with.
@@ -70,11 +71,11 @@ public class PermImageRetriever implements ImageRetriever<PermissionsUpdate> {
           new HashMap<String, TPrivilegeChanges>(),
           new HashMap<String, TRoleChanges>());
 
-      for (Map.Entry<String, Map<String, String>> privEnt : privilegeImage.entrySet()) {
+      for (Map.Entry<String, Map<TPrivilegeEntity, String>> privEnt : privilegeImage.entrySet()) {
         String authzObj = privEnt.getKey();
-        Map<String,String> privs = privEnt.getValue();
+        Map<TPrivilegeEntity,String> privs = privEnt.getValue();
         tPermUpdate.putToPrivilegeChanges(authzObj, new TPrivilegeChanges(
-        authzObj, privs, new HashMap<String, String>()));
+        authzObj, privs, new HashMap<TPrivilegeEntity, String>()));
       }
 
       for (Map.Entry<String, List<String>> privEnt : roleImage.entrySet()) {
