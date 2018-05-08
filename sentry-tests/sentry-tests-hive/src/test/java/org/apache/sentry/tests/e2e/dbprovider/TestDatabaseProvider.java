@@ -2221,6 +2221,36 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
   }
 
   @Test
+  public void testGrantRevokeOnEmptyURI() throws Exception{
+
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("CREATE ROLE role1");
+    ResultSet resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 0);
+    statement.execute("GRANT ROLE role1 to GROUP " + USERGROUP1);
+
+    //Test Grant to EMPTY URI
+    try {
+      statement.execute("GRANT ALL ON URI \"\" TO ROLE role1");
+      assertTrue("Grant ALL on Empty URI SHOULD NOT BE ALLOWED!!", false);
+    } catch (SQLException e){}
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 0);
+
+    //Test Revoke to EMPTY URI
+    try {
+      statement.execute("REVOKE ALL ON URI \"\" TO ROLE role1");
+      assertTrue("Revoke ALL on Empty URI SHOULD NOT BE ALLOWED!!", false);
+    } catch (SQLException e){}
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 0);
+
+    statement.close();
+    connection.close();
+  }
+
+  @Test
   public void testShowGrantOnALL() throws Exception {
 
     // setup db objects needed by the test

@@ -45,6 +45,7 @@ import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
 import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
 import org.apache.sentry.provider.db.service.persistent.HMSFollower;
 import com.google.common.base.Preconditions;
+import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -260,7 +261,7 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
       String roleName = request.getRoleName();
 
       for (TSentryPrivilege privilege : request.getPrivileges()) {
-        if(!("COLUMN".equalsIgnoreCase(privilege.getPrivilegeScope()))) {
+        if(!(PrivilegeScope.COLUMN.name().equalsIgnoreCase(privilege.getPrivilegeScope()))) {
           PermissionsUpdate update = onAlterSentryRoleGrantPrivilegeCore(roleName, privilege);
           if (update != null && privilegesUpdateMap != null) {
             privilegesUpdateMap.put(privilege, update);

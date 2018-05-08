@@ -756,50 +756,55 @@ public class SentryStore {
     MSentryRole mRole = getRole(pm, roleName);
     if (mRole == null) {
       throw noSuchRole(roleName);
-    } else {
-      if (!isNULL(privilege.getColumnName()) || !isNULL(privilege.getTableName())
-          || !isNULL(privilege.getDbName())) {
-        // If Grant is for ALL and Either INSERT/SELECT already exists..
-        // need to remove it and GRANT ALL..
-        if (AccessConstants.ALL.equalsIgnoreCase(privilege.getAction())
-            || AccessConstants.ACTION_ALL.equalsIgnoreCase(privilege.getAction())) {
-          TSentryPrivilege tNotAll = new TSentryPrivilege(privilege);
-          tNotAll.setAction(AccessConstants.SELECT);
-          MSentryPrivilege mSelect = getMSentryPrivilege(tNotAll, pm);
-          tNotAll.setAction(AccessConstants.INSERT);
-          MSentryPrivilege mInsert = getMSentryPrivilege(tNotAll, pm);
-          if ((mSelect != null) && mRole.getPrivileges().contains(mSelect)) {
-            mSelect.removeRole(mRole);
-            pm.makePersistent(mSelect);
-          }
-          if ((mInsert != null) && mRole.getPrivileges().contains(mInsert)) {
-            mInsert.removeRole(mRole);
-            pm.makePersistent(mInsert);
-          }
-        } else {
-          // If Grant is for Either INSERT/SELECT and ALL already exists..
-          // do nothing..
-          TSentryPrivilege tAll = new TSentryPrivilege(privilege);
-          tAll.setAction(AccessConstants.ALL);
-          MSentryPrivilege mAll1 = getMSentryPrivilege(tAll, pm);
-          tAll.setAction(AccessConstants.ACTION_ALL);
-          MSentryPrivilege mAll2 = getMSentryPrivilege(tAll, pm);
-          if (mAll1 != null && mRole.getPrivileges().contains(mAll1)) {
-            return null;
-          }
-          if (mAll2 != null && mRole.getPrivileges().contains(mAll2)) {
-            return null;
-          }
+    }
+
+    if(privilege.getPrivilegeScope().equalsIgnoreCase(PrivilegeScope.URI.name())
+        && StringUtils.isBlank(privilege.getURI())) {
+      throw new SentryInvalidInputException("cannot grant URI privileges to Null or EMPTY location");
+    }
+
+    if (!isNULL(privilege.getColumnName()) || !isNULL(privilege.getTableName())
+        || !isNULL(privilege.getDbName())) {
+      // If Grant is for ALL and Either INSERT/SELECT already exists..
+      // need to remove it and GRANT ALL..
+      if (AccessConstants.ALL.equalsIgnoreCase(privilege.getAction())
+          || AccessConstants.ACTION_ALL.equalsIgnoreCase(privilege.getAction())) {
+        TSentryPrivilege tNotAll = new TSentryPrivilege(privilege);
+        tNotAll.setAction(AccessConstants.SELECT);
+        MSentryPrivilege mSelect = getMSentryPrivilege(tNotAll, pm);
+        tNotAll.setAction(AccessConstants.INSERT);
+        MSentryPrivilege mInsert = getMSentryPrivilege(tNotAll, pm);
+        if ((mSelect != null) && mRole.getPrivileges().contains(mSelect)) {
+          mSelect.removeRole(mRole);
+          pm.makePersistent(mSelect);
+        }
+        if ((mInsert != null) && mRole.getPrivileges().contains(mInsert)) {
+          mInsert.removeRole(mRole);
+          pm.makePersistent(mInsert);
+        }
+      } else {
+        // If Grant is for Either INSERT/SELECT and ALL already exists..
+        // do nothing..
+        TSentryPrivilege tAll = new TSentryPrivilege(privilege);
+        tAll.setAction(AccessConstants.ALL);
+        MSentryPrivilege mAll1 = getMSentryPrivilege(tAll, pm);
+        tAll.setAction(AccessConstants.ACTION_ALL);
+        MSentryPrivilege mAll2 = getMSentryPrivilege(tAll, pm);
+        if (mAll1 != null && mRole.getPrivileges().contains(mAll1)) {
+          return null;
+        }
+        if (mAll2 != null && mRole.getPrivileges().contains(mAll2)) {
+          return null;
         }
       }
-
-      mPrivilege = getMSentryPrivilege(privilege, pm);
-      if (mPrivilege == null) {
-        mPrivilege = convertToMSentryPrivilege(privilege);
-      }
-      mPrivilege.appendRole(mRole);
-      pm.makePersistent(mPrivilege);
     }
+
+    mPrivilege = getMSentryPrivilege(privilege, pm);
+    if (mPrivilege == null) {
+      mPrivilege = convertToMSentryPrivilege(privilege);
+    }
+    mPrivilege.appendRole(mRole);
+    pm.makePersistent(mPrivilege);
     return mPrivilege;
   }
 
@@ -906,6 +911,11 @@ public class SentryStore {
     if (mRole == null) {
       throw noSuchRole(roleName);
     }
+    if(tPrivilege.getPrivilegeScope().equalsIgnoreCase(PrivilegeScope.URI.name())
+        && StringUtils.isBlank(tPrivilege.getURI())) {
+      throw new SentryInvalidInputException("cannot revoke URI privileges from Null or EMPTY location");
+    }
+
     MSentryPrivilege mPrivilege = getMSentryPrivilege(tPrivilege, pm);
     if (mPrivilege == null) {
       mPrivilege = convertToMSentryPrivilege(tPrivilege);

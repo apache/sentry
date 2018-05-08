@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hive.SentryHiveConstants;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
@@ -416,6 +417,9 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
               break;
             case LOCAL_URI:
             case DFS_URI:
+              if(StringUtils.isBlank(hivePrivObject.getObjectName())) {
+                throw new HiveAuthzPluginException("Null or Empty locations not supported by " + hivePrivObject.getType().name());
+              }
               String uRIString = hivePrivObject.getObjectName().replace("'", "").replace("\"", "");
               if (isGrant) {
                 sentryClient.grantURIPrivilege(grantorName, roleName, serverName,
