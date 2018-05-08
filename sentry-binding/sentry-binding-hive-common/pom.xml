@@ -95,7 +95,6 @@ limitations under the License.
       <artifactId>mockito-all</artifactId>
       <scope>test</scope>
     </dependency>
-    <!-- required for SentryGrantRevokeTask -->
     <dependency>
       <groupId>org.apache.sentry</groupId>
       <artifactId>sentry-provider-db</artifactId>

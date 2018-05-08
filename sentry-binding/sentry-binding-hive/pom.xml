@@ -77,7 +77,6 @@ limitations under the License.
       <groupId>org.apache.sentry</groupId>
       <artifactId>sentry-provider-common</artifactId>
     </dependency>
-    <!-- required for SentryGrantRevokeTask -->
     <dependency>
       <groupId>org.apache.sentry</groupId>
       <artifactId>sentry-provider-db</artifactId>
