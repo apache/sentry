@@ -177,7 +177,8 @@ public final class SentryClientTransportConstants {
     static final String SERVER_RPC_CONN_TIMEOUT =
       "sentry.hdfs.service.client.server.rpc-connection-timeout";
 
-    static final int SERVER_RPC_CONN_TIMEOUT_DEFAULT = 200000;
+    //default rpc connection timeout value in milliseconds
+    static final int SERVER_RPC_CONN_TIMEOUT_DEFAULT = 1200000;
 
     /**
      * max retry num for client rpc
