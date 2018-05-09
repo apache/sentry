@@ -18,6 +18,9 @@
 
 package org.apache.sentry.provider.db.service.model;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
+import java.util.HashSet;
 import java.util.Set;
 
 import javax.jdo.annotations.PersistenceCapable;
@@ -35,12 +38,15 @@ public class MSentryUser {
   private String userName;
   // set of roles granted to this user
   private Set<MSentryRole> roles;
+  // set of privileges granted to this user
+  private Set<MSentryPrivilege> privileges;
   private long createTime;
 
   public MSentryUser(String userName, long createTime, Set<MSentryRole> roles) {
     this.userName = MSentryUtil.safeIntern(userName);
     this.createTime = createTime;
     this.roles = roles;
+    this.privileges = new HashSet<>();
   }
 
   public long getCreateTime() {
@@ -71,9 +77,45 @@ public class MSentryUser {
     }
   }
 
+  public void setPrivileges(Set<MSentryPrivilege> privileges) {
+    this.privileges = privileges;
+  }
+
+  public Set<MSentryPrivilege> getPrivileges() {
+    return privileges;
+  }
+
+  public void removePrivilege(MSentryPrivilege privilege) {
+    if (privileges.remove(privilege)) {
+      privilege.removeUser(this);
+    }
+  }
+
+  public void appendPrivileges(Set<MSentryPrivilege> privileges) {
+    this.privileges.addAll(privileges);
+  }
+
+  public void appendPrivilege(MSentryPrivilege privilege) {
+    if (privileges.add(privilege)) {
+      privilege.appendUser(this);
+    }
+  }
+
+  public void removePrivileges() {
+    // As we iterate through the loop below Method removeRole will modify the privileges set
+    // will be updated.
+    // Copy of the <code>privileges<code> is taken at the beginning of the loop to avoid using
+    // the actual privilege set in MSentryUser instance.
+
+    for (MSentryPrivilege privilege : ImmutableSet.copyOf(privileges)) {
+      privilege.removeUser(this);
+    }
+    Preconditions.checkState(privileges.isEmpty(), "Privileges should be empty: " + privileges);
+  }
+
   @Override
   public String toString() {
-    return "MSentryUser [userName=" + userName + ", roles=[...]" + ", createTime=" + createTime
+    return "MSentryUser [userName=" + userName + ", roles=[...]" + ", privileges=[...]" + ", createTime=" + createTime
         + "]";
   }
 

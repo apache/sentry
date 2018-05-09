@@ -47,10 +47,13 @@ public class MSentryPrivilege {
   private Boolean grantOption = false;
   // roles this privilege is a part of
   private Set<MSentryRole> roles;
+  // users this privilege is a part of
+  private Set<MSentryUser> users;
   private long createTime;
 
   public MSentryPrivilege() {
     this.roles = new HashSet<>();
+    this.users = new HashSet<>();
   }
 
   public MSentryPrivilege(String privilegeScope,
@@ -65,6 +68,7 @@ public class MSentryPrivilege {
     this.action = SentryStore.toNULLCol(action).intern();
     this.grantOption = grantOption;
     this.roles = new HashSet<>();
+    this.users = new HashSet<>();
   }
 
   public MSentryPrivilege(String privilegeScope,
@@ -85,6 +89,8 @@ public class MSentryPrivilege {
     this.grantOption = other.grantOption;
     this.roles = new HashSet<>();
     roles.addAll(other.roles);
+    this.users = new HashSet<>();
+    users.addAll(other.users);
   }
 
   public String getServerName() {
@@ -163,13 +169,24 @@ public class MSentryPrivilege {
     roles.add(role);
   }
 
+  public void appendUser(MSentryUser user) {
+    users.add(user);
+  }
+
   public Set<MSentryRole> getRoles() {
     return roles;
   }
 
+  public Set<MSentryUser> getUsers() { return users; }
+
   public void removeRole(MSentryRole role) {
     roles.remove(role);
     role.removePrivilege(this);
+  }
+
+  public void removeUser(MSentryUser user) {
+    users.remove(user);
+    user.removePrivilege(this);
   }
 
   @Override
@@ -177,7 +194,7 @@ public class MSentryPrivilege {
     return "MSentryPrivilege [privilegeScope=" + privilegeScope
         + ", serverName=" + serverName + ", dbName=" + dbName
         + ", tableName=" + tableName + ", columnName=" + columnName
-        + ", URI=" + URI + ", action=" + action + ", roles=[...]"
+        + ", URI=" + URI + ", action=" + action + ", roles=[...]" + ", users=[...]"
         + ", createTime=" + createTime + ", grantOption=" + grantOption +"]";
   }
 

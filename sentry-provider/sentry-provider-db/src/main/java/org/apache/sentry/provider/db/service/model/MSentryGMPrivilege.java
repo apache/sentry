@@ -1,5 +1,5 @@
 /**
-vim  * Licensed to the Apache Software Foundation (ASF) under one
+ * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
  * regarding copyright ownership.  The ASF licenses this file
@@ -77,8 +77,8 @@ public class MSentryGMPrivilege {
   }
 
   public MSentryGMPrivilege(String componentName, String serviceName,
-                                 List<? extends Authorizable> authorizables,
-                                 String action, Boolean grantOption) {
+      List<? extends Authorizable> authorizables,
+      String action, Boolean grantOption) {
     this.componentName = MSentryUtil.safeIntern(componentName);
     this.serviceName = MSentryUtil.safeIntern(serviceName);
     this.action = MSentryUtil.safeIntern(action);
@@ -253,68 +253,68 @@ public class MSentryGMPrivilege {
 
   @Override
   public boolean equals(Object obj) {
-      if (this == obj) {
-          return true;
-      }
-      if (obj == null) {
-          return false;
-      }
-      if (getClass() != obj.getClass()) {
-          return false;
-      }
-      MSentryGMPrivilege other = (MSentryGMPrivilege) obj;
-      if (action == null) {
-          if (other.action != null) {
-              return false;
-          }
-      } else if (!action.equalsIgnoreCase(other.action)) {
-          return false;
-      }
-      if (scope == null) {
-        if (other.scope != null) {
-            return false;
-        }
-      } else if (!scope.equals(other.scope)) {
-        return false;
-      }
-      if (serviceName == null) {
-          if (other.serviceName != null) {
-              return false;
-          }
-      } else if (!serviceName.equals(other.serviceName)) {
-          return false;
-      }
-      if (componentName == null) {
-          if (other.componentName != null) {
-              return false;
-          }
-      } else if (!componentName.equals(other.componentName)) {
-          return false;
-      }
-      if (grantOption == null) {
-        if (other.grantOption != null) {
-          return false;
-        }
-      } else if (!grantOption.equals(other.grantOption)) {
-        return false;
-      }
-
-      List<? extends Authorizable> authorizables = getAuthorizables();
-      List<? extends Authorizable> otherAuthorizables = other.getAuthorizables();
-
-      if (authorizables.size() != otherAuthorizables.size()) {
-        return false;
-      }
-      for (int i = 0; i < authorizables.size(); i++) {
-        String o1 = KV_JOINER.join(authorizables.get(i).getTypeName(),
-                                         authorizables.get(i).getName());
-        String o2 = KV_JOINER.join(otherAuthorizables.get(i).getTypeName(),
-                                   otherAuthorizables.get(i).getName());
-        if (!o1.equals(o2)) {
-          return false;
-        }
-      }
+    if (this == obj) {
       return true;
+    }
+    if (obj == null) {
+      return false;
+    }
+    if (getClass() != obj.getClass()) {
+      return false;
+    }
+    MSentryGMPrivilege other = (MSentryGMPrivilege) obj;
+    if (action == null) {
+      if (other.action != null) {
+        return false;
+      }
+    } else if (!action.equalsIgnoreCase(other.action)) {
+      return false;
+    }
+    if (scope == null) {
+      if (other.scope != null) {
+        return false;
+      }
+    } else if (!scope.equals(other.scope)) {
+      return false;
+    }
+    if (serviceName == null) {
+      if (other.serviceName != null) {
+        return false;
+      }
+    } else if (!serviceName.equals(other.serviceName)) {
+      return false;
+    }
+    if (componentName == null) {
+      if (other.componentName != null) {
+        return false;
+      }
+    } else if (!componentName.equals(other.componentName)) {
+      return false;
+    }
+    if (grantOption == null) {
+      if (other.grantOption != null) {
+        return false;
+      }
+    } else if (!grantOption.equals(other.grantOption)) {
+      return false;
+    }
+
+    List<? extends Authorizable> authorizables = getAuthorizables();
+    List<? extends Authorizable> otherAuthorizables = other.getAuthorizables();
+
+    if (authorizables.size() != otherAuthorizables.size()) {
+      return false;
+    }
+    for (int i = 0; i < authorizables.size(); i++) {
+      String o1 = KV_JOINER.join(authorizables.get(i).getTypeName(),
+          authorizables.get(i).getName());
+      String o2 = KV_JOINER.join(otherAuthorizables.get(i).getTypeName(),
+          otherAuthorizables.get(i).getName());
+      if (!o1.equals(o2)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /**
@@ -350,9 +350,9 @@ public class MSentryGMPrivilege {
       //check authorizable name
       if (!existAuth.getName().equals(requestAuth.getName())) {
         /**The persistent authorizable isn't equal the request authorizable
-        * but the following situations are pass check
-        * The name of persistent authorizable is ALL or "*"
-        */
+         * but the following situations are pass check
+         * The name of persistent authorizable is ALL or "*"
+         */
         if (existAuth.getName().equalsIgnoreCase(AccessConstants.ACTION_ALL)
             || existAuth.getName().equalsIgnoreCase(AccessConstants.ALL)) {
           continue;
