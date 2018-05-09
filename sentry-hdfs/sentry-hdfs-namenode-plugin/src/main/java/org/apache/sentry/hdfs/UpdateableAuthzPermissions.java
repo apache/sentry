@@ -144,11 +144,11 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
         // Db, but no explicit grants on Table.. then the authzObject associated
         // with the table will never exist.
         if (privilegeInfo != null) {
-          Map<String, FsAction> allPermissions = privilegeInfo.getAllPermissions();
+          Map<TPrivilegeEntity, FsAction> allPermissions = privilegeInfo.getAllPermissions();
           perms.delPrivilegeInfo(oldAuthzObj);
           perms.removeParentChildMappings(oldAuthzObj);
           PrivilegeInfo newPrivilegeInfo = new PrivilegeInfo(newAuthzObj);
-          for (Map.Entry<String, FsAction> e : allPermissions.entrySet()) {
+          for (Map.Entry<TPrivilegeEntity, FsAction> e : allPermissions.entrySet()) {
             newPrivilegeInfo.setPermission(e.getKey(), e.getValue());
           }
           perms.addPrivilegeInfo(newPrivilegeInfo);
@@ -159,9 +159,8 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
       if (pUpdate.getAuthzObj().equals(PermissionsUpdate.ALL_AUTHZ_OBJ)) {
         // Request to remove role from all Privileges
         delPrivEntity = pUpdate.getDelPrivileges().keySet().iterator().next();
-        String roleToRemove = delPrivEntity.getValue();
         for (PrivilegeInfo pInfo : perms.getAllPrivileges()) {
-          pInfo.removePermission(roleToRemove);
+          pInfo.removePermission(delPrivEntity);
         }
       }
       PrivilegeInfo pInfo = perms.getPrivilegeInfo(pUpdate.getAuthzObj());
@@ -169,13 +168,13 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
         if (pInfo == null) {
           pInfo = new PrivilegeInfo(pUpdate.getAuthzObj());
         }
-        FsAction fsAction = pInfo.getPermission(aMap.getKey().getValue());
+        FsAction fsAction = pInfo.getPermission(aMap.getKey());
         if (fsAction == null) {
           fsAction = getFAction(aMap.getValue());
         } else {
           fsAction = fsAction.or(getFAction(aMap.getValue()));
         }
-        pInfo.setPermission(aMap.getKey().getValue(), fsAction);
+        pInfo.setPermission(aMap.getKey(), fsAction);
       }
       if (pInfo != null) {
         perms.addPrivilegeInfo(pInfo);
@@ -197,13 +196,13 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
           }
           // recursive revoke
           for (PrivilegeInfo pInfo2 : parentAndChild) {
-            FsAction fsAction = pInfo2.getPermission(dMap.getKey().getValue());
+            FsAction fsAction = pInfo2.getPermission(dMap.getKey());
             if (fsAction != null) {
               fsAction = fsAction.and(getFAction(dMap.getValue()).not());
               if (FsAction.NONE == fsAction) {
-                pInfo2.removePermission(dMap.getKey().getValue());
+                pInfo2.removePermission(dMap.getKey());
               } else {
-                pInfo2.setPermission(dMap.getKey().getValue(), fsAction);
+                pInfo2.setPermission(dMap.getKey(), fsAction);
               }
             }
           }
@@ -244,8 +243,8 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
     PermissionsUpdate retVal = new PermissionsUpdate(currSeqNum, true);
     for (PrivilegeInfo pInfo : perms.getAllPrivileges()) {
       TPrivilegeChanges pUpdate = retVal.addPrivilegeUpdate(pInfo.getAuthzObj());
-      for (Map.Entry<String, FsAction> ent : pInfo.getAllPermissions().entrySet()) {
-        pUpdate.putToAddPrivileges(new TPrivilegeEntity(TPrivilegeEntityType.ROLE, ent.getKey()),
+      for (Map.Entry<TPrivilegeEntity, FsAction> ent : pInfo.getAllPermissions().entrySet()) {
+        pUpdate.putToAddPrivileges(new TPrivilegeEntity(ent.getKey()),
                 ent.getValue().SYMBOL);
       }
     }

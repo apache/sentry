@@ -23,35 +23,39 @@ import org.apache.hadoop.fs.permission.AclEntry;
 import org.apache.hadoop.fs.permission.AclEntryScope;
 import org.apache.hadoop.fs.permission.AclEntryType;
 import org.apache.hadoop.fs.permission.FsAction;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntity;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntityType;
 
 public class SentryPermissions implements AuthzPermissions {
 
   public static class PrivilegeInfo {
     private final String authzObj;
-    private final Map<String, FsAction> roleToPermission = new HashMap<String, FsAction>();
+    // It is safe to use TPrivilegeEntity as key as it implements the hashCode and equals API's.
+    // Equals() API would help in handling hash collisions.
+    private final Map<TPrivilegeEntity, FsAction> privilegeEntityFsActionMap = new HashMap<TPrivilegeEntity, FsAction>();
     public PrivilegeInfo(String authzObj) {
       this.authzObj = authzObj;
     }
-    public PrivilegeInfo setPermission(String role, FsAction perm) {
-      roleToPermission.put(role, perm);
+    public PrivilegeInfo setPermission(TPrivilegeEntity privilegeEntity, FsAction perm) {
+      privilegeEntityFsActionMap.put(privilegeEntity, perm);
       return this;
     }
-    public PrivilegeInfo removePermission(String role) {
-      roleToPermission.remove(role);
+    public PrivilegeInfo removePermission(TPrivilegeEntity privilegeEntity) {
+      privilegeEntityFsActionMap.remove(privilegeEntity);
       return this;
     }
-    public FsAction getPermission(String role) {
-      return roleToPermission.get(role);
+    public FsAction getPermission(TPrivilegeEntity privilegeEntity) {
+      return privilegeEntityFsActionMap.get(privilegeEntity);
     }
-    public Map<String, FsAction> getAllPermissions() {
-      return roleToPermission;
+    public Map<TPrivilegeEntity, FsAction> getAllPermissions() {
+      return privilegeEntityFsActionMap;
     }
     public String getAuthzObj() {
       return authzObj;
     }
     @Override
     public String toString() {
-      return "PrivilegeInfo(" + authzObj + " --> " + roleToPermission + ")";
+      return "PrivilegeInfo(" + authzObj + " --> " + privilegeEntityFsActionMap + ")";
     }
   }
 
@@ -134,9 +138,11 @@ public class SentryPermissions implements AuthzPermissions {
 
     PrivilegeInfo privilegeInfo = privileges.get(authzObj);
     if (privilegeInfo != null) {
-      for (Map.Entry<String, FsAction> privs : privilegeInfo
+      for (Map.Entry<TPrivilegeEntity, FsAction> privs : privilegeInfo
           .getAllPermissions().entrySet()) {
-        constructAclEntry(privs.getKey(), privs.getValue(), groupPerms);
+        if(privs.getKey().getType() == TPrivilegeEntityType.ROLE) {
+          constructAclEntry(privs.getKey().getValue(), privs.getValue(), groupPerms);
+        }
       }
     }
     return groupPerms;
