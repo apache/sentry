@@ -23,12 +23,12 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.sentry.core.model.db.AccessConstants;
-import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
-import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleGrantPrivilegeRequest;
-import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleRevokePrivilegeRequest;
-import org.apache.sentry.provider.db.service.thrift.TSentryGrantOption;
-import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
-import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
+import org.apache.sentry.api.generic.thrift.TAuthorizable;
+import org.apache.sentry.api.common.ApiConstants.PrivilegeScope;
+import org.apache.sentry.api.service.thrift.TAlterSentryRoleGrantPrivilegeRequest;
+import org.apache.sentry.api.service.thrift.TAlterSentryRoleRevokePrivilegeRequest;
+import org.apache.sentry.api.service.thrift.TSentryGrantOption;
+import org.apache.sentry.api.service.thrift.TSentryPrivilege;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -308,9 +308,9 @@ public class TestCommandUtil extends Assert {
   // generate the command without grant option
   @Test
   public void testCreateCmdForGrantOrRevokeGMPrivilege1() {
-    org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleGrantPrivilegeRequest grantRequest = getGrantGMPrivilegeRequest();
-    org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleRevokePrivilegeRequest revokeRequest = getRevokeGMPrivilegeRequest();
-    org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege privilege = getGMPrivilege();
+    org.apache.sentry.api.generic.thrift.TAlterSentryRoleGrantPrivilegeRequest grantRequest = getGrantGMPrivilegeRequest();
+    org.apache.sentry.api.generic.thrift.TAlterSentryRoleRevokePrivilegeRequest revokeRequest = getRevokeGMPrivilegeRequest();
+    org.apache.sentry.api.generic.thrift.TSentryPrivilege privilege = getGMPrivilege();
     grantRequest.setPrivilege(privilege);
     revokeRequest.setPrivilege(privilege);
 
@@ -327,11 +327,11 @@ public class TestCommandUtil extends Assert {
   // generate the command with grant option
   @Test
   public void testCreateCmdForGrantOrRevokeGMPrivilege2() {
-    org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleGrantPrivilegeRequest grantRequest = getGrantGMPrivilegeRequest();
-    org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleRevokePrivilegeRequest revokeRequest = getRevokeGMPrivilegeRequest();
-    org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege privilege = getGMPrivilege();
+    org.apache.sentry.api.generic.thrift.TAlterSentryRoleGrantPrivilegeRequest grantRequest = getGrantGMPrivilegeRequest();
+    org.apache.sentry.api.generic.thrift.TAlterSentryRoleRevokePrivilegeRequest revokeRequest = getRevokeGMPrivilegeRequest();
+    org.apache.sentry.api.generic.thrift.TSentryPrivilege privilege = getGMPrivilege();
     privilege
-        .setGrantOption(org.apache.sentry.provider.db.generic.service.thrift.TSentryGrantOption.TRUE);
+        .setGrantOption(org.apache.sentry.api.generic.thrift.TSentryGrantOption.TRUE);
     grantRequest.setPrivilege(privilege);
     revokeRequest.setPrivilege(privilege);
 
@@ -379,14 +379,14 @@ public class TestCommandUtil extends Assert {
     return request;
   }
 
-  private org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleGrantPrivilegeRequest getGrantGMPrivilegeRequest() {
-    org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleGrantPrivilegeRequest request = new org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleGrantPrivilegeRequest();
+  private org.apache.sentry.api.generic.thrift.TAlterSentryRoleGrantPrivilegeRequest getGrantGMPrivilegeRequest() {
+    org.apache.sentry.api.generic.thrift.TAlterSentryRoleGrantPrivilegeRequest request = new org.apache.sentry.api.generic.thrift.TAlterSentryRoleGrantPrivilegeRequest();
     request.setRoleName("testRole");
     return request;
   }
 
-  private org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleRevokePrivilegeRequest getRevokeGMPrivilegeRequest() {
-    org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleRevokePrivilegeRequest request = new org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleRevokePrivilegeRequest();
+  private org.apache.sentry.api.generic.thrift.TAlterSentryRoleRevokePrivilegeRequest getRevokeGMPrivilegeRequest() {
+    org.apache.sentry.api.generic.thrift.TAlterSentryRoleRevokePrivilegeRequest request = new org.apache.sentry.api.generic.thrift.TAlterSentryRoleRevokePrivilegeRequest();
     request.setRoleName("testRole");
     return request;
   }
@@ -403,8 +403,8 @@ public class TestCommandUtil extends Assert {
     return privilege;
   }
 
-  private org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege getGMPrivilege() {
-    org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege privilege = new org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege();
+  private org.apache.sentry.api.generic.thrift.TSentryPrivilege getGMPrivilege() {
+    org.apache.sentry.api.generic.thrift.TSentryPrivilege privilege = new org.apache.sentry.api.generic.thrift.TSentryPrivilege();
     privilege.setAction("ACTION");
     privilege.setComponent("COMPONENT");
     List<TAuthorizable> authorizables = new ArrayList<TAuthorizable>();

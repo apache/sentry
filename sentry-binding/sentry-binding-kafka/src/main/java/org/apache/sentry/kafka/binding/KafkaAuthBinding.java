@@ -56,13 +56,14 @@ import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.apache.sentry.provider.db.generic.SentryGenericProviderBackend;
-import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
-import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
-import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
-import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
-import org.apache.sentry.provider.db.generic.service.thrift.TSentryRole;
-import org.apache.sentry.provider.db.generic.tools.GenericPrivilegeConverter;
-import org.apache.sentry.service.thrift.ServiceConstants;
+import org.apache.sentry.api.generic.thrift.SentryGenericServiceClient;
+import org.apache.sentry.api.generic.thrift.SentryGenericServiceClientFactory;
+import org.apache.sentry.api.generic.thrift.TAuthorizable;
+import org.apache.sentry.api.generic.thrift.TSentryPrivilege;
+import org.apache.sentry.api.generic.thrift.TSentryRole;
+import org.apache.sentry.api.common.ApiConstants;
+import org.apache.sentry.api.tools.GenericPrivilegeConverter;
+import org.apache.sentry.service.common.ServiceConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Option;
@@ -159,23 +160,23 @@ public class KafkaAuthBinding {
     if (enableCachingConfig != null) {
       String enableCaching = enableCachingConfig.toString();
       if (Boolean.parseBoolean(enableCaching)) {
-        authConf.set(ServiceConstants.ClientConfig.ENABLE_CACHING, enableCaching);
+        authConf.set(ApiConstants.ClientConfig.ENABLE_CACHING, enableCaching);
 
         final Object cacheTtlMsConfig = kafkaConfigs
             .get(AuthzConfVars.AUTHZ_CACHING_TTL_MS_NAME.getVar());
         if (cacheTtlMsConfig != null) {
-          authConf.set(ServiceConstants.ClientConfig.CACHE_TTL_MS, cacheTtlMsConfig.toString());
+          authConf.set(ApiConstants.ClientConfig.CACHE_TTL_MS, cacheTtlMsConfig.toString());
         }
 
         final Object cacheUpdateFailuresCountConfig = kafkaConfigs
             .get(AuthzConfVars.AUTHZ_CACHING_UPDATE_FAILURES_COUNT_NAME.getVar());
         if (cacheUpdateFailuresCountConfig != null) {
-          authConf.set(ServiceConstants.ClientConfig.CACHE_UPDATE_FAILURES_BEFORE_PRIV_REVOKE,
+          authConf.set(ApiConstants.ClientConfig.CACHE_UPDATE_FAILURES_BEFORE_PRIV_REVOKE,
               cacheUpdateFailuresCountConfig.toString());
         }
 
-        if (authConf.get(ServiceConstants.ClientConfig.PRIVILEGE_CONVERTER) == null) {
-          authConf.set(ServiceConstants.ClientConfig.PRIVILEGE_CONVERTER,
+        if (authConf.get(ApiConstants.ClientConfig.PRIVILEGE_CONVERTER) == null) {
+          authConf.set(ApiConstants.ClientConfig.PRIVILEGE_CONVERTER,
               GenericPrivilegeConverter.class.getName());
         }
       }

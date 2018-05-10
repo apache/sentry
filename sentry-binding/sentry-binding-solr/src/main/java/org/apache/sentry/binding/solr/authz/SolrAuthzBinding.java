@@ -48,10 +48,10 @@ import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.apache.sentry.provider.common.GroupMappingService;
 import org.apache.sentry.provider.db.generic.SentryGenericProviderBackend;
-import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
-import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
-import org.apache.sentry.provider.db.generic.tools.GenericPrivilegeConverter;
-import org.apache.sentry.service.thrift.ServiceConstants;
+import org.apache.sentry.api.generic.thrift.SentryGenericServiceClient;
+import org.apache.sentry.api.generic.thrift.SentryGenericServiceClientFactory;
+import org.apache.sentry.api.common.ApiConstants;
+import org.apache.sentry.api.tools.GenericPrivilegeConverter;
 import org.apache.solr.security.AuthorizationResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,8 +110,8 @@ public class SolrAuthzBinding implements Closeable {
         + policyEngineName + ", provider backend " + providerBackendName);
 
     // for convenience, set the PrivilegeConverter.
-    if (authzConf.get(ServiceConstants.ClientConfig.PRIVILEGE_CONVERTER) == null) {
-      authzConf.set(ServiceConstants.ClientConfig.PRIVILEGE_CONVERTER,
+    if (authzConf.get(ApiConstants.ClientConfig.PRIVILEGE_CONVERTER) == null) {
+      authzConf.set(ApiConstants.ClientConfig.PRIVILEGE_CONVERTER,
                        GenericPrivilegeConverter.class.getName());
     }
 

@@ -25,12 +25,12 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.sentry.core.model.db.AccessConstants;
-import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
-import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleGrantPrivilegeRequest;
-import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleRevokePrivilegeRequest;
-import org.apache.sentry.provider.db.service.thrift.TSentryGrantOption;
-import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
-import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
+import org.apache.sentry.api.generic.thrift.TAuthorizable;
+import org.apache.sentry.api.common.ApiConstants.PrivilegeScope;
+import org.apache.sentry.api.service.thrift.TAlterSentryRoleGrantPrivilegeRequest;
+import org.apache.sentry.api.service.thrift.TAlterSentryRoleRevokePrivilegeRequest;
+import org.apache.sentry.api.service.thrift.TSentryGrantOption;
+import org.apache.sentry.api.service.thrift.TSentryPrivilege;
 import org.datanucleus.util.StringUtils;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -159,18 +159,18 @@ public final class CommandUtil {
   }
 
   public static String createCmdForGrantGMPrivilege(
-      org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleGrantPrivilegeRequest request) {
+      org.apache.sentry.api.generic.thrift.TAlterSentryRoleGrantPrivilegeRequest request) {
     return createCmdForGrantOrRevokeGMPrivilege(request.getRoleName(), request.getPrivilege(), true);
   }
 
   public static String createCmdForRevokeGMPrivilege(
-      org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleRevokePrivilegeRequest request) {
+      org.apache.sentry.api.generic.thrift.TAlterSentryRoleRevokePrivilegeRequest request) {
     return createCmdForGrantOrRevokeGMPrivilege(request.getRoleName(), request.getPrivilege(),
         false);
   }
 
   private static String createCmdForGrantOrRevokeGMPrivilege(String roleName,
-      org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege privilege,
+      org.apache.sentry.api.generic.thrift.TSentryPrivilege privilege,
       boolean isGrant) {
     StringBuilder sb = new StringBuilder();
     if (isGrant) {
@@ -205,7 +205,7 @@ public final class CommandUtil {
     }
     sb.append(roleName);
 
-    if (privilege.getGrantOption() == org.apache.sentry.provider.db.generic.service.thrift.TSentryGrantOption.TRUE) {
+    if (privilege.getGrantOption() == org.apache.sentry.api.generic.thrift.TSentryGrantOption.TRUE) {
       sb.append(" WITH GRANT OPTION");
     }
 

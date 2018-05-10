@@ -17,9 +17,9 @@ import com.google.common.collect.HashBasedTable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.provider.common.TableCache;
-import org.apache.sentry.provider.db.generic.service.thrift.*;
-import org.apache.sentry.provider.db.generic.tools.TSentryPrivilegeConverter;
-import org.apache.sentry.service.thrift.ServiceConstants;
+import org.apache.sentry.api.generic.thrift.*;
+import org.apache.sentry.api.common.ApiConstants;
+import org.apache.sentry.api.tools.TSentryPrivilegeConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,8 +81,8 @@ public final class UpdatableCache implements TableCache, AutoCloseable {
     this.tSentryPrivilegeConverter = tSentryPrivilegeConverter;
 
     // check caching configuration
-    this.cacheTtlNs = TimeUnit.MILLISECONDS.toNanos(conf.getLong(ServiceConstants.ClientConfig.CACHE_TTL_MS, ServiceConstants.ClientConfig.CACHING_TTL_MS_DEFAULT));
-    this.allowedUpdateFailuresCount = conf.getInt(ServiceConstants.ClientConfig.CACHE_UPDATE_FAILURES_BEFORE_PRIV_REVOKE, ServiceConstants.ClientConfig.CACHE_UPDATE_FAILURES_BEFORE_PRIV_REVOKE_DEFAULT);
+    this.cacheTtlNs = TimeUnit.MILLISECONDS.toNanos(conf.getLong(ApiConstants.ClientConfig.CACHE_TTL_MS, ApiConstants.ClientConfig.CACHING_TTL_MS_DEFAULT));
+    this.allowedUpdateFailuresCount = conf.getInt(ApiConstants.ClientConfig.CACHE_UPDATE_FAILURES_BEFORE_PRIV_REVOKE, ApiConstants.ClientConfig.CACHE_UPDATE_FAILURES_BEFORE_PRIV_REVOKE_DEFAULT);
   }
 
   @Override

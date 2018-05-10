@@ -22,14 +22,14 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.exception.SentryInvalidInputException;
 import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
-import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleAddGroupsRequest;
-import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleDeleteGroupsRequest;
-import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleGrantPrivilegeRequest;
-import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleRevokePrivilegeRequest;
-import org.apache.sentry.provider.db.service.thrift.TDropPrivilegesRequest;
-import org.apache.sentry.provider.db.service.thrift.TDropSentryRoleRequest;
-import org.apache.sentry.provider.db.service.thrift.TRenamePrivilegesRequest;
-import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
+import org.apache.sentry.api.service.thrift.TAlterSentryRoleAddGroupsRequest;
+import org.apache.sentry.api.service.thrift.TAlterSentryRoleDeleteGroupsRequest;
+import org.apache.sentry.api.service.thrift.TAlterSentryRoleGrantPrivilegeRequest;
+import org.apache.sentry.api.service.thrift.TAlterSentryRoleRevokePrivilegeRequest;
+import org.apache.sentry.api.service.thrift.TDropPrivilegesRequest;
+import org.apache.sentry.api.service.thrift.TDropSentryRoleRequest;
+import org.apache.sentry.api.service.thrift.TRenamePrivilegesRequest;
+import org.apache.sentry.api.service.thrift.TSentryPrivilege;
 
 import java.util.Map;
 

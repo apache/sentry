@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.sentry.provider.db.service.thrift;
+package org.apache.sentry.api.service.thrift;
 
 import java.net.HttpURLConnection;
 import java.net.URL;

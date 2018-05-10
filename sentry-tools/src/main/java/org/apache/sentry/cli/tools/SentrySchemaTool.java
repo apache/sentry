@@ -52,7 +52,7 @@ import org.apache.sentry.core.common.exception.SentrySiteConfigurationException;
 import org.apache.sentry.provider.db.service.persistent.SentryStoreSchemaInfo;
 import org.apache.sentry.cli.tools.SentrySchemaHelper.NestedScriptParser;
 import org.apache.sentry.service.thrift.SentryService;
-import org.apache.sentry.service.thrift.ServiceConstants;
+import org.apache.sentry.service.common.ServiceConstants;
 
 public class SentrySchemaTool {
   private static final String SENTRY_SCRIP_DIR = File.separatorChar + "scripts"

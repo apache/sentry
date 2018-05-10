@@ -29,6 +29,9 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.sentry.api.generic.thrift.TAuthorizable;
+import org.apache.sentry.api.generic.thrift.TSentryGrantOption;
+import org.apache.sentry.api.generic.thrift.TSentryPrivilege;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.utils.KeyValue;
@@ -46,9 +49,6 @@ import org.apache.sentry.core.model.solr.SolrPrivilegeModel;
 import org.apache.sentry.core.model.sqoop.SqoopModelAuthorizables;
 import org.apache.sentry.core.model.sqoop.SqoopPrivilegeModel;
 import org.apache.sentry.provider.common.AuthorizationComponent;
-import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
-import org.apache.sentry.provider.db.generic.service.thrift.TSentryGrantOption;
-import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
 import org.apache.shiro.config.ConfigurationException;
 
 /**

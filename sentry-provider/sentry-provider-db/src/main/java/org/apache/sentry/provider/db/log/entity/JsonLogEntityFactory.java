@@ -25,30 +25,30 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
+import org.apache.sentry.api.generic.thrift.TAuthorizable;
 import org.apache.sentry.provider.db.log.util.CommandUtil;
 import org.apache.sentry.provider.db.log.util.Constants;
-import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleAddGroupsRequest;
-import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleAddGroupsResponse;
-import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleAddUsersRequest;
-import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleAddUsersResponse;
-import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleDeleteGroupsRequest;
-import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleDeleteGroupsResponse;
-import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleDeleteUsersRequest;
-import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleDeleteUsersResponse;
-import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleGrantPrivilegeRequest;
-import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleGrantPrivilegeResponse;
-import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleRevokePrivilegeRequest;
-import org.apache.sentry.provider.db.service.thrift.TAlterSentryRoleRevokePrivilegeResponse;
-import org.apache.sentry.provider.db.service.thrift.TCreateSentryRoleRequest;
-import org.apache.sentry.provider.db.service.thrift.TCreateSentryRoleResponse;
-import org.apache.sentry.provider.db.service.thrift.TDropSentryRoleRequest;
-import org.apache.sentry.provider.db.service.thrift.TDropSentryRoleResponse;
-import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
-import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
+import org.apache.sentry.api.service.thrift.TAlterSentryRoleAddGroupsRequest;
+import org.apache.sentry.api.service.thrift.TAlterSentryRoleAddGroupsResponse;
+import org.apache.sentry.api.service.thrift.TAlterSentryRoleAddUsersRequest;
+import org.apache.sentry.api.service.thrift.TAlterSentryRoleAddUsersResponse;
+import org.apache.sentry.api.service.thrift.TAlterSentryRoleDeleteGroupsRequest;
+import org.apache.sentry.api.service.thrift.TAlterSentryRoleDeleteGroupsResponse;
+import org.apache.sentry.api.service.thrift.TAlterSentryRoleDeleteUsersRequest;
+import org.apache.sentry.api.service.thrift.TAlterSentryRoleDeleteUsersResponse;
+import org.apache.sentry.api.service.thrift.TAlterSentryRoleGrantPrivilegeRequest;
+import org.apache.sentry.api.service.thrift.TAlterSentryRoleGrantPrivilegeResponse;
+import org.apache.sentry.api.service.thrift.TAlterSentryRoleRevokePrivilegeRequest;
+import org.apache.sentry.api.service.thrift.TAlterSentryRoleRevokePrivilegeResponse;
+import org.apache.sentry.api.service.thrift.TCreateSentryRoleRequest;
+import org.apache.sentry.api.service.thrift.TCreateSentryRoleResponse;
+import org.apache.sentry.api.service.thrift.TDropSentryRoleRequest;
+import org.apache.sentry.api.service.thrift.TDropSentryRoleResponse;
+import org.apache.sentry.api.service.thrift.TSentryGroup;
+import org.apache.sentry.api.service.thrift.TSentryPrivilege;
 import org.apache.sentry.core.common.utils.ThriftUtil;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
-import org.apache.sentry.service.thrift.Status;
+import org.apache.sentry.service.common.ServiceConstants.ServerConfig;
+import org.apache.sentry.api.common.Status;
 import org.apache.sentry.service.thrift.TSentryResponseStatus;
 
 import com.google.common.base.Joiner;
@@ -225,8 +225,8 @@ public final class JsonLogEntityFactory {
 
   // log entity for generic model create role
   public JsonLogEntity createJsonLogEntity(
-      org.apache.sentry.provider.db.generic.service.thrift.TCreateSentryRoleRequest request,
-      org.apache.sentry.provider.db.generic.service.thrift.TCreateSentryRoleResponse response,
+      org.apache.sentry.api.generic.thrift.TCreateSentryRoleRequest request,
+      org.apache.sentry.api.generic.thrift.TCreateSentryRoleResponse response,
       Configuration conf) {
     GMAuditMetadataLogEntity gmamle = createCommonGMAMLE(conf, response.getStatus(),
         request.getRequestorUserName(), request.getClass().getName(), request.getComponent());
@@ -237,8 +237,8 @@ public final class JsonLogEntityFactory {
 
   // log entity for generic model drop role
   public JsonLogEntity createJsonLogEntity(
-      org.apache.sentry.provider.db.generic.service.thrift.TDropSentryRoleRequest request,
-      org.apache.sentry.provider.db.generic.service.thrift.TDropSentryRoleResponse response,
+      org.apache.sentry.api.generic.thrift.TDropSentryRoleRequest request,
+      org.apache.sentry.api.generic.thrift.TDropSentryRoleResponse response,
       Configuration conf) {
     GMAuditMetadataLogEntity gmamle = createCommonGMAMLE(conf, response.getStatus(),
         request.getRequestorUserName(), request.getClass().getName(), request.getComponent());
@@ -249,8 +249,8 @@ public final class JsonLogEntityFactory {
 
   // log entity for generic model grant privilege
   public JsonLogEntity createJsonLogEntity(
-      org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleGrantPrivilegeRequest request,
-      org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleGrantPrivilegeResponse response,
+      org.apache.sentry.api.generic.thrift.TAlterSentryRoleGrantPrivilegeRequest request,
+      org.apache.sentry.api.generic.thrift.TAlterSentryRoleGrantPrivilegeResponse response,
       Configuration conf) {
     GMAuditMetadataLogEntity gmamle = createCommonGMAMLE(conf, response.getStatus(),
         request.getRequestorUserName(), request.getClass().getName(), request.getComponent());
@@ -271,8 +271,8 @@ public final class JsonLogEntityFactory {
 
   // log entity for generic model revoke privilege
   public JsonLogEntity createJsonLogEntity(
-      org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleRevokePrivilegeRequest request,
-      org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleRevokePrivilegeResponse response,
+      org.apache.sentry.api.generic.thrift.TAlterSentryRoleRevokePrivilegeRequest request,
+      org.apache.sentry.api.generic.thrift.TAlterSentryRoleRevokePrivilegeResponse response,
       Configuration conf) {
     GMAuditMetadataLogEntity gmamle = createCommonGMAMLE(conf, response.getStatus(),
         request.getRequestorUserName(), request.getClass().getName(), request.getComponent());
@@ -293,8 +293,8 @@ public final class JsonLogEntityFactory {
 
   // log entity for generic model add role to group
   public JsonLogEntity createJsonLogEntity(
-      org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleAddGroupsRequest request,
-      org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleAddGroupsResponse response,
+      org.apache.sentry.api.generic.thrift.TAlterSentryRoleAddGroupsRequest request,
+      org.apache.sentry.api.generic.thrift.TAlterSentryRoleAddGroupsResponse response,
       Configuration conf) {
     GMAuditMetadataLogEntity gmamle = createCommonGMAMLE(conf, response.getStatus(),
         request.getRequestorUserName(), request.getClass().getName(), request.getComponent());
@@ -307,8 +307,8 @@ public final class JsonLogEntityFactory {
 
   // log entity for hive delete role from group
   public JsonLogEntity createJsonLogEntity(
-      org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleDeleteGroupsRequest request,
-      org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleDeleteGroupsResponse response,
+      org.apache.sentry.api.generic.thrift.TAlterSentryRoleDeleteGroupsRequest request,
+      org.apache.sentry.api.generic.thrift.TAlterSentryRoleDeleteGroupsResponse response,
       Configuration conf) {
     GMAuditMetadataLogEntity gmamle = createCommonGMAMLE(conf, response.getStatus(),
         request.getRequestorUserName(), request.getClass().getName(), request.getComponent());

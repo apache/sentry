@@ -25,7 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.lang.Thread.sleep;
-import static org.apache.sentry.service.thrift.ServiceConstants.ServerConfig.SENTRY_HA_ZOOKEEPER_QUORUM;
+import static org.apache.sentry.service.common.ServiceConstants.ServerConfig.SENTRY_HA_ZOOKEEPER_QUORUM;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

@@ -22,10 +22,10 @@ import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import org.apache.commons.io.FileUtils;
 import org.apache.sentry.core.common.exception.SentryUserException;
-import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceIntegrationBase;
-import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
-import org.apache.sentry.provider.db.generic.service.thrift.TSentryRole;
-import org.apache.sentry.service.thrift.ServiceConstants;
+import org.apache.sentry.api.generic.thrift.SentryGenericServiceIntegrationBase;
+import org.apache.sentry.api.generic.thrift.TSentryPrivilege;
+import org.apache.sentry.api.generic.thrift.TSentryRole;
+import org.apache.sentry.api.common.ApiConstants;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -55,7 +55,7 @@ public class TestSentryShellIndexer extends SentryGenericServiceIntegrationBase 
   public void prepareForTest() throws Exception {
     confDir = Files.createTempDir();
     confPath = new File(confDir, "sentry-site.xml");
-    conf.set(ServiceConstants.ClientConfig.SERVICE_NAME, service);
+    conf.set(ApiConstants.ClientConfig.SERVICE_NAME, service);
     if (confPath.createNewFile()) {
       FileOutputStream to = new FileOutputStream(confPath);
       conf.writeXml(to);

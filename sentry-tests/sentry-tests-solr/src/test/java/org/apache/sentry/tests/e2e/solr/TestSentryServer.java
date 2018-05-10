@@ -28,14 +28,14 @@ import java.util.concurrent.TimeoutException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.sentry.provider.db.generic.SentryGenericProviderBackend;
-import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
-import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
+import org.apache.sentry.api.generic.thrift.SentryGenericServiceClient;
+import org.apache.sentry.api.generic.thrift.SentryGenericServiceClientFactory;
+import org.apache.sentry.api.common.ApiConstants;
 import org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.service.thrift.SentryService;
 import org.apache.sentry.service.thrift.SentryServiceFactory;
-import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
+import org.apache.sentry.service.common.ServiceConstants.ServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,8 +131,8 @@ public class TestSentryServer implements Closeable {
   private Configuration getClientConfig() {
     Configuration conf = new Configuration(false);
     conf.set(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_NONE);
-    conf.set(ClientConfig.SERVER_RPC_ADDRESS, sentryService.getAddress().getHostName());
-    conf.set(ClientConfig.SERVER_RPC_PORT, String.valueOf(sentryService.getAddress().getPort()));
+    conf.set(ApiConstants.ClientConfig.SERVER_RPC_ADDRESS, sentryService.getAddress().getHostName());
+    conf.set(ApiConstants.ClientConfig.SERVER_RPC_PORT, String.valueOf(sentryService.getAddress().getPort()));
     conf.set(AuthzConfVars.AUTHZ_PROVIDER_BACKEND.getVar(),
         SentryGenericProviderBackend.class.getName());
     conf.set("sentry.provider",

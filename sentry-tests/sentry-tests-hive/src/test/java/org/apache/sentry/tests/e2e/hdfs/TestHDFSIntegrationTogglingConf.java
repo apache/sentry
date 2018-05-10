@@ -22,7 +22,7 @@ package org.apache.sentry.tests.e2e.hdfs;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.sentry.hdfs.SentryAuthorizationConstants;
-import org.apache.sentry.service.thrift.ServiceConstants;
+import org.apache.sentry.service.common.ServiceConstants;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

@@ -23,8 +23,8 @@ import org.apache.sentry.core.common.transport.RetryClientInvocationHandler;
 import org.apache.sentry.core.common.transport.SentryPolicyClientTransportConfig;
 import org.apache.sentry.core.common.transport.SentryTransportFactory;
 import org.apache.sentry.core.common.transport.SentryTransportPool;
-import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
-import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClientDefaultImpl;
+import org.apache.sentry.api.service.thrift.SentryPolicyServiceClient;
+import org.apache.sentry.api.service.thrift.SentryPolicyServiceClientDefaultImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

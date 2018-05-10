@@ -32,8 +32,8 @@ import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.sentry.core.common.exception.SentryUserException;
-import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
-import org.apache.sentry.provider.db.service.thrift.TSentryRole;
+import org.apache.sentry.api.service.thrift.TSentryPrivilege;
+import org.apache.sentry.api.service.thrift.TSentryRole;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
 import org.junit.After;
 import org.junit.Before;

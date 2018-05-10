@@ -43,7 +43,7 @@ import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.common.exception.SentryConfigurationException;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.provider.common.AuthorizationProvider;
-import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
+import org.apache.sentry.api.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.service.thrift.SentryServiceClientFactory;
 
 import java.security.CodeSource;

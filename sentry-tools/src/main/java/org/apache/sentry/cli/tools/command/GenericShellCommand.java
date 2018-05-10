@@ -28,11 +28,11 @@ import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.sentry.core.common.exception.SentryUserException;
-import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
-import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
-import org.apache.sentry.provider.db.generic.service.thrift.TSentryRole;
+import org.apache.sentry.api.generic.thrift.SentryGenericServiceClient;
+import org.apache.sentry.api.generic.thrift.TSentryPrivilege;
+import org.apache.sentry.api.generic.thrift.TSentryRole;
 import org.apache.sentry.cli.tools.ShellCommand;
-import org.apache.sentry.provider.db.generic.tools.TSentryPrivilegeConverter;
+import org.apache.sentry.api.tools.TSentryPrivilegeConverter;
 
 /**
  * The ShellCommand implementation for the Generic clients

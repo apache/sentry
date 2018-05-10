@@ -45,11 +45,11 @@ import org.apache.sentry.hdfs.SentryMalformedPathException;
 import org.apache.sentry.hdfs.UniquePathsUpdate;
 import org.apache.sentry.hdfs.Updateable.Update;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
+import org.apache.sentry.api.service.thrift.SentryMetrics;
+import org.apache.sentry.api.service.thrift.TSentryAuthorizable;
+import org.apache.sentry.api.common.SentryServiceUtil;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntityType;
-import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
-import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntity;
-import org.apache.sentry.service.thrift.SentryServiceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

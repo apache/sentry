@@ -18,8 +18,8 @@
  */
 package org.apache.sentry.provider.db.generic.tools;
 
+import org.apache.sentry.api.generic.thrift.TSentryPrivilege;
 import org.apache.sentry.core.common.exception.SentryUserException;
-import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
 
 public interface TSentryPrivilegeConverter {
 

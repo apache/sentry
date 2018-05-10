@@ -18,8 +18,8 @@
 package org.apache.sentry.cli.tools.command.hive;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
-import org.apache.sentry.service.thrift.ServiceConstants;
+import org.apache.sentry.api.common.ApiConstants;
+import org.apache.sentry.api.service.thrift.TSentryPrivilege;
 
 public final class CommandUtil {
 
@@ -37,24 +37,24 @@ public final class CommandUtil {
     String tableName = tSentryPrivilege.getTableName();
     String columnName = tSentryPrivilege.getColumnName();
     String uri = tSentryPrivilege.getURI();
-    if (ServiceConstants.PrivilegeScope.SERVER.toString().equals(tSentryPrivilege.getPrivilegeScope())) {
+    if (ApiConstants.PrivilegeScope.SERVER.toString().equals(tSentryPrivilege.getPrivilegeScope())) {
       if (StringUtils.isEmpty(serverName)) {
         throw new IllegalArgumentException("The hierarchy of privilege is not correct.");
       }
-    } else if (ServiceConstants.PrivilegeScope.URI.toString().equals(tSentryPrivilege.getPrivilegeScope())) {
+    } else if (ApiConstants.PrivilegeScope.URI.toString().equals(tSentryPrivilege.getPrivilegeScope())) {
       if (StringUtils.isEmpty(serverName) || StringUtils.isEmpty(uri)) {
         throw new IllegalArgumentException("The hierarchy of privilege is not correct.");
       }
-    } else if (ServiceConstants.PrivilegeScope.DATABASE.toString().equals(tSentryPrivilege.getPrivilegeScope())) {
+    } else if (ApiConstants.PrivilegeScope.DATABASE.toString().equals(tSentryPrivilege.getPrivilegeScope())) {
       if (StringUtils.isEmpty(serverName) || StringUtils.isEmpty(dbName)) {
         throw new IllegalArgumentException("The hierarchy of privilege is not correct.");
       }
-    } else if (ServiceConstants.PrivilegeScope.TABLE.toString().equals(tSentryPrivilege.getPrivilegeScope())) {
+    } else if (ApiConstants.PrivilegeScope.TABLE.toString().equals(tSentryPrivilege.getPrivilegeScope())) {
       if (StringUtils.isEmpty(serverName) || StringUtils.isEmpty(dbName)
               || StringUtils.isEmpty(tableName)) {
         throw new IllegalArgumentException("The hierarchy of privilege is not correct.");
       }
-    } else if (ServiceConstants.PrivilegeScope.COLUMN.toString().equals(tSentryPrivilege.getPrivilegeScope())
+    } else if (ApiConstants.PrivilegeScope.COLUMN.toString().equals(tSentryPrivilege.getPrivilegeScope())
       && (StringUtils.isEmpty(serverName) || StringUtils.isEmpty(dbName)
               || StringUtils.isEmpty(tableName) || StringUtils.isEmpty(columnName))) {
         throw new IllegalArgumentException("The hierarchy of privilege is not correct.");

@@ -20,10 +20,8 @@ package org.apache.sentry.provider.db.generic;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.provider.common.ProviderBackendContext;
+import org.apache.sentry.api.common.ApiConstants;
 import org.junit.Test;
-
-import static org.apache.sentry.service.thrift.ServiceConstants.ClientConfig.COMPONENT_TYPE;
-import static org.apache.sentry.service.thrift.ServiceConstants.ClientConfig.SERVICE_NAME;
 import static org.junit.Assert.assertEquals;
 
 public class TestSentryGenericProviderBackend {
@@ -32,8 +30,8 @@ public class TestSentryGenericProviderBackend {
     Configuration conf = new Configuration();
     String sampleServiceName = "sampleServiceName123";
     String sampleComponentType = "sampleComponentType123";
-    conf.set(SERVICE_NAME, sampleServiceName);
-    conf.set(COMPONENT_TYPE, sampleComponentType);
+    conf.set(ApiConstants.ClientConfig.SERVICE_NAME, sampleServiceName);
+    conf.set(ApiConstants.ClientConfig.COMPONENT_TYPE, sampleComponentType);
     SentryGenericProviderBackend providerBackend = new SentryGenericProviderBackend(conf, "resource");
     assertEquals(sampleComponentType, providerBackend.getComponentType());
     assertEquals(sampleServiceName, providerBackend.getServiceName());

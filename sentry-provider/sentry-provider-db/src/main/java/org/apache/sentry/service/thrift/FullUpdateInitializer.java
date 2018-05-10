@@ -27,7 +27,7 @@ import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.sentry.hdfs.PathsUpdate;
 import org.apache.sentry.hdfs.SentryMalformedPathException;
 import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
-import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
+import org.apache.sentry.api.service.thrift.SentryMetrics;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

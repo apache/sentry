@@ -20,11 +20,11 @@ package org.apache.sentry.shell;
 
 import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.provider.common.AuthorizationComponent;
-import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
-import org.apache.sentry.provider.db.generic.tools.GenericPrivilegeConverter;
+import org.apache.sentry.api.generic.thrift.SentryGenericServiceClient;
+import org.apache.sentry.api.tools.GenericPrivilegeConverter;
 import org.apache.sentry.cli.tools.command.GenericShellCommand;
-import org.apache.sentry.provider.db.generic.tools.TSentryPrivilegeConverter;
-import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
+import org.apache.sentry.api.tools.TSentryPrivilegeConverter;
+import org.apache.sentry.api.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.cli.tools.ShellCommand;
 import org.apache.sentry.cli.tools.command.hive.HiveShellCommand;
 

@@ -54,9 +54,9 @@ import org.apache.sentry.hdfs.UniquePathsUpdate;
 import org.apache.sentry.service.thrift.SentryHMSClient;
 import org.apache.sentry.service.thrift.HiveConnectionFactory;
 import org.apache.sentry.service.thrift.HiveSimpleConnectionFactory;
-import org.apache.sentry.service.thrift.ServiceConstants;
+import org.apache.sentry.service.common.ServiceConstants;
 import org.apache.sentry.service.thrift.HMSClient;
-import org.apache.sentry.provider.db.service.thrift.TSentryAuthorizable;
+import org.apache.sentry.api.service.thrift.TSentryAuthorizable;
 import static org.apache.sentry.hdfs.ServiceConstants.ServerConfig.SENTRY_SERVICE_FULL_UPDATE_PUBSUB;
 
 import org.junit.Before;

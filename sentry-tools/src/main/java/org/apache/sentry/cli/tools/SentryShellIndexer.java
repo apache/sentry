@@ -24,11 +24,11 @@ import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.sentry.api.common.ApiConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.sentry.provider.common.AuthorizationComponent.HBASE_INDEXER;
-import static org.apache.sentry.service.thrift.ServiceConstants.ClientConfig.SERVICE_NAME;
 
 /**
  * SentryShellIndexer is an admin tool, and responsible for the management of repository.
@@ -92,7 +92,7 @@ public class SentryShellIndexer extends SentryShellGeneric {
 
   @Override
   protected String getService(Configuration conf) throws Exception {
-    String service = conf.get(SERVICE_NAME, serviceName);
+    String service = conf.get(ApiConstants.ClientConfig.SERVICE_NAME, serviceName);
     if (service == null) {
       throw new IllegalArgumentException("Service was not defined. Please, use -s command option, or sentry.provider.backend.generic.service-name configuration entry.");
     }

@@ -32,11 +32,11 @@ import org.apache.sentry.core.common.exception.SentryConfigurationException;
 import org.apache.sentry.provider.common.CacheProvider;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
-import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
-import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
-import org.apache.sentry.provider.db.generic.service.thrift.TSentryRole;
-import org.apache.sentry.provider.db.generic.tools.TSentryPrivilegeConverter;
-import org.apache.sentry.service.thrift.ServiceConstants;
+import org.apache.sentry.api.generic.thrift.SentryGenericServiceClient;
+import org.apache.sentry.api.generic.thrift.SentryGenericServiceClientFactory;
+import org.apache.sentry.api.generic.thrift.TSentryRole;
+import org.apache.sentry.api.common.ApiConstants;
+import org.apache.sentry.api.tools.TSentryPrivilegeConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,10 +60,10 @@ public class SentryGenericProviderBackend extends CacheProvider implements Provi
   public SentryGenericProviderBackend(Configuration conf, String resource) //NOPMD
       throws Exception {
     this.conf = conf;
-    this.enableCaching = conf.getBoolean(ServiceConstants.ClientConfig.ENABLE_CACHING, ServiceConstants.ClientConfig.ENABLE_CACHING_DEFAULT);
-    this.privilegeConverter = conf.get(ServiceConstants.ClientConfig.PRIVILEGE_CONVERTER);
-    this.setServiceName(conf.get(ServiceConstants.ClientConfig.SERVICE_NAME));
-    this.setComponentType(conf.get(ServiceConstants.ClientConfig.COMPONENT_TYPE));
+    this.enableCaching = conf.getBoolean(ApiConstants.ClientConfig.ENABLE_CACHING, ApiConstants.ClientConfig.ENABLE_CACHING_DEFAULT);
+    this.privilegeConverter = conf.get(ApiConstants.ClientConfig.PRIVILEGE_CONVERTER);
+    this.setServiceName(conf.get(ApiConstants.ClientConfig.SERVICE_NAME));
+    this.setComponentType(conf.get(ApiConstants.ClientConfig.COMPONENT_TYPE));
   }
 
   @Override
@@ -72,12 +72,12 @@ public class SentryGenericProviderBackend extends CacheProvider implements Provi
       throw new IllegalStateException("SentryGenericProviderBackend has already been initialized, cannot be initialized twice");
     }
 
-    Preconditions.checkNotNull(serviceName, "Service name is not defined. Use configuration parameter: " + conf.get(ServiceConstants.ClientConfig.SERVICE_NAME));
-    Preconditions.checkNotNull(componentType, "Component type is not defined. Use configuration parameter: " + conf.get(ServiceConstants.ClientConfig.COMPONENT_TYPE));
+    Preconditions.checkNotNull(serviceName, "Service name is not defined. Use configuration parameter: " + conf.get(ApiConstants.ClientConfig.SERVICE_NAME));
+    Preconditions.checkNotNull(componentType, "Component type is not defined. Use configuration parameter: " + conf.get(ApiConstants.ClientConfig.COMPONENT_TYPE));
 
     if (enableCaching) {
       if (privilegeConverter == null) {
-        throw new SentryConfigurationException(ServiceConstants.ClientConfig.PRIVILEGE_CONVERTER + " not configured.");
+        throw new SentryConfigurationException(ApiConstants.ClientConfig.PRIVILEGE_CONVERTER + " not configured.");
       }
 
       Constructor<?> privilegeConverterConstructor;

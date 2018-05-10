@@ -36,7 +36,7 @@ import org.apache.thrift.TException;
 import org.apache.sentry.service.thrift.SentryHMSClient;
 import org.apache.sentry.service.thrift.HiveConnectionFactory;
 import org.apache.sentry.service.thrift.HiveNotificationFetcher;
-import org.apache.sentry.service.thrift.SentryServiceUtil;
+import org.apache.sentry.api.common.SentryServiceUtil;
 import org.apache.sentry.service.thrift.SentryStateBank;
 import org.apache.sentry.service.thrift.SentryServiceState;
 import org.apache.sentry.service.thrift.HMSFollowerState;
