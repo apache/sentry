@@ -371,4 +371,128 @@ public class TestDbColumnLevelMetaDataOps extends AbstractTestWithStaticConfigur
     String query = "SHOW TABLE EXTENDED IN " + TEST_COL_METADATA_OPS_DB + " LIKE " + TEST_COL_METADATA_OPS_TB;
     validateSemanticException(query, USER1_1);
   }
+
+  /**
+   * User cannot exchange partition of tables without any privilege on input table and output table
+   * @throws Exception
+   */
+  @Test
+  public void testAlterTableExchangeNoPrivilege() throws Exception {
+    final String PAR_ROLE_NAME = "config1_user_role";
+    final String PAR_GROUP_NAME = USERGROUP1;
+    final String PAR_DB_NAME = "config1_test_database1";
+    final String PAR_INPUT_TABLE_NAME = "aliens";
+    final String PAR_OUTPUT_TABLE_NAME = "movie_stars";
+
+    establishSession(ADMIN1);
+    statement.execute("DROP DATABASE IF EXISTS " + PAR_DB_NAME + " CASCADE");
+    statement.execute("CREATE DATABASE " + PAR_DB_NAME);
+    statement.execute("CREATE ROLE " + PAR_ROLE_NAME);
+    statement.execute("GRANT ROLE " + PAR_ROLE_NAME + " TO GROUP " + PAR_GROUP_NAME);
+    statement.execute("CREATE TABLE " + PAR_DB_NAME + "." + PAR_INPUT_TABLE_NAME + " (name string) PARTITIONED BY (home_planet string, diet string)");
+    statement.execute("CREATE TABLE " + PAR_DB_NAME + "." + PAR_OUTPUT_TABLE_NAME + " (name string) PARTITIONED BY (home_planet string, diet string)");
+    statement.execute("ALTER TABLE " + PAR_DB_NAME + "." + PAR_INPUT_TABLE_NAME + " ADD PARTITION (home_planet='earth', diet='milk shakes')");
+    statement.execute("ALTER TABLE " + PAR_DB_NAME + "." + PAR_INPUT_TABLE_NAME + " ADD PARTITION (home_planet='trapis-4', diet='sentient lifeforms with cheese')");
+
+    String query = "ALTER TABLE " + PAR_DB_NAME + "." + PAR_OUTPUT_TABLE_NAME + " EXCHANGE PARTITION (home_planet='earth', diet='milk shakes') WITH TABLE " + PAR_DB_NAME + "." + PAR_INPUT_TABLE_NAME;
+    validateSemanticException(query, USER1_1);
+  }
+
+  /**
+   * User cannot exchange partition of tables without input required privilege
+   * @throws Exception
+   */
+  @Test
+  public void testAlterTableExchangeNoPrivilegeOnInput() throws Exception {
+    final String PAR_ROLE_NAME = "config1_user_role";
+    final String PAR_GROUP_NAME = USERGROUP1;
+    final String PAR_DB_NAME = "config1_test_database2";
+    final String PAR_INPUT_TABLE_NAME = "aliens";
+    final String PAR_OUTPUT_TABLE_NAME = "movie_stars";
+
+    establishSession(ADMIN1);
+    statement.execute("DROP DATABASE IF EXISTS " + PAR_DB_NAME + " CASCADE");
+    statement.execute("CREATE DATABASE " + PAR_DB_NAME);
+    statement.execute("CREATE ROLE " + PAR_ROLE_NAME);
+    statement.execute("GRANT ROLE " + PAR_ROLE_NAME + " TO GROUP " + PAR_GROUP_NAME);
+    statement.execute("CREATE TABLE " + PAR_DB_NAME + "." + PAR_INPUT_TABLE_NAME + " (name string) PARTITIONED BY (home_planet string, diet string)");
+    statement.execute("CREATE TABLE " + PAR_DB_NAME + "." + PAR_OUTPUT_TABLE_NAME + " (name string) PARTITIONED BY (home_planet string, diet string)");
+    statement.execute("ALTER TABLE " + PAR_DB_NAME + "." + PAR_INPUT_TABLE_NAME + " ADD PARTITION (home_planet='earth', diet='milk shakes')");
+    statement.execute("ALTER TABLE " + PAR_DB_NAME + "." + PAR_INPUT_TABLE_NAME + " ADD PARTITION (home_planet='trapis-4', diet='sentient lifeforms with cheese')");
+
+    // grant propert privilege to output table
+    statement.execute("GRANT INSERT ON TABLE " + PAR_DB_NAME + "." + PAR_OUTPUT_TABLE_NAME + " TO ROLE " + PAR_ROLE_NAME);
+    statement.execute("GRANT ALTER ON TABLE " + PAR_DB_NAME + "." + PAR_OUTPUT_TABLE_NAME + " TO ROLE " + PAR_ROLE_NAME);
+
+    // move a partition from a source table to target table and alter each table's metadata.
+    // ALTER TABLE <dest_table> EXCHANGE PARTITION (<[partial] partition spec>) WITH TABLE <src_table>
+    String query = "ALTER TABLE " + PAR_DB_NAME + "." + PAR_OUTPUT_TABLE_NAME + " EXCHANGE PARTITION (home_planet='earth', diet='milk shakes') WITH TABLE " + PAR_DB_NAME + "." + PAR_INPUT_TABLE_NAME;
+    validateSemanticException(query, USER1_1);
+  }
+
+  /**
+   * User cannot exchange partition of tables without output required privilege
+   * @throws Exception
+   */
+  @Test
+  public void testAlterTableExchangeNoPrivilegeOnOutput() throws Exception {
+    final String PAR_ROLE_NAME = "config1_user_role";
+    final String PAR_GROUP_NAME = USERGROUP1;
+    final String PAR_DB_NAME = "config1_test_database3";
+    final String PAR_INPUT_TABLE_NAME = "aliens";
+    final String PAR_OUTPUT_TABLE_NAME = "movie_stars";
+
+    establishSession(ADMIN1);
+    statement.execute("DROP DATABASE IF EXISTS " + PAR_DB_NAME + " CASCADE");
+    statement.execute("CREATE DATABASE " + PAR_DB_NAME);
+    statement.execute("CREATE ROLE " + PAR_ROLE_NAME);
+    statement.execute("GRANT ROLE " + PAR_ROLE_NAME + " TO GROUP " + PAR_GROUP_NAME);
+    statement.execute("CREATE TABLE " + PAR_DB_NAME + "." + PAR_INPUT_TABLE_NAME + " (name string) PARTITIONED BY (home_planet string, diet string)");
+    statement.execute("CREATE TABLE " + PAR_DB_NAME + "." + PAR_OUTPUT_TABLE_NAME + " (name string) PARTITIONED BY (home_planet string, diet string)");
+    statement.execute("ALTER TABLE " + PAR_DB_NAME + "." + PAR_INPUT_TABLE_NAME + " ADD PARTITION (home_planet='earth', diet='milk shakes')");
+    statement.execute("ALTER TABLE " + PAR_DB_NAME + "." + PAR_INPUT_TABLE_NAME + " ADD PARTITION (home_planet='trapis-4', diet='sentient lifeforms with cheese')");
+
+    // grant propert privilege to input table
+    statement.execute("GRANT ALL ON TABLE " + PAR_DB_NAME + "." + PAR_INPUT_TABLE_NAME + " TO ROLE " + PAR_ROLE_NAME);
+
+    // move a partition from a source table to target table and alter each table's metadata.
+    // ALTER TABLE <dest_table> EXCHANGE PARTITION (<[partial] partition spec>) WITH TABLE <src_table>
+    String query = "ALTER TABLE " + PAR_DB_NAME + "." + PAR_OUTPUT_TABLE_NAME + " EXCHANGE PARTITION (home_planet='earth', diet='milk shakes') WITH TABLE " + PAR_DB_NAME + "." + PAR_INPUT_TABLE_NAME;
+    validateSemanticException(query, USER1_1);
+  }
+
+  /**
+   * User can exchange partition of tables with both input and output required privileges
+   * @throws Exception
+   */
+  @Test
+  public void testAlterTableExchangeWithPrivilege() throws Exception {
+    final String PAR_ROLE_NAME = "config1_user_role";
+    final String PAR_GROUP_NAME = USERGROUP1;
+    final String PAR_DB_NAME = "config1_test_database4";
+    final String PAR_INPUT_TABLE_NAME = "aliens";
+    final String PAR_OUTPUT_TABLE_NAME = "movie_stars";
+
+    establishSession(ADMIN1);
+    statement.execute("DROP DATABASE IF EXISTS " + PAR_DB_NAME + " CASCADE");
+    statement.execute("CREATE DATABASE " + PAR_DB_NAME);
+    statement.execute("CREATE ROLE " + PAR_ROLE_NAME);
+    statement.execute("GRANT ROLE " + PAR_ROLE_NAME + " TO GROUP " + PAR_GROUP_NAME);
+    statement.execute("CREATE TABLE " + PAR_DB_NAME + "." + PAR_INPUT_TABLE_NAME + " (name string) PARTITIONED BY (home_planet string, diet string)");
+    statement.execute("CREATE TABLE " + PAR_DB_NAME + "." + PAR_OUTPUT_TABLE_NAME + " (name string) PARTITIONED BY (home_planet string, diet string)");
+    statement.execute("ALTER TABLE " + PAR_DB_NAME + "." + PAR_INPUT_TABLE_NAME + " ADD PARTITION (home_planet='earth', diet='milk shakes')");
+    statement.execute("ALTER TABLE " + PAR_DB_NAME + "." + PAR_INPUT_TABLE_NAME + " ADD PARTITION (home_planet='trapis-4', diet='sentient lifeforms with cheese')");
+
+    // grant propert privilege to input table
+    statement.execute("GRANT ALL ON TABLE " + PAR_DB_NAME + "." + PAR_INPUT_TABLE_NAME + " TO ROLE " + PAR_ROLE_NAME);
+    // grant propert privilege to output table
+    statement.execute("GRANT INSERT ON TABLE " + PAR_DB_NAME + "." + PAR_OUTPUT_TABLE_NAME + " TO ROLE " + PAR_ROLE_NAME);
+    statement.execute("GRANT ALTER ON TABLE " + PAR_DB_NAME + "." + PAR_OUTPUT_TABLE_NAME + " TO ROLE " + PAR_ROLE_NAME);
+
+    // move a partition from a source table to target table and alter each table's metadata.
+    // ALTER TABLE <dest_table> EXCHANGE PARTITION (<[partial] partition spec>) WITH TABLE <src_table>
+    String query = "ALTER TABLE " + PAR_DB_NAME + "." + PAR_OUTPUT_TABLE_NAME + " EXCHANGE PARTITION (home_planet='earth', diet='milk shakes') WITH TABLE " + PAR_DB_NAME + "." + PAR_INPUT_TABLE_NAME;
+    establishSession(USER1_1);
+    statement.execute(query);
+  }
 }
