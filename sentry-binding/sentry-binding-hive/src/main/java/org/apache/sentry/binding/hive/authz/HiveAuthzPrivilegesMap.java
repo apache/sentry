@@ -112,6 +112,16 @@ public class HiveAuthzPrivilegesMap {
         setOperationType(HiveOperationType.DDL).
         build();
 
+    // input required privilege from Hive: SELECT on column level and DELETE on table level
+    // output required privilege from Hive: INSERT on table level
+    // Sentry makes it more restrictive, and requires ALL at input, INSERT and ALTER at output
+    HiveAuthzPrivileges alterTableExchangePrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
+        addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.ALL)).
+        addOutputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.INSERT, DBModelAction.ALTER)).
+        setOperationScope(HiveOperationScope.TABLE).
+        setOperationType(HiveOperationType.DDL).
+        build();
+
     HiveAuthzPrivileges alterPartPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
         addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.ALTER)).
         setOperationScope(HiveOperationScope.TABLE).
@@ -240,6 +250,8 @@ public class HiveAuthzPrivilegesMap {
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_ADDCOLS, alterTablePrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_REPLACECOLS, alterTablePrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_PARTCOLTYPE, alterPartPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_EXCHANGEPARTITION, alterTableExchangePrivilege);
+
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERTABLE_BUCKETNUM, alterPartPrivilege);
     hiveAuthzStmtPrivMap.put(HiveOperation.ALTERPARTITION_BUCKETNUM, alterPartPrivilege);
 
