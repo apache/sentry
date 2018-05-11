@@ -34,6 +34,7 @@ public final class AccessConstants {
   public static final String ALTER = "alter";
   public static final String CREATE = "create";
   public static final String DROP = "drop";
+  public static final String OWNER = "OWNER";
   public static final String INDEX = "index";
   public static final String LOCK = "lock";
 

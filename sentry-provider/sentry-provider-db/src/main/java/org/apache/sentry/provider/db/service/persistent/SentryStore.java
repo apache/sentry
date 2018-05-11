@@ -2526,18 +2526,36 @@ public class SentryStore {
         retVal.put(authzObj, pUpdate);
       }
       for (MSentryRole mRole : mPriv.getRoles()) {
-        String existingPriv = pUpdate.get(mRole.getRoleName());
-        if (existingPriv == null) {
-          pUpdate.put(new TPrivilegeEntity(TPrivilegeEntityType.ROLE, mRole.getRoleName()),
-                  mPriv.getAction().toUpperCase());
-        } else {
-          pUpdate.put(new TPrivilegeEntity(TPrivilegeEntityType.ROLE, mRole.getRoleName()), existingPriv + "," +
-                  mPriv.getAction().toUpperCase());
-        }
+        pUpdate = addPrivilegeEntry (mPriv, TPrivilegeEntityType.ROLE, mRole.getRoleName(), pUpdate);
+      }
+      for (MSentryUser mUser : mPriv.getUsers()) {
+        pUpdate = addPrivilegeEntry (mPriv, TPrivilegeEntityType.USER, mUser.getUserName(), pUpdate);
       }
     }
     query.closeAll();
     return retVal;
+  }
+
+  private static Map<TPrivilegeEntity, String> addPrivilegeEntry(MSentryPrivilege mPriv, TPrivilegeEntityType tEntityType,
+    String entity, Map<TPrivilegeEntity, String> update) {
+    String action;
+    String newAction;
+    String existingPriv = update.get(entity);
+    action = mPriv.getAction().toUpperCase();
+    newAction = mPriv.getAction().toUpperCase();
+    if(action.equals(AccessConstants.OWNER)) {
+      // Translate owner privilege to actual privilege.
+      newAction = AccessConstants.ACTION_ALL;
+    }
+
+    if (existingPriv == null) {
+      update.put(new TPrivilegeEntity(tEntityType, entity),
+              newAction);
+    } else {
+      update.put(new TPrivilegeEntity(tEntityType, entity), existingPriv + "," +
+              newAction);
+    }
+    return update;
   }
 
   /**

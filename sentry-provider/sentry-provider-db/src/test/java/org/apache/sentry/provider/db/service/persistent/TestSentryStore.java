@@ -2466,11 +2466,27 @@ public class TestSentryStore extends org.junit.Assert {
     sentryStore.alterSentryRoleAddGroups(grantor, roleName1, groups);
     sentryStore.alterSentryRoleAddGroups(grantor, roleName2, groups);
 
+    //Grant owner privilege to role
+    TSentryPrivilege privilege3 = new TSentryPrivilege();
+    privilege3.setPrivilegeScope("TABLE");
+    privilege3.setServerName("server1");
+    privilege3.setDbName("db3");
+    privilege3.setTableName("tbl1");
+    privilege3.setAction("OWNER");
+    privilege3.setCreateTime(System.currentTimeMillis());
+    sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName1, privilege3);
+    sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName2, privilege3);
+
     PermissionsImage permImage = sentryStore.retrieveFullPermssionsImage();
     Map<String, Map<TPrivilegeEntity, String>> privs = permImage.getPrivilegeImage();
     Map<String, List<String>> roles = permImage.getRoleImage();
     assertEquals(2, privs.get("db1.tbl1").size());
     assertEquals(2, roles.size());
+
+    assertEquals(2, privs.get("db3.tbl1").size());
+    assertEquals("ALL", privs.get("db3.tbl1").get(new TPrivilegeEntity(TPrivilegeEntityType.ROLE, roleName1)));
+    assertEquals("ALL", privs.get("db3.tbl1").get(new TPrivilegeEntity(TPrivilegeEntityType.ROLE, roleName2)));
+
   }
 
   /**
