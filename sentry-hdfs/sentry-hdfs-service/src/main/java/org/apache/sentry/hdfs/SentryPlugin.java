@@ -20,6 +20,7 @@ package org.apache.sentry.hdfs;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.hadoop.conf.Configuration;
@@ -262,7 +263,8 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
 
       for (TSentryPrivilege privilege : request.getPrivileges()) {
         if(!(PrivilegeScope.COLUMN.name().equalsIgnoreCase(privilege.getPrivilegeScope()))) {
-          PermissionsUpdate update = onAlterSentryRoleGrantPrivilegeCore(roleName, privilege);
+          PermissionsUpdate update = onAlterSentryGrantPrivilegeCore(new TPrivilegeEntity(TPrivilegeEntityType.ROLE,
+                  roleName), privilege);
           if (update != null && privilegesUpdateMap != null) {
             privilegesUpdateMap.put(privilege, update);
           }
@@ -275,16 +277,43 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     }
   }
 
-  private PermissionsUpdate onAlterSentryRoleGrantPrivilegeCore(String roleName, TSentryPrivilege privilege)
-      throws SentryPluginException {
+  @Override
+  public void onAlterSentryUserGrantPrivilege(String userName, Set<TSentryPrivilege> privileges,
+                Map<TSentryPrivilege, Update> privilegesUpdateMap) throws SentryPluginException {
+    Preconditions.checkNotNull(userName, "User name is NULL");
+    Preconditions.checkNotNull(privilegesUpdateMap, "Privilege MAP NULL");
+    Preconditions.checkNotNull(privileges, "Privilege Set provided is NULL");
+
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("onAlterSentryUserGrantPrivilege: {}", userName);
+    }
+
+    if (privileges.size() > 0) {
+      for (TSentryPrivilege privilege : privileges) {
+        if(!(PrivilegeScope.COLUMN.name().equalsIgnoreCase(privilege.getPrivilegeScope()))) {
+          PermissionsUpdate update = onAlterSentryGrantPrivilegeCore(new TPrivilegeEntity(TPrivilegeEntityType.USER,
+            userName), privilege);
+          if (update != null && privilegesUpdateMap != null) {
+            privilegesUpdateMap.put(privilege, update);
+          }
+        }
+      }
+    }
+    if (LOGGER.isTraceEnabled()) {
+      // TSentryPrivilege.toString() and update.toString() provides all details
+      LOGGER.trace("onAlterSentryUserGrantPrivilege: {}", privilegesUpdateMap);
+    }
+  }
+
+  private PermissionsUpdate onAlterSentryGrantPrivilegeCore(TPrivilegeEntity tPrivilegeEntity, TSentryPrivilege privilege)
+          throws SentryPluginException {
     String authzObj = getAuthzObj(privilege);
     if (authzObj == null) {
       return null;
     }
 
     PermissionsUpdate update = new PermissionsUpdate();
-    update.addPrivilegeUpdate(authzObj).putToAddPrivileges( new TPrivilegeEntity(TPrivilegeEntityType.ROLE, roleName),
-        privilege.getAction().toUpperCase());
+    update.addPrivilegeUpdate(authzObj).putToAddPrivileges( tPrivilegeEntity, privilege.getAction().toUpperCase());
 
     LOGGER.debug(String.format("onAlterSentryRoleGrantPrivilegeCore, Authz Perm preUpdate [ %s ]",
                   authzObj));
@@ -333,7 +362,8 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
 
       for (TSentryPrivilege privilege : request.getPrivileges()) {
         if(!("COLUMN".equalsIgnoreCase(privilege.getPrivilegeScope()))) {
-          PermissionsUpdate update = onAlterSentryRoleRevokePrivilegeCore(roleName, privilege);
+          PermissionsUpdate update = onAlterSentryRevokePrivilegeCore(new TPrivilegeEntity(TPrivilegeEntityType.ROLE,
+                  roleName), privilege);
           if (update != null && privilegesUpdateMap != null) {
             privilegesUpdateMap.put(privilege, update);
           }
@@ -346,7 +376,36 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     }
   }
 
-  private PermissionsUpdate onAlterSentryRoleRevokePrivilegeCore(String roleName, TSentryPrivilege privilege)
+  @Override
+  public void onAlterSentryUserRevokePrivilege(String userName, Set<TSentryPrivilege> privileges,
+                                               Map<TSentryPrivilege, Update> privilegesUpdateMap)
+          throws SentryPluginException {
+    Preconditions.checkNotNull(userName, "User name is NULL");
+    Preconditions.checkNotNull(privilegesUpdateMap, "Privilege MAP NULL");
+    Preconditions.checkNotNull(privileges, "Privilege Set provided is NULL");
+
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("onAlterSentryUserRevokePrivilege: {}", userName); // request.toString() provides all details
+    }
+
+    if (privileges.size() > 0) {
+      for (TSentryPrivilege privilege : privileges) {
+        if(!("COLUMN".equalsIgnoreCase(privilege.getPrivilegeScope()))) {
+          PermissionsUpdate update = onAlterSentryRevokePrivilegeCore(new TPrivilegeEntity(TPrivilegeEntityType.USER,
+                  userName), privilege);
+          if (update != null && privilegesUpdateMap != null) {
+            privilegesUpdateMap.put(privilege, update);
+          }
+        }
+      }
+    }
+    if (LOGGER.isTraceEnabled()) {
+      // TSentryPrivilege.toString() and Update.toString() provides all details
+      LOGGER.trace("onAlterSentryUserRevokePrivilege: {}", privilegesUpdateMap);
+    }
+  }
+
+  private PermissionsUpdate onAlterSentryRevokePrivilegeCore(TPrivilegeEntity tPrivilegeEntity, TSentryPrivilege privilege)
       throws SentryPluginException {
     String authzObj = getAuthzObj(privilege);
     if (authzObj == null) {
@@ -354,9 +413,7 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     }
 
     PermissionsUpdate update = new PermissionsUpdate();
-    update.addPrivilegeUpdate(authzObj).putToDelPrivileges(
-            new TPrivilegeEntity(TPrivilegeEntityType.ROLE,roleName),
-            privilege.getAction().toUpperCase());
+    update.addPrivilegeUpdate(authzObj).putToDelPrivileges(tPrivilegeEntity, privilege.getAction().toUpperCase());
 
     LOGGER.debug("onAlterSentryRoleRevokePrivilegeCore, Authz Perm preUpdate [ {} ]", authzObj);
     return update;

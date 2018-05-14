@@ -32,6 +32,7 @@ import org.apache.sentry.api.service.thrift.TRenamePrivilegesRequest;
 import org.apache.sentry.api.service.thrift.TSentryPrivilege;
 
 import java.util.Map;
+import java.util.Set;
 
 import static org.apache.sentry.hdfs.Updateable.Update;
 
@@ -65,6 +66,26 @@ public interface SentryPolicyStorePlugin {
         Map<TSentryPrivilege, Update> privilegesUpdateMap) throws SentryPluginException;
 
   void onAlterSentryRoleRevokePrivilege(TAlterSentryRoleRevokePrivilegeRequest tRequest,
+        Map<TSentryPrivilege, Update> privilegesUpdateMap) throws SentryPluginException;
+
+  /**
+   * Used to create an update when privileges are granted to user.
+   * @param userName
+   * @param privileges
+   * @param privilegesUpdateMap
+   * @throws SentryPluginException
+   */
+  void onAlterSentryUserGrantPrivilege(String userName, Set<TSentryPrivilege> privileges,
+        Map<TSentryPrivilege, Update> privilegesUpdateMap) throws SentryPluginException;
+
+  /**
+   * Used to create an update when privileges are revoked from user.
+   * @param userName
+   * @param privileges
+   * @param privilegesUpdateMap
+   * @throws SentryPluginException
+   */
+  void onAlterSentryUserRevokePrivilege(String userName, Set<TSentryPrivilege> privileges,
         Map<TSentryPrivilege, Update> privilegesUpdateMap) throws SentryPluginException;
 
   Update onDropSentryRole(TDropSentryRoleRequest tRequest) throws SentryPluginException;
