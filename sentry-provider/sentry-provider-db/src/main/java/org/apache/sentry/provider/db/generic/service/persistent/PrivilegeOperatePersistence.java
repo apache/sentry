@@ -47,7 +47,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.sentry.provider.db.service.persistent.QueryParamBuilder;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
-import org.apache.sentry.service.common.ServiceConstants;
+import org.apache.sentry.service.thrift.ServiceConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

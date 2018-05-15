@@ -33,7 +33,7 @@ import org.apache.hadoop.hive.metastore.messaging.MessageDeserializer;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageDeserializer;
 import org.apache.sentry.provider.db.service.persistent.PathsImage;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
-import org.apache.sentry.api.service.thrift.SentryMetrics;
+import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

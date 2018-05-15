@@ -414,7 +414,7 @@ public class TestHDFSIntegration {
                           + "/sentrystore_db;create=true");
           properties.put(ServerConfig.SENTRY_STORE_JDBC_PASS, "dummy");
           properties.put("sentry.service.processor.factories",
-                  "org.apache.sentry.api.service.thrift.SentryPolicyStoreProcessorFactory,org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
+                  "org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessorFactory,org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
           properties.put("sentry.policy.store.plugins", "org.apache.sentry.hdfs.SentryPlugin");
           properties.put(ServerConfig.RPC_MIN_THREADS, "3");
           for (Map.Entry<String, String> entry : properties.entrySet()) {

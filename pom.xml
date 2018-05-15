@@ -756,7 +756,6 @@ limitations under the License.
     <module>sentry-tests</module>
     <module>sentry-hdfs</module>
     <module>sentry-tools</module>
-    <module>sentry-service</module>
     <module>sentry-dist</module>
   </modules>
 
@@ -1046,9 +1045,9 @@ limitations under the License.
               <excludes combine.children="append">
                 <exclude>%regex[org.apache.sentry.tests.e2e.*.class]</exclude>
                 <exclude>%regex[org.apache.sentry.binding.hive.TestURI.class]</exclude>
-                <exclude>%regex[org.apache.sentry.api.service.thrift.*.class]</exclude>
+                <exclude>%regex[org.apache.sentry.provider.db.service.thrift.*.class]</exclude>
                 <exclude>%regex[org.apache.solr.handler.admin.*.class]</exclude>
-                <exclude>%regex[org.apache.sentry.api.generic.thrift.*.class]</exclude>
+                <exclude>%regex[org.apache.sentry.provider.db.generic.service.thrift.*.class]</exclude>
                 <exclude>%regex[org.apache.sentry.cli.tools.*.class]</exclude>
               </excludes>
             </configuration>
