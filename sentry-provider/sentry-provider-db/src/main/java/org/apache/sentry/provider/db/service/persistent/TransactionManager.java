@@ -25,7 +25,7 @@ import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.exception.SentryUserException;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
+import org.apache.sentry.service.common.ServiceConstants.ServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +33,7 @@ import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
 import javax.jdo.Transaction;
 
-import org.apache.sentry.provider.db.service.thrift.SentryMetrics;
+import org.apache.sentry.api.service.thrift.SentryMetrics;
 
 import java.util.Random;
 import java.util.concurrent.Callable;

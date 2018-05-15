@@ -33,9 +33,10 @@ import org.apache.sentry.core.common.utils.KeyValue;
 import org.apache.sentry.core.model.indexer.IndexerPrivilegeModel;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
-import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
-import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
-import org.apache.sentry.provider.db.generic.tools.GenericPrivilegeConverter;
+import org.apache.sentry.api.generic.thrift.SentryGenericServiceClient;
+import org.apache.sentry.api.generic.thrift.SentryGenericServiceClientFactory;
+import org.apache.sentry.api.common.ApiConstants;
+import org.apache.sentry.api.tools.GenericPrivilegeConverter;
 import org.apache.sentry.provider.file.SimpleFileProviderBackend;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +50,6 @@ import java.util.Set;
 
 import static org.apache.sentry.core.common.utils.SentryConstants.AUTHORIZABLE_SPLITTER;
 import static org.apache.sentry.provider.common.AuthorizationComponent.HBASE_INDEXER;
-import static org.apache.sentry.service.thrift.ServiceConstants.ClientConfig.SERVICE_NAME;
 
 /**
  * SentryConfigToolIndexer is an administrative tool used to parse a HBase Indexer policy file
@@ -152,7 +152,7 @@ public class SentryConfigToolIndexer {
     String component = HBASE_INDEXER;
     Configuration conf = getSentryConf();
 
-    String service = conf.get(SERVICE_NAME, getServiceName());
+    String service = conf.get(ApiConstants.ClientConfig.SERVICE_NAME, getServiceName());
 
     if (service == null) {
       throw new IllegalArgumentException("Service was not defined. Please, use -s command option, or sentry.provider.backend.generic.service-name configuration entry.");

@@ -21,7 +21,7 @@ package org.apache.sentry.provider.db.log.util;
 import java.util.Map;
 import com.google.common.collect.ImmutableMap;
 
-import org.apache.sentry.provider.db.service.thrift.*;
+import org.apache.sentry.api.service.thrift.*;
 
 public final class Constants {
   public static final String AUDIT_LOGGER_NAME = "sentry.hive.authorization.ddl.logger";
@@ -69,17 +69,17 @@ public final class Constants {
     .put(TAlterSentryRoleDeleteUsersRequest.class.getName(), Constants.OPERATION_DELETE_ROLE_USER)
 
     // for generic model audit log
-    .put(org.apache.sentry.provider.db.generic.service.thrift.TCreateSentryRoleRequest.class.getName(),
+    .put(org.apache.sentry.api.generic.thrift.TCreateSentryRoleRequest.class.getName(),
         Constants.OPERATION_CREATE_ROLE)
-    .put(org.apache.sentry.provider.db.generic.service.thrift.TDropSentryRoleRequest.class.getName(),
+    .put(org.apache.sentry.api.generic.thrift.TDropSentryRoleRequest.class.getName(),
         Constants.OPERATION_DROP_ROLE)
-    .put(org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleGrantPrivilegeRequest.class.getName(),
+    .put(org.apache.sentry.api.generic.thrift.TAlterSentryRoleGrantPrivilegeRequest.class.getName(),
         Constants.OPERATION_GRANT_PRIVILEGE)
-    .put(org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleRevokePrivilegeRequest.class.getName(),
+    .put(org.apache.sentry.api.generic.thrift.TAlterSentryRoleRevokePrivilegeRequest.class.getName(),
         Constants.OPERATION_REVOKE_PRIVILEGE)
-    .put(org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleAddGroupsRequest.class.getName(),
+    .put(org.apache.sentry.api.generic.thrift.TAlterSentryRoleAddGroupsRequest.class.getName(),
         Constants.OPERATION_ADD_ROLE)
-    .put(org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleDeleteGroupsRequest.class.getName(),
+    .put(org.apache.sentry.api.generic.thrift.TAlterSentryRoleDeleteGroupsRequest.class.getName(),
         Constants.OPERATION_DELETE_ROLE)
     .build();
   
@@ -95,17 +95,17 @@ public final class Constants {
     .put(TAlterSentryRoleRevokePrivilegeRequest.class.getName(), Constants.OBJECT_TYPE_PRINCIPAL)
 
     // for generic model audit log
-    .put(org.apache.sentry.provider.db.generic.service.thrift.TCreateSentryRoleRequest.class.getName(),
+    .put(org.apache.sentry.api.generic.thrift.TCreateSentryRoleRequest.class.getName(),
         Constants.OBJECT_TYPE_ROLE)
-    .put(org.apache.sentry.provider.db.generic.service.thrift.TDropSentryRoleRequest.class.getName(),
+    .put(org.apache.sentry.api.generic.thrift.TDropSentryRoleRequest.class.getName(),
         Constants.OBJECT_TYPE_ROLE)
-    .put(org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleAddGroupsRequest.class.getName(),
+    .put(org.apache.sentry.api.generic.thrift.TAlterSentryRoleAddGroupsRequest.class.getName(),
         Constants.OBJECT_TYPE_ROLE)
-    .put(org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleDeleteGroupsRequest.class.getName(),
+    .put(org.apache.sentry.api.generic.thrift.TAlterSentryRoleDeleteGroupsRequest.class.getName(),
         Constants.OBJECT_TYPE_ROLE)
-    .put(org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleGrantPrivilegeRequest.class.getName(),
+    .put(org.apache.sentry.api.generic.thrift.TAlterSentryRoleGrantPrivilegeRequest.class.getName(),
         Constants.OBJECT_TYPE_PRINCIPAL)
-    .put(org.apache.sentry.provider.db.generic.service.thrift.TAlterSentryRoleRevokePrivilegeRequest.class.getName(),
+    .put(org.apache.sentry.api.generic.thrift.TAlterSentryRoleRevokePrivilegeRequest.class.getName(),
         Constants.OBJECT_TYPE_PRINCIPAL)
     .build();
 

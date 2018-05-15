@@ -47,7 +47,7 @@ import java.util.concurrent.ThreadFactory;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.apache.sentry.service.thrift.ServiceConstants.ServerConfig.*;
+import static org.apache.sentry.service.common.ServiceConstants.ServerConfig.*;
 
 /**
  * HAContext stores the global ZooKeeper related context.

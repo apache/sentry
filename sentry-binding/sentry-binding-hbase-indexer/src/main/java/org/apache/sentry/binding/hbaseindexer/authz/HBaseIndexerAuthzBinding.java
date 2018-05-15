@@ -33,7 +33,7 @@ import org.apache.sentry.policy.common.PolicyEngine;
 import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
-import org.apache.sentry.service.thrift.ServiceConstants;
+import org.apache.sentry.api.common.ApiConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,7 +107,7 @@ public class HBaseIndexerAuthzBinding {
     }
 
     // For SentryGenericProviderBackend
-    authzConf.set(ServiceConstants.ClientConfig.COMPONENT_TYPE, HBASE_INDEXER);
+    authzConf.set(ApiConstants.ClientConfig.COMPONENT_TYPE, HBASE_INDEXER);
 
     providerBackend =
       (ProviderBackend) providerBackendConstructor.newInstance(new Object[] {authzConf, resourceName});

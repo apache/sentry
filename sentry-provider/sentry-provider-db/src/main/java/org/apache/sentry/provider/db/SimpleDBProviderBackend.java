@@ -24,9 +24,9 @@ import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.exception.SentryConfigurationException;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
-import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
+import org.apache.sentry.api.common.ApiConstants;
+import org.apache.sentry.api.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.service.thrift.SentryServiceClientFactory;
-import org.apache.sentry.service.thrift.ServiceConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,8 +48,8 @@ public class SimpleDBProviderBackend implements ProviderBackend {
 
   public SimpleDBProviderBackend(Configuration conf) throws Exception {
     this.conf = conf;
-    this.retryCount = conf.getInt(ServiceConstants.ClientConfig.RETRY_COUNT_CONF, ServiceConstants.ClientConfig.RETRY_COUNT_DEFAULT);
-    this.retryIntervalSec = conf.getInt(ServiceConstants.ClientConfig.RETRY_INTERVAL_SEC_CONF, ServiceConstants.ClientConfig.RETRY_INTERVAL_SEC_DEFAULT);
+    this.retryCount = conf.getInt(ApiConstants.ClientConfig.RETRY_COUNT_CONF, ApiConstants.ClientConfig.RETRY_COUNT_DEFAULT);
+    this.retryIntervalSec = conf.getInt(ApiConstants.ClientConfig.RETRY_INTERVAL_SEC_CONF, ApiConstants.ClientConfig.RETRY_INTERVAL_SEC_DEFAULT);
   }
   /**
    * {@inheritDoc}

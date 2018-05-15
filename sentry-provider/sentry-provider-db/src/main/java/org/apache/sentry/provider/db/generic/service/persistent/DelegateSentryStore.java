@@ -33,10 +33,10 @@ import org.apache.sentry.provider.db.service.model.MSentryGMPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryGroup;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
-import org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessor;
-import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
-import org.apache.sentry.provider.db.service.thrift.TSentryRole;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
+import org.apache.sentry.api.service.thrift.SentryPolicyStoreProcessor;
+import org.apache.sentry.api.service.thrift.TSentryGroup;
+import org.apache.sentry.api.service.thrift.TSentryRole;
+import org.apache.sentry.service.common.ServiceConstants.ServerConfig;
 
 import javax.jdo.PersistenceManager;
 import java.util.Arrays;

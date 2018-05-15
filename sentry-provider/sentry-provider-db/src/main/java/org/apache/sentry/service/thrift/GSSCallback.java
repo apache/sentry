@@ -27,7 +27,7 @@ import javax.security.sasl.AuthorizeCallback;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.SaslRpcServer;
 import org.apache.sentry.core.common.exception.ConnectionDeniedException;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
+import org.apache.sentry.service.common.ServiceConstants.ServerConfig;
 
 public class GSSCallback extends SaslRpcServer.SaslGssCallbackHandler {
 

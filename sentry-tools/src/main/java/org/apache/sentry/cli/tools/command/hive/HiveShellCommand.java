@@ -28,12 +28,12 @@ import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.sentry.core.common.exception.SentryUserException;
-import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
-import org.apache.sentry.provider.db.service.thrift.TSentryGroup;
-import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
-import org.apache.sentry.provider.db.service.thrift.TSentryRole;
+import org.apache.sentry.api.service.thrift.SentryPolicyServiceClient;
+import org.apache.sentry.api.service.thrift.TSentryGroup;
+import org.apache.sentry.api.service.thrift.TSentryPrivilege;
+import org.apache.sentry.api.service.thrift.TSentryRole;
 import org.apache.sentry.cli.tools.ShellCommand;
-import org.apache.sentry.service.thrift.SentryServiceUtil;
+import org.apache.sentry.api.common.SentryServiceUtil;
 
 /**
  * The ShellCommand implementation for Hive.

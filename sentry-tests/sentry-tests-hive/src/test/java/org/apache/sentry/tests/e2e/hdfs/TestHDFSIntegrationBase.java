@@ -82,7 +82,7 @@ import org.apache.sentry.tests.e2e.hive.hiveserver.InternalMetastoreServer;
 import org.apache.sentry.tests.e2e.minisentry.SentrySrv;
 import org.apache.sentry.tests.e2e.minisentry.SentrySrvFactory;
 import org.fest.reflect.core.Reflection;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
+import org.apache.sentry.service.common.ServiceConstants.ServerConfig;
 import org.apache.sentry.provider.db.SimpleDBProviderBackend;
 
 
@@ -870,7 +870,7 @@ public abstract class TestHDFSIntegrationBase {
           }
           if(hdfsSyncEnabled) {
             sentryProperties.put("sentry.service.processor.factories",
-                    "org.apache.sentry.provider.db.service.thrift.SentryPolicyStoreProcessorFactory,org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
+                    "org.apache.sentry.api.service.thrift.SentryPolicyStoreProcessorFactory,org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
             sentryProperties.put("sentry.policy.store.plugins", "org.apache.sentry.hdfs.SentryPlugin");
           }
             for (Map.Entry<String, String> entry : sentryProperties.entrySet()) {

@@ -30,12 +30,13 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.minikdc.MiniKdc;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.sentry.provider.db.service.thrift.SentryMiniKdcTestcase;
-import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
-import org.apache.sentry.provider.db.service.thrift.TSentryRole;
+import org.apache.sentry.api.common.ApiConstants;
+import org.apache.sentry.api.common.Status;
+import org.apache.sentry.api.service.thrift.SentryMiniKdcTestcase;
+import org.apache.sentry.api.service.thrift.SentryPolicyServiceClient;
+import org.apache.sentry.api.service.thrift.TSentryRole;
 import org.apache.sentry.provider.file.PolicyFile;
-import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
+import org.apache.sentry.service.common.ServiceConstants.ServerConfig;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -161,7 +162,7 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
       conf.set(ServerConfig.SENTRY_WEB_ENABLE, "false");
     }
     if (pooled) {
-      conf.set(ClientConfig.SENTRY_POOL_ENABLED, "true");
+      conf.set(ApiConstants.ClientConfig.SENTRY_POOL_ENABLED, "true");
     }
     if (useSSL) {
       String keystorePath = Resources.getResource("keystore.jks").getPath();
@@ -180,8 +181,8 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
         "jdbc:derby:;databaseName=" + dbDir.getPath() + ";create=true");
     conf.set(ServerConfig.SENTRY_STORE_JDBC_PASS, "dummy");
     server = SentryServiceFactory.create(conf);
-    conf.set(ClientConfig.SERVER_RPC_ADDRESS, server.getAddress().getHostName());
-    conf.set(ClientConfig.SERVER_RPC_PORT, String.valueOf(server.getAddress().getPort()));
+    conf.set(ApiConstants.ClientConfig.SERVER_RPC_ADDRESS, server.getAddress().getHostName());
+    conf.set(ApiConstants.ClientConfig.SERVER_RPC_PORT, String.valueOf(server.getAddress().getPort()));
     conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING,
         ServerConfig.SENTRY_STORE_LOCAL_GROUP_MAPPING);
   }

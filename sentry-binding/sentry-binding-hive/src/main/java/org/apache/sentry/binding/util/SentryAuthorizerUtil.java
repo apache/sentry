@@ -50,10 +50,10 @@ import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.core.model.db.Table;
-import org.apache.sentry.provider.db.service.thrift.TSentryGrantOption;
-import org.apache.sentry.provider.db.service.thrift.TSentryPrivilege;
-import org.apache.sentry.provider.db.service.thrift.TSentryRole;
-import org.apache.sentry.service.thrift.ServiceConstants.PrivilegeScope;
+import org.apache.sentry.api.common.ApiConstants;
+import org.apache.sentry.api.service.thrift.TSentryGrantOption;
+import org.apache.sentry.api.service.thrift.TSentryPrivilege;
+import org.apache.sentry.api.service.thrift.TSentryRole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -239,7 +239,7 @@ public class SentryAuthorizerUtil {
    */
   public static HivePrivilegeObject convert2HivePrivilegeObject(TSentryPrivilege tSentryPrivilege) {
     HivePrivilegeObject privilege = null;
-    switch (PrivilegeScope.valueOf(tSentryPrivilege.getPrivilegeScope())) {
+    switch (ApiConstants.PrivilegeScope.valueOf(tSentryPrivilege.getPrivilegeScope())) {
       case SERVER:
         privilege = new HivePrivilegeObject(HivePrivilegeObjectType.GLOBAL, "*", null);
         break;
@@ -271,7 +271,7 @@ public class SentryAuthorizerUtil {
         }
       default:
         LOG.warn("Unknown PrivilegeScope: "
-            + PrivilegeScope.valueOf(tSentryPrivilege.getPrivilegeScope()));
+            + ApiConstants.PrivilegeScope.valueOf(tSentryPrivilege.getPrivilegeScope()));
         break;
     }
     return privilege;

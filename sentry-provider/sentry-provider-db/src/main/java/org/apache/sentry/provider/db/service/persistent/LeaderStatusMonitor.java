@@ -33,7 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.sentry.service.thrift.ServiceConstants.ServerConfig.*;
+import static org.apache.sentry.service.common.ServiceConstants.ServerConfig.*;
 
 /**
  * LeaderStatusMonitor participates in the distributed leader election protocol

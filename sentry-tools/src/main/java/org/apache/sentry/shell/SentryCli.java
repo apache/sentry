@@ -23,9 +23,10 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.log4j.PropertyConfigurator;
-import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
-import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
-import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
+import org.apache.sentry.api.generic.thrift.SentryGenericServiceClient;
+import org.apache.sentry.api.generic.thrift.SentryGenericServiceClientFactory;
+import org.apache.sentry.api.common.ApiConstants;
+import org.apache.sentry.api.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.service.thrift.SentryServiceClientFactory;
 
 import java.io.FileInputStream;
@@ -33,9 +34,8 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 
-import static org.apache.sentry.service.thrift.ServiceConstants.ClientConfig.SERVER_RPC_ADDRESS;
-import static org.apache.sentry.service.thrift.ServiceConstants.ServerConfig.SECURITY_MODE;
-import static org.apache.sentry.service.thrift.ServiceConstants.ServerConfig.SECURITY_MODE_NONE;
+import static org.apache.sentry.service.common.ServiceConstants.ServerConfig.SECURITY_MODE;
+import static org.apache.sentry.service.common.ServiceConstants.ServerConfig.SECURITY_MODE_NONE;
 
 /**
  * Sentry interactive tool
@@ -147,7 +147,7 @@ public class SentryCli {
     }
 
     if (host != null) {
-      conf.set(SERVER_RPC_ADDRESS, host);
+      conf.set(ApiConstants.ClientConfig.SERVER_RPC_ADDRESS, host);
     }
 
     requestorName = cmd.getOptionValue(userOpt);

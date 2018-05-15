@@ -44,7 +44,7 @@ import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.core.model.db.Table;
 import org.apache.sentry.provider.db.SentryMetastoreListenerPlugin;
-import org.apache.sentry.provider.db.service.thrift.SentryPolicyServiceClient;
+import org.apache.sentry.api.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.service.thrift.SentryServiceClientFactory;
 import org.apache.sentry.service.thrift.ServiceConstants.ConfUtilties;
 import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;

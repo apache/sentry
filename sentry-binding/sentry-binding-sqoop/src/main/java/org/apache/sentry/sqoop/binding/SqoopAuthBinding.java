@@ -37,14 +37,14 @@ import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.apache.sentry.provider.db.generic.SentryGenericProviderBackend;
-import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
-import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
-import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
-import org.apache.sentry.provider.db.generic.service.thrift.TSentryGrantOption;
-import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
-import org.apache.sentry.provider.db.generic.service.thrift.TSentryRole;
-import org.apache.sentry.provider.db.generic.tools.GenericPrivilegeConverter;
-import org.apache.sentry.service.thrift.ServiceConstants;
+import org.apache.sentry.api.generic.thrift.SentryGenericServiceClient;
+import org.apache.sentry.api.generic.thrift.SentryGenericServiceClientFactory;
+import org.apache.sentry.api.generic.thrift.TAuthorizable;
+import org.apache.sentry.api.generic.thrift.TSentryGrantOption;
+import org.apache.sentry.api.generic.thrift.TSentryPrivilege;
+import org.apache.sentry.api.generic.thrift.TSentryRole;
+import org.apache.sentry.api.common.ApiConstants;
+import org.apache.sentry.api.tools.GenericPrivilegeConverter;
 import org.apache.sentry.sqoop.conf.SqoopAuthConf.AuthzConfVars;
 import org.apache.sqoop.common.SqoopException;
 import org.apache.sqoop.model.MPrivilege;
@@ -112,8 +112,8 @@ public class SqoopAuthBinding {
     }
 
     // for convenience, set the PrivilegeConverter.
-    if (authConf.get(ServiceConstants.ClientConfig.PRIVILEGE_CONVERTER) == null) {
-      authConf.set(ServiceConstants.ClientConfig.PRIVILEGE_CONVERTER, GenericPrivilegeConverter.class.getName());
+    if (authConf.get(ApiConstants.ClientConfig.PRIVILEGE_CONVERTER) == null) {
+      authConf.set(ApiConstants.ClientConfig.PRIVILEGE_CONVERTER, GenericPrivilegeConverter.class.getName());
     }
 
     //Instantiate the configured providerBackend

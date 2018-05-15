@@ -22,7 +22,7 @@ import java.io.File;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.provider.file.PolicyFile;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
+import org.apache.sentry.service.common.ServiceConstants.ServerConfig;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

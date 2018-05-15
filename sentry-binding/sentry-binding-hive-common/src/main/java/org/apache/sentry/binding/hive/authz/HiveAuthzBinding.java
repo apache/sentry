@@ -48,7 +48,7 @@ import org.apache.sentry.provider.cache.SimpleCacheProviderBackend;
 import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
-import org.apache.sentry.provider.db.service.thrift.TSentryRole;
+import org.apache.sentry.api.service.thrift.TSentryRole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

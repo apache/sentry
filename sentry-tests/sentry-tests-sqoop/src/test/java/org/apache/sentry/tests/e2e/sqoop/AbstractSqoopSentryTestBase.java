@@ -36,16 +36,16 @@ import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.sentry.core.model.sqoop.SqoopActionConstant;
 import org.apache.sentry.provider.db.generic.SentryGenericProviderBackend;
-import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClient;
-import org.apache.sentry.provider.db.generic.service.thrift.SentryGenericServiceClientFactory;
-import org.apache.sentry.provider.db.generic.service.thrift.TAuthorizable;
-import org.apache.sentry.provider.db.generic.service.thrift.TSentryPrivilege;
+import org.apache.sentry.api.generic.thrift.SentryGenericServiceClient;
+import org.apache.sentry.api.generic.thrift.SentryGenericServiceClientFactory;
+import org.apache.sentry.api.generic.thrift.TAuthorizable;
+import org.apache.sentry.api.generic.thrift.TSentryPrivilege;
+import org.apache.sentry.api.common.ApiConstants;
 import org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.PolicyFile;
 import org.apache.sentry.service.thrift.SentryService;
 import org.apache.sentry.service.thrift.SentryServiceFactory;
-import org.apache.sentry.service.thrift.ServiceConstants.ClientConfig;
-import org.apache.sentry.service.thrift.ServiceConstants.ServerConfig;
+import org.apache.sentry.service.common.ServiceConstants.ServerConfig;
 import org.apache.sentry.sqoop.conf.SqoopAuthConf.AuthzConfVars;
 import org.apache.sqoop.common.test.utils.NetworkUtils;
 import org.junit.AfterClass;
@@ -175,8 +175,8 @@ public class AbstractSqoopSentryTestBase {
     Configuration conf = new Configuration();
     /** set the Sentry client configuration for Sqoop Service integration */
     conf.set(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_NONE);
-    conf.set(ClientConfig.SERVER_RPC_ADDRESS, server.getAddress().getHostName());
-    conf.set(ClientConfig.SERVER_RPC_PORT, String.valueOf(server.getAddress().getPort()));
+    conf.set(ApiConstants.ClientConfig.SERVER_RPC_ADDRESS, server.getAddress().getHostName());
+    conf.set(ApiConstants.ClientConfig.SERVER_RPC_PORT, String.valueOf(server.getAddress().getPort()));
 
     conf.set(AuthzConfVars.AUTHZ_PROVIDER.getVar(),
         LocalGroupResourceAuthorizationProvider.class.getName());
