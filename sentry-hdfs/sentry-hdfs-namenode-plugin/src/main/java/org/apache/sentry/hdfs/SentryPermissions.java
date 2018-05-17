@@ -25,6 +25,8 @@ import org.apache.hadoop.fs.permission.AclEntryType;
 import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntity;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntityType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SentryPermissions implements AuthzPermissions {
 
@@ -85,12 +87,89 @@ public class SentryPermissions implements AuthzPermissions {
     }
   }
 
+  /**
+   * Defines HDFS ACL entity to which ACL's are assigned.
+   */
+  public static class HdfsAclEntity {
+    private final AclEntryType type;
+    private final String value;
+
+    private HdfsAclEntity(AclEntryType type, String value) throws IllegalArgumentException {
+      if(type == AclEntryType.USER || type == AclEntryType.GROUP) {
+        this.type = type;
+        this.value = value;
+      } else {
+        throw new IllegalArgumentException("Invalid AclEntryType");
+      }
+    }
+    public static HdfsAclEntity constructAclEntityForUser(String user) {
+      return new HdfsAclEntity(AclEntryType.USER, user);
+    }
+
+    public static HdfsAclEntity constructAclEntityForGroup(String group) {
+      return new HdfsAclEntity(AclEntryType.GROUP, group);
+    }
+
+    public AclEntryType getType() {
+      return type;
+    }
+
+    public String getValue() {
+      return value;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (obj == null) {
+        return false;
+      }
+      if (getClass() != obj.getClass()) {
+        return false;
+      }
+
+      HdfsAclEntity other = (HdfsAclEntity) obj;
+      if (type == null) {
+        if (other.type != null) {
+          return false;
+        }
+      } else if (!type.equals(other.type)) {
+        return false;
+      }
+
+      if (value == null) {
+        if (other.value != null) {
+          return false;
+        }
+      } else if (!value.equals(other.value)) {
+        return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result + ((type == null) ? 0 : type.hashCode());
+      result = prime * result + ((value == null) ? 0 : value.hashCode());
+
+      return result;
+    }
+  }
+
   // Comparison of authorizable object should be case insensitive.
   private final Map<String, PrivilegeInfo> privileges = new TreeMap<String, PrivilegeInfo>(String.CASE_INSENSITIVE_ORDER);
   private Map<String, Set<String>> authzObjChildren = new TreeMap<String, Set<String>>(String.CASE_INSENSITIVE_ORDER);
 
   // RoleInfo should be case insensitive.
   private final Map<String, RoleInfo> roles = new TreeMap<String, RoleInfo>(String.CASE_INSENSITIVE_ORDER);
+  private static Logger LOG =
+          LoggerFactory.getLogger(SentryINodeAttributesProvider.class);
+
 
   String getParentAuthzObject(String authzObject) {
     if (authzObject != null) {
@@ -127,37 +206,56 @@ public class SentryPermissions implements AuthzPermissions {
     }
   }
 
-  private Map<String, FsAction> getGroupPerms(String authzObj) {
-    Map<String, FsAction> groupPerms;
+  /**
+   * Retrieves all the permissions granted to the object directly and inherited from
+   * the parents.
+   * @param authzObj Object name for which permissions are needed.
+   * @return Sentry Permissions
+   */
+  private Map<HdfsAclEntity, FsAction> getPerms(String authzObj) {
+    Map<HdfsAclEntity, FsAction> perms;
     String parent = getParentAuthzObject(authzObj);
     if (parent == null || parent.equals(authzObj)) {
-      groupPerms = new HashMap<String, FsAction>();
+      perms = new HashMap<HdfsAclEntity, FsAction>();
     } else {
-      groupPerms = getGroupPerms(parent);
+      perms = getPerms(parent);
     }
 
     PrivilegeInfo privilegeInfo = privileges.get(authzObj);
     if (privilegeInfo != null) {
       for (Map.Entry<TPrivilegeEntity, FsAction> privs : privilegeInfo
           .getAllPermissions().entrySet()) {
-        if(privs.getKey().getType() == TPrivilegeEntityType.ROLE) {
-          constructAclEntry(privs.getKey().getValue(), privs.getValue(), groupPerms);
-        }
+        constructHdfsPermissions(privs.getKey(), privs.getValue(), perms);
       }
     }
-    return groupPerms;
+    return perms;
   }
 
+  /**
+   * Constructs HDFS ACL's based on the permissions granted to the object directly
+   * and inherited from the parents.
+   * @param authzObj Object name for which ACL are needed
+   * @return HDFS ACL's
+   */
   @Override
   public List<AclEntry> getAcls(String authzObj) {
-    Map<String, FsAction> groupPerms = getGroupPerms(authzObj);
+    Map<HdfsAclEntity, FsAction> permissions = getPerms(authzObj);
+
     List<AclEntry> retList = new LinkedList<AclEntry>();
-    for (Map.Entry<String, FsAction> groupPerm : groupPerms.entrySet()) {
+    for (Map.Entry<HdfsAclEntity, FsAction> permission : permissions.entrySet()) {
       AclEntry.Builder builder = new AclEntry.Builder();
-      builder.setName(groupPerm.getKey());
-      builder.setType(AclEntryType.GROUP);
+      if(permission.getKey().getType() == AclEntryType.GROUP) {
+        builder.setName(permission.getKey().getValue());
+        builder.setType(AclEntryType.GROUP);
+      } else if (permission.getKey().getType() == AclEntryType.USER){
+        builder.setName(permission.getKey().getValue());
+        builder.setType(AclEntryType.USER);
+      } else {
+        LOG.warn("Permissions for Invalid AclEntryType: %s", permission.getKey().getType());
+        continue;
+      }
       builder.setScope(AclEntryScope.ACCESS);
-      FsAction action = groupPerm.getValue();
+      FsAction action = permission.getValue();
       if (action == FsAction.READ || action == FsAction.WRITE
           || action == FsAction.READ_WRITE) {
         action = action.or(FsAction.EXECUTE);
@@ -168,17 +266,39 @@ public class SentryPermissions implements AuthzPermissions {
     return retList;
   }
 
-  private void constructAclEntry(String role, FsAction permission,
-      Map<String, FsAction> groupPerms) {
-    RoleInfo roleInfo = roles.get(role);
-    if (roleInfo != null) {
-      for (String group : roleInfo.groups) {
-        FsAction fsAction = groupPerms.get(group);
-        if (fsAction == null) {
-          fsAction = FsAction.NONE;
+  /**
+   * Constructs HDFS Permissions entry based on the privileges granted.
+   * @param privilegeEntity Privilege Entity
+   * @param permission Permission granted
+   * @param perms
+   */
+  private void constructHdfsPermissions(TPrivilegeEntity privilegeEntity, FsAction permission,
+    Map<HdfsAclEntity, FsAction> perms) {
+    HdfsAclEntity aclEntry;
+    FsAction fsAction;
+    if(privilegeEntity.getType() == TPrivilegeEntityType.ROLE) {
+      RoleInfo roleInfo = roles.get(privilegeEntity.getValue());
+      if (roleInfo != null) {
+        for (String group : roleInfo.groups) {
+          aclEntry = HdfsAclEntity.constructAclEntityForGroup(group);
+          // fsAction is an aggregate of permissions granted to
+          // the group on the object and it's parents.
+          fsAction = perms.get(aclEntry);
+          if (fsAction == null) {
+            fsAction = FsAction.NONE;
+          }
+          perms.put(aclEntry, fsAction.or(permission));
         }
-        groupPerms.put(group, fsAction.or(permission));
       }
+    } else if(privilegeEntity.getType() == TPrivilegeEntityType.USER) {
+      aclEntry = HdfsAclEntity.constructAclEntityForUser(privilegeEntity.getValue());
+      // fsAction is an aggregate of permissions granted to
+      // the user on the object and it's parents.
+      fsAction = perms.get(aclEntry);
+      if (fsAction == null) {
+        fsAction = FsAction.NONE;
+      }
+      perms.put(aclEntry, fsAction.or(permission));
     }
   }
 
