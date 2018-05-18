@@ -2316,6 +2316,8 @@ public class SentryStore {
         if (newTPrivilege.getPrivilegeScope().equals(PrivilegeScope.DATABASE.name())) {
           tPriv.setDbName(newTPrivilege.getDbName());
         } else if (newTPrivilege.getPrivilegeScope().equals(PrivilegeScope.TABLE.name())) {
+          // the DB name could change, so set its value
+          tPriv.setDbName(newTPrivilege.getDbName());
           tPriv.setTableName(newTPrivilege.getTableName());
         }
         alterSentryRoleGrantPrivilegeCore(pm, role.getRoleName(), tPriv);
