@@ -55,6 +55,7 @@ import org.apache.sentry.api.service.thrift.validator.GrantPrivilegeRequestValid
 import org.apache.sentry.api.service.thrift.validator.RevokePrivilegeRequestValidator;
 import org.apache.sentry.api.common.SentryServiceUtil;
 import org.apache.sentry.service.common.ServiceConstants.ConfUtilties;
+import org.apache.sentry.service.common.ServiceConstants.SentryEntityType;
 import org.apache.sentry.service.common.ServiceConstants.ServerConfig;
 import org.apache.sentry.api.common.Status;
 import org.apache.sentry.service.thrift.TSentryResponseStatus;
@@ -802,7 +803,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       }
       if (request.isSetAuthorizableHierarchy()) {
         TSentryAuthorizable authorizableHierarchy = request.getAuthorizableHierarchy();
-        privilegeSet = sentryStore.getTSentryPrivileges(Sets.newHashSet(request.getRoleName()), authorizableHierarchy);
+        privilegeSet = sentryStore.getTSentryPrivileges(SentryEntityType.ROLE, Sets.newHashSet(request.getRoleName()), authorizableHierarchy);
       } else {
         privilegeSet = sentryStore.getAllTSentryPrivilegesByRoleName(request.getRoleName());
       }
@@ -1049,6 +1050,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
         authRoleMap.put(authorizable, sentryStore
             .listSentryPrivilegesByAuthorizable(requestedGroups,
                 request.getRoleSet(), authorizable, inAdminGroups(memberGroups)));
+
+        // TODO: add privileges associated with user by calling listSentryPrivilegesByAuthorizableForUser
       }
       response.setPrivilegesMapByAuth(authRoleMap);
       response.setStatus(Status.OK());

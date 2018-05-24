@@ -20,6 +20,7 @@ package org.apache.sentry.provider.db.service.persistent;
 
 import com.google.common.base.Joiner;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
+import org.apache.sentry.provider.db.service.model.MSentryUser;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import javax.jdo.Query;
@@ -316,6 +317,28 @@ public class QueryParamBuilder {
     }
     paramBuilder.newChild().addSet("role.roleName == ", roleNames);
     paramBuilder.addString("roles.contains(role)");
+    return paramBuilder;
+  }
+
+  /**
+   * Add common filter for set of Sentry users. This is used to simplify creating filters for
+   * privileges belonging to the specified set of users.
+   * @param query Query used for search
+   * @param paramBuilder paramBuilder for parameters
+   * @param userNames set of user names
+   * @return paramBuilder supplied or a new one if the supplied one is null.
+   */
+  public static QueryParamBuilder addUsersFilter(Query query, QueryParamBuilder paramBuilder,
+      Set<String> userNames) {
+    query.declareVariables(MSentryUser.class.getName() + " user");
+    if (paramBuilder == null) {
+      paramBuilder = new QueryParamBuilder();
+    }
+    if (userNames == null || userNames.isEmpty()) {
+      return paramBuilder;
+    }
+    paramBuilder.newChild().addSet("user.userName == ", userNames);
+    paramBuilder.addString("users.contains(user)");
     return paramBuilder;
   }
 

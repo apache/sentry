@@ -35,6 +35,7 @@ import org.apache.sentry.core.common.exception.SentryAccessDeniedException;
 import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
 import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
 import org.apache.sentry.tests.e2e.hive.AbstractTestWithStaticConfiguration;
+import org.apache.sentry.tests.e2e.hive.SlowE2ETest;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -960,6 +961,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     1.7.2. Grant all, revoke select leads to select on table
      */
   @Test
+  @SlowE2ETest
   public void testGrantRevokePrivileges() throws Exception {
     Connection connection;
     Statement statement;
@@ -1139,7 +1141,7 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
       assertThat(resultSet.getString(4), equalToIgnoringCase(""));//column
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
-      assertThat(resultSet.getString(7), equalToIgnoringCase("select"));
+      assertNotSame(resultSet.getString(7), equalToIgnoringCase("insert"));
       assertThat(resultSet.getBoolean(8), is(Boolean.FALSE));//grantOption
       //Create time is not tested
       //assertThat(resultSet.getLong(9), is(new Long(0)));
@@ -1152,22 +1154,22 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     assertResultSize(resultSet, 1);
     statement.execute("REVOKE SELECT ON TABLE tab1 from role role1");
     resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
-    assertResultSize(resultSet, 1);
+    int resultSetSize = 0;
     while(resultSet.next()) {
+      resultSetSize ++;
       assertThat(resultSet.getString(1), equalToIgnoringCase("default"));
       assertThat(resultSet.getString(2), equalToIgnoringCase("tab1"));
       assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
       assertThat(resultSet.getString(4), equalToIgnoringCase(""));//column
       assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
       assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
-      assertThat(resultSet.getString(7), equalToIgnoringCase("insert"));
+      assertNotSame(resultSet.getString(7), equalToIgnoringCase("select"));
       assertThat(resultSet.getBoolean(8), is(Boolean.FALSE));//grantOption
       //Create time is not tested
       //assertThat(resultSet.getLong(9), is(new Long(0)));
       assertThat(resultSet.getString(10), equalToIgnoringCase("--"));//grantor
-
     }
-
+    assertEquals(1, resultSetSize);
     statement.close();
     connection.close();
   }
