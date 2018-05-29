@@ -154,6 +154,11 @@ limitations under the License.
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.apache.sentry</groupId>
+      <artifactId>sentry-service-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-shims</artifactId>
       <scope>provided</scope>
@@ -286,65 +291,6 @@ limitations under the License.
       </resource>
     </resources>
     <plugins>
-      <plugin>
-        <groupId>com.google.code.maven-replacer-plugin</groupId>
-        <artifactId>replacer</artifactId>
-        <version>1.5.2</version>
-        <executions>
-          <execution>
-            <id>replaceTokens</id>
-            <phase>clean</phase>
-            <goals>
-              <goal>replace</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <file>${basedir}/src/main/webapp/SentryService.html</file>
-          <replacements>
-            <replacement>
-             <token>%PROJECT_VERSION%</token>
-             <value>${project.version}</value>
-            </replacement>
-          </replacements>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.datanucleus</groupId>
-        <artifactId>datanucleus-maven-plugin</artifactId>
-        <version>${datanucleus.maven.plugin.version}</version>
-        <configuration>
-          <api>JDO</api>
-          <metadataIncludes>**/*.jdo</metadataIncludes>
-          <verbose>true</verbose>
-        </configuration>
-        <executions>
-          <execution>
-            <phase>process-classes</phase>
-            <goals>
-              <goal>enhance</goal>
-            </goals>
-          </execution>
-        </executions>
-        <dependencies>
-          <dependency>
-            <groupId>org.datanucleus</groupId>
-            <artifactId>datanucleus-core</artifactId>
-            <version>${datanucleus-core.version}</version>
-          </dependency>
-        </dependencies>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
