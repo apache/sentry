@@ -58,8 +58,7 @@ limitations under the License.
     </dependency>
     <dependency>
       <groupId>org.apache.sentry</groupId>
-      <artifactId>sentry-service-server</artifactId>
-      <version>${project.version}</version>
+      <artifactId>sentry-provider-db</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.curator</groupId>
