@@ -31,6 +31,8 @@ limitations under the License.
 
     <modules>
         <module>sentry-service-api</module>
+        <module>sentry-service-server</module>
+        <module>sentry-service-client</module>
     </modules>
 
 </project>
