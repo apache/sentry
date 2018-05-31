@@ -106,6 +106,8 @@ public final class SentryMetrics {
       name(SentryPolicyStoreProcessor.class, "list-roles-by-group"));
   final Timer listPrivilegesByRoleTimer = METRIC_REGISTRY.timer(
       name(SentryPolicyStoreProcessor.class, "list-privileges-by-role"));
+  final Timer listPrivilegesByUserTimer = METRIC_REGISTRY.timer(
+    name(SentryPolicyStoreProcessor.class, "list-privileges-by-user"));
   final Timer listPrivilegesForProviderTimer = METRIC_REGISTRY.timer(
       name(SentryPolicyStoreProcessor.class, "list-privileges-for-provider"));
   final Timer listPrivilegesByAuthorizableTimer = METRIC_REGISTRY.timer(

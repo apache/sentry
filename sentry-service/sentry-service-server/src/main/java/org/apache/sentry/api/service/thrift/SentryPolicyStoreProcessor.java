@@ -793,21 +793,28 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     TSentryResponseStatus status;
     Set<TSentryPrivilege> privilegeSet = new HashSet<TSentryPrivilege>();
     String subject = request.getRequestorUserName();
+
+    // The 'roleName' parameter is deprecated in Sentry 2.x. If the new 'entityName' is not
+    // null, then use it to get the role name otherwise fall back to the old 'roleName' which
+    // is required to be set.
+    String roleName = (request.getEntityName() != null)
+      ? request.getEntityName() : request.getRoleName();
+
     try {
       validateClientVersion(request.getProtocol_version());
       Set<String> groups = getRequestorGroups(subject);
       Boolean admin = inAdminGroups(groups);
       if(!admin) {
         Set<String> roleNamesForGroups = toTrimedLower(sentryStore.getRoleNamesForGroups(groups));
-        if(!roleNamesForGroups.contains(request.getRoleName().trim().toLowerCase())) {
+        if(!roleNamesForGroups.contains(roleName.trim().toLowerCase())) {
           throw new SentryAccessDeniedException("Access denied to " + subject);
         }
       }
       if (request.isSetAuthorizableHierarchy()) {
         TSentryAuthorizable authorizableHierarchy = request.getAuthorizableHierarchy();
-        privilegeSet = sentryStore.getTSentryPrivileges(SentryEntityType.ROLE, Sets.newHashSet(request.getRoleName()), authorizableHierarchy);
+        privilegeSet = sentryStore.getTSentryPrivileges(SentryEntityType.ROLE, Sets.newHashSet(roleName), authorizableHierarchy);
       } else {
-        privilegeSet = sentryStore.getAllTSentryPrivilegesByRoleName(request.getRoleName());
+        privilegeSet = sentryStore.getAllTSentryPrivilegesByRoleName(roleName);
       }
       response.setPrivileges(privilegeSet);
       response.setStatus(Status.OK());
@@ -835,10 +842,85 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     return response;
   }
 
+  /**
+   * This method is used to check that required parameters marked as optional in thrift are
+   * not null.
+   *
+   * @param param The object parameter marked as optional to check.
+   * @param message The warning message to log and return to the client.
+   * @return Null if the parameter is not null, otherwise a InvalidInput status that can be
+   * used to return to the client.
+   */
+  private TSentryResponseStatus checkRequiredParameter(Object param, String message) {
+    if (param == null) {
+      LOGGER.warn(message);
+      return Status.InvalidInput(message, new SentryInvalidInputException(message));
+    }
+
+    return null;
+  }
+
   @Override
   public TListSentryPrivilegesResponse list_sentry_privileges_by_user(
     TListSentryPrivilegesRequest request) throws TException {
-    return null;
+    final Timer.Context timerContext = sentryMetrics.listPrivilegesByUserTimer.time();
+    TListSentryPrivilegesResponse response = new TListSentryPrivilegesResponse();
+    Set<TSentryPrivilege> privilegeSet = new HashSet<TSentryPrivilege>();
+    String subject = request.getRequestorUserName();
+
+    // The 'entityName' parameter is made optional in thrift, so we need to check that is not
+    // null before proceed.
+    TSentryResponseStatus status =
+      checkRequiredParameter(request.getEntityName(), "entityName parameter must not be null");
+    if (status != null) {
+      response.setStatus(status);
+      return response;
+    }
+
+    String userName = request.getEntityName().trim();
+
+    try {
+      validateClientVersion(request.getProtocol_version());
+
+      // To allow listing the privileges, the requestor user must be part of the admins group, or
+      // the requestor user must be the same user requesting privileges for.
+      Set<String> groups = getRequestorGroups(subject);
+      Boolean admin = inAdminGroups(groups);
+      if(!admin && !userName.equalsIgnoreCase(subject)) {
+        throw new SentryAccessDeniedException("Access denied to " + subject);
+      }
+
+      if (request.isSetAuthorizableHierarchy()) {
+        TSentryAuthorizable authorizableHierarchy = request.getAuthorizableHierarchy();
+        privilegeSet = sentryStore.getTSentryPrivileges(SentryEntityType.USER, Sets.newHashSet(userName), authorizableHierarchy);
+      } else {
+        privilegeSet = sentryStore.getAllTSentryPrivilegesByUserName(userName);
+      }
+
+      response.setPrivileges(privilegeSet);
+      response.setStatus(Status.OK());
+    } catch (SentryNoSuchObjectException e) {
+      response.setPrivileges(privilegeSet);
+      String msg = "Privilege: " + request + " couldn't be retrieved.";
+      LOGGER.error(msg, e);
+      response.setStatus(Status.NoSuchObject(msg, e));
+    } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (SentryGroupNotFoundException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (SentryThriftAPIMismatchException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.THRIFT_VERSION_MISMATCH(e.getMessage(), e));
+    } catch (Exception e) {
+      String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
+      LOGGER.error(msg, e);
+      response.setStatus(Status.RuntimeError(msg, e));
+    } finally {
+      timerContext.stop();
+    }
+    return response;
   }
 
   /**
@@ -1020,8 +1102,10 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     final Timer.Context timerContext = sentryMetrics.listPrivilegesByAuthorizableTimer.time();
     TListSentryPrivilegesByAuthResponse response = new TListSentryPrivilegesByAuthResponse();
     Map<TSentryAuthorizable, TSentryPrivilegeMap> authRoleMap = Maps.newHashMap();
+    Map<TSentryAuthorizable, TSentryPrivilegeMap> authUserMap = Maps.newHashMap();
     String subject = request.getRequestorUserName();
     Set<String> requestedGroups = request.getGroups();
+    Set<String> requestedUsers = request.getUsers();
     TSentryActiveRoleSet requestedRoleSet = request.getRoleSet();
     try {
       validateClientVersion(request.getProtocol_version());
@@ -1051,17 +1135,30 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
             }
           }
         }
+
+        // disallow non-admin to lookup users that they are not part of
+        if (requestedUsers != null && !requestedUsers.isEmpty()) {
+          for (String requestedUser : requestedUsers) {
+            if (!requestedUser.equalsIgnoreCase(subject)) {
+              // if user doesn't is not requesting its own user privileges then raise error
+              throw new SentryAccessDeniedException("Access denied to " + subject);
+            }
+          }
+        }
       }
 
-      // If user is not part of any group.. return empty response
+      // Return user and role privileges found per authorizable object
       for (TSentryAuthorizable authorizable : request.getAuthorizableSet()) {
         authRoleMap.put(authorizable, sentryStore
             .listSentryPrivilegesByAuthorizable(requestedGroups,
                 request.getRoleSet(), authorizable, inAdminGroups(memberGroups)));
 
-        // TODO: add privileges associated with user by calling listSentryPrivilegesByAuthorizableForUser
+        authUserMap.put(authorizable, sentryStore
+          .listSentryPrivilegesByAuthorizableForUser(requestedUsers, authorizable,
+            inAdminGroups(memberGroups)));
       }
       response.setPrivilegesMapByAuth(authRoleMap);
+      response.setPrivilegesMapByAuthForUsers(authUserMap);
       response.setStatus(Status.OK());
       // TODO : Sentry - HDFS : Have to handle this
     } catch (SentryAccessDeniedException e) {

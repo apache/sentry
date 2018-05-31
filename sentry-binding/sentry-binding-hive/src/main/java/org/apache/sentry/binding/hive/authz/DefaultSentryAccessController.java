@@ -201,7 +201,7 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
   @Override
   public List<HivePrivilegeInfo> showPrivileges(HivePrincipal principal, HivePrivilegeObject privObj)
       throws HiveAuthzPluginException, HiveAccessControlException {
-    if (principal.getType() != HivePrincipalType.ROLE) {
+    if (principal.getType() != HivePrincipalType.ROLE && principal.getType() != HivePrincipalType.USER) {
       String msg =
           SentryHiveConstants.SHOW_NOT_SUPPORTED_FOR_PRINCIPAL + principal.getType();
       throw new HiveAuthzPluginException(msg);
@@ -214,12 +214,28 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
       Set<TSentryPrivilege> tPrivilges = new HashSet<TSentryPrivilege>();
       if (authorizables != null && !authorizables.isEmpty()) {
         for (List<? extends Authorizable> authorizable : authorizables) {
-          tPrivilges.addAll(sentryClient.listPrivilegesByRoleName(authenticator.getUserName(),
-              principal.getName(), authorizable));
+          switch (principal.getType()) {
+            case ROLE:
+              tPrivilges.addAll(sentryClient.listPrivilegesByRoleName(authenticator.getUserName(),
+                principal.getName(), authorizable));
+              break;
+            case USER:
+              tPrivilges.addAll(sentryClient.listPrivilegesByUserName(authenticator.getUserName(),
+                principal.getName(), authorizable));
+              break;
+          }
         }
       } else {
-        tPrivilges.addAll(sentryClient.listPrivilegesByRoleName(authenticator.getUserName(),
-            principal.getName(), null));
+        switch (principal.getType()) {
+          case ROLE:
+            tPrivilges.addAll(sentryClient.listPrivilegesByRoleName(authenticator.getUserName(),
+              principal.getName(), null));
+            break;
+          case USER:
+            tPrivilges.addAll(sentryClient.listPrivilegesByUserName(authenticator.getUserName(),
+              principal.getName(), null));
+            break;
+        }
       }
 
       if (tPrivilges != null && !tPrivilges.isEmpty()) {

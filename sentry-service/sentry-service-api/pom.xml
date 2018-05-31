@@ -95,6 +95,11 @@ limitations under the License.
             <groupId>org.apache.sentry</groupId>
             <artifactId>sentry-core-model-indexer</artifactId>
         </dependency>
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-all</artifactId>
+        <scope>test</scope>
+      </dependency>
     </dependencies>
 
 
