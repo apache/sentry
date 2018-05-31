@@ -72,6 +72,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.base.Strings;
+
 
 import static org.apache.sentry.hdfs.Updateable.Update;
 
@@ -1235,5 +1237,37 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       response.setStatus(Status.RuntimeError(msg, e));
     }
     return response;
+  }
+
+  /**
+   * This API constructs (@Link TSentryPrivilege} for authorizable provided
+   * based on the configurations.
+   *
+   * @param authorizable for which owner privilege should be constructed.
+   * @return null if owner privilege can not be constructed, else instance of {@Link TSentryPrivilege}
+   */
+  TSentryPrivilege constructOwnerPrivilege(TSentryAuthorizable authorizable) {
+    Boolean isOwnerPrivEnabled = conf.getBoolean(ServerConfig.SENTRY_ENABLE_OWNER_PRIVILEGES,
+      ServerConfig.SENTRY_ENABLE_OWNER_PRIVILEGES_DEFAULT);
+    if(isOwnerPrivEnabled == false) {
+      return null;
+    }
+    if(Strings.isNullOrEmpty(authorizable.getDb())) {
+      LOGGER.error("Received authorizable with out DB Name");
+      return null;
+    }
+    Boolean privilegeWithGrantOption = conf.getBoolean(ServerConfig.SENTRY_OWNER_PRIVILEGE_WITH_GRANT,
+            ServerConfig.SENTRY_OWNER_PRIVILEGE_WITH_GRANT_DEFAULT);
+
+    TSentryPrivilege ownerPrivilege = new TSentryPrivilege();
+    ownerPrivilege.setDbName(authorizable.getDb());
+    if(!Strings.isNullOrEmpty(authorizable.getTable())) {
+      ownerPrivilege.setTableName(authorizable.getTable());
+    }
+    if(privilegeWithGrantOption) {
+      ownerPrivilege.setGrantOption(TSentryGrantOption.TRUE);
+    }
+    ownerPrivilege.setAction(AccessConstants.OWNER);
+    return ownerPrivilege;
   }
 }
