@@ -38,6 +38,11 @@ enum TSentryGrantOption {
   UNSET = -1
 }
 
+enum TSentryObjectOwnerType {
+  ROLE = 1,
+  USER = 2
+}
+
 # Represents a Privilege in transport from the client to the server
 struct TSentryPrivilege {
 1: required string privilegeScope, # Valid values are SERVER, DATABASE, TABLE, COLUMN, URI
@@ -323,6 +328,29 @@ struct TSentrySyncIDResponse {
 2: required i64 id // Most recent processed ID
 }
 
+/*
+ * This request is an extension to TSentrySyncIDRequest. Additionally this request
+ * is used to update the HMS events and the owner changes associated with events.
+ * To be backward compatible, TSentrySyncIDRequest is not updated. Instead new request
+ * is created extending it.
+*/
+
+struct TSentryHmsEventNotification {
+1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V2,
+2: required i64 id, # Requested ID
+#  Constructed from enum org.apache.hadoop.hive.metastore.messaging.EventMessage.EventType
+3: required string eventType, # Type of the event which resulted in owner update request
+4: required TSentryObjectOwnerType ownerType, # Type of the owner
+5: required string ownerName, # owner name
+6: required TSentryAuthorizable authorizable
+}
+
+struct TSentryHmsEventNotificationResponse {
+1: required sentry_common_service.TSentryResponseStatus status
+2: required i64 id // Most recent processed ID
+}
+
+
 service SentryPolicyService
 {
   TCreateSentryRoleResponse create_sentry_role(1:TCreateSentryRoleRequest request)
@@ -361,4 +389,8 @@ service SentryPolicyService
 
   # Synchronize between HMS notifications and Sentry
   TSentrySyncIDResponse sentry_sync_notifications(1:TSentrySyncIDRequest request);
+
+  # Notify Sentry about new events in HMS. Currently used to synchronize between HMS/Sentry
+  # and also update sentry with the owner information.
+  TSentryHmsEventNotificationResponse sentry_notify_hms_event(1:TSentryHmsEventNotification request);
 }

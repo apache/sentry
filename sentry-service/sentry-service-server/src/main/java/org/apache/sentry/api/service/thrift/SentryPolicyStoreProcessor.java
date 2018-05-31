@@ -1270,4 +1270,13 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     ownerPrivilege.setAction(AccessConstants.OWNER);
     return ownerPrivilege;
   }
+
+  @Override
+  public TSentryHmsEventNotificationResponse sentry_notify_hms_event
+          (TSentryHmsEventNotification request) throws TException{
+    TSentryHmsEventNotificationResponse response = new TSentryHmsEventNotificationResponse();
+    //TODO This API has to be implemented.
+    response.setStatus(Status.OK());
+    return response;
+  }
 }
