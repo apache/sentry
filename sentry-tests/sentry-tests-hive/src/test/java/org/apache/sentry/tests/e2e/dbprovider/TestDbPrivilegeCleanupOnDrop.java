@@ -30,6 +30,8 @@ import java.util.List;
 import org.apache.sentry.tests.e2e.hdfs.TestHDFSIntegrationBase;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
@@ -59,6 +61,16 @@ public class TestDbPrivilegeCleanupOnDrop extends TestHDFSIntegrationBase {
 
   private Connection connection;
   private Statement statement;
+
+  @BeforeClass
+  public static void setup() throws Exception {
+    // TODO: once HIVE-18783 is fixed, set high interval
+    // set high interval to test if table rename is synced with fetching notification from HMS
+    // HMSFOLLOWER_INTERVAL_MILLS = 2000;
+    WAIT_FOR_NOTIFICATION_PROCESSING = HMSFOLLOWER_INTERVAL_MILLS * 3;
+
+    TestHDFSIntegrationBase.setup();
+  }
 
   @Before
   public void initialize() throws Exception{
@@ -113,7 +125,6 @@ public class TestDbPrivilegeCleanupOnDrop extends TestHDFSIntegrationBase {
     setupDbObjects(statement); // create test DBs and Tables
     setupPrivileges(statement); // setup privileges for USER1
     dropDbObjects(statement); // drop objects
-    Thread.sleep(WAIT_FOR_NOTIFICATION_PROCESSING);
     verifyPrivilegesDropped(statement); // verify privileges are removed
 
     statement.close();
@@ -152,7 +163,6 @@ public class TestDbPrivilegeCleanupOnDrop extends TestHDFSIntegrationBase {
     dropDbObjects(statement); // drop DB and tables
 
     setupDbObjects(statement); // recreate same DBs and tables
-    Thread.sleep(WAIT_FOR_NOTIFICATION_PROCESSING);
     verifyPrivilegesDropped(statement); // verify the stale privileges removed
   }
 
@@ -171,7 +181,6 @@ public class TestDbPrivilegeCleanupOnDrop extends TestHDFSIntegrationBase {
     setupRoles(statement); // create required roles
     setupDbObjects(statement); // create test DBs and Tables
     setupPrivileges(statement); // setup privileges for USER1
-    Thread.sleep(WAIT_FOR_NOTIFICATION_PROCESSING);
 
     // verify privileges on the created tables
     statement.execute("USE " + DB2);
@@ -181,9 +190,10 @@ public class TestDbPrivilegeCleanupOnDrop extends TestHDFSIntegrationBase {
     verifyTablePrivilegeExist(statement, Lists.newArrayList("all_tbl2"),
         tableName2);
 
-    renameTables(statement); // alter tables to rename
+    // alter tables to rename
+    renameTables(statement);
+
     // verify privileges removed for old tables
-    Thread.sleep(WAIT_FOR_NOTIFICATION_PROCESSING);
     verifyTablePrivilegesDropped(statement);
 
     // verify privileges created for new tables
@@ -255,12 +265,58 @@ public class TestDbPrivilegeCleanupOnDrop extends TestHDFSIntegrationBase {
   }
 
   /**
+   * add single privilege, rename table within the same DB and verify privilege moved to
+   * new table name right away
+   *
+   * @throws Exception
+   */
+  @Test
+  public void testRenameTablesWithinDBSinglePrivilege() throws Exception {
+    dbNames = new String[]{DB1, DB2};
+    roles = new String[]{"admin_role", "read_db1", "all_db1", "select_tbl1",
+        "insert_tbl1", "all_tbl1", "all_tbl2", "all_prod"};
+
+    // create required roles
+    setupRoles(statement);
+
+    // create test DBs and Tables
+    statement.execute("CREATE DATABASE " + DB1);
+    statement.execute("CREATE DATABASE " + DB2);
+    statement.execute("create table " + DB2 + "." + tableName1
+        + " (under_col int comment 'the under column', value string)");
+
+    // setup privileges for USER1
+    statement.execute("GRANT ALL ON DATABASE " + DB1 + " TO ROLE all_db1");
+    statement.execute("GRANT SELECT ON DATABASE " + DB1
+        + " TO ROLE read_db1");
+    statement.execute("GRANT ALL ON DATABASE " + DB2 + " TO ROLE all_prod");
+    statement.execute("USE " + DB2);
+
+    // grant priviledges
+    statement.execute("GRANT SELECT ON TABLE " + tableName1
+        + " TO ROLE select_tbl1");
+
+    // rename table
+    statement.execute("ALTER TABLE " + tableName1 + " RENAME TO " +
+        tableName1 + renameTag);
+
+    // verify privileges created for new table
+    verifyTablePrivilegeExist(statement,
+        Lists.newArrayList("select_tbl1"),
+        tableName1 + renameTag);
+
+    statement.close();
+    connection.close();
+  }
+
+  /**
    * After we drop/rename table, we will drop/rename all privileges(ALL,SELECT,INSERT,ALTER,DROP...)
    * from this role
    *
    * @throws Exception
    */
   @Test
+  @Ignore("once HIVE-18783 is fixed in hive version, enable this test")
   public void testDropAndRenameWithMultiAction() throws Exception {
     dbNames = new String[]{DB1, DB2};
     roles = new String[]{"admin_role", "user_role"};
@@ -286,11 +342,9 @@ public class TestDbPrivilegeCleanupOnDrop extends TestHDFSIntegrationBase {
     statement = connection.createStatement();
     statement.execute("USE " + DB1);
     statement.execute("ALTER TABLE t1 RENAME TO t2");
-    Thread.sleep(WAIT_FOR_NOTIFICATION_PROCESSING);
 
     // After rename table t1 to t2, user_role should have permission to drop t2
     statement.execute("drop table t2");
-    Thread.sleep(WAIT_FOR_NOTIFICATION_PROCESSING);
     ResultSet resultSet = statement.executeQuery("SHOW GRANT ROLE user_role");
     // user_role will revoke all privilege from table t2, only remain DROP/CREATE on db_1
     assertRemainingRows(resultSet, 2);

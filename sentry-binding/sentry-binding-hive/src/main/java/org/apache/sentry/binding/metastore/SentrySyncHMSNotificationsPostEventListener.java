@@ -20,6 +20,7 @@ package org.apache.sentry.binding.metastore;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.hadoop.hive.metastore.MetaStoreEventListener;
 import org.apache.hadoop.hive.metastore.MetaStoreEventListenerConstants;
 import org.apache.hadoop.hive.metastore.api.MetaException;
@@ -46,7 +47,9 @@ import java.util.concurrent.atomic.AtomicLong;
  * whenever a DDL event happens on the Hive metastore.
  */
 public class SentrySyncHMSNotificationsPostEventListener extends MetaStoreEventListener {
-  private static final Logger LOGGER = LoggerFactory.getLogger(SentrySyncHMSNotificationsPostEventListener.class);
+
+  private static final Logger LOGGER = LoggerFactory
+      .getLogger(SentrySyncHMSNotificationsPostEventListener.class);
 
   private final HiveAuthzConf authzConf;
 
@@ -78,7 +81,7 @@ public class SentrySyncHMSNotificationsPostEventListener extends MetaStoreEventL
       throw new RuntimeException(error);
     }
 
-    authzConf = HiveAuthzConf.getAuthzConf((HiveConf)config);
+    authzConf = HiveAuthzConf.getAuthzConf((HiveConf) config);
   }
 
   @Override
@@ -93,7 +96,31 @@ public class SentrySyncHMSNotificationsPostEventListener extends MetaStoreEventL
 
   @Override
   public void onAlterTable(AlterTableEvent tableEvent) throws MetaException {
-    // no-op
+
+    if (tableEvent == null) {
+      return;
+    }
+
+    Table oldTable = tableEvent.getOldTable();
+    Table newTable = tableEvent.getNewTable();
+
+    if (oldTable == null) {
+      return;
+    }
+
+    if (newTable == null) {
+      return;
+    }
+
+    String oldDbName = oldTable.getDbName();
+    String newDbName = newTable.getDbName();
+    String oldTableName = oldTable.getTableName();
+    String newTableName = newTable.getTableName();
+
+    if (!newDbName.equalsIgnoreCase(oldDbName) || !newTableName.equalsIgnoreCase(oldTableName)) {
+      // make sure sentry gets the table rename event
+      syncNotificationEvents(tableEvent, "onAlterTable");
+    }
   }
 
   @Override

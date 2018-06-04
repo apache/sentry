@@ -172,8 +172,8 @@ public abstract class TestHDFSIntegrationBase {
           ServerConfig.SENTRY_HMSFOLLOWER_INIT_DELAY_MILLS_DEFAULT +
               ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS_DEFAULT * 2 + CACHE_REFRESH * 2;
 
-  protected static final long HMSFOLLOWER_INTERVAL_MILLS = 50;
-  protected static final long WAIT_FOR_NOTIFICATION_PROCESSING = HMSFOLLOWER_INTERVAL_MILLS * 3;
+  protected static long HMSFOLLOWER_INTERVAL_MILLS = 50;
+  protected static long WAIT_FOR_NOTIFICATION_PROCESSING = HMSFOLLOWER_INTERVAL_MILLS * 3;
 
   // Time to wait before running next tests. The unit is milliseconds.
   // Deleting HDFS may finish, but HDFS may not be ready for creating the same file again.
@@ -624,6 +624,8 @@ public abstract class TestHDFSIntegrationBase {
         hiveConf.set("hive.security.authorization.task.factory", "org.apache.sentry.binding.hive.SentryHiveAuthorizationTaskFactoryImpl");
         hiveConf.set("hive.server2.session.hook", "org.apache.sentry.binding.hive.HiveAuthzBindingSessionHook");
         hiveConf.set("sentry.metastore.service.users", "hive");// queries made by hive user (beeline) skip meta store check
+        // make sure metastore calls sentry post event listener
+        hiveConf.set("hive.metastore.event.listeners", "org.apache.sentry.binding.metastore.SentrySyncHMSNotificationsPostEventListener");
 
         HiveAuthzConf authzConf = new HiveAuthzConf(Resources.getResource("sentry-site.xml"));
         authzConf.addResource(hiveConf);
