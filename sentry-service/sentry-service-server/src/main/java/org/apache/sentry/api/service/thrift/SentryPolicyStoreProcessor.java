@@ -835,6 +835,12 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     return response;
   }
 
+  @Override
+  public TListSentryPrivilegesResponse list_sentry_privileges_by_user(
+    TListSentryPrivilegesRequest request) throws TException {
+    return null;
+  }
+
   /**
    * This method was created specifically for ProviderBackend.getPrivileges() and is not meant
    * to be used for general privilege retrieval. More details in the .thrift file.

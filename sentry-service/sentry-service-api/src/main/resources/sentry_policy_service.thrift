@@ -189,9 +189,18 @@ struct TSentryAuthorizable {
 struct TListSentryPrivilegesRequest {
 1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V2,
 2: required string requestorUserName, # user on whose behalf the request is issued
+
+# @Deprecated Use entityName instead to set role names or user names. This parameter will be
+# removed in the next major version of Sentry 3.0
 4: required string roleName, # get privileges assigned for this role
-5: optional TSentryAuthorizable authorizableHierarchy # get privileges assigned for this role
+5: optional TSentryAuthorizable authorizableHierarchy, # get privileges assigned for this role
+
+# Get privileges assigned for this entity name. This entityName should be set to a a role name
+# or user name depending of which function you call, either list_sentry_privileges_by_role or
+# list_sentry_privileges_by_user
+6: optional string entityName
 }
+
 struct TListSentryPrivilegesResponse {
 1: required sentry_common_service.TSentryResponseStatus status
 2: optional set<TSentryPrivilege> privileges
@@ -249,11 +258,19 @@ struct TListSentryPrivilegesByAuthRequest {
 2: required string requestorUserName, # user on whose behalf the request is issued
 3: required set<TSentryAuthorizable> authorizableSet,
 4: optional set<string> groups,
-5: optional TSentryActiveRoleSet roleSet
+5: optional TSentryActiveRoleSet roleSet,
+6: optional set<string> users
 }
 struct TListSentryPrivilegesByAuthResponse {
 1: required sentry_common_service.TSentryResponseStatus status,
-2: optional map<TSentryAuthorizable, TSentryPrivilegeMap> privilegesMapByAuth # will not be set in case of an error
+
+# privilegesMapByAuth (legacy & compatible parameter) contains role privileges
+# (will not be set in case of an error)
+2: optional map<TSentryAuthorizable, TSentryPrivilegeMap> privilegesMapByAuth,
+
+# privilegesMapByAuthForUsers contains user privileges
+# (will not be set in case of an error)
+3: optional map<TSentryAuthorizable, TSentryPrivilegeMap> privilegesMapByAuthForUsers
 }
 
 # Obtain a config value from the Sentry service
@@ -369,6 +386,7 @@ service SentryPolicyService
   TListSentryRolesResponse list_sentry_roles_by_user(1:TListSentryRolesForUserRequest request)
 
   TListSentryPrivilegesResponse list_sentry_privileges_by_role(1:TListSentryPrivilegesRequest request)
+  TListSentryPrivilegesResponse list_sentry_privileges_by_user(1:TListSentryPrivilegesRequest request)
 
   # For use with ProviderBackend.getPrivileges only
   TListSentryPrivilegesForProviderResponse list_sentry_privileges_for_provider(1:TListSentryPrivilegesForProviderRequest request)
