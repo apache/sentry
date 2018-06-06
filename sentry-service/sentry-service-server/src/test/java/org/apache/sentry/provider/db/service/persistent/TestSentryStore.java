@@ -238,7 +238,13 @@ public class TestSentryStore extends org.junit.Assert {
     sentryStore.alterSentryRoleAddGroups(grantor, roleName, groups);
     sentryStore.alterSentryRoleDeleteGroups(roleName, groups);
     sentryStore.alterSentryRoleAddUsers(roleName, users);
+    MSentryUser user = sentryStore.getMSentryUserByName(users.iterator().next());
+    assertNotNull(user);
+
     sentryStore.alterSentryRoleDeleteUsers(roleName, users);
+    user = sentryStore.getMSentryUserByName(users.iterator().next(), false);
+    assertNull(user);
+
     sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName, privilege);
     sentryStore.alterSentryRoleRevokePrivilege(grantor, roleName, privilege);
   }
@@ -3873,11 +3879,8 @@ public class TestSentryStore extends org.junit.Assert {
 
     privilege.setAction(AccessConstants.INSERT);
     sentryStore.alterSentryUserRevokePrivilege(grantor, userName, privilege);
-    user = sentryStore.getMSentryUserByName(userName);
-    privileges = user.getPrivileges();
-    assertEquals(privileges.toString(), 0, privileges.size());
-
-    sentryStore.dropSentryUser(userName);
+    user = sentryStore.getMSentryUserByName(userName, false);
+    assertNull(user);
   }
 
   /**
@@ -4031,6 +4034,11 @@ public class TestSentryStore extends org.junit.Assert {
     privileges = user.getPrivileges();
     assertEquals(privileges.toString(), 1, privileges.size());
 
-    sentryStore.dropSentryUser(userName);
+    privilege.setAction(AccessConstants.SELECT);
+    sentryStore.alterSentryUserRevokePrivilege(grantor, userName, privilege);
+    // after having ALL and revoking INSERT and SELECT, we should have NO privileges
+    // user should be removed automatically
+    user = sentryStore.getMSentryUserByName(userName, false);
+    assertNull(user);
   }
 }

@@ -1241,7 +1241,22 @@ public class SentryStore {
     for (MSentryPrivilege childPriv : privilegeGraph) {
       revokePrivilegeFromUser(pm, tPrivilege, mUser, childPriv);
     }
-    pm.makePersistent(mUser);
+
+    persistUser(pm, mUser);
+  }
+
+  /**
+   * If user is stale, delete it from database. Otherwise, persist the user
+   * @param pm persistence manager
+   * @param user user to persist
+   */
+  private void persistUser(PersistenceManager pm, MSentryUser user) {
+    if (isUserStale(user)) {
+      pm.deletePersistent(user);
+      return;
+    }
+
+    pm.makePersistent(user);
   }
 
   /**
@@ -1432,6 +1447,14 @@ public class SentryStore {
         revokeUserPartial(pm, mUser, currentPrivilege, persistedPriv, addActions);
       }
     }
+  }
+
+  private boolean isUserStale(MSentryUser user) {
+    if (user.getPrivileges().isEmpty() && user.getRoles().isEmpty()) {
+      return true;
+    }
+
+    return false;
   }
 
   private boolean isPrivilegeStall(MSentryPrivilege privilege) {
@@ -1983,16 +2006,24 @@ public class SentryStore {
                 Query query = pm.newQuery(MSentryUser.class);
                 query.setFilter("this.userName == :userName");
                 query.setUnique(true);
-                List<MSentryUser> users = Lists.newArrayList();
+                List<MSentryUser> usersToSave = Lists.newArrayList();
+                List<MSentryUser> usersToDelete = Lists.newArrayList();
                 for (String userName : userNames) {
                   userName = userName.trim();
                   MSentryUser user = (MSentryUser) query.execute(userName);
                   if (user != null) {
                     user.removeRole(role);
-                    users.add(user);
+
+                    if (isUserStale(user)) {
+                      usersToDelete.add(user);
+                    } else {
+                      usersToSave.add(user);
+                    }
                   }
                 }
-                pm.makePersistentAll(users);
+
+                pm.deletePersistentAll(usersToDelete);
+                pm.makePersistentAll(usersToSave);
               }
               return null;
             });
