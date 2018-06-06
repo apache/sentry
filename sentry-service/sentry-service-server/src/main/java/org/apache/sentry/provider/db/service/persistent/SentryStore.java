@@ -789,7 +789,32 @@ public class SentryStore {
     }
   }
 
-  private MSentryPrivilege alterSentryRoleGrantPrivilegeCore(PersistenceManager pm,
+  /**
+   * Find the privilege in entityPrivileges that matches the input privilege.
+   * Function contains() only returns if there is a match, but does not return matching privilege
+   * in entityPrivileges.
+   * inputPrivilege contains all privilege fields except the roles and users information.
+   * we need to find the privilege with all users and roles that matches the inputPrivilege.
+   * @param entityPrivileges the privileges to search, which is fetched from DB, containing
+   * associated users and/or roles
+   * @param inputPrivilege input privilege to match. It is constructed in memory, does not contain
+   * associated users and/or roles
+   * @return matched privilege in entityPrivileges. When there is no match, return null
+   */
+   private MSentryPrivilege findMatchPrivilege(
+      Set<MSentryPrivilege> entityPrivileges,
+      MSentryPrivilege inputPrivilege) {
+
+     for (MSentryPrivilege entityPrivilege : entityPrivileges) {
+       if (entityPrivilege.equals(inputPrivilege)) {
+         return entityPrivilege;
+       }
+     }
+
+     return null;
+   }
+
+   private MSentryPrivilege alterSentryRoleGrantPrivilegeCore(PersistenceManager pm,
       String roleName, TSentryPrivilege privilege)
       throws SentryNoSuchObjectException, SentryInvalidInputException {
     MSentryPrivilege mPrivilege = null;
@@ -811,14 +836,16 @@ public class SentryStore {
           || AccessConstants.ACTION_ALL.equalsIgnoreCase(privilege.getAction())) {
         TSentryPrivilege tNotAll = new TSentryPrivilege(privilege);
         tNotAll.setAction(AccessConstants.SELECT);
-        MSentryPrivilege mSelect = getMSentryPrivilege(tNotAll, pm);
+        MSentryPrivilege mSelect =
+            findMatchPrivilege(mRole.getPrivileges(), convertToMSentryPrivilege(tNotAll));
         tNotAll.setAction(AccessConstants.INSERT);
-        MSentryPrivilege mInsert = getMSentryPrivilege(tNotAll, pm);
-        if ((mSelect != null) && mRole.getPrivileges().contains(mSelect)) {
+        MSentryPrivilege mInsert =
+            findMatchPrivilege(mRole.getPrivileges(), convertToMSentryPrivilege(tNotAll));
+        if (mSelect != null) {
           mSelect.removeRole(mRole);
           pm.makePersistent(mSelect);
         }
-        if ((mInsert != null) && mRole.getPrivileges().contains(mInsert)) {
+        if (mInsert != null) {
           mInsert.removeRole(mRole);
           pm.makePersistent(mInsert);
         }
@@ -827,13 +854,15 @@ public class SentryStore {
         // do nothing..
         TSentryPrivilege tAll = new TSentryPrivilege(privilege);
         tAll.setAction(AccessConstants.ALL);
-        MSentryPrivilege mAll1 = getMSentryPrivilege(tAll, pm);
+        MSentryPrivilege mAll1 =
+            findMatchPrivilege(mRole.getPrivileges(), convertToMSentryPrivilege(tAll));
         tAll.setAction(AccessConstants.ACTION_ALL);
-        MSentryPrivilege mAll2 = getMSentryPrivilege(tAll, pm);
-        if (mAll1 != null && mRole.getPrivileges().contains(mAll1)) {
+        MSentryPrivilege mAll2 =
+            findMatchPrivilege(mRole.getPrivileges(), convertToMSentryPrivilege(tAll));
+        if (mAll1 != null) {
           return null;
         }
-        if (mAll2 != null && mRole.getPrivileges().contains(mAll2)) {
+        if (mAll2 != null) {
           return null;
         }
       }
@@ -1036,14 +1065,16 @@ public class SentryStore {
           || AccessConstants.ACTION_ALL.equalsIgnoreCase(privilege.getAction())) {
         TSentryPrivilege tNotAll = new TSentryPrivilege(privilege);
         tNotAll.setAction(AccessConstants.SELECT);
-        MSentryPrivilege mSelect = getMSentryPrivilege(tNotAll, pm);
+        MSentryPrivilege mSelect =
+            findMatchPrivilege(mUser.getPrivileges(), convertToMSentryPrivilege(tNotAll));
         tNotAll.setAction(AccessConstants.INSERT);
-        MSentryPrivilege mInsert = getMSentryPrivilege(tNotAll, pm);
-        if ((mSelect != null) && mUser.getPrivileges().contains(mSelect)) {
+        MSentryPrivilege mInsert =
+            findMatchPrivilege(mUser.getPrivileges(), convertToMSentryPrivilege(tNotAll));
+        if (mSelect != null) {
           mSelect.removeUser(mUser);
           pm.makePersistent(mSelect);
         }
-        if ((mInsert != null) && mUser.getPrivileges().contains(mInsert)) {
+        if (mInsert != null) {
           mInsert.removeUser(mUser);
           pm.makePersistent(mInsert);
         }
@@ -1052,13 +1083,15 @@ public class SentryStore {
         // do nothing..
         TSentryPrivilege tAll = new TSentryPrivilege(privilege);
         tAll.setAction(AccessConstants.ALL);
-        MSentryPrivilege mAll1 = getMSentryPrivilege(tAll, pm);
+        MSentryPrivilege mAll1 =
+            findMatchPrivilege(mUser.getPrivileges(), convertToMSentryPrivilege(tAll));
         tAll.setAction(AccessConstants.ACTION_ALL);
-        MSentryPrivilege mAll2 = getMSentryPrivilege(tAll, pm);
-        if (mAll1 != null && mUser.getPrivileges().contains(mAll1)) {
+        MSentryPrivilege mAll2 =
+            findMatchPrivilege(mUser.getPrivileges(), convertToMSentryPrivilege(tAll));
+        if (mAll1 != null) {
           return null;
         }
-        if (mAll2 != null && mUser.getPrivileges().contains(mAll2)) {
+        if (mAll2 != null) {
           return null;
         }
       }
