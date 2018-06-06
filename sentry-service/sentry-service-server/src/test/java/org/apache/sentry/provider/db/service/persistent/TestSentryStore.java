@@ -3978,6 +3978,8 @@ public class TestSentryStore extends org.junit.Assert {
     // second round
     privilege.setAction(AccessConstants.ALL);
     sentryStore.alterSentryRoleGrantPrivilege(grantor, roleName, privilege);
+    List<MSentryPrivilege> totalPrivileges = sentryStore.getAllMSentryPrivileges();
+    assertEquals(totalPrivileges.toString(),1, totalPrivileges.size());
     role = sentryStore.getMSentryRoleByName(roleName);
     privileges = role.getPrivileges();
     assertEquals(privileges.toString(), 1, privileges.size());
@@ -3985,6 +3987,8 @@ public class TestSentryStore extends org.junit.Assert {
     privilege.setAction(AccessConstants.INSERT);
     sentryStore.alterSentryRoleRevokePrivilege(grantor, roleName, privilege);
     // after having ALL and revoking INSERT, we should have (SELECT)
+    totalPrivileges = sentryStore.getAllMSentryPrivileges();
+    assertEquals(totalPrivileges.toString(),1, totalPrivileges.size());
     role = sentryStore.getMSentryRoleByName(roleName);
     privileges = role.getPrivileges();
     assertEquals(privileges.toString(), 1, privileges.size());
@@ -4023,6 +4027,9 @@ public class TestSentryStore extends org.junit.Assert {
     // second round
     privilege.setAction(AccessConstants.ALL);
     sentryStore.alterSentryUserGrantPrivilege(grantor, userName, privilege);
+    List<MSentryPrivilege> totalPrivileges = sentryStore.getAllMSentryPrivileges();
+    assertEquals(totalPrivileges.toString(),1, totalPrivileges.size());
+
     user = sentryStore.getMSentryUserByName(userName);
     privileges = user.getPrivileges();
     assertEquals(privileges.toString(), 1, privileges.size());
@@ -4030,6 +4037,9 @@ public class TestSentryStore extends org.junit.Assert {
     privilege.setAction(AccessConstants.INSERT);
     sentryStore.alterSentryUserRevokePrivilege(grantor, userName, privilege);
     // after having ALL and revoking INSERT, we should have (SELECT)
+    totalPrivileges = sentryStore.getAllMSentryPrivileges();
+    assertEquals(totalPrivileges.toString(),1, totalPrivileges.size());
+
     user = sentryStore.getMSentryUserByName(userName);
     privileges = user.getPrivileges();
     assertEquals(privileges.toString(), 1, privileges.size());

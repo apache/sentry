@@ -843,11 +843,11 @@ public class SentryStore {
             findMatchPrivilege(mRole.getPrivileges(), convertToMSentryPrivilege(tNotAll));
         if (mSelect != null) {
           mSelect.removeRole(mRole);
-          pm.makePersistent(mSelect);
+          persistPrivilege(pm, mSelect);
         }
         if (mInsert != null) {
           mInsert.removeRole(mRole);
-          pm.makePersistent(mInsert);
+          persistPrivilege(pm, mInsert);
         }
       } else {
         // If Grant is for Either INSERT/SELECT and ALL already exists..
@@ -1072,11 +1072,11 @@ public class SentryStore {
             findMatchPrivilege(mUser.getPrivileges(), convertToMSentryPrivilege(tNotAll));
         if (mSelect != null) {
           mSelect.removeUser(mUser);
-          pm.makePersistent(mSelect);
+          persistPrivilege(pm, mSelect);
         }
         if (mInsert != null) {
           mInsert.removeUser(mUser);
-          pm.makePersistent(mInsert);
+          persistPrivilege(pm, mInsert);
         }
       } else {
         // If Grant is for Either INSERT/SELECT and ALL already exists..
@@ -1421,11 +1421,7 @@ public class SentryStore {
           persistedPriv.removeUser(mUser);
         }
 
-        if (isPrivilegeStall(persistedPriv)) {
-          pm.deletePersistent(persistedPriv);
-        } else {
-          pm.makePersistent(persistedPriv);
-        }
+        persistPrivilege(pm, persistedPriv);
       }
     } else {
 
@@ -1457,7 +1453,16 @@ public class SentryStore {
     return false;
   }
 
-  private boolean isPrivilegeStall(MSentryPrivilege privilege) {
+  private void persistPrivilege(PersistenceManager pm, MSentryPrivilege privilege) {
+    if (isPrivilegeStale(privilege)) {
+        pm.deletePersistent(privilege);
+      return;
+    }
+
+    pm.makePersistent(privilege);
+  }
+
+  private boolean isPrivilegeStale(MSentryPrivilege privilege) {
     if (privilege.getUsers().isEmpty() && privilege.getRoles().isEmpty()) {
       return true;
     }
@@ -1465,7 +1470,7 @@ public class SentryStore {
     return false;
   }
 
-  private boolean isPrivilegeStall(MSentryGMPrivilege privilege) {
+  private boolean isPrivilegeStale(MSentryGMPrivilege privilege) {
     if (privilege.getRoles().isEmpty()) {
       return true;
     }
@@ -1481,21 +1486,13 @@ public class SentryStore {
     persistedPriv = getMSentryPrivilege(convertToTSentryPrivilege(persistedPriv), pm);
     if (persistedPriv != null && !persistedPriv.getRoles().isEmpty()) {
       persistedPriv.removeRole(mRole);
-      if (isPrivilegeStall(persistedPriv)) {
-        pm.deletePersistent(persistedPriv);
-      } else {
-        pm.makePersistent(persistedPriv);
-      }
+      persistPrivilege(pm, persistedPriv);
     }
     currentPrivilege.setAction(AccessConstants.ALL);
     persistedPriv = getMSentryPrivilege(convertToTSentryPrivilege(currentPrivilege), pm);
     if (persistedPriv != null && mRole.getPrivileges().contains(persistedPriv)) {
       persistedPriv.removeRole(mRole);
-      if (isPrivilegeStall(persistedPriv)) {
-        pm.deletePersistent(persistedPriv);
-      } else {
-        pm.makePersistent(persistedPriv);
-      }
+      persistPrivilege(pm, persistedPriv);
 
       // add decomposted actions
       for (String addAction : addActions) {
@@ -1520,21 +1517,13 @@ public class SentryStore {
     persistedPriv = getMSentryPrivilege(convertToTSentryPrivilege(persistedPriv), pm);
     if (persistedPriv != null && !persistedPriv.getUsers().isEmpty()) {
       persistedPriv.removeUser(mUser);
-      if (isPrivilegeStall(persistedPriv)) {
-        pm.deletePersistent(persistedPriv);
-      } else {
-        pm.makePersistent(persistedPriv);
-      }
+      persistPrivilege(pm, persistedPriv);
     }
     currentPrivilege.setAction(AccessConstants.ALL);
     persistedPriv = getMSentryPrivilege(convertToTSentryPrivilege(currentPrivilege), pm);
     if (persistedPriv != null && mUser.getPrivileges().contains(persistedPriv)) {
       persistedPriv.removeUser(mUser);
-      if (isPrivilegeStall(persistedPriv)) {
-        pm.deletePersistent(persistedPriv);
-      } else {
-        pm.makePersistent(persistedPriv);
-      }
+      persistPrivilege(pm, persistedPriv);
 
       // add decomposted actions
       for (String addAction : addActions) {
@@ -1567,11 +1556,7 @@ public class SentryStore {
       MSentryPrivilege persistedPriv = getMSentryPrivilege(convertToTSentryPrivilege(mPrivilege), pm);
       if (persistedPriv != null && !persistedPriv.getRoles().isEmpty()) {
         persistedPriv.removeRole(mRole);
-        if (isPrivilegeStall(persistedPriv)) {
-          pm.deletePersistent(persistedPriv);
-        } else {
-          pm.makePersistent(persistedPriv);
-        }
+        persistPrivilege(pm, persistedPriv);
       }
     }
   }
@@ -1592,11 +1577,7 @@ public class SentryStore {
       MSentryPrivilege persistedPriv = getMSentryPrivilege(convertToTSentryPrivilege(mPrivilege), pm);
       if (persistedPriv != null && !persistedPriv.getUsers().isEmpty()) {
         persistedPriv.removeUser(mUser);
-        if (isPrivilegeStall(persistedPriv)) {
-          pm.deletePersistent(persistedPriv);
-        } else {
-          pm.makePersistent(persistedPriv);
-        }
+        persistPrivilege(pm, persistedPriv);
       }
     }
   }
@@ -1873,7 +1854,7 @@ public class SentryStore {
   private void removeStaledPrivileges(PersistenceManager pm, List<MSentryPrivilege> privilegesCopy) {
     List<MSentryPrivilege> stalePrivileges = new ArrayList<>(0);
     for (MSentryPrivilege privilege : privilegesCopy) {
-      if (isPrivilegeStall(privilege)) {
+      if (isPrivilegeStale(privilege)) {
         stalePrivileges.add(privilege);
       }
     }
@@ -1885,7 +1866,7 @@ public class SentryStore {
   private void removeStaledGMPrivileges(PersistenceManager pm, List<MSentryGMPrivilege> privilegesCopy) {
     List<MSentryGMPrivilege> stalePrivileges = new ArrayList<>(0);
     for (MSentryGMPrivilege privilege : privilegesCopy) {
-      if (isPrivilegeStall(privilege)) {
+      if (isPrivilegeStale(privilege)) {
         stalePrivileges.add(privilege);
       }
     }
