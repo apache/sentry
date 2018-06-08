@@ -26,6 +26,8 @@ import javax.jdo.annotations.PersistenceCapable;
 import org.apache.sentry.core.common.utils.PathUtils;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
+import org.apache.sentry.provider.db.service.persistent.PrivilegeEntity;
+import org.apache.sentry.service.common.ServiceConstants.SentryEntityType;
 
 /**
  * Database backed Sentry Privilege. Any changes to this object
@@ -165,12 +167,16 @@ public class MSentryPrivilege {
      this.grantOption = grantOption;
    }
 
-  public void appendRole(MSentryRole role) {
-    roles.add(role);
-  }
-
-  public void appendUser(MSentryUser user) {
-    users.add(user);
+  /**
+   * Appends Role/User in the privilege.
+   * @param entity Role/User to be appended.
+   */
+  public void appendEntity(PrivilegeEntity entity) {
+    if(entity.getType() == SentryEntityType.ROLE) {
+      roles.add((MSentryRole)entity);
+    } else  if(entity.getType() == SentryEntityType.USER) {
+      users.add((MSentryUser)entity);
+    }
   }
 
   public Set<MSentryRole> getRoles() {
@@ -179,9 +185,17 @@ public class MSentryPrivilege {
 
   public Set<MSentryUser> getUsers() { return users; }
 
-  public void removeRole(MSentryRole role) {
-    roles.remove(role);
-    role.removePrivilege(this);
+  /**
+   * Removes Role/User in the privilege.
+   * @param entity Role/User to be removed.
+   */
+  public void removeEntity(PrivilegeEntity entity) {
+    if(entity.getType() == SentryEntityType.ROLE && (roles != null) && (roles.size() > 0)) {
+      roles.remove((MSentryRole)entity);
+    } else  if(entity.getType() == SentryEntityType.USER && (users != null) && (users.size() > 0)) {
+      users.remove((MSentryUser)entity);
+    }
+    entity.removePrivilege(this);
   }
 
   public void removeUser(MSentryUser user) {

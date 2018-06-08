@@ -25,12 +25,15 @@ import java.util.Set;
 
 import javax.jdo.annotations.PersistenceCapable;
 
+import org.apache.sentry.service.common.ServiceConstants;
+import org.apache.sentry.provider.db.service.persistent.PrivilegeEntity;
+
 /**
  * Database backed Sentry User. Any changes to this object
  * require re-running the maven build so DN an re-enhance.
  */
 @PersistenceCapable
-public class MSentryUser {
+public class MSentryUser implements PrivilegeEntity {
 
   /**
    * User name is unique
@@ -55,6 +58,18 @@ public class MSentryUser {
 
   public void setCreateTime(long createTime) {
     this.createTime = createTime;
+  }
+
+  /**
+   * Gets the User name
+   * @return username
+   */
+  public String getEntityName() {
+    return userName;
+  }
+
+  public ServiceConstants.SentryEntityType getType() {
+    return ServiceConstants.SentryEntityType.USER;
   }
 
   public Set<MSentryRole> getRoles() {
@@ -97,7 +112,7 @@ public class MSentryUser {
 
   public void appendPrivilege(MSentryPrivilege privilege) {
     if (privileges.add(privilege)) {
-      privilege.appendUser(this);
+      privilege.appendEntity(this);
     }
   }
 

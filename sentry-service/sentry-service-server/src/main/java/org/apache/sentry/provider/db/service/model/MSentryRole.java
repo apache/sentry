@@ -26,12 +26,15 @@ import javax.jdo.annotations.PersistenceCapable;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
+import org.apache.sentry.service.common.ServiceConstants;
+import org.apache.sentry.provider.db.service.persistent.PrivilegeEntity;
+
 /**
  * Database backed Sentry Role. Any changes to this object
  * require re-running the maven build so DN an re-enhance.
  */
 @PersistenceCapable
-public class MSentryRole {
+public class MSentryRole implements PrivilegeEntity {
 
   private String roleName;
   // set of privileges granted to this role
@@ -64,6 +67,18 @@ public class MSentryRole {
 
   public void setCreateTime(long createTime) {
     this.createTime = createTime;
+  }
+
+  /**
+   * Get the Name of the Role.
+   * @return roleName
+   */
+  public String getEntityName() {
+    return roleName;
+  }
+
+  public ServiceConstants.SentryEntityType getType() {
+    return ServiceConstants.SentryEntityType.ROLE;
   }
 
   public String getRoleName() {
@@ -108,7 +123,7 @@ public class MSentryRole {
 
   public void removePrivilege(MSentryPrivilege privilege) {
     if (privileges.remove(privilege)) {
-      privilege.removeRole(this);
+      privilege.removeEntity(this);
     }
   }
 
@@ -118,7 +133,7 @@ public class MSentryRole {
 
   public void appendPrivilege(MSentryPrivilege privilege) {
     if (privileges.add(privilege)) {
-      privilege.appendRole(this);
+      privilege.appendEntity(this);
     }
   }
 
@@ -180,7 +195,7 @@ public class MSentryRole {
     // the actual privilege set in MSentryRole instance.
 
     for (MSentryPrivilege privilege : ImmutableSet.copyOf(privileges)) {
-      privilege.removeRole(this);
+      privilege.removeEntity(this);
     }
     Preconditions.checkState(privileges.isEmpty(), "Privileges should be empty: " + privileges);
   }
