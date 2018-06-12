@@ -232,8 +232,13 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
     TListSentryPrivilegesRequest request = new TListSentryPrivilegesRequest();
     request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
     request.setRequestorUserName(requestorUserName);
-    request.setRoleName(""); // 'roleName' is required but it is deprecated by 'entityName'
-    request.setEntityName(roleName);
+
+    // TODO: Switch from setRoleName() to setEntityName()
+    // The 'roleName' parameter is deprecated in Sentry 2.x, but it is still required by older
+    // versions of Sentry 2.0. To keep compatibility when connecting to older versions of Sentry 2.x,
+    // then we'll use this parameter, but it will be switched for setEntityName once the roleName
+    // is removed.
+    request.setRoleName(roleName);
     if (authorizable != null && !authorizable.isEmpty()) {
       TSentryAuthorizable tSentryAuthorizable = setupSentryAuthorizable(authorizable);
       request.setAuthorizableHierarchy(tSentryAuthorizable);
