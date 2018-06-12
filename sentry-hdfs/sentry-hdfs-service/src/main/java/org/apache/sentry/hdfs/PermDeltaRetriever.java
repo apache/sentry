@@ -18,6 +18,7 @@
 package org.apache.sentry.hdfs;
 
 import com.codahale.metrics.Timer.Context;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
 import org.apache.sentry.provider.db.service.model.MSentryPermChange;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 
@@ -66,6 +67,11 @@ public class PermDeltaRetriever implements DeltaRetriever<PermissionsUpdate> {
         PermissionsUpdate permsUpdate = new PermissionsUpdate();
         permsUpdate.JSONDeserialize(mSentryPermChange.getPermChange());
         permsUpdate.setSeqNum(changeID);
+        Collection<TPrivilegeChanges> privChanges = permsUpdate.getPrivilegeUpdates();
+        for(TPrivilegeChanges privChange : privChanges) {
+          DBUpdateForwarder.translateOwnerPrivileges(privChange.getAddPrivileges());
+          DBUpdateForwarder.translateOwnerPrivileges(privChange.getDelPrivileges());
+        }
         updates.add(permsUpdate);
       }
       return updates;

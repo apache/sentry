@@ -17,15 +17,24 @@
  */
 package org.apache.sentry.hdfs;
 
+import org.apache.sentry.core.model.db.AccessConstants;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntity;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntityType;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
 import org.apache.sentry.provider.db.service.model.MSentryPathChange;
+import org.apache.sentry.provider.db.service.model.MSentryPermChange;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -72,5 +81,52 @@ public class TestDeltaRetriever {
     assertEquals(2, pathsUpdates.get(1).getSeqNum());
     assertEquals(false, pathsUpdates.get(1).hasFullImage());
     assertEquals(3, pathsUpdates.get(1).getImgNum());
+  }
+
+  @Test
+  public void testDeltaPermUpdatesRetrievedWhenOwnerPrivileges() throws Exception {
+    PermDeltaRetriever deltaRetriever;
+    List<PermissionsUpdate> permUpdates;
+
+    Mockito.when(sentryStoreMock.getMSentryPermChanges(Mockito.anyLong())).
+            thenAnswer(new Answer() {
+              @Override
+              public List<MSentryPermChange> answer(InvocationOnMock invocation)
+                      throws Throwable {
+                List<MSentryPermChange> permChanges = new ArrayList<>();
+                PermissionsUpdate update = new PermissionsUpdate();
+                update.addPrivilegeUpdate("obj1").putToAddPrivileges( new TPrivilegeEntity(TPrivilegeEntityType.ROLE,
+                        "role1"), AccessConstants.OWNER);
+                MSentryPermChange perm1 = new MSentryPermChange(1,update);
+                permChanges.add(perm1);
+                update = new PermissionsUpdate();
+                update.addPrivilegeUpdate("obj1").putToAddPrivileges( new TPrivilegeEntity(TPrivilegeEntityType.USER,
+                        "user1"), AccessConstants.OWNER);
+                MSentryPermChange perm2 = new MSentryPermChange(2,update);
+                permChanges.add(perm2);
+                update = new PermissionsUpdate();
+                update.addPrivilegeUpdate("obj1").putToDelPrivileges( new TPrivilegeEntity(TPrivilegeEntityType.ROLE,
+                        "user1"), AccessConstants.OWNER);
+                MSentryPermChange perm3 = new MSentryPermChange(2,update);
+                permChanges.add(perm3);
+                return permChanges;
+              }
+            });
+
+    deltaRetriever = new PermDeltaRetriever(sentryStoreMock);
+    permUpdates = deltaRetriever.retrieveDelta(0, 3);
+    assertEquals(3, permUpdates.size());
+    assertEquals(1, permUpdates.get(0).getSeqNum());
+
+    for(PermissionsUpdate update : permUpdates) {
+      for(TPrivilegeChanges priv : update.getPrivilegeUpdates()) {
+        for(Map.Entry<TPrivilegeEntity,String> privEntry : priv.getAddPrivileges().entrySet()) {
+          assertEquals(AccessConstants.ALL, privEntry.getValue());
+        }
+        for(Map.Entry<TPrivilegeEntity,String> privEntry : priv.getDelPrivileges().entrySet()) {
+          assertEquals(AccessConstants.ALL, privEntry.getValue());
+        }
+      }
+    }
   }
 }

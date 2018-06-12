@@ -73,9 +73,10 @@ public class PermImageRetriever implements ImageRetriever<PermissionsUpdate> {
 
       for (Map.Entry<String, Map<TPrivilegeEntity, String>> privEnt : privilegeImage.entrySet()) {
         String authzObj = privEnt.getKey();
-        Map<TPrivilegeEntity,String> privs = privEnt.getValue();
+        Map<TPrivilegeEntity,String> privMap = privEnt.getValue();
+        DBUpdateForwarder.translateOwnerPrivileges(privMap);
         tPermUpdate.putToPrivilegeChanges(authzObj, new TPrivilegeChanges(
-        authzObj, privs, new HashMap<TPrivilegeEntity, String>()));
+        authzObj, privMap, new HashMap<TPrivilegeEntity, String>()));
       }
 
       for (Map.Entry<String, List<String>> privEnt : roleImage.entrySet()) {

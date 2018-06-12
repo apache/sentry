@@ -18,13 +18,21 @@
 package org.apache.sentry.hdfs;
 
 import com.google.common.collect.Sets;
+import junit.framework.Assert;
 import org.apache.commons.lang.StringUtils;
+import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.hdfs.service.thrift.TPathChanges;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntity;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntityType;
+import org.apache.sentry.provider.db.service.persistent.PermissionsImage;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -63,6 +71,39 @@ public class TestImageRetriever {
     assertEquals(1, pathsUpdate.getSeqNum());
     assertEquals(2, pathsUpdate.getPathChanges().size());
     assertTrue(comparePaths(fullPathsImage, pathsUpdate.getPathChanges()));
+  }
+
+
+  @Test
+  public void testFullPermUpdatesRetrievedWithOwnerPrivileges() throws Exception {
+    PermImageRetriever imageRetriever;
+    PermissionsUpdate permUpdate;
+
+    Mockito.when(sentryStoreMock.retrieveFullPermssionsImage()).
+            thenAnswer(new Answer() {
+              @Override
+              public PermissionsImage answer(InvocationOnMock invocation)
+                      throws Throwable {
+                Map<String, Map<TPrivilegeEntity, String>> privilegeMap = new HashMap<>();
+                Map<TPrivilegeEntity, String> privMap = new HashMap<>();
+                privMap.put(new TPrivilegeEntity(TPrivilegeEntityType.ROLE, "role1"), AccessConstants.OWNER);
+                privMap.put(new TPrivilegeEntity(TPrivilegeEntityType.USER, "user1"), AccessConstants.OWNER);
+                privilegeMap.put("obj1", privMap);
+                privilegeMap.put("obj2", privMap);
+                return new PermissionsImage(new HashMap<>(), privilegeMap, 1L);
+              }
+            });
+
+    imageRetriever = new PermImageRetriever(sentryStoreMock);
+    permUpdate = imageRetriever.retrieveFullImage();
+    Assert.assertNotNull(permUpdate);
+
+    assertEquals(2, permUpdate.getPrivilegeUpdates().size());
+    for(TPrivilegeChanges privUpdate : permUpdate.getPrivilegeUpdates()) {
+      for(Map.Entry<TPrivilegeEntity,String> priv : privUpdate.getAddPrivileges().entrySet()) {
+        assertEquals(priv.getValue(), AccessConstants.ALL);
+      }
+    }
   }
 
   private boolean comparePaths(Map<String, Collection<String>> expected, List<TPathChanges> actual) {
