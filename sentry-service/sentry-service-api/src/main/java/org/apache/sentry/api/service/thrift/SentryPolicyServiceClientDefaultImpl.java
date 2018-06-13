@@ -267,6 +267,8 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
     TListSentryPrivilegesRequest request = new TListSentryPrivilegesRequest();
     request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
     request.setRequestorUserName(requestorUserName);
+    // TODO: Remove setRoleName() once the required field is removed
+    request.setRoleName(""); // roleName is unused by it is required by Thrift
     request.setEntityName(userName);
     if (authorizable != null && !authorizable.isEmpty()) {
       TSentryAuthorizable tSentryAuthorizable = setupSentryAuthorizable(authorizable);
