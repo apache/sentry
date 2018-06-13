@@ -23,10 +23,17 @@ from optparse import OptionParser
 tmp_dir = None
 BASE_JIRA_URL = 'https://issues.apache.org/jira'
 
-def execute(cmd, log=True):
+def execute(cmd, log=True, output_file=""):
+  processes = list()
   if log:
     print "INFO: Executing %s" % (cmd)
-  return subprocess.call(cmd, shell=True)
+  if len(output_file) > 0 :
+    processes.append(subprocess.Popen(cmd, shell=True))
+    processes.append(subprocess.Popen('tail -f ' + output_file, shell=True))
+    if processes[0].poll() is None:
+      return processes[0].wait()
+  else:
+    return subprocess.call(cmd, shell=True)
 
 def jira_request(result, url, username, password, data, headers):
   request = urllib2.Request(url, data, headers)
@@ -120,7 +127,7 @@ def git_checkout(result, branch):
 
 def git_apply(result, cmd, patch_file, output_dir):
   output_file = "%s/apply.txt" % (output_dir)
-  rc = execute("%s %s 1>%s 2>&1" % (cmd, patch_file, output_file))
+  rc = execute("%s %s 1>%s 2>&1" % (cmd, patch_file, output_file), True, output_file)
   output = ""
   if os.path.exists(output_file):
     with open(output_file) as fh:
@@ -131,12 +138,14 @@ def git_apply(result, cmd, patch_file, output_dir):
     result.fatal("failed to apply patch (exit code %d):\n%s\n" % (rc, output))
 
 def mvn_clean(result, mvn_repo, output_dir, mvn_profile):
-  rc = execute("mvn clean -Dmaven.repo.local=%s %s 1>%s/clean.txt 2>&1" % (mvn_repo, mvn_profile, output_dir))
+  output_file = output_dir+'/clean.txt'
+  rc = execute("mvn clean -Dmaven.repo.local=%s %s 1>%s 2>&1" % (mvn_repo, mvn_profile, output_file), True, output_file)
   if rc != 0:
     result.fatal("failed to clean project (exit code %d)" % (rc))
 
 def mvn_install(result, mvn_repo, output_dir, mvn_profile):
-  rc = execute("mvn install -U -DskipTests -Dmaven.repo.local=%s %s 1>%s/install.txt 2>&1" % (mvn_repo, mvn_profile, output_dir))
+  output_file = output_dir+'/install.txt'
+  rc = execute("mvn install -U -DskipTests -Dmaven.repo.local=%s %s 1>%s 2>&1" % (mvn_repo, mvn_profile, output_file), True, output_file)
   if rc != 0:
     result.fatal("failed to build with patch (exit code %d)" % (rc))
 
@@ -146,7 +155,8 @@ def find_all_files(top):
             yield os.path.join(root, f)
 
 def mvn_test(result, mvn_repo, output_dir, mvn_profile):
-  rc = execute("mvn verify --fail-at-end -Dmaven.repo.local=%s %s 1>%s/test.txt 2>&1" % (mvn_repo, mvn_profile, output_dir))
+  output_file = output_dir+'/test.txt'
+  rc = execute("mvn verify --fail-at-end -Dmaven.repo.local=%s %s 1>%s 2>&1" % (mvn_repo, mvn_profile, output_file), True, output_file)
   if rc == 0:
     result.success("all tests passed")
   else:
