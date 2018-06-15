@@ -405,8 +405,8 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
             case TABLE_OR_VIEW:
               // For column level security
               if (columnNames != null && !columnNames.isEmpty()) {
-                if (action.equalsIgnoreCase(AccessConstants.INSERT)
-                    || action.equalsIgnoreCase(AccessConstants.ALL)) {
+                // Columns accept only SELECT privileges
+                if (!action.equalsIgnoreCase(AccessConstants.SELECT)) {
                   String msg =
                       SentryHiveConstants.PRIVILEGE_NOT_SUPPORTED + privilege.getName()
                           + " on Column";

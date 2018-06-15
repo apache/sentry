@@ -367,8 +367,8 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
       if (privilegeDef.getChildCount() > 1) {
         cols = BaseSemanticAnalyzer.getColumnNames((ASTNode) privilegeDef.getChild(1));
       }
-      if (cols != null && (privObj.getPriv().equals(PrivilegeType.INSERT)
-              || privObj.getPriv().equals(PrivilegeType.ALL))) {
+      // Columns accept only SELECT privileges
+      if (cols != null && !privObj.getPriv().equals(PrivilegeType.SELECT)) {
         String msg = SentryHiveConstants.PRIVILEGE_NOT_SUPPORTED + privObj.getPriv() + " on Column";
         throw new SemanticException(msg);
       }
