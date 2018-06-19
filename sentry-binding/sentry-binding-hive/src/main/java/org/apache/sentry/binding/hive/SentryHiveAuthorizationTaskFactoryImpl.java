@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.SentryHiveConstants;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -188,30 +189,56 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
       HashSet<WriteEntity> outputs) throws SemanticException {
     SentryHivePrivilegeObjectDesc privHiveObj = null;
 
-    ASTNode principal = (ASTNode) ast.getChild(0);
+    PrincipalDesc principalDesc = null;
     PrincipalType type = null;
+
+    ASTNode principal = (ASTNode) ast.getChild(0);
     switch (principal.getType()) {
-    case HiveParser.TOK_USER:
-      type = PrincipalType.USER;
-      break;
-    case HiveParser.TOK_GROUP:
-      type = PrincipalType.GROUP;
-      break;
-    case HiveParser.TOK_ROLE:
-      type = PrincipalType.ROLE;
-      break;
-    default:
-      type = PrincipalType.USER;
+      case HiveParser.TOK_USER:
+        type = PrincipalType.USER;
+        break;
+      case HiveParser.TOK_GROUP:
+        type = PrincipalType.GROUP;
+        break;
+      case HiveParser.TOK_ROLE:
+        type = PrincipalType.ROLE;
+        break;
+      case HiveParser.TOK_PRIV_OBJECT_COL:
+        //Set type as null for SHOW GRANT ON <hive_object>
+        type = null;
+        break;
     }
-    if (type != PrincipalType.ROLE) {
+    if (type != null && type != PrincipalType.ROLE) {
       String msg = SentryHiveConstants.SHOW_NOT_SUPPORTED_FOR_PRINCIPAL + type;
       throw new SemanticException(msg);
     }
-    String principalName = BaseSemanticAnalyzer.unescapeIdentifier(principal.getChild(0).getText());
-    PrincipalDesc principalDesc = new PrincipalDesc(principalName, type);
+
+    if(type != null) {
+      String principalName = BaseSemanticAnalyzer
+          .unescapeIdentifier(principal.getChild(0).getText());
+      principalDesc = new PrincipalDesc(principalName, type);
+    } else {
+      /**
+       * Commands like SHOW GRANT ON <hive_object
+       *   Eg: ASTNode structure: TOK_SHOW_GRANT -> TOK_PRIV_OBJECT_COL -> TOK_TABLE_TYPE -> TOK_TABNAME -> <hive_object>
+       */
+      privHiveObj = analyzePrivilegeObject(principal);
+      if(privHiveObj == null) {
+        String msg =
+            SentryHiveConstants.SHOW_NOT_SUPPORTED_FOR_PRINCIPAL + "unspecified object name";
+        throw new SemanticException(msg);
+      }
+      //Principal name is list of all users or roles granted privilege to the object
+      principalDesc = new PrincipalDesc(StringUtils.EMPTY, type);
+    }
 
     // Partition privileges are not supported by Sentry
-    if (ast.getChildCount() > 1) {
+    if (type != null && ast.getChildCount() > 1) {
+      /**
+       *  Support for SHOW GRANT ROLE/USER/GROUP <name> ON <hive_o
+       *  bject>
+       *    Eg: ASTNode structure: TOK_SHOW_GRANT -> {TOK_ROLE/TOK_GROUP/TOK_USER, TOK_PRIV_OBJECT_COL} -> TOK_TABLE_TYPE -> TOK_TABNAME -> <hive_object>
+       */
       ASTNode child = (ASTNode) ast.getChild(1);
       if (child.getToken().getType() == HiveParser.TOK_PRIV_OBJECT_COL) {
         privHiveObj = analyzePrivilegeObject(child);

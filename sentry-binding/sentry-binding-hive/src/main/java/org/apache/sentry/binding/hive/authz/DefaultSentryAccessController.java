@@ -17,8 +17,10 @@ package org.apache.sentry.binding.hive.authz;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hive.SentryHiveConstants;
@@ -37,6 +39,9 @@ import org.apache.hadoop.hive.ql.security.authorization.plugin.HivePrivilege;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HivePrivilegeInfo;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HivePrivilegeObject;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveRoleGrant;
+import org.apache.sentry.api.service.thrift.SentryObjectPrivileges;
+import org.apache.sentry.api.service.thrift.TSentryAuthorizable;
+import org.apache.sentry.api.service.thrift.TSentryPrivilegeMap;
 import org.apache.sentry.binding.hive.SentryOnFailureHookContext;
 import org.apache.sentry.binding.hive.SentryOnFailureHookContextImpl;
 import org.apache.sentry.binding.hive.authz.HiveAuthzBinding.HiveHook;
@@ -201,6 +206,15 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
   @Override
   public List<HivePrivilegeInfo> showPrivileges(HivePrincipal principal, HivePrivilegeObject privObj)
       throws HiveAuthzPluginException, HiveAccessControlException {
+    if(principal.getName().isEmpty()) {
+      return showPriviliegesForObject(privObj);
+    } else {
+      return showPrivilegesByPrincipal(principal, privObj);
+    }
+  }
+
+  public List<HivePrivilegeInfo> showPrivilegesByPrincipal(HivePrincipal principal,
+      HivePrivilegeObject privObj) throws HiveAuthzPluginException, HiveAccessControlException {
     if (principal.getType() != HivePrincipalType.ROLE && principal.getType() != HivePrincipalType.USER) {
       String msg =
           SentryHiveConstants.SHOW_NOT_SUPPORTED_FOR_PRINCIPAL + principal.getType();
@@ -253,6 +267,70 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
       closeClient();
     }
     return infoList;
+  }
+
+  private List<HivePrivilegeInfo> showPriviliegesForObject(HivePrivilegeObject privObj)
+      throws HiveAuthzPluginException, HiveAccessControlException {
+    List<HivePrivilegeInfo> infoList = new ArrayList<HivePrivilegeInfo>();
+
+    if (privObj == null) {
+      String msg =
+          SentryHiveConstants.SHOW_NOT_SUPPORTED_FOR_PRINCIPAL + "unspecified object name";
+      throw new HiveAuthzPluginException(msg);
+    }
+
+    try {
+      sentryClient = getSentryClient();
+      Set<List<? extends Authorizable>> authorizableSet =
+          Sets.newHashSet(SentryAuthorizerUtil.getAuthzHierarchy(new Server(serverName), privObj));
+
+      Set<String> users = Collections.singleton(authenticator.getUserName());
+      SentryObjectPrivileges sentryObjectPrivileges = null;
+      if (authorizableSet != null && !authorizableSet.isEmpty()) {
+        hiveAuthzBinding = new HiveAuthzBinding(hiveHook, this.conf, authzConf);
+        sentryObjectPrivileges = sentryClient
+            .getAllPrivilegsbyAuthorizable(authenticator.getUserName(), authorizableSet, null, users, hiveAuthzBinding.getActiveRoleSet());
+      } else {
+        String msg =
+            SentryHiveConstants.SHOW_NOT_SUPPORTED_FOR_PRINCIPAL + "object name [" + privObj.getObjectName() + "] does not exist";
+        throw new HiveAuthzPluginException(msg);
+      }
+
+      Map<TSentryAuthorizable, TSentryPrivilegeMap> rolePrivilegesMap = sentryObjectPrivileges.getPrivilegesForRoles();
+      generateHivePrincipalInfo(infoList, rolePrivilegesMap, HivePrincipalType.ROLE);
+      Map<TSentryAuthorizable, TSentryPrivilegeMap> userPrivilegesMap = sentryObjectPrivileges.getPrivilegesForUsers();
+      generateHivePrincipalInfo(infoList, userPrivilegesMap, HivePrincipalType.USER);
+
+    } catch (SentryAccessDeniedException e) {
+      HiveOperation hiveOp = HiveOperation.SHOW_GRANT;
+      executeOnFailureHooks(hiveOp, e);
+    } catch (SentryUserException e) {
+      String msg = "Error when sentryClient listPrivilegsbyAuthorizable: " + e;
+      executeOnErrorHooks(msg, e);
+    } catch (Exception e) {
+      String msg = "Error when sentryClient listPrivilegsbyAuthorizable: " + e;
+      executeOnErrorHooks(msg, e);
+    } finally {
+      closeClient();
+    }
+    return infoList;
+  }
+
+  private void generateHivePrincipalInfo(List<HivePrivilegeInfo> infoList,
+      Map<TSentryAuthorizable, TSentryPrivilegeMap> privilegesMap,
+      HivePrincipalType principalType) {
+    if (privilegesMap != null && !privilegesMap.isEmpty()) {
+      for (TSentryPrivilegeMap map : privilegesMap.values()) {
+        Map<String, Set<TSentryPrivilege>> principalNameToPrivilegeMap = map.getPrivilegeMap();
+        for (String principalName : principalNameToPrivilegeMap.keySet()) {
+          for (TSentryPrivilege priv : principalNameToPrivilegeMap.get(principalName)) {
+            infoList.add(SentryAuthorizerUtil
+                .convert2HivePrivilegeInfo(priv, new HivePrincipal(principalName,
+                    principalType)));//For now only roles are retrieved
+          }
+        }
+      }
+    }
   }
 
   @Override

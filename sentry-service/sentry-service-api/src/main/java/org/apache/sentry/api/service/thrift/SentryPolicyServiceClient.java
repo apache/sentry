@@ -243,6 +243,28 @@ public interface SentryPolicyServiceClient extends AutoCloseable {
     Set<String> groups, Set<String> users, ActiveRoleSet roleSet) throws SentryUserException;
 
   /**
+   * Returns an encapsulation of objects for all types assigned to a set of users and/or groups available in a
+   * set of authorizable objects.
+   *
+   * @param requestorUserName The user who is requesting the list of privileges.
+   * @param authorizables A list of authorizable objects to look for privileges.
+   *                      If null, then privileges of any authorizable object should be returned.
+   * @param groups A list of groups to look for privileges assigned.
+   *               If null, then privileges of any group on the specified authorizable object
+   *               should be returned.
+   * @param users A list of users to look for privileges assigned.
+   *              If null, then privileges of any user on the specified authorizable object
+   *              should be returned.
+   * @param roleSet The active role the group and/or user has. If null, then privileges of
+   *                any role on the specified group or user should be returned.
+   * @return A an instance of SentryObjectPrivileges on the specified authorizable object.
+   * @throws SentryUserException In case an error occurs while getting the list of privileges.
+   */
+  SentryObjectPrivileges getAllPrivilegsbyAuthorizable(
+      String requestorUserName, Set<List<? extends Authorizable>> authorizables,
+      Set<String> groups, Set<String> users, ActiveRoleSet roleSet) throws SentryUserException;
+
+  /**
    * Returns the configuration value in the sentry server associated with propertyName, or if
    * propertyName does not exist, the defaultValue. There is no "requestorUserName" because this is
    * regarded as an internal interface.
