@@ -38,7 +38,10 @@ public class HiveActionFactory extends BitFieldActionFactory {
     ALL(AccessConstants.ACTION_ALL, SELECT.getCode() | INSERT.getCode() | ALTER.getCode() | CREATE.getCode() |
             DROP.getCode() | INDEX.getCode() | LOCK.getCode()),   // binary: 01111111
     ALL_STAR(AccessConstants.ALL, ALL.getCode()),                 // binary: 01111111
-    SOME(AccessConstants.SOME, ALL.getCode());                    // binary: 01111111
+    SOME(AccessConstants.SOME, ALL.getCode()),                    // binary: 01111111
+
+    // OWNER is a special privilege that behaves like the ALL or ALL_STAR privilege.
+    OWNER(AccessConstants.OWNER, ALL.getCode());                  // binary: 01111111
 
     private String name;
     private int code;
