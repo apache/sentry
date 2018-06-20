@@ -292,4 +292,13 @@ public interface SentryPolicyServiceClient extends AutoCloseable {
    * @return The most recent processed notification ID.
    */
   long syncNotifications(long id) throws SentryUserException;
+
+  /**
+   * Notifies sentry server with the HMS Event and related metadata.
+   * @param sentryHmsEventNotification Event Notification message.
+   * @return The most recent processed notification ID.
+   */
+  long notifyHmsNotification(TSentryHmsEventNotification sentryHmsEventNotification) throws SentryUserException;
+
+
 }

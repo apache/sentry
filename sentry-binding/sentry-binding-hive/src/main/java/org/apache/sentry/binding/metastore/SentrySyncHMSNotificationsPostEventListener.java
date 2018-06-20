@@ -18,11 +18,14 @@
 package org.apache.sentry.binding.metastore;
 
 import com.google.common.annotations.VisibleForTesting;
+
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.hadoop.hive.metastore.MetaStoreEventListener;
-import org.apache.hadoop.hive.metastore.MetaStoreEventListenerConstants;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.events.AddPartitionEvent;
 import org.apache.hadoop.hive.metastore.events.AlterPartitionEvent;
@@ -33,14 +36,12 @@ import org.apache.hadoop.hive.metastore.events.DropDatabaseEvent;
 import org.apache.hadoop.hive.metastore.events.DropPartitionEvent;
 import org.apache.hadoop.hive.metastore.events.DropTableEvent;
 import org.apache.hadoop.hive.metastore.events.ListenerEvent;
+import org.apache.hadoop.hive.metastore.messaging.EventMessage.EventType;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.api.service.thrift.SentryPolicyServiceClient;
 import org.apache.sentry.service.thrift.SentryServiceClientFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This HMS post-event listener is used only to synchronize with HMS notifications on the Sentry server
@@ -84,19 +85,48 @@ public class SentrySyncHMSNotificationsPostEventListener extends MetaStoreEventL
     authzConf = HiveAuthzConf.getAuthzConf((HiveConf) config);
   }
 
+  /**
+   * Notify sentry server when new table is created
+   *
+   * @param tableEvent Create table Event
+   * @throws MetaException
+   */
   @Override
   public void onCreateTable(CreateTableEvent tableEvent) throws MetaException {
-    syncNotificationEvents(tableEvent, "onCreateTable");
+    // Failure event, Need not be notified.
+    if (failedEvent(tableEvent, EventType.CREATE_TABLE)) {
+      return;
+    }
+    SentryHmsEvent event = new SentryHmsEvent(tableEvent);
+    notifyHmsEvent(event);
   }
 
+  /**
+   * Notify sentry server when table is dropped
+   *
+   * @param tableEvent Drop table event
+   * @throws MetaException
+   */
   @Override
   public void onDropTable(DropTableEvent tableEvent) throws MetaException {
-    syncNotificationEvents(tableEvent, "onDropTable");
+    // Failure event, Need not be notified.
+    if (failedEvent(tableEvent, EventType.DROP_TABLE)) {
+      return;
+    }
+    SentryHmsEvent event = new SentryHmsEvent(tableEvent);
+    notifyHmsEvent(event);
   }
 
+  /**
+   * Notify sentry server when when table is altered.
+   * Owner information is updated in the request only when there is owner change.
+   * Sentry is not notified when neither rename happened nor owner is changed
+   *
+   * @param tableEvent Alter table event
+   * @throws MetaException When both the owner change and rename is seen.
+   */
   @Override
   public void onAlterTable(AlterTableEvent tableEvent) throws MetaException {
-
     if (tableEvent == null) {
       return;
     }
@@ -111,16 +141,20 @@ public class SentrySyncHMSNotificationsPostEventListener extends MetaStoreEventL
     if (newTable == null) {
       return;
     }
-
-    String oldDbName = oldTable.getDbName();
-    String newDbName = newTable.getDbName();
-    String oldTableName = oldTable.getTableName();
-    String newTableName = newTable.getTableName();
-
-    if (!newDbName.equalsIgnoreCase(oldDbName) || !newTableName.equalsIgnoreCase(oldTableName)) {
-      // make sure sentry gets the table rename event
-      syncNotificationEvents(tableEvent, "onAlterTable");
+    // Failure event, Need not be notified.
+    if (failedEvent(tableEvent, EventType.ALTER_TABLE)) {
+      return;
     }
+
+    if(StringUtils.equals(oldTable.getOwner(), newTable.getOwner()) &&
+        StringUtils.equalsIgnoreCase(oldTable.getDbName(), newTable.getDbName()) &&
+        StringUtils.equalsIgnoreCase(oldTable.getTableName(), newTable.getTableName())) {
+      // nothing to notify, neither rename happened nor owner is changed
+      return;
+    }
+
+    SentryHmsEvent event = new SentryHmsEvent(tableEvent);
+    notifyHmsEvent(event);
   }
 
   @Override
@@ -138,73 +172,70 @@ public class SentrySyncHMSNotificationsPostEventListener extends MetaStoreEventL
     // no-op
   }
 
+  /**
+   * Notify sentry server when new database is created
+   *
+   * @param dbEvent Create database event
+   * @throws MetaException
+   */
   @Override
   public void onCreateDatabase(CreateDatabaseEvent dbEvent) throws MetaException {
-    syncNotificationEvents(dbEvent, "onCreateDatabase");
-  }
-
-  @Override
-  public void onDropDatabase(DropDatabaseEvent dbEvent) throws MetaException {
-    syncNotificationEvents(dbEvent, "onDropDatabase");
+    // Failure event, Need not be notified.
+    if (failedEvent(dbEvent, EventType.CREATE_DATABASE)) {
+      return;
+    }
+    SentryHmsEvent event = new SentryHmsEvent(dbEvent);
+    notifyHmsEvent(event);
   }
 
   /**
-   * It requests the Sentry server the synchronization of recent notification events.
+   * Notify sentry server when database is dropped
    *
-   * After the sync call, the latest processed ID will be stored for future reference to avoid
-   * syncing an ID that was already processed.
-   *
-   * @param event An event that contains a DB_NOTIFICATION_EVENT_ID_KEY_NAME value to request.
+   * @param dbEvent Drop database event.
+   * @throws MetaException
    */
-  private void syncNotificationEvents(ListenerEvent event, String eventName) {
-    // Do not sync notifications if the event has failed.
-    if (failedEvent(event, eventName)) {
+  @Override
+  public void onDropDatabase(DropDatabaseEvent dbEvent) throws MetaException {
+    // Failure event, Need not be notified.
+    if (failedEvent(dbEvent, EventType.DROP_DATABASE)) {
       return;
     }
+    SentryHmsEvent event = new SentryHmsEvent(dbEvent);
+    notifyHmsEvent(event);
+  }
 
-    Map<String, String> eventParameters = event.getParameters();
-    if (!eventParameters.containsKey(MetaStoreEventListenerConstants.DB_NOTIFICATION_EVENT_ID_KEY_NAME)) {
-      return;
-    }
-
+  /**
+   * Notifies sentry server about the HMS Event and related metadata.
+   *
+   * @param event Sentry HMS event.
+   */
+  private void notifyHmsEvent(SentryHmsEvent event ) {
     /* If the HMS is running in an active transaction, then we do not want to sync with Sentry
      * because the desired eventId is not available for Sentry yet, and Sentry may block the HMS
-     * forever or until a read time-out happens. */
-    if (isMetastoreTransactionActive(eventParameters)) {
+     * forever or until a read time-out happens.
+     * */
+    if(event.isMetastoreTransactionActive()) {
       return;
     }
 
-    long eventId =
-        Long.parseLong(eventParameters.get(MetaStoreEventListenerConstants.DB_NOTIFICATION_EVENT_ID_KEY_NAME));
-
-    // This check is only for performance reasons to avoid calling the sync thrift call if the Sentry server
-    // already processed the requested eventId.
-    if (eventId <= latestProcessedId.get()) {
-      return;
+    if (!shouldSyncEvent(event)) {
+      event.setEventId(0L);
     }
 
-    try(SentryPolicyServiceClient sentryClient = this.getSentryServiceClient()) {
-      LOGGER.debug("Starting Sentry/HMS notifications sync for {} (id: {})", eventName, eventId);
-      long sentryLatestProcessedId = sentryClient.syncNotifications(eventId);
-      LOGGER.debug("Finished Sentry/HMS notifications sync for {} (id: {})", eventName, eventId);
+    try (SentryPolicyServiceClient sentryClient = this.getSentryServiceClient()) {
+      LOGGER.debug("Notifying sentry about Notification for {} (id: {})", event.getEventType(),
+              event.getEventId());
+      long sentryLatestProcessedId = sentryClient.notifyHmsNotification(event.getHmsEventNotification());
+      LOGGER.debug("Finished Notifying sentry about Notification for {} (id: {})", event.getEventType(),
+             event.getEventId());
       LOGGER.debug("Latest processed event ID returned by the Sentry server: {}", sentryLatestProcessedId);
-
       updateProcessedId(sentryLatestProcessedId);
     } catch (Exception e) {
       // This error is only logged. There is no need to throw an error to Hive because HMS sync is called
       // after the notification is already generated by Hive (as post-event).
-      LOGGER.error("Failed to sync requested HMS notifications up to the event ID: " + eventId, e);
+      LOGGER.error("Encountered failure while notifying notification for {} (id: {})",
+              event.getEventType(), event.getEventId(), e);
     }
-  }
-
-  /**
-   * @return True if the HMS is calling this notification in an active transaction; False otherwise
-   */
-  private boolean isMetastoreTransactionActive(Map<String, String> parameters) {
-    String transactionActive =
-        parameters.get(MetaStoreEventListenerConstants.HIVE_METASTORE_TRANSACTION_ACTIVE);
-
-    return transactionActive != null && Boolean.valueOf(transactionActive);
   }
 
   /**
@@ -223,7 +254,7 @@ public class SentrySyncHMSNotificationsPostEventListener extends MetaStoreEventL
 
   /**
    * Sets the sentry client object (for testing purposes only)
-   *
+   * <p>
    * It may be set by unit-tests as a mock object and used to verify that the client methods
    * were called correctly (see TestSentrySyncHMSNotificationsPostEventListener).
    */
@@ -245,13 +276,34 @@ public class SentrySyncHMSNotificationsPostEventListener extends MetaStoreEventL
     }
   }
 
-  private boolean failedEvent(ListenerEvent event, String eventName) {
+  private boolean failedEvent(ListenerEvent event, EventType eventType) {
     if (!event.getStatus()) {
       LOGGER.debug("Skip HMS synchronization request with the Sentry server for {} " +
-          "{} since the operation failed. \n", eventName, event);
+              "{} since the operation failed. \n", eventType.toString(), event);
       return true;
     }
 
     return false;
+  }
+
+  /**
+   * Performs checks to make sure if the event should be synced.
+   *
+   * @param event SentryHmsEvent
+   * @return False: if Event should not be synced, True otherwise.
+   */
+  private boolean shouldSyncEvent(SentryHmsEvent event) {
+
+    // Sync need not be performed, Event id is not updated in the event.
+    if(event.getEventId() < 0) {
+      return false;
+    }
+
+    // This check is only for performance reasons to avoid calling the sync thrift call if the Sentry
+    // server already processed the requested eventId.
+    if (event.getEventId() <= latestProcessedId.get()) {
+      return false;
+    }
+    return true;
   }
 }
