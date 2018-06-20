@@ -84,7 +84,7 @@ public class SentryStoreSchemaInfo {
     }
     if (firstScript == sentrySchemaVersions.length) {
       throw new SentryUserException("Unknown version specified for upgrade "
-          + fromSchemaVer + " Metastore schema may be too old or newer");
+          + fromSchemaVer + " Sentry schema may be too old or newer");
     }
 
     for (int i = firstScript; i < sentrySchemaVersions.length; i++) {

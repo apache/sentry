@@ -150,15 +150,15 @@ public class SentrySchemaTool {
    * @throws SentryUserException
    */
   public void showInfo() throws SentryUserException {
-    Connection sentryStoreConn = getConnectionToMetastore(true);
+    Connection sentryStoreConn = getConnectionToSentrystore(true);
     System.out.println("Sentry distribution version:\t "
         + SentryStoreSchemaInfo.getSentryVersion());
     System.out.println("SentryStore schema version:\t "
-        + getMetaStoreSchemaVersion(sentryStoreConn));
+        + getSentrySchemaVersion(sentryStoreConn));
   }
 
   // read schema version from sentry store
-  private String getMetaStoreSchemaVersion(Connection sentryStoreConn)
+  private String getSentrySchemaVersion(Connection sentryStoreConn)
       throws SentryUserException {
     String versionQuery;
     if (SentrySchemaHelper.getDbCommandParser(dbType).needsQuotedIdentifier()) {
@@ -180,8 +180,8 @@ public class SentrySchemaTool {
   }
 
   // test the connection sentry store using the config property
-  private void testConnectionToMetastore() throws SentryUserException {
-    try (Connection conn = getConnectionToMetastore(true)) {
+  private void testConnectionToSentrystore() throws SentryUserException {
+    try (Connection conn = getConnectionToSentrystore(true)) {
       conn.close();
     } catch (SQLException e) {
       throw new SentryUserException("Failed to close sentry store connection", e);
@@ -195,7 +195,7 @@ public class SentrySchemaTool {
    * @return
    * @throws SentryUserException
    */
-  private Connection getConnectionToMetastore(boolean printInfo)
+  private Connection getConnectionToSentrystore(boolean printInfo)
       throws SentryUserException {
     if (printInfo) {
       System.out.println("Sentry store connection URL:\t " + connectionURL);
@@ -223,7 +223,7 @@ public class SentrySchemaTool {
       return;
     }
     String newSchemaVersion =
-        getMetaStoreSchemaVersion(getConnectionToMetastore(false));
+        getSentrySchemaVersion(getConnectionToSentrystore(false));
     // verify that the new version is added to schema
     if (!sentryStoreSchemaInfo.getSentrySchemaVersion().equalsIgnoreCase(
         newSchemaVersion)) {
@@ -237,12 +237,12 @@ public class SentrySchemaTool {
    * @throws SentryUserException
    */
   public void doUpgrade() throws SentryUserException {
-    String fromVersion = getMetaStoreSchemaVersion(getConnectionToMetastore(false));
+    String fromVersion = getSentrySchemaVersion(getConnectionToSentrystore(false));
     if (fromVersion == null || fromVersion.isEmpty()) {
       throw new SentryUserException(
           "Schema version not stored in the sentry store. "
               +
-          "Metastore schema is too old or corrupt. Try specifying the version manually");
+          "Sentry schema is too old or corrupt. Try specifying the version manually");
     }
     doUpgrade(fromVersion);
   }
@@ -262,7 +262,7 @@ public class SentrySchemaTool {
     // Find the list of scripts to execute for this upgrade
     List<String> upgradeScripts =
         sentryStoreSchemaInfo.getUpgradeScripts(fromSchemaVer);
-    testConnectionToMetastore();
+    testConnectionToSentrystore();
     System.out.println("Starting upgrade sentry store schema from version " +
  fromSchemaVer + " to "
         + sentryStoreSchemaInfo.getSentrySchemaVersion());
@@ -277,7 +277,7 @@ public class SentrySchemaTool {
       }
     } catch (IOException eIO) {
       throw new SentryUserException(
-          "Upgrade FAILED! Metastore state would be inconsistent !!", eIO);
+          "Upgrade FAILED! Sentry store state would be inconsistent !!", eIO);
     }
 
     // Revalidated the new version after upgrade
@@ -304,7 +304,7 @@ public class SentrySchemaTool {
    * @throws SentryUserException
    */
   public void doInit(String toVersion) throws SentryUserException {
-    testConnectionToMetastore();
+    testConnectionToSentrystore();
     System.out.println("Starting sentry store schema initialization to " + toVersion);
 
     String initScriptDir = sentryStoreSchemaInfo.getSentryStoreScriptDir();
@@ -318,7 +318,7 @@ public class SentrySchemaTool {
       }
     } catch (IOException e) {
       throw new SentryUserException("Schema initialization FAILED!"
-          + " Metastore state would be inconsistent !!", e);
+          + " Sentry store state would be inconsistent !!", e);
     }
   }
 
@@ -461,7 +461,7 @@ public class SentrySchemaTool {
                  .withDescription("Override config file password")
                  .create("passWord");
     Option dbTypeOpt = OptionBuilder.withArgName("databaseType")
-                .hasArg().withDescription("Metastore database type [" +
+                .hasArg().withDescription("Sentry store database type [" +
                 SentrySchemaHelper.DB_DERBY + "," +
                 SentrySchemaHelper.DB_MYSQL + "," +
                 SentrySchemaHelper.DB_ORACLE + "," +
