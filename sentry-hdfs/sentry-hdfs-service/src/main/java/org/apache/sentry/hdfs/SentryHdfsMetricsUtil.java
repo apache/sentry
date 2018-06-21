@@ -95,12 +95,12 @@ final class SentryHdfsMetricsUtil {
 
   // Timer for getting permission changes deltas
   static final Timer getDeltaPermChangesTimer = sentryMetrics.getTimer(
-          MetricRegistry.name(PathDeltaRetriever.class, "perm", "delta", "time")
+          MetricRegistry.name(PermDeltaRetriever.class, "perm", "delta", "time")
   );
 
   // Histogram for the number of permissions changes processed for deltas
   static final Histogram getDeltaPermChangesHistogram = sentryMetrics.getHistogram(
-          MetricRegistry.name(PathDeltaRetriever.class, "perm", "delta", "size"));
+          MetricRegistry.name(PermDeltaRetriever.class, "perm", "delta", "size"));
 
   private SentryHdfsMetricsUtil() {
     // Make constructor private to avoid instantiation
