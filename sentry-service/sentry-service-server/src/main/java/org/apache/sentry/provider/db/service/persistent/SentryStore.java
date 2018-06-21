@@ -1863,8 +1863,7 @@ public class SentryStore {
                   .addNull(URI)
                   .newChild()
                   .addNotNull(URI)
-                  .addCustomParam("\"" + authHierarchy.getUri() +
-                      "\".startsWith(:URI)", URI, authHierarchy.getUri());
+                  .addCustomParam("(:authURI.startsWith(URI))", "authURI", authHierarchy.getUri());
             }
           }
 
