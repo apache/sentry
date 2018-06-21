@@ -24,8 +24,6 @@ import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.api.service.thrift.TAlterSentryRoleAddGroupsRequest;
 import org.apache.sentry.api.service.thrift.TAlterSentryRoleDeleteGroupsRequest;
-import org.apache.sentry.api.service.thrift.TAlterSentryRoleGrantPrivilegeRequest;
-import org.apache.sentry.api.service.thrift.TAlterSentryRoleRevokePrivilegeRequest;
 import org.apache.sentry.api.service.thrift.TDropPrivilegesRequest;
 import org.apache.sentry.api.service.thrift.TDropSentryRoleRequest;
 import org.apache.sentry.api.service.thrift.TRenamePrivilegesRequest;
@@ -62,10 +60,24 @@ public interface SentryPolicyStorePlugin {
 
   Update onAlterSentryRoleDeleteGroups(TAlterSentryRoleDeleteGroupsRequest tRequest) throws SentryPluginException;
 
-  void onAlterSentryRoleGrantPrivilege(TAlterSentryRoleGrantPrivilegeRequest tRequest,
-        Map<TSentryPrivilege, Update> privilegesUpdateMap) throws SentryPluginException;
+  /**
+   * Used to create an update when privileges are granted to owner who is a Role
+   * @param roleName
+   * @param privileges
+   * @param privilegesUpdateMap
+   * @throws SentryPluginException
+   */
+  void onAlterSentryRoleGrantPrivilege(String roleName, Set<TSentryPrivilege> privileges,
+       Map<TSentryPrivilege, Update> privilegesUpdateMap) throws SentryPluginException;
 
-  void onAlterSentryRoleRevokePrivilege(TAlterSentryRoleRevokePrivilegeRequest tRequest,
+  /**
+   * Used to create an update when privileges are revoked from owner who is a role
+   * @param roleName
+   * @param privileges
+   * @param privilegesUpdateMap
+   * @throws SentryPluginException
+   */
+  void onAlterSentryRoleRevokePrivilege(String roleName, Set<TSentryPrivilege> privileges,
         Map<TSentryPrivilege, Update> privilegesUpdateMap) throws SentryPluginException;
 
   /**

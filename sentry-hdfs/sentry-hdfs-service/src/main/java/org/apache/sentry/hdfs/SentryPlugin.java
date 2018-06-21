@@ -38,8 +38,6 @@ import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.api.common.SentryServiceUtil;
 import org.apache.sentry.api.service.thrift.TAlterSentryRoleAddGroupsRequest;
 import org.apache.sentry.api.service.thrift.TAlterSentryRoleDeleteGroupsRequest;
-import org.apache.sentry.api.service.thrift.TAlterSentryRoleGrantPrivilegeRequest;
-import org.apache.sentry.api.service.thrift.TAlterSentryRoleRevokePrivilegeRequest;
 import org.apache.sentry.api.service.thrift.TDropPrivilegesRequest;
 import org.apache.sentry.api.service.thrift.TDropSentryRoleRequest;
 import org.apache.sentry.api.service.thrift.TRenamePrivilegesRequest;
@@ -251,17 +249,18 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
   }
 
   @Override
-  public void onAlterSentryRoleGrantPrivilege(TAlterSentryRoleGrantPrivilegeRequest request,
-          Map<TSentryPrivilege, Update> privilegesUpdateMap) throws SentryPluginException {
-    Preconditions.checkNotNull(request, "request");
+  public void onAlterSentryRoleGrantPrivilege(String roleName, Set<TSentryPrivilege> privileges,
+                                              Map<TSentryPrivilege, Update> privilegesUpdateMap) throws SentryPluginException {
+    Preconditions.checkNotNull(roleName, "Role name is NULL");
+    Preconditions.checkNotNull(privilegesUpdateMap, "Privilege MAP NULL");
+    Preconditions.checkNotNull(privileges, "Privilege Set provided is NULL");
+
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("onAlterSentryRoleGrantPrivilege: {}", request); // request.toString() provides all details
+      LOGGER.trace("onAlterSentryRoleGrantPrivilege: {}", roleName, privileges);
     }
 
-    if (request.isSetPrivileges()) {
-      String roleName = request.getRoleName();
-
-      for (TSentryPrivilege privilege : request.getPrivileges()) {
+    if (privileges.size() > 0) {
+      for (TSentryPrivilege privilege : privileges) {
         if(!(PrivilegeScope.COLUMN.name().equalsIgnoreCase(privilege.getPrivilegeScope()))) {
           PermissionsUpdate update = onAlterSentryGrantPrivilegeCore(new TPrivilegeEntity(TPrivilegeEntityType.ROLE,
                   roleName), privilege);
@@ -285,7 +284,7 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     Preconditions.checkNotNull(privileges, "Privilege Set provided is NULL");
 
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("onAlterSentryUserGrantPrivilege: {}", userName);
+      LOGGER.trace("onAlterSentryUserGrantPrivilege: {}", userName, privileges);
     }
 
     if (privileges.size() > 0) {
@@ -349,18 +348,19 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
   }
 
   @Override
-  public void onAlterSentryRoleRevokePrivilege(TAlterSentryRoleRevokePrivilegeRequest request,
-      Map<TSentryPrivilege, Update> privilegesUpdateMap)
+  public void onAlterSentryRoleRevokePrivilege(String roleName, Set<TSentryPrivilege> privileges,
+                                               Map<TSentryPrivilege, Update> privilegesUpdateMap)
           throws SentryPluginException {
-    Preconditions.checkNotNull(request, "request");
+    Preconditions.checkNotNull(roleName, "Role name is NULL");
+    Preconditions.checkNotNull(privilegesUpdateMap, "Privilege MAP NULL");
+    Preconditions.checkNotNull(privileges, "Privilege Set provided is NULL");
+
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("onAlterSentryRoleRevokePrivilege: {}", request); // request.toString() provides all details
+      LOGGER.trace("onAlterSentryRoleRevokePrivilege: {}", roleName, privileges);
     }
 
-    if (request.isSetPrivileges()) {
-      String roleName = request.getRoleName();
-
-      for (TSentryPrivilege privilege : request.getPrivileges()) {
+    if (privileges.size() > 0) {
+      for (TSentryPrivilege privilege : privileges) {
         if(!("COLUMN".equalsIgnoreCase(privilege.getPrivilegeScope()))) {
           PermissionsUpdate update = onAlterSentryRevokePrivilegeCore(new TPrivilegeEntity(TPrivilegeEntityType.ROLE,
                   roleName), privilege);
@@ -385,7 +385,7 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     Preconditions.checkNotNull(privileges, "Privilege Set provided is NULL");
 
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("onAlterSentryUserRevokePrivilege: {}", userName); // request.toString() provides all details
+      LOGGER.trace("onAlterSentryUserRevokePrivilege: {}", userName, privileges);
     }
 
     if (privileges.size() > 0) {

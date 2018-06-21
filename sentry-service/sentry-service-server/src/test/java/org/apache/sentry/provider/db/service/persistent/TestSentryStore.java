@@ -43,6 +43,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.alias.CredentialProvider;
 import org.apache.hadoop.security.alias.CredentialProviderFactory;
 import org.apache.hadoop.security.alias.UserProvider;
+import org.apache.sentry.SentryOwnerInfo;
 import org.apache.sentry.core.common.exception.SentryAccessDeniedException;
 import org.apache.sentry.core.common.exception.SentryInvalidInputException;
 import org.apache.sentry.core.model.db.AccessConstants;
@@ -1975,6 +1976,209 @@ public class TestSentryStore extends org.junit.Assert {
         .size());
   }
 
+  /**
+   * Grants owner privileges to role/user and updates the owner
+   * and makes sure that the owner privilege is updated.
+   * @throws Exception
+   */
+  @Test
+  public void testUpdateOwnerPrivilege() throws Exception {
+    String roleName1 = "list-privs-r1", roleName2 = "list-privs-r2", roleName3 = "list-privs-r3";
+    String userName1 = "user1", userName2 = "user2";
+    String grantor = "g1";
+    List<SentryOwnerInfo> ownerInfoList  = null;
+    sentryStore.createSentryRole(roleName1);
+    sentryStore.createSentryRole(roleName2);
+    sentryStore.createSentryRole(roleName3);
+    sentryStore.createSentryUser(userName1);
+    sentryStore.createSentryUser(userName2);
+
+
+    TSentryPrivilege privilege_tbl1 = new TSentryPrivilege();
+    privilege_tbl1.setPrivilegeScope("TABLE");
+    privilege_tbl1.setServerName("server1");
+    privilege_tbl1.setDbName("db1");
+    privilege_tbl1.setTableName("tbl1");
+    privilege_tbl1.setCreateTime(System.currentTimeMillis());
+    privilege_tbl1.setAction("OWNER");
+
+    TSentryAuthorizable tSentryAuthorizable = new TSentryAuthorizable();
+    tSentryAuthorizable.setServer("server1");
+    tSentryAuthorizable.setDb("db1");
+    tSentryAuthorizable.setTable("tbl1");
+
+    sentryStore.alterSentryGrantPrivilege(grantor, SentryEntityType.ROLE, roleName1, privilege_tbl1, null);
+
+    assertEquals(1, sentryStore.getAllTSentryPrivilegesByRoleName(roleName1)
+            .size());
+    assertEquals(0, sentryStore.getAllTSentryPrivilegesByRoleName(roleName2)
+            .size());
+
+    ownerInfoList  = sentryStore.listOwnersByAuthorizable(tSentryAuthorizable);
+    assertEquals(1, ownerInfoList.size());
+    assertEquals(SentryEntityType.ROLE, ownerInfoList.get(0).getOwnerType());
+    assertEquals(roleName1, ownerInfoList.get(0).getOwnerName());
+
+
+    // Change owner from a one role to another role
+    sentryStore.updateOwnerPrivilege(tSentryAuthorizable, roleName2, SentryEntityType.ROLE, null);
+    ownerInfoList  = sentryStore.listOwnersByAuthorizable(tSentryAuthorizable);
+    assertEquals(1, ownerInfoList.size());
+    assertEquals(SentryEntityType.ROLE, ownerInfoList.get(0).getOwnerType());
+    assertEquals(roleName2, ownerInfoList.get(0).getOwnerName());
+
+    assertEquals(0, sentryStore.getAllTSentryPrivilegesByRoleName(roleName1)
+            .size());
+    assertEquals(1, sentryStore.getAllTSentryPrivilegesByRoleName(roleName2)
+            .size());
+
+    tSentryAuthorizable.setTable("tbl2");
+    TSentryPrivilege privilege_tbl2 = new TSentryPrivilege(privilege_tbl1);
+    privilege_tbl2.setTableName("tbl2");
+
+    // Change owner from a one user to another user
+    sentryStore.alterSentryGrantPrivilege(grantor, SentryEntityType.USER,userName1, privilege_tbl2, null);
+    assertEquals(1, sentryStore.getAllTSentryPrivilegesByUserName(userName1)
+            .size());
+
+
+
+    sentryStore.updateOwnerPrivilege(tSentryAuthorizable, userName2, SentryEntityType.USER, null);
+    assertEquals(1, sentryStore.getAllTSentryPrivilegesByUserName(userName2)
+            .size());
+    ownerInfoList  = sentryStore.listOwnersByAuthorizable(tSentryAuthorizable);
+    assertEquals(1, ownerInfoList.size());
+    assertEquals(SentryEntityType.USER, ownerInfoList.get(0).getOwnerType());
+    assertEquals(userName2, ownerInfoList.get(0).getOwnerName());
+
+  // Change owner from a user to role
+    sentryStore.updateOwnerPrivilege(tSentryAuthorizable, roleName1, SentryEntityType.ROLE, null);
+    assertEquals(1, sentryStore.getAllTSentryPrivilegesByRoleName(roleName1)
+            .size());
+
+    // At this point  roleName1 has owner privilege on db1.tb2
+    //Add all privilege to roleName1 and make sure that owner privilege is not effected.
+    TSentryPrivilege privilege_tbl2_all = new TSentryPrivilege(privilege_tbl2);
+    privilege_tbl2_all.setAction(AccessConstants.ALL);
+    sentryStore.alterSentryGrantPrivilege(grantor, SentryEntityType.ROLE, roleName1, privilege_tbl2_all, null);
+    // Verify that there are two privileges.
+    assertEquals(2, sentryStore.getAllTSentryPrivilegesByRoleName(roleName1)
+            .size());
+
+
+    tSentryAuthorizable.setTable("tbl3");
+    TSentryPrivilege privilege_tbl3_all = new TSentryPrivilege(privilege_tbl2);
+    privilege_tbl3_all.setAction(AccessConstants.ALL);
+    privilege_tbl3_all.setTableName("tbl3");
+    sentryStore.alterSentryGrantPrivilege(grantor, SentryEntityType.ROLE, roleName3, privilege_tbl3_all, null);
+    assertEquals(1, sentryStore.getAllTSentryPrivilegesByRoleName(roleName3)
+            .size());
+    TSentryPrivilege privilege_tbl3_owner = new TSentryPrivilege(privilege_tbl3_all);
+    privilege_tbl3_owner.setAction(AccessConstants.OWNER);
+    sentryStore.alterSentryGrantPrivilege(grantor, SentryEntityType.ROLE, roleName3, privilege_tbl3_owner, null);
+
+    assertEquals(2, sentryStore.getAllTSentryPrivilegesByRoleName(roleName3)
+            .size());
+  }
+
+  @Test
+  public void testListSentryOwnerPrivilegesByAuthorizable() throws Exception {
+    String roleName1 = "list-privs-r1";
+    String userName1 = "user1";
+    String grantor = "g1";
+    sentryStore.createSentryRole(roleName1);
+    sentryStore.createSentryUser(userName1);
+
+    TSentryPrivilege privilege_tbl1 = new TSentryPrivilege();
+    privilege_tbl1.setPrivilegeScope("TABLE");
+    privilege_tbl1.setServerName("server1");
+    privilege_tbl1.setDbName("db1");
+    privilege_tbl1.setTableName("tbl1");
+    privilege_tbl1.setCreateTime(System.currentTimeMillis());
+    privilege_tbl1.setAction("OWNER");
+    privilege_tbl1.setGrantOption(TSentryGrantOption.TRUE);
+
+    TSentryAuthorizable tSentryAuthorizable = new TSentryAuthorizable();
+    tSentryAuthorizable.setServer("server1");
+    tSentryAuthorizable.setDb("db1");
+    tSentryAuthorizable.setTable("tbl1");
+
+    sentryStore.alterSentryGrantPrivilege(grantor, SentryEntityType.ROLE, roleName1, privilege_tbl1, null);
+
+    sentryStore.updateOwnerPrivilege(tSentryAuthorizable, userName1, SentryEntityType.USER, null);
+    assertEquals(1, sentryStore.getAllTSentryPrivilegesByUserName(userName1)
+            .size());
+  }
+
+  @Test
+  public void testRevokeOwnerPrivilege() throws Exception {
+
+    String roleName1 = "list-privs-r1";
+    String userName1 = "user1";
+    String grantor = "g1";
+    sentryStore.createSentryRole(roleName1);
+    sentryStore.createSentryUser(userName1);
+
+    TSentryPrivilege privilege_tbl1 = new TSentryPrivilege();
+    privilege_tbl1.setPrivilegeScope("TABLE");
+    privilege_tbl1.setServerName("server1");
+    privilege_tbl1.setDbName("db1");
+    privilege_tbl1.setTableName("tbl1");
+    privilege_tbl1.setCreateTime(System.currentTimeMillis());
+    privilege_tbl1.setAction("OWNER");
+    privilege_tbl1.setGrantOption(TSentryGrantOption.TRUE);
+
+    TSentryAuthorizable tSentryAuthorizable = new TSentryAuthorizable();
+    tSentryAuthorizable.setServer("server1");
+    tSentryAuthorizable.setDb("db1");
+    tSentryAuthorizable.setTable("tbl1");
+
+    sentryStore.alterSentryGrantPrivilege(grantor, SentryEntityType.ROLE, roleName1, privilege_tbl1, null);
+
+    sentryStore.revokeOwnerPrivileges(tSentryAuthorizable, null);
+    assertEquals(0, sentryStore.getAllTSentryPrivilegesByUserName(userName1)
+            .size());
+  }
+
+  @Test
+  public void testDropUserOnUpdateOwnerPrivilege() throws Exception {
+    String userName1 = "user1", userName2 = "user2";
+    String grantor = "g1";
+    sentryStore.createSentryUser(userName1);
+    sentryStore.createSentryUser(userName2);
+
+
+    TSentryPrivilege privilege_tbl1 = new TSentryPrivilege();
+    privilege_tbl1.setPrivilegeScope("TABLE");
+    privilege_tbl1.setServerName("server1");
+    privilege_tbl1.setDbName("db1");
+    privilege_tbl1.setTableName("tbl1");
+    privilege_tbl1.setCreateTime(System.currentTimeMillis());
+    privilege_tbl1.setAction("OWNER");
+
+    TSentryAuthorizable tSentryAuthorizable = new TSentryAuthorizable();
+    tSentryAuthorizable.setServer("server1");
+    tSentryAuthorizable.setDb("db1");
+    tSentryAuthorizable.setTable("tbl1");
+
+
+    // Change owner from a one user to another user
+    sentryStore.alterSentryGrantPrivilege(grantor, SentryEntityType.USER, userName1, privilege_tbl1, null);
+    assertEquals(1, sentryStore.getAllTSentryPrivilegesByUserName(userName1)
+            .size());
+
+
+    sentryStore.updateOwnerPrivilege(tSentryAuthorizable, userName2, SentryEntityType.USER, null);
+    assertEquals(1, sentryStore.getAllTSentryPrivilegesByUserName(userName2)
+            .size());
+
+    try {
+      sentryStore.createSentryUser(userName1);
+    } catch (Exception e) {
+      fail("Exception should not be seen asthe user: " + userName1 + " should have been deleted.");
+    }
+
+  }
   /**
    * Regression test for SENTRY-547 and SENTRY-548
    * Use case:

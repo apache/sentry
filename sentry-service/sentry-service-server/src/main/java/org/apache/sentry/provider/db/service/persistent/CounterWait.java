@@ -54,7 +54,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * updater threads.
  */
 @ThreadSafe
-public final class CounterWait {
+public class CounterWait {
   // Implementation notes.
   //
   // The implementation is based on:
@@ -102,7 +102,7 @@ public final class CounterWait {
 
   /**
    * Create an instance of CounterWait object that will timeout during wait
-   * @param waitTimeout maximum time in seconds to wait for counter
+   * @param waitTimeoutSec maximum time in seconds to wait for counter
    */
   public CounterWait(long waitTimeoutSec) {
     this(waitTimeoutSec, TimeUnit.SECONDS);
