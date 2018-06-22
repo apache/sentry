@@ -1154,11 +1154,10 @@ public class SentryStore {
     }
 
     if (requestedPrivToRevoke.getAction().equalsIgnoreCase(AccessConstants.ALL) ||
-      requestedPrivToRevoke.getAction().equalsIgnoreCase(AccessConstants.ACTION_ALL)) {
-      if (!persistedPriv.getRoles().isEmpty()) {
-        if (mEntity != null) {
-          persistedPriv.removeEntity(mEntity);
-        }
+            requestedPrivToRevoke.getAction().equalsIgnoreCase(AccessConstants.ACTION_ALL)) {
+      if ((!persistedPriv.getRoles().isEmpty() || !persistedPriv.getUsers().isEmpty()) &&
+              mEntity != null) {
+        persistedPriv.removeEntity(mEntity);
         persistPrivilege(pm, persistedPriv);
       }
     } else {
@@ -2614,7 +2613,7 @@ public class SentryStore {
   }
 
   /**
-   * Drop the given privilege from all roles.
+   * Drop the given privilege from all entities.
    *
    * @param tAuthorizable the given authorizable object.
    * @throws Exception
@@ -2624,17 +2623,17 @@ public class SentryStore {
             pm -> {
               pm.setDetachAllOnCommit(false); // No need to detach objects
 
-              // Drop the give privilege for all possible actions from all roles.
+              // Drop the give privilege for all possible actions from all entities.
               TSentryPrivilege tPrivilege = toSentryPrivilege(tAuthorizable);
 
               try {
                 if (isMultiActionsSupported(tPrivilege)) {
                   for (String privilegeAction : ALL_ACTIONS) {
                     tPrivilege.setAction(privilegeAction);
-                    dropPrivilegeForAllRoles(pm, new TSentryPrivilege(tPrivilege));
+                    dropPrivilegeForAllEntities(pm, new TSentryPrivilege(tPrivilege));
                   }
                 } else {
-                  dropPrivilegeForAllRoles(pm, new TSentryPrivilege(tPrivilege));
+                  dropPrivilegeForAllEntities(pm, new TSentryPrivilege(tPrivilege));
                 }
               } catch (JDODataStoreException e) {
                 throw new SentryInvalidInputException("Failed to get privileges: "
@@ -2645,7 +2644,7 @@ public class SentryStore {
   }
 
   /**
-   * Drop the given privilege from all roles. As well as persist the corresponding
+   * Drop the given privilege from all entities. As well as persist the corresponding
    * permission change to MSentryPermChange table in a single transaction.
    *
    * @param tAuthorizable the given authorizable object.
@@ -2657,17 +2656,17 @@ public class SentryStore {
     execute(update, pm -> {
       pm.setDetachAllOnCommit(false); // No need to detach objects
 
-      // Drop the give privilege for all possible actions from all roles.
+      // Drop the give privilege for all possible actions from all entities.
       TSentryPrivilege tPrivilege = toSentryPrivilege(tAuthorizable);
 
       try {
         if (isMultiActionsSupported(tPrivilege)) {
           for (String privilegeAction : ALL_ACTIONS) {
             tPrivilege.setAction(privilegeAction);
-            dropPrivilegeForAllRoles(pm, new TSentryPrivilege(tPrivilege));
+            dropPrivilegeForAllEntities(pm, new TSentryPrivilege(tPrivilege));
           }
         } else {
-          dropPrivilegeForAllRoles(pm, new TSentryPrivilege(tPrivilege));
+          dropPrivilegeForAllEntities(pm, new TSentryPrivilege(tPrivilege));
         }
       } catch (JDODataStoreException e) {
         throw new SentryInvalidInputException("Failed to get privileges: "
@@ -2750,7 +2749,7 @@ public class SentryStore {
   }
 
   /**
-   * Rename the privilege for all roles. Drop the old privilege name and create the new one.
+   * Rename the privilege for all entities. Drop the old privilege name and create the new one.
    *
    * @param oldTAuthorizable the old authorizable name needs to be renamed.
    * @param newTAuthorizable the new authorizable name
@@ -2763,7 +2762,7 @@ public class SentryStore {
             pm -> {
               pm.setDetachAllOnCommit(false); // No need to detach objects
 
-              // Drop the give privilege for all possible actions from all roles.
+              // Drop the give privilege for all possible actions from all entities.
               TSentryPrivilege tPrivilege = toSentryPrivilege(oldTAuthorizable);
               TSentryPrivilege newPrivilege = toSentryPrivilege(newTAuthorizable);
 
@@ -2773,10 +2772,10 @@ public class SentryStore {
                   for (String privilegeAction : ALL_ACTIONS) {
                     tPrivilege.setAction(privilegeAction);
                     newPrivilege.setAction(privilegeAction);
-                    renamePrivilegeForAllRoles(pm, tPrivilege, newPrivilege);
+                    renamePrivilegeForAllEntities(pm, tPrivilege, newPrivilege);
                   }
                 } else {
-                  renamePrivilegeForAllRoles(pm, tPrivilege, newPrivilege);
+                  renamePrivilegeForAllEntities(pm, tPrivilege, newPrivilege);
                 }
               } catch (JDODataStoreException e) {
                 throw new SentryInvalidInputException("Failed to get privileges: "
@@ -2787,7 +2786,7 @@ public class SentryStore {
   }
 
   /**
-   * Rename the privilege for all roles. Drop the old privilege name and create the new one.
+   * Rename the privilege for all entities. Drop the old privilege name and create the new one.
    * As well as persist the corresponding permission change to MSentryPermChange table in a
    * single transaction.
    *
@@ -2804,7 +2803,7 @@ public class SentryStore {
     execute(update, pm -> {
       pm.setDetachAllOnCommit(false); // No need to detach objects
 
-      // Drop the give privilege for all possible actions from all roles.
+      // Drop the give privilege for all possible actions from all entities.
       TSentryPrivilege tPrivilege = toSentryPrivilege(oldTAuthorizable);
       TSentryPrivilege newPrivilege = toSentryPrivilege(newTAuthorizable);
 
@@ -2814,10 +2813,10 @@ public class SentryStore {
           for (String privilegeAction : ALL_ACTIONS) {
             tPrivilege.setAction(privilegeAction);
             newPrivilege.setAction(privilegeAction);
-            renamePrivilegeForAllRoles(pm, tPrivilege, newPrivilege);
+            renamePrivilegeForAllEntities(pm, tPrivilege, newPrivilege);
           }
         } else {
-          renamePrivilegeForAllRoles(pm, tPrivilege, newPrivilege);
+          renamePrivilegeForAllEntities(pm, tPrivilege, newPrivilege);
         }
       } catch (JDODataStoreException e) {
         throw new SentryInvalidInputException("Failed to get privileges: "
@@ -2833,45 +2832,46 @@ public class SentryStore {
 
   }
   // wrapper for dropOrRename
-  private void renamePrivilegeForAllRoles(PersistenceManager pm,
+  private void renamePrivilegeForAllEntities(PersistenceManager pm,
       TSentryPrivilege tPrivilege,
       TSentryPrivilege newPrivilege) throws SentryNoSuchObjectException,
       SentryInvalidInputException {
-    dropOrRenamePrivilegeForAllRoles(pm, tPrivilege, newPrivilege);
+    dropOrRenamePrivilegeForAllEntities(pm, tPrivilege, newPrivilege);
   }
 
   /**
-   * Drop given privilege from all roles
+   * Drop given privilege from all entities
    * @param tPrivilege
    * @throws SentryNoSuchObjectException
    * @throws SentryInvalidInputException
    */
-  private void dropPrivilegeForAllRoles(PersistenceManager pm,
+  private void dropPrivilegeForAllEntities(PersistenceManager pm,
       TSentryPrivilege tPrivilege)
       throws SentryNoSuchObjectException, SentryInvalidInputException {
-    dropOrRenamePrivilegeForAllRoles(pm, tPrivilege, null);
+    dropOrRenamePrivilegeForAllEntities(pm, tPrivilege, null);
   }
 
   /**
-   * Drop given privilege from all roles Create the new privilege if asked
+   * Drop given privilege from all entities Create the new privilege if asked
    * @param tPrivilege
    * @param pm
    * @throws SentryNoSuchObjectException
    * @throws SentryInvalidInputException
    */
-  private void dropOrRenamePrivilegeForAllRoles(PersistenceManager pm,
+  private void dropOrRenamePrivilegeForAllEntities(PersistenceManager pm,
       TSentryPrivilege tPrivilege,
       TSentryPrivilege newTPrivilege) throws SentryNoSuchObjectException,
       SentryInvalidInputException {
-    Collection<MSentryRole> roleSet = new HashSet<>();
+    Collection<PrivilegeEntity> entitySet = new HashSet<>();
     List<MSentryPrivilege> mPrivileges = getMSentryPrivileges(tPrivilege, pm);
     for (MSentryPrivilege mPrivilege : mPrivileges) {
-      roleSet.addAll(ImmutableSet.copyOf(mPrivilege.getRoles()));
+      entitySet.addAll(ImmutableSet.copyOf(mPrivilege.getRoles()));
+      entitySet.addAll(ImmutableSet.copyOf(mPrivilege.getUsers()));
     }
     // Dropping the privilege
     if (newTPrivilege == null) {
-      for (MSentryRole role : roleSet) {
-        alterSentryRevokePrivilegeCore(pm, SentryEntityType.ROLE, role.getRoleName(), tPrivilege);
+      for (PrivilegeEntity entity : entitySet) {
+        alterSentryRevokePrivilegeCore(pm, entity.getType(), entity.getEntityName(), tPrivilege);
       }
       return;
     }
@@ -2885,18 +2885,22 @@ public class SentryStore {
       // dereferenced. If object has to be used even after that it should have been detached.
       parent = pm.detachCopy(parent);
     }
-    for (MSentryRole role : roleSet) {
+    for (PrivilegeEntity entity : entitySet) {
+      // When all the privilege associated for a user are revoked, user will be removed from the database.
+      // JDO object should be not used when the associated database entry is removed. Application should use
+      // a detached copy instead.
+      PrivilegeEntity detachedEntity = pm.detachCopy(entity);
       // 1. get privilege and child privileges
       Collection<MSentryPrivilege> privilegeGraph = new HashSet<>();
       if (parent != null) {
         privilegeGraph.add(parent);
-        populateChildren(pm, SentryEntityType.ROLE, Sets.newHashSet(role.getRoleName()), parent, privilegeGraph);
+        populateChildren(pm, detachedEntity.getType(), Sets.newHashSet(detachedEntity.getEntityName()), parent, privilegeGraph);
       } else {
-        populateChildren(pm, SentryEntityType.ROLE, Sets.newHashSet(role.getRoleName()), convertToMSentryPrivilege(tPrivilege),
+        populateChildren(pm, detachedEntity.getType(), Sets.newHashSet(detachedEntity.getEntityName()), convertToMSentryPrivilege(tPrivilege),
           privilegeGraph);
       }
       // 2. revoke privilege and child privileges
-      alterSentryRevokePrivilegeCore(pm, SentryEntityType.ROLE, role.getRoleName(), tPrivilege);
+      alterSentryRevokePrivilegeCore(pm, detachedEntity.getType(), detachedEntity.getEntityName(), tPrivilege);
       // 3. add new privilege and child privileges with new tableName
       for (MSentryPrivilege mPriv : privilegeGraph) {
         TSentryPrivilege tPriv = convertToTSentryPrivilege(mPriv);
@@ -2907,7 +2911,7 @@ public class SentryStore {
           tPriv.setDbName(newTPrivilege.getDbName());
           tPriv.setTableName(newTPrivilege.getTableName());
         }
-        alterSentryGrantPrivilegeCore(pm, SentryEntityType.ROLE, role.getRoleName(), tPriv);
+        alterSentryGrantPrivilegeCore(pm, detachedEntity.getType(), detachedEntity.getEntityName(), tPriv);
       }
     }
   }
