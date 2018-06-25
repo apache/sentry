@@ -199,6 +199,54 @@ public class TestDbComplexView extends AbstractTestWithStaticConfiguration {
         }
     }
 
+    private void grantAndValidateColumnPrivilege(String testView, String column, String testRole, String testGroup,
+                                           String user, boolean revoke) throws Exception {
+        createTestRole(ADMIN1, testRole);
+        List<String> sqls = new ArrayList<String>();
+
+        // grant privilege
+        sqls.add("USE " + TEST_VIEW_DB);
+        sqls.add("GRANT SELECT(" + column + ")" + " ON TABLE " + testView + " TO ROLE " + testRole);
+        sqls.add("GRANT ROLE " + testRole + " TO GROUP " + testGroup);
+        execBatch(ADMIN1, sqls);
+
+        // show grant should pass and could list view
+        assertTrue("can not find select privilege from " + testRole,
+                execValidate(ADMIN1, "SHOW GRANT ROLE " + testRole + " ON TABLE " + testView,
+                        TEST_VIEW_DB, "privilege", "select"));
+        assertTrue("can not find " + testView,
+                execValidate(user, "SHOW TABLES", TEST_VIEW_DB, "tab_name", testView));
+
+        // select from view should pass
+        sqls.clear();
+        sqls.add("USE " + TEST_VIEW_DB);
+        sqls.add("SELECT "+ column +" FROM " + testView);
+        execBatch(user, sqls);
+
+        if (revoke) {
+            // revoke privilege
+            sqls.clear();
+            sqls.add("USE " + TEST_VIEW_DB);
+            sqls.add("REVOKE SELECT(" + column + ")" + " ON TABLE " + testView + " FROM ROLE " + testRole);
+            execBatch(ADMIN1, sqls);
+
+            // shouldn't be able to show grant
+            assertFalse("should not find select from " + testRole,
+                    execValidate(ADMIN1, "SHOW GRANT ROLE " + testRole + " ON TABLE " + testView,
+                            TEST_VIEW_DB, "privilege", "select"));
+
+            // select from view should fail
+            sqls.clear();
+            sqls.add("USE " + TEST_VIEW_DB);
+            sqls.add("SELECT * FROM " + testView);
+            try {
+                execBatch(user, sqls);
+            } catch (SQLException ex) {
+                LOGGER.info("Expected SQLException here", ex);
+            }
+        }
+    }
+
     private void grantAndValidatePrivilege(String testView, String testRole,
                                            String testGroup, String user) throws Exception {
         grantAndValidatePrivilege(testView, testRole, testGroup, user, true);
@@ -235,6 +283,26 @@ public class TestDbComplexView extends AbstractTestWithStaticConfiguration {
         // Disabled because of SENTRY-745, also need to backport HIVE-10875
         //grantAndValidatePrivilege(testView3, testRole3, USERGROUP3, USER3_1);
     }
+
+    /**
+     * Create view1 and view2 from view1
+     * Grant and validate select privileges to both views
+     * @throws Exception
+     */
+    @Test
+    public void testColumnPrivilegeOnView() throws Exception {
+        List<String> sqls = new ArrayList<String>();
+        // create a simple view
+        sqls.add("USE " + TEST_VIEW_DB);
+        sqls.add("CREATE VIEW " + TEST_VIEW +
+                "(userid,link) AS SELECT userid,link from " + TEST_VIEW_TB);
+
+        execBatch(ADMIN1, sqls);
+
+        // validate privileges
+        grantAndValidateColumnPrivilege(TEST_VIEW, "userid", TEST_VIEW_ROLE, USERGROUP1, USER1_1, true);
+    }
+
 
     /**
      * Create a view by join two tables
