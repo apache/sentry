@@ -60,6 +60,8 @@ public class TestOperationsPart1 extends AbstractTestWithStaticConfiguration {
     privileges.put("create_db2", "server=server1->db=" + DB2 + "->action=create");
 
     privileges.put("all_db1_tb1", "server=server1->db=" + DB1 + "->table=tb1->action=all");
+    privileges.put("create_db1_tb1", "server=server1->db=" + DB1  + "->action=create");
+    privileges.put("drop_db1_tb1", "server=server1->db=" + DB1  + "->action=drop");
     privileges.put("select_db1_tb1", "server=server1->db=" + DB1 + "->table=tb1->action=select");
     privileges.put("insert_db1_tb1", "server=server1->db=" + DB1 + "->table=tb1->action=insert");
     privileges.put("alter_db1_tb1", "server=server1->db=" + DB1 + "->table=tb1->action=alter");
@@ -70,6 +72,7 @@ public class TestOperationsPart1 extends AbstractTestWithStaticConfiguration {
     privileges.put("insert_db2_tb2", "server=server1->db=" + DB2 + "->table=tb2->action=insert");
     privileges.put("select_db1_view1", "server=server1->db=" + DB1 + "->table=view1->action=select");
     privileges.put("create_db1_view1", "server=server1->db=" + DB1  + "->action=create");
+    privileges.put("all_db1_view1", "server=server1->db=" + DB1  + "->action=all");
     privileges.put("drop_db1_view1", "server=server1->db=" + DB1  + "->action=drop");
     privileges.put("select_db1_tb2", "server=server1->db=" + DB1 + "->table=tb2->action=select");
 
@@ -605,6 +608,72 @@ public class TestOperationsPart1 extends AbstractTestWithStaticConfiguration {
   }
 
   @Test
+  public void testAlterRenameTableWithinDB() throws Exception {
+    adminCreate(DB1, "tb1", true);
+
+    Connection connection;
+    Statement statement;
+    //Setup
+    policyFile
+        .addPermissionsToRole("create_db1", privileges.get("create_db1"))
+        .addPermissionsToRole("all_db1_tb1", privileges.get("all_db1_tb1"))
+        .addRolesToGroup(USERGROUP1, "create_db1", "all_db1_tb1")
+        .addRolesToGroup(USERGROUP2, "create_db1");
+    writePolicyFile(policyFile);
+
+    String command = "ALTER TABLE " + DB1 + ".tb1 RENAME TO " + DB1 + ".tb2";
+
+    //negative test cases
+    connection = context.createConnection(USER2_1);
+    statement = context.createStatement(connection);
+    context.assertSentrySemanticException(statement, command, semanticException);
+    statement.close();
+    connection.close();
+
+    //positive test cases
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    statement.execute(command);
+    statement.close();
+    connection.close();
+  }
+
+  @Test
+  public void testAlterRenameTableCrossDB() throws Exception {
+    adminCreate(DB1, tableName, true);
+    adminCreate(DB2, null, true);
+
+    Connection connection;
+    Statement statement;
+    //Setup
+    policyFile
+        .addPermissionsToRole("create_db2", privileges.get("create_db2"))
+        .addPermissionsToRole("create_db1_tb1", privileges.get("create_db1_tb1"))
+        .addPermissionsToRole("all_db1_tb1", privileges.get("all_db1_tb1"))
+        .addPermissionsToRole("select_db1_tb1", privileges.get("select_db1_tb1"))
+        .addRolesToGroup(USERGROUP1, "create_db2", "all_db1_tb1")
+        .addRolesToGroup(USERGROUP2, "create_db2", "select_db1_tb1");
+    writePolicyFile(policyFile);
+
+    String command = "ALTER TABLE " + DB1 + ".tb1 RENAME TO " + DB2 + ".tb2";
+
+    //negative test cases
+    connection = context.createConnection(USER2_1);
+    statement = context.createStatement(connection);
+    context.assertSentrySemanticException(statement, command, semanticException);
+    statement.close();
+    connection.close();
+
+    //positive test cases
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    statement.execute(command);
+    statement.close();
+    connection.close();
+  }
+
+
+  @Test
   public void testAlterRenameView() throws Exception {
     adminCreate(DB1, tableName, true);
 
@@ -618,29 +687,28 @@ public class TestOperationsPart1 extends AbstractTestWithStaticConfiguration {
 
     policyFile
         .addPermissionsToRole("create_db1_view1", privileges.get("create_db1_view1"))
-        .addPermissionsToRole("drop_db1_view1", privileges.get("drop_db1_view1"))
+        .addPermissionsToRole("all_db1_view1", privileges.get("all_db1_view1"))
         .addPermissionsToRole("create_db1", privileges.get("create_db1"))
-        .addRolesToGroup(USERGROUP1, "create_db1", "create_db1_view1", "drop_db1_view1")
-        .addPermissionsToRole("select_db1_view1", privileges.get("select_db1_view1"))
         .addPermissionsToRole("select_db1_tb1", privileges.get("select_db1_tb1"))
-        .addRolesToGroup(USERGROUP2, "select_db1_tb1", "create_db1", "select_db1_view1");
+        .addPermissionsToRole("select_db1_view1", privileges.get("select_db1_view1"))
+        .addRolesToGroup(USERGROUP1, "create_db1", "all_db1_view1")
+        .addRolesToGroup(USERGROUP2, "create_db1", "select_db1_tb1", "select_db1_view1");
     writePolicyFile(policyFile);
+
+    //negative test cases
+    connection = context.createConnection(USER2_1);
+    statement = context.createStatement(connection);
+    statement.execute("Use " + DB1);
+    context.assertSentrySemanticException(statement, "ALTER VIEW view1 RENAME TO view2",
+        semanticException);
+    statement.close();
+    connection.close();
 
     //positive test cases
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("Use " + DB1);
     statement.execute("ALTER VIEW view1 RENAME TO view2");
-    statement.close();
-    connection.close();
-
-    //negative test cases
-    connection = context.createConnection(USER2_1);
-    statement = context.createStatement(connection);
-    statement.execute("Use " + DB1);
-    statement.execute("CREATE VIEW view1 AS SELECT * FROM tb1");
-    context.assertSentrySemanticException(statement, "ALTER VIEW view1 RENAME TO view2",
-        semanticException);
     statement.close();
     connection.close();
   }

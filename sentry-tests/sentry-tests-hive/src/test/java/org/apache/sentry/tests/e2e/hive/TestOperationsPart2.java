@@ -256,7 +256,7 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
    1. HiveOperation.ALTERTABLE_RENAME
    */
   @Test
-  public void renameTable() throws Exception {
+  public void renameTablePositive() throws Exception {
     adminCreate(DB1, "TAB_1");
     adminCreate(DB2, "TAB_3");
     adminCreate(DB3, null);
@@ -270,9 +270,50 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
         .addRolesToGroup(USERGROUP1, "all_db1")
         .addRolesToGroup(USERGROUP1, "drop_db2")
         .addRolesToGroup(USERGROUP1, "create_db3")
-        .addPermissionsToRole("all_db1", "server=server1->db=" + DB1)
+        .addRolesToGroup(USERGROUP1, "all_db2_table3")
+        .addPermissionsToRole("all_db1", "server=server1->db=" + DB1 + "->action=all")
         .addPermissionsToRole("drop_db2", "server=server1->db=" + DB2 + "->action=drop")
         .addPermissionsToRole("create_db3", "server=server1->db=" + DB3 + "->action=create")
+        .addPermissionsToRole("all_db2_table3", "server=server1->db=" + DB2 + "->table=TAB_3" + "->action=all")
+        .setUserGroupMapping(StaticUserGroup.getStaticMapping());
+    writePolicyFile(policyFile);
+
+    connection = context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+
+    // user1 have all permission with db_1 and create permission with db_3, alter_table_rename pass
+    exec(statement, "use " + DB1);
+    exec(statement, "alter table TAB_1 rename to " + DB3 + ".TAB_1");
+    exec(statement, "alter table " + DB1 + ".TAB_2 rename to " + DB3 + ".TAB_2");
+
+    // user1 have all permission with db_2.tab_3 and create permission with db_3, alter_table_rename pass
+    exec(statement, "use " + DB2);
+    exec(statement, "alter table TAB_3 rename to " + DB3 + ".TAB_3");
+  }
+
+  /*
+   1. HiveOperation.ALTERTABLE_RENAME
+   */
+  @Test
+  public void renameTableNegative() throws Exception {
+    adminCreate(DB1, "TAB_1");
+    adminCreate(DB2, "TAB_3");
+    adminCreate(DB3, "TAB_3");
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    exec(statement, "CREATE table  " + DB1 + ".TAB_2 (a string)");
+    statement.close();
+    connection.close();
+
+    policyFile
+        .addRolesToGroup(USERGROUP1, "all_db1")
+        .addRolesToGroup(USERGROUP1, "drop_db2")
+        .addRolesToGroup(USERGROUP1, "create_db3")
+        .addRolesToGroup(USERGROUP1, "all_db2_table3")
+        .addPermissionsToRole("all_db1", "server=server1->db=" + DB1 + "->action=all")
+        .addPermissionsToRole("drop_db2", "server=server1->db=" + DB2 + "->action=drop")
+        .addPermissionsToRole("create_db3", "server=server1->db=" + DB3 + "->action=create")
+        .addPermissionsToRole("all_db2_table3", "server=server1->db=" + DB2 + "->table=TAB_3" + "->action=all")
         .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
 
@@ -310,16 +351,7 @@ public class TestOperationsPart2 extends AbstractTestWithStaticConfiguration {
       // ignore the exception
     }
 
-    // user1 have all permission with db_1 and create permission with db_3, alter_table_rename pass
-    exec(statement, "use " + DB1);
-    exec(statement, "alter table TAB_1 rename to " + DB3 + ".TAB_1");
-    exec(statement, "alter table " + DB1 + ".TAB_2 rename to " + DB3 + ".TAB_2");
-
-    // user1 have drop permission with db_2 and create permission with db_3, alter_table_rename pass
-    exec(statement, "use " + DB2);
-    exec(statement, "alter table TAB_3 rename to " + DB3 + ".TAB_3");
-
-    // user1 haven't drop permission with db_3, can't move table to db_3
+    // user1 does not have all permission with db_3.tab_3, cannot move table to db_3.tab_4
     exec(statement, "use " + DB3);
     try {
       exec(statement, "alter table TAB_3 rename to TAB_4");
