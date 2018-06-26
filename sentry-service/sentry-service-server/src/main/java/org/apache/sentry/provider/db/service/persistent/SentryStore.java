@@ -1907,6 +1907,7 @@ public class SentryStore implements SentryStoreInterface {
               pm -> {
                 Query query = pm.newQuery(MSentryPrivilege.class);
                 QueryParamBuilder paramBuilder = QueryParamBuilder.newQueryParamBuilder();
+
                 if (entityNames == null || entityNames.isEmpty()) {
                   if (entityType == SentryEntityType.ROLE) {
                     paramBuilder.addString("!roles.isEmpty()");
@@ -1945,9 +1946,17 @@ public class SentryStore implements SentryStoreInterface {
                   // if no server, then return empty result
                   return Collections.emptyList();
                 }
-                FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchRole");
-                grp.addMember("roles");
-                pm.getFetchPlan().addGroup("fetchRole");
+
+                if (entityType == SentryEntityType.ROLE) {
+                  FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchRole");
+                  grp.addMember("roles");
+                  pm.getFetchPlan().addGroup("fetchRole");
+                } else if(entityType == SentryEntityType.USER) {
+                  FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchUser");
+                  grp.addMember("users");
+                  pm.getFetchPlan().addGroup("fetchUser");
+                }
+
                 query.setFilter(paramBuilder.toString());
                 @SuppressWarnings("unchecked")
                 List<MSentryPrivilege> result = (List<MSentryPrivilege>)query.

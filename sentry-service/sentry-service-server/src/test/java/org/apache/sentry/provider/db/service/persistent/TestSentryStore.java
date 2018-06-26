@@ -44,6 +44,7 @@ import org.apache.hadoop.security.alias.CredentialProvider;
 import org.apache.hadoop.security.alias.CredentialProviderFactory;
 import org.apache.hadoop.security.alias.UserProvider;
 import org.apache.sentry.SentryOwnerInfo;
+import org.apache.sentry.api.service.thrift.TSentryPrivilegeMap;
 import org.apache.sentry.core.common.exception.SentryAccessDeniedException;
 import org.apache.sentry.core.common.exception.SentryInvalidInputException;
 import org.apache.sentry.core.common.utils.SentryConstants;
@@ -4187,6 +4188,33 @@ public class TestSentryStore extends org.junit.Assert {
             new HashSet<String>(),
             Sets.newHashSet(userName1),
             new TSentryActiveRoleSet(true, new HashSet<String>()))));
+  }
+
+  @Test
+  public void testListSentryPrivilegesByAuthorizableForUser() throws Exception {
+    String userName1 = "list-privs-user1";
+    String grantor = "g1";
+    sentryStore.createSentryUser(userName1);
+
+    TSentryPrivilege privilege1 = new TSentryPrivilege();
+    privilege1.setPrivilegeScope("TABLE");
+    privilege1.setServerName("server1");
+    privilege1.setDbName("db1");
+    privilege1.setTableName("tbl1");
+    privilege1.setAction("SELECT");
+    privilege1.setCreateTime(System.currentTimeMillis());
+    sentryStore.alterSentryGrantPrivilege(grantor, SentryEntityType.USER, userName1, privilege1, null);
+
+    TSentryAuthorizable tSentryAuthorizable = new TSentryAuthorizable();
+    tSentryAuthorizable.setServer("server1");
+    tSentryAuthorizable.setDb("db1");
+    tSentryAuthorizable.setTable("tbl1");
+
+    TSentryPrivilegeMap map = sentryStore.listSentryPrivilegesByAuthorizableForUser(
+        Sets.newHashSet(userName1),
+        tSentryAuthorizable,false);
+    assertEquals(1, map.getPrivilegeMapSize());
+    assertEquals(Sets.newHashSet(userName1), map.getPrivilegeMap().keySet());
   }
 
   @Test
