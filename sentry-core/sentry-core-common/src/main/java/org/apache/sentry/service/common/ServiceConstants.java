@@ -78,6 +78,9 @@ public class ServiceConstants {
     public static final String PROCESSOR_FACTORIES_DEFAULT =
         "org.apache.sentry.api.service.thrift.SentryPolicyStoreProcessorFactory" +
             ",org.apache.sentry.api.generic.thrift.SentryGenericPolicyProcessorFactory";
+    public static final String SENTRY_STORE = "sentry.service.sentrystore";
+    public static final String SENTRY_STORE_DEFAULT =
+      "org.apache.sentry.provider.db.service.persistent.SentryStore";
     public static final String SENTRY_STORE_JDBC_URL = "sentry.store.jdbc.url";
     public static final String SENTRY_STORE_JDBC_USER = "sentry.store.jdbc.user";
     public static final String SENTRY_STORE_JDBC_USER_DEFAULT = "Sentry";

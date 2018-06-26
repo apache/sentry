@@ -17,7 +17,7 @@
  */
 package org.apache.sentry.hdfs;
 
-import org.apache.sentry.provider.db.service.persistent.SentryStore;
+import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.service.thrift.SentryServiceState;
 import org.apache.sentry.service.thrift.SentryStateBank;
 import org.apache.sentry.service.thrift.SentryStateBankTestHelper;
@@ -49,9 +49,9 @@ public class TestDBUpdateForwarder {
 
   @Test
   public void testEmptyListIsReturnedWhenImageNumIsZeroAndNoImagesArePersisted() throws Exception {
-    Mockito.when(imageRetriever.getLatestImageID()).thenReturn(SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
+    Mockito.when(imageRetriever.getLatestImageID()).thenReturn(SentryConstants.EMPTY_PATHS_SNAPSHOT_ID);
 
-    List updates = updater.getAllUpdatesFrom(1, SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
+    List updates = updater.getAllUpdatesFrom(1, SentryConstants.EMPTY_PATHS_SNAPSHOT_ID);
     assertTrue(updates.isEmpty());
   }
 
@@ -85,7 +85,7 @@ public class TestDBUpdateForwarder {
 
   @Test
   public void testEmptyListIsReturnedWhenImageIsUnusedAndNoDeltaChangesArePersisted() throws Exception {
-    Mockito.when(deltaRetriever.getLatestDeltaID()).thenReturn(SentryStore.EMPTY_NOTIFICATION_ID);
+    Mockito.when(deltaRetriever.getLatestDeltaID()).thenReturn(SentryConstants.EMPTY_NOTIFICATION_ID);
 
     List updates = updater.getAllUpdatesFrom(1, UNUSED_PATH_UPDATE_IMG_NUM);
     assertTrue(updates.isEmpty());
@@ -97,7 +97,7 @@ public class TestDBUpdateForwarder {
     Mockito.when(imageRetriever.retrieveFullImage())
         .thenReturn(new PathsUpdate(1, 1, true));
 
-    List<PathsUpdate> updates = updater.getAllUpdatesFrom(0, SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
+    List<PathsUpdate> updates = updater.getAllUpdatesFrom(0, SentryConstants.EMPTY_PATHS_SNAPSHOT_ID);
     assertEquals(1, updates.size());
     assertEquals(1, updates.get(0).getSeqNum());
     assertEquals(1, updates.get(0).getImgNum());
@@ -111,7 +111,7 @@ public class TestDBUpdateForwarder {
         .thenReturn(new PathsUpdate(1, 1, true));
     SentryStateBank.enableState(SentryServiceState.COMPONENT, SentryServiceState.FULL_UPDATE_RUNNING);
 
-    List<PathsUpdate> updates = updater.getAllUpdatesFrom(0, SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
+    List<PathsUpdate> updates = updater.getAllUpdatesFrom(0, SentryConstants.EMPTY_PATHS_SNAPSHOT_ID);
     assertTrue(updates.isEmpty());
   }
 

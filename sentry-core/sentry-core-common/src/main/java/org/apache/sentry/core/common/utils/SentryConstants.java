@@ -45,4 +45,31 @@ public class SentryConstants {
 
   public static final String KERBEROS_MODE = "kerberos";
 
+  // Sentry Store constants
+
+  public static final String NULL_COL = "__NULL__";
+  public static final int INDEX_GROUP_ROLES_MAP = 0;
+  public static final int INDEX_USER_ROLES_MAP = 1;
+
+  // String constants for field names
+  public static final String SERVER_NAME = "serverName";
+  public static final String DB_NAME = "dbName";
+  public static final String TABLE_NAME = "tableName";
+  public static final String COLUMN_NAME = "columnName";
+  public static final String ACTION = "action";
+  public static final String URI = "URI";
+  public static final String GRANT_OPTION = "grantOption";
+  public static final String ROLE_NAME = "roleName";
+
+  // Initial change ID for permission/path change. Auto increment
+  // is starting from 1.
+  public static final long INIT_CHANGE_ID = 1L;
+
+  public static final long EMPTY_CHANGE_ID = 0L;
+
+  public static final long EMPTY_NOTIFICATION_ID = 0L;
+
+  // Representation for empty HMS snapshots not found on MAuthzPathsSnapshotId
+  public static final long EMPTY_PATHS_SNAPSHOT_ID = 0L;
+
 }

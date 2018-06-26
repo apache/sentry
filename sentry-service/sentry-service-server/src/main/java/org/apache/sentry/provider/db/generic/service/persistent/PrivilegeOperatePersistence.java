@@ -34,6 +34,7 @@ import org.apache.sentry.core.common.Action;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.BitFieldAction;
 import org.apache.sentry.core.common.BitFieldActionFactory;
+import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.model.indexer.IndexerActionFactory;
 import org.apache.sentry.core.model.kafka.KafkaActionFactory;
 import org.apache.sentry.core.model.solr.SolrActionFactory;
@@ -91,7 +92,7 @@ public class PrivilegeOperatePersistence {
             .add(ACTION, SentryStore.toNULLCol(privilege.getAction()), true);
 
     Boolean grantOption = privilege.getGrantOption();
-    paramBuilder.addObject(SentryStore.GRANT_OPTION, grantOption);
+    paramBuilder.addObject(SentryConstants.GRANT_OPTION, grantOption);
 
     List<? extends Authorizable> authorizables = privilege.getAuthorizables();
     int nAuthorizables = authorizables.size();

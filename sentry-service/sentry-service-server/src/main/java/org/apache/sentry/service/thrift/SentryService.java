@@ -51,7 +51,7 @@ import org.apache.sentry.api.common.SentryServiceUtil;
 import org.apache.sentry.core.common.utils.SigUtils;
 import org.apache.sentry.provider.db.service.persistent.HMSFollower;
 import org.apache.sentry.provider.db.service.persistent.LeaderStatusMonitor;
-import org.apache.sentry.provider.db.service.persistent.SentryStore;
+import org.apache.sentry.provider.db.service.persistent.SentryStoreInterface;
 import org.apache.sentry.api.service.thrift.SentryHealthCheckServletContextListener;
 import org.apache.sentry.api.service.thrift.SentryMetrics;
 import org.apache.sentry.api.service.thrift.SentryMetricsServletContextListener;
@@ -114,7 +114,7 @@ public class SentryService implements Callable, SigUtils.SigListener {
     between various {@link SentryPolicyService}, i.e., {@link SentryPolicyStoreProcessor} and
     {@link HMSFollower}.
    */
-  private final SentryStore sentryStore;
+  private final SentryStoreInterface sentryStore;
   private ScheduledExecutorService sentryStoreCleanService;
   private final LeaderStatusMonitor leaderMonitor;
 
@@ -165,7 +165,7 @@ public class SentryService implements Callable, SigUtils.SigListener {
         .setNameFormat(SENTRY_SERVICE_THREAD_NAME)
         .build();
     serviceExecutor = Executors.newSingleThreadExecutor(sentryServiceThreadFactory);
-    this.sentryStore = new SentryStore(conf);
+    this.sentryStore = getSentryStore(conf);
     sentryStore.setPersistUpdateDeltas(SentryServiceUtil.isHDFSSyncEnabled(conf));
     this.leaderMonitor = LeaderStatusMonitor.getLeaderStatusMonitor(conf);
     webServerPort = conf.getInt(ServerConfig.SENTRY_WEB_PORT, ServerConfig.SENTRY_WEB_PORT_DEFAULT);
@@ -181,6 +181,34 @@ public class SentryService implements Callable, SigUtils.SigListener {
       } catch (Exception e) {
         LOGGER.error("Failed to register signal", e);
       }
+    }
+  }
+
+  private SentryStoreInterface getSentryStore(Configuration conf) {
+    String sentryStoreClass = conf.get(ServerConfig.SENTRY_STORE,
+      ServerConfig.SENTRY_STORE_DEFAULT);
+    try {
+      Class<?> sentryClazz = conf.getClassByName(sentryStoreClass);
+      Constructor<?> sentryConstructor = sentryClazz
+        .getConstructor(Configuration.class);
+      Object sentryObj = sentryConstructor.newInstance(conf);
+      if (sentryObj instanceof SentryStoreInterface) {
+        LOGGER.info("Instantiating sentry store class: " + sentryStoreClass);
+        return (SentryStoreInterface) sentryConstructor.newInstance(conf);
+      }
+      // The supplied class doesn't implement SentryStoreIface. Let's try to use a proxy
+      // instance.
+      // In practice, the following should only be used in development phase, as there are
+      // cases where using a proxy can fail, and result in runtime errors.
+      LOGGER.warn(
+        String.format("Trying to use a proxy instance (duck-typing) for the " +
+          "supplied SentryStore, since the specified class %s does not implement " +
+          "SentryStoreIface.", sentryStoreClass));
+      return
+        new DynamicProxy<>(sentryObj, SentryStoreInterface.class, sentryStoreClass).createProxy();
+    } catch (Exception e) {
+      throw new IllegalStateException("Could not create "
+        + sentryStoreClass, e);
     }
   }
 

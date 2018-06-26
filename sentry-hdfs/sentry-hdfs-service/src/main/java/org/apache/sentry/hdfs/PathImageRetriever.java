@@ -18,7 +18,7 @@
 package org.apache.sentry.hdfs;
 
 import com.codahale.metrics.Timer;
-import org.apache.sentry.provider.db.service.persistent.SentryStore;
+import org.apache.sentry.provider.db.service.persistent.SentryStoreInterface;
 
 import javax.annotation.concurrent.ThreadSafe;
 
@@ -32,11 +32,11 @@ import javax.annotation.concurrent.ThreadSafe;
 @ThreadSafe
 class PathImageRetriever implements ImageRetriever<PathsUpdate> {
 
-  private final SentryStore sentryStore;
+  private final SentryStoreInterface sentryStore;
   /** List of prefixes managed by Sentry */
   private final String[] prefixes;
 
-  PathImageRetriever(SentryStore sentryStore, String[] prefixes) {
+  PathImageRetriever(SentryStoreInterface sentryStore, String[] prefixes) {
     this.sentryStore = sentryStore;
     this.prefixes = prefixes;
   }

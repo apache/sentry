@@ -19,6 +19,8 @@
 package org.apache.sentry.provider.db.service.persistent;
 
 import com.google.common.base.Joiner;
+
+import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
 import org.apache.sentry.provider.db.service.model.MSentryUser;
 
@@ -260,7 +262,7 @@ public class QueryParamBuilder {
    * @return this
    */
   public QueryParamBuilder addNotNull(String fieldName) {
-    queryParts.add(String.format("this.%s != \"%s\"", fieldName, SentryStore.NULL_COL));
+    queryParts.add(String.format("this.%s != \"%s\"", fieldName, SentryConstants.NULL_COL));
     return this;
   }
 
@@ -270,7 +272,7 @@ public class QueryParamBuilder {
    * @return this
    */
   public QueryParamBuilder addNull(String fieldName) {
-    queryParts.add(String.format("this.%s == \"%s\"", fieldName, SentryStore.NULL_COL));
+    queryParts.add(String.format("this.%s == \"%s\"", fieldName, SentryConstants.NULL_COL));
     return this;
   }
 

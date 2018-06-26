@@ -31,8 +31,8 @@ import org.apache.hadoop.hive.metastore.api.NotificationEvent;
 import org.apache.hadoop.hive.metastore.api.NotificationEventResponse;
 import org.apache.hadoop.hive.metastore.messaging.MessageDeserializer;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageDeserializer;
+import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.provider.db.service.persistent.PathsImage;
-import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.api.service.thrift.SentryMetrics;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
@@ -143,7 +143,7 @@ public class SentryHMSClient implements AutoCloseable {
     if (client == null) {
       LOGGER.error(NOT_CONNECTED_MSG);
       return new PathsImage(Collections.<String, Collection<String>>emptyMap(),
-          SentryStore.EMPTY_NOTIFICATION_ID, SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
+          SentryConstants.EMPTY_NOTIFICATION_ID, SentryConstants.EMPTY_PATHS_SNAPSHOT_ID);
     }
 
     try {
@@ -151,8 +151,8 @@ public class SentryHMSClient implements AutoCloseable {
       Map<String, Collection<String>> pathsFullSnapshot = fetchFullUpdate();
       if (pathsFullSnapshot.isEmpty()) {
         LOGGER.info("Received empty paths when getting full snapshot. NotificationID Before Snapshot: {}", eventIdBefore.getEventId());
-        return new PathsImage(pathsFullSnapshot, SentryStore.EMPTY_NOTIFICATION_ID,
-            SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
+        return new PathsImage(pathsFullSnapshot, SentryConstants.EMPTY_NOTIFICATION_ID,
+            SentryConstants.EMPTY_PATHS_SNAPSHOT_ID);
       }
 
       CurrentNotificationEventId eventIdAfter = client.getCurrentNotificationEventId();
@@ -165,7 +165,7 @@ public class SentryHMSClient implements AutoCloseable {
         // As eventIDAfter is the last event that was processed, eventIDAfter is used to update
         // lastProcessedNotificationID instead of getting it from persistent store.
         return new PathsImage(pathsFullSnapshot, eventIdAfter.getEventId(),
-                SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
+                SentryConstants.EMPTY_PATHS_SNAPSHOT_ID);
       }
 
       LOGGER.info("Reconciling full snapshot - applying {} changes",
@@ -183,7 +183,7 @@ public class SentryHMSClient implements AutoCloseable {
           LOGGER.error("Snapshot discarded, updates to HMS data while shapshot is being taken."
                   + "ID Before: {}. ID After: {}", eventIdBefore.getEventId(), eventIdAfter.getEventId());
           return new PathsImage(Collections.<String, Collection<String>>emptyMap(),
-                  SentryStore.EMPTY_NOTIFICATION_ID, SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
+                  SentryConstants.EMPTY_NOTIFICATION_ID, SentryConstants.EMPTY_PATHS_SNAPSHOT_ID);
         }
 
         for (NotificationEvent event : response.getEvents()) {
@@ -217,13 +217,13 @@ public class SentryHMSClient implements AutoCloseable {
       // As eventIDAfter is the last event that was processed, eventIDAfter is used to update
       // lastProcessedNotificationID instead of getting it from persistent store.
       return new PathsImage(pathsFullSnapshot, currentEventId,
-          SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
+        SentryConstants.EMPTY_PATHS_SNAPSHOT_ID);
     } catch (TException failure) {
       LOGGER.error("Fetching a new HMS snapshot cannot continue because an error occurred during "
           + "the HMS communication: ", failure);
       LOGGER.error("Root Exception", ExceptionUtils.getRootCause(failure));
       return new PathsImage(Collections.<String, Collection<String>>emptyMap(),
-          SentryStore.EMPTY_NOTIFICATION_ID, SentryStore.EMPTY_PATHS_SNAPSHOT_ID);
+        SentryConstants.EMPTY_NOTIFICATION_ID, SentryConstants.EMPTY_PATHS_SNAPSHOT_ID);
     }
   }
 

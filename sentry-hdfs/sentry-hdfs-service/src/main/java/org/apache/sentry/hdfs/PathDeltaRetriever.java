@@ -19,7 +19,7 @@ package org.apache.sentry.hdfs;
 
 import com.codahale.metrics.Timer.Context;
 import org.apache.sentry.provider.db.service.model.MSentryPathChange;
-import org.apache.sentry.provider.db.service.persistent.SentryStore;
+import org.apache.sentry.provider.db.service.persistent.SentryStoreInterface;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.ArrayList;
@@ -37,9 +37,9 @@ import java.util.List;
 @ThreadSafe
 public class PathDeltaRetriever implements DeltaRetriever<PathsUpdate> {
 
-  private final SentryStore sentryStore;
+  private final SentryStoreInterface sentryStore;
 
-  PathDeltaRetriever(SentryStore sentryStore) {
+  PathDeltaRetriever(SentryStoreInterface sentryStore) {
     this.sentryStore = sentryStore;
   }
 

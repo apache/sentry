@@ -18,7 +18,16 @@
 
 package org.apache.sentry.provider.db.service.persistent;
 
+import static org.apache.sentry.core.common.utils.SentryConstants.ACTION;
 import static org.apache.sentry.core.common.utils.SentryConstants.AUTHORIZABLE_JOINER;
+import static org.apache.sentry.core.common.utils.SentryConstants.COLUMN_NAME;
+import static org.apache.sentry.core.common.utils.SentryConstants.DB_NAME;
+import static org.apache.sentry.core.common.utils.SentryConstants.EMPTY_CHANGE_ID;
+import static org.apache.sentry.core.common.utils.SentryConstants.EMPTY_NOTIFICATION_ID;
+import static org.apache.sentry.core.common.utils.SentryConstants.EMPTY_PATHS_SNAPSHOT_ID;
+import static org.apache.sentry.core.common.utils.SentryConstants.GRANT_OPTION;
+import static org.apache.sentry.core.common.utils.SentryConstants.INDEX_GROUP_ROLES_MAP;
+import static org.apache.sentry.core.common.utils.SentryConstants.INDEX_USER_ROLES_MAP;
 import static org.apache.sentry.core.common.utils.SentryConstants.KV_JOINER;
 
 import java.io.IOException;
@@ -100,6 +109,10 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+import static org.apache.sentry.core.common.utils.SentryConstants.NULL_COL;
+import static org.apache.sentry.core.common.utils.SentryConstants.SERVER_NAME;
+import static org.apache.sentry.core.common.utils.SentryConstants.TABLE_NAME;
+import static org.apache.sentry.core.common.utils.SentryConstants.URI;
 import static org.apache.sentry.hdfs.Updateable.Update;
 
 /**
@@ -125,34 +138,9 @@ import static org.apache.sentry.hdfs.Updateable.Update;
  * See <a href="https://issues.apache.org/jira/browse/SENTRY-1824">SENTRY-1824</a>
  * for more detail.
  */
-public class SentryStore {
+public class SentryStore implements SentryStoreInterface {
   private static final Logger LOGGER = LoggerFactory
       .getLogger(SentryStore.class);
-
-  public static final String NULL_COL = "__NULL__";
-  public static final int INDEX_GROUP_ROLES_MAP = 0;
-  public static final int INDEX_USER_ROLES_MAP = 1;
-
-  // String constants for field names
-  public static final String SERVER_NAME = "serverName";
-  public static final String DB_NAME = "dbName";
-  public static final String TABLE_NAME = "tableName";
-  public static final String COLUMN_NAME = "columnName";
-  public static final String ACTION = "action";
-  public static final String URI = "URI";
-  public static final String GRANT_OPTION = "grantOption";
-  public static final String ROLE_NAME = "roleName";
-
-  // Initial change ID for permission/path change. Auto increment
-  // is starting from 1.
-  public static final long INIT_CHANGE_ID = 1L;
-
-  private static final long EMPTY_CHANGE_ID = 0L;
-
-  public static final long EMPTY_NOTIFICATION_ID = 0L;
-
-  // Representation for empty HMS snapshots not found on MAuthzPathsSnapshotId
-  public static final long EMPTY_PATHS_SNAPSHOT_ID = 0L;
 
   // For counters, representation of the "unknown value"
   private static final long COUNT_VALUE_UNKNOWN = -1L;
@@ -573,7 +561,6 @@ public class SentryStore {
   /**
    * Removes all the information related to HMS Objects from sentry store.
    */
-  @VisibleForTesting
   public void clearHmsPathInformation() throws Exception {
     tm.executeTransactionWithRetry(
             pm -> {
@@ -3065,7 +3052,9 @@ public class SentryStore {
    *
    * @return a {@link PathsImage} contains the mapping of hiveObj to
    *         &lt role, privileges &gt and the mapping of role to &lt Groups &gt.
-   *         For empty image returns {@link #EMPTY_CHANGE_ID} and empty maps.
+   *         For empty image returns
+   *         {@link org.apache.sentry.core.common.utils.SentryConstants#EMPTY_CHANGE_ID}
+   *         and empty maps.
    * @throws Exception
    */
   public PermissionsImage retrieveFullPermssionsImage() throws Exception {
@@ -3195,7 +3184,9 @@ public class SentryStore {
    *
    * @param prefixes path of Sentry managed prefixes. Ignore any path outside the prefix.
    * @return an up-to-date hive paths snapshot contains mapping of hiveObj to &lt Paths &gt.
-   *         For empty image return {@link #EMPTY_CHANGE_ID} and a empty map.
+   *         For empty image return
+   *         {@link org.apache.sentry.core.common.utils.SentryConstants#EMPTY_CHANGE_ID}
+   *         and a empty map.
    * @throws Exception
    */
   public PathsUpdate retrieveFullPathsImageUpdate(final String[] prefixes) throws Exception {

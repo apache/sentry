@@ -19,7 +19,7 @@ package org.apache.sentry.api.generic.thrift;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.api.common.ApiConstants.SentryPolicyServiceConstants;
-import org.apache.sentry.provider.db.service.persistent.SentryStore;
+import org.apache.sentry.provider.db.service.persistent.SentryStoreInterface;
 import org.apache.sentry.service.thrift.ProcessorFactory;
 import org.apache.thrift.TMultiplexedProcessor;
 import org.apache.thrift.TProcessor;
@@ -32,7 +32,7 @@ public class SentryGenericPolicyProcessorFactory extends ProcessorFactory {
 
   @Override
   public boolean register(TMultiplexedProcessor multiplexedProcessor,
-                          SentryStore _) throws Exception {
+                          SentryStoreInterface _) throws Exception {
     SentryGenericPolicyProcessor processHandler = new SentryGenericPolicyProcessor(conf);
     TProcessor processor = new SentryGenericPolicyProcessorWrapper<SentryGenericPolicyService.Iface>(
         processHandler);

@@ -19,6 +19,7 @@
 package org.apache.sentry.provider.db.service.persistent;
 
 import org.apache.sentry.core.common.utils.PubSub;
+import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
 
 import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SERVER_NAME;
@@ -57,7 +58,7 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
 
   private SentryHMSClient client;
   private final Configuration authzConf;
-  private final SentryStore sentryStore;
+  private final SentryStoreInterface sentryStore;
   private final NotificationProcessor notificationProcessor;
   private boolean readyToServe;
   private final HiveNotificationFetcher notificationFetcher;
@@ -70,7 +71,7 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
    * Current generation of HMS snapshots. HMSFollower is single-threaded, so no need
    * to protect against concurrent modification.
    */
-  private long hmsImageId = SentryStore.EMPTY_PATHS_SNAPSHOT_ID;
+  private long hmsImageId = SentryConstants.EMPTY_PATHS_SNAPSHOT_ID;
 
   /**
    * Configuring Hms Follower thread.
@@ -79,7 +80,7 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
    * @param store sentry store
    * @param leaderMonitor singleton instance of LeaderStatusMonitor
    */
-  public HMSFollower(Configuration conf, SentryStore store, LeaderStatusMonitor leaderMonitor,
+  public HMSFollower(Configuration conf, SentryStoreInterface store, LeaderStatusMonitor leaderMonitor,
               HiveConnectionFactory hiveConnectionFactory) {
     this(conf, store, leaderMonitor, hiveConnectionFactory, null);
   }
@@ -93,7 +94,7 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
    * @param authServerName Server that sentry is Authorizing
    */
   @VisibleForTesting
-  public HMSFollower(Configuration conf, SentryStore store, LeaderStatusMonitor leaderMonitor,
+  public HMSFollower(Configuration conf, SentryStoreInterface store, LeaderStatusMonitor leaderMonitor,
               HiveConnectionFactory hiveConnectionFactory, String authServerName) {
     LOGGER.info("HMSFollower is being initialized");
     readyToServe = false;
@@ -390,7 +391,7 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
       // Check we're still the leader before persisting the new snapshot
       if (!isLeader()) {
         LOGGER.info("Not persisting full snapshot since not a leader");
-        return SentryStore.EMPTY_NOTIFICATION_ID;
+        return SentryConstants.EMPTY_NOTIFICATION_ID;
       }
       try {
         if (hdfsSyncEnabled) {

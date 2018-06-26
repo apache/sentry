@@ -39,6 +39,7 @@ import org.apache.sentry.SentryOwnerInfo;
 import org.apache.sentry.api.common.ThriftConstants;
 import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.exception.SentrySiteConfigurationException;
+import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.common.GroupMappingService;
 import org.apache.sentry.core.common.utils.PolicyFileConstants;
@@ -53,7 +54,7 @@ import org.apache.sentry.core.common.exception.SentryThriftAPIMismatchException;
 import org.apache.sentry.provider.db.log.entity.JsonLogEntity;
 import org.apache.sentry.provider.db.log.entity.JsonLogEntityFactory;
 import org.apache.sentry.provider.db.log.util.Constants;
-import org.apache.sentry.provider.db.service.persistent.SentryStore;
+import org.apache.sentry.provider.db.service.persistent.SentryStoreInterface;
 import org.apache.sentry.core.common.utils.PolicyStoreConstants.PolicyStoreServerConfig;
 import org.apache.sentry.api.service.thrift.validator.GrantPrivilegeRequestValidator;
 import org.apache.sentry.api.service.thrift.validator.RevokePrivilegeRequestValidator;
@@ -93,7 +94,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
 
   private final String name;
   private final Configuration conf;
-  private final SentryStore sentryStore;
+  private final SentryStoreInterface sentryStore;
   private final NotificationHandlerInvoker notificationHandlerInvoker;
   private final ImmutableSet<String> adminGroups;
   private SentryMetrics sentryMetrics;
@@ -104,7 +105,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   private List<SentryPolicyStorePlugin> sentryPlugins = new LinkedList<SentryPolicyStorePlugin>();
 
   SentryPolicyStoreProcessor(String name,
-        Configuration conf, SentryStore store) throws Exception {
+        Configuration conf, SentryStoreInterface store) throws Exception {
     super();
     this.name = name;
     this.conf = conf;
@@ -1274,8 +1275,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       List<Map<String, Set<String>>> mapList = sentryStore.getGroupUserRoleMapList(
           roleNames);
       tSentryMappingData.setGroupRolesMap(mapList.get(
-          SentryStore.INDEX_GROUP_ROLES_MAP));
-      tSentryMappingData.setUserRolesMap(mapList.get(SentryStore.INDEX_USER_ROLES_MAP));
+          SentryConstants.INDEX_GROUP_ROLES_MAP));
+      tSentryMappingData.setUserRolesMap(mapList.get(SentryConstants.INDEX_USER_ROLES_MAP));
 
       response.setMappingData(tSentryMappingData);
       response.setStatus(Status.OK());

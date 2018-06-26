@@ -46,6 +46,7 @@ import org.apache.hadoop.security.alias.UserProvider;
 import org.apache.sentry.SentryOwnerInfo;
 import org.apache.sentry.core.common.exception.SentryAccessDeniedException;
 import org.apache.sentry.core.common.exception.SentryInvalidInputException;
+import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
 import org.apache.sentry.core.common.exception.SentryGrantDeniedException;
@@ -3764,7 +3765,7 @@ public class TestSentryStore extends org.junit.Assert {
     assertEquals(2, pathsImage.size());
 
     if (lastNotificationId == null) {
-      lastNotificationId = SentryStore.EMPTY_NOTIFICATION_ID;
+      lastNotificationId = SentryConstants.EMPTY_NOTIFICATION_ID;
     }
 
     // Rename path of 'db1.table1' from 'db1.table1' to 'db1.newTable1'

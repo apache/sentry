@@ -27,8 +27,9 @@ import org.apache.hadoop.hive.metastore.IMetaStoreClient.NotificationFilter;
 import org.apache.hadoop.hive.metastore.api.CurrentNotificationEventId;
 import org.apache.hadoop.hive.metastore.api.NotificationEvent;
 import org.apache.hadoop.hive.metastore.api.NotificationEventResponse;
+import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.hdfs.UniquePathsUpdate;
-import org.apache.sentry.provider.db.service.persistent.SentryStore;
+import org.apache.sentry.provider.db.service.persistent.SentryStoreInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +39,7 @@ import org.slf4j.LoggerFactory;
 public final class HiveNotificationFetcher implements AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(HiveNotificationFetcher.class);
 
-  private final SentryStore sentryStore;
+  private final SentryStoreInterface sentryStore;
   private final HiveConnectionFactory hmsConnectionFactory;
   private HiveMetaStoreClient hmsClient;
 
@@ -46,7 +47,7 @@ public final class HiveNotificationFetcher implements AutoCloseable {
   private long lastIdFiltered = 0;
   private Set<String> cache = new HashSet<>();
 
-  public HiveNotificationFetcher(SentryStore sentryStore, HiveConnectionFactory hmsConnectionFactory) {
+  public HiveNotificationFetcher(SentryStoreInterface sentryStore, HiveConnectionFactory hmsConnectionFactory) {
     this.sentryStore = sentryStore;
     this.hmsConnectionFactory = hmsConnectionFactory;
   }
@@ -191,7 +192,7 @@ public final class HiveNotificationFetcher implements AutoCloseable {
       return eventId.getEventId();
     }
 
-    return SentryStore.EMPTY_NOTIFICATION_ID;
+    return SentryConstants.EMPTY_NOTIFICATION_ID;
   }
 
   /* AutoCloseable implementations */

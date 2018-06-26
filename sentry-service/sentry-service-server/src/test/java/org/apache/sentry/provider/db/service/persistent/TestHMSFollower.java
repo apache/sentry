@@ -50,6 +50,7 @@ import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageFactory;
 import org.apache.sentry.core.common.utils.PubSub;
+import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.hdfs.UniquePathsUpdate;
 import org.apache.sentry.service.thrift.SentryHMSClient;
 import org.apache.sentry.service.thrift.HiveConnectionFactory;
@@ -125,7 +126,7 @@ public class TestHMSFollower {
      * should trigger a new full HMS snapshot request with the eventId = 1
      */
 
-    final long SENTRY_PROCESSED_EVENT_ID = SentryStore.EMPTY_NOTIFICATION_ID;
+    final long SENTRY_PROCESSED_EVENT_ID = SentryConstants.EMPTY_NOTIFICATION_ID;
     final long HMS_PROCESSED_EVENT_ID = 1L;
 
     // Mock that returns a full snapshot
@@ -195,7 +196,7 @@ public class TestHMSFollower {
      *
      */
 
-    final long SENTRY_PROCESSED_EVENT_ID = SentryStore.EMPTY_NOTIFICATION_ID;
+    final long SENTRY_PROCESSED_EVENT_ID = SentryConstants.EMPTY_NOTIFICATION_ID;
     final long HMS_PROCESSED_EVENT_ID = 1L;
 
     // Mock that returns a full snapshot
@@ -282,7 +283,7 @@ public class TestHMSFollower {
 
     disableHdfsSyncInSentry(configuration);
 
-    final long SENTRY_PROCESSED_EVENT_ID = SentryStore.EMPTY_NOTIFICATION_ID;
+    final long SENTRY_PROCESSED_EVENT_ID = SentryConstants.EMPTY_NOTIFICATION_ID;
     final long HMS_PROCESSED_EVENT_ID = 1L;
 
     // Mock that returns a full snapshot
@@ -381,7 +382,7 @@ public class TestHMSFollower {
 
     disableHdfsSyncInSentry(configuration);
 
-    final long SENTRY_PROCESSED_EVENT_ID = SentryStore.EMPTY_NOTIFICATION_ID;
+    final long SENTRY_PROCESSED_EVENT_ID = SentryConstants.EMPTY_NOTIFICATION_ID;
     final long HMS_PROCESSED_EVENT_ID = 1L;
 
     // Mock that returns a full snapshot
@@ -1142,7 +1143,7 @@ public class TestHMSFollower {
      // HMSFollower tries to fetch all notifications from HMS.
 
 
-    final long SENTRY_PROCESSED_EVENT_ID = SentryStore.EMPTY_NOTIFICATION_ID;
+    final long SENTRY_PROCESSED_EVENT_ID = SentryConstants.EMPTY_NOTIFICATION_ID;
     final long HMS_PROCESSED_EVENT_ID = 1L;
 
     NotificationEventResponse response = new NotificationEventResponse();
@@ -1191,7 +1192,7 @@ public class TestHMSFollower {
     //
     // Simulates (by using mocks) that Sentry is out-of-sync with sentry
 
-    final long SENTRY_PROCESSED_EVENT_ID = SentryStore.EMPTY_NOTIFICATION_ID;
+    final long SENTRY_PROCESSED_EVENT_ID = SentryConstants.EMPTY_NOTIFICATION_ID;
 
     NotificationEventResponse response = new NotificationEventResponse();
 
