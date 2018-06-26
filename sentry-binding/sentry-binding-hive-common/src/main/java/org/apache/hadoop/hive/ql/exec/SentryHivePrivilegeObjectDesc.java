@@ -22,6 +22,7 @@ import org.apache.hadoop.hive.ql.plan.PrivilegeObjectDesc;
 public class SentryHivePrivilegeObjectDesc extends PrivilegeObjectDesc {
   private boolean isUri;
   private boolean isServer;
+  private boolean isDatabase;
 
   public SentryHivePrivilegeObjectDesc() {
     // reset table type which is on by default
@@ -46,6 +47,14 @@ public class SentryHivePrivilegeObjectDesc extends PrivilegeObjectDesc {
 
   public boolean isSentryPrivObjectDesc() {
     return isServer || isUri;
+  }
+
+  public boolean getDatabase() {
+    return isDatabase;
+  }
+
+  public void setDatabase(boolean isDatabase) {
+    this.isDatabase = isDatabase;
   }
 
 }

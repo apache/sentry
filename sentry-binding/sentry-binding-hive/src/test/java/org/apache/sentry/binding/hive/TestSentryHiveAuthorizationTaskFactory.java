@@ -403,11 +403,34 @@ public class TestSentryHiveAuthorizationTaskFactory {
   }
 
   /**
+   * SHOW GRANT ROLE ... ON DATABASE ...
+   */
+  @Test
+  public void testShowGrantRoleOnDatabase() throws Exception {
+    DDLWork work = analyze(parse("SHOW GRANT ROLE " + ROLE + " ON DATABASE " + DB));
+    ShowGrantDesc grantDesc = work.getShowGrantDesc();
+    Assert.assertNotNull("Show grant should not be null", grantDesc);
+    Assert.assertEquals(PrincipalType.ROLE, grantDesc.getPrincipalDesc().getType());
+    Assert.assertEquals(ROLE, grantDesc.getPrincipalDesc().getName());
+    Assert.assertTrue("Expected database", ((SentryHivePrivilegeObjectDesc)grantDesc.getHiveObj()).getDatabase());
+    Assert.assertEquals(DB, ((SentryHivePrivilegeObjectDesc)grantDesc.getHiveObj()).getObject());
+  }
+
+  /**
    * SHOW GRANT GROUP ... ON TABLE ...
    */
   @Test
   public void testShowGrantGroupOnTable() throws Exception {
     expectSemanticException("SHOW GRANT GROUP " + GROUP + " ON TABLE " + TABLE,
+        SentryHiveConstants.SHOW_NOT_SUPPORTED_FOR_PRINCIPAL + "GROUP");
+  }
+
+  /**
+   * SHOW GRANT GROUP ... ON DATABASE ...
+   */
+  @Test
+  public void testShowGrantGroupOnDatabase() throws Exception {
+    expectSemanticException("SHOW GRANT GROUP " + GROUP + " ON DATABASE " + DB,
         SentryHiveConstants.SHOW_NOT_SUPPORTED_FOR_PRINCIPAL + "GROUP");
   }
 
@@ -499,8 +522,7 @@ public class TestSentryHiveAuthorizationTaskFactory {
     Assert.assertEquals(null, grantDesc.getPrincipalDesc().getType());
     Assert.assertEquals(StringUtils.EMPTY, grantDesc.getPrincipalDesc().getName());
     Assert.assertEquals(DB, grantDesc.getHiveObj().getObject());
-    //TODO - Part of SENTRY-2238 commit
-//    Assert.assertTrue("Expected database", ((SentryHivePrivilegeObjectDesc)grantDesc.getHiveObj()).getDatabase());
+    Assert.assertTrue("Expected database", ((SentryHivePrivilegeObjectDesc)grantDesc.getHiveObj()).getDatabase());
   }
 
   /**

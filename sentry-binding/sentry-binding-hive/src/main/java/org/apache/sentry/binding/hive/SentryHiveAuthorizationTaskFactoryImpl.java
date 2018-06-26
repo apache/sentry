@@ -326,6 +326,10 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
           subject.setUri(true);
         } else if (astChild.getToken().getType() == HiveParser.TOK_SERVER_TYPE) {
           subject.setServer(true);
+        } else if(astChild.getToken().getType() == HiveParser.TOK_DB_TYPE) {
+          subject.setDatabase(true);
+          String qualified = BaseSemanticAnalyzer.getUnescapedName(gchild);
+          subject.setObject(qualified);
         } else if (astChild.getToken().getType() == HiveParser.TOK_TABLE_TYPE) {
           subject.setTable(true);
           String qualified = BaseSemanticAnalyzer.getUnescapedName(gchild);
