@@ -37,26 +37,6 @@ limitations under the License.
     <module>sentry-binding-hbase-indexer</module>
     <module>sentry-binding-hive-conf</module>
     <module>sentry-binding-hive-follower</module>
+    <module>sentry-binding-hive</module>
   </modules>
-
-  <profiles>
-    <profile>
-      <id>hive-authz1</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <modules>
-        <module>sentry-binding-hive</module>
-      </modules>
-    </profile>
-    <profile>
-      <id>hive-authz2</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-      </activation>
-      <modules>
-        <module>sentry-binding-hive-v2</module>
-      </modules>
-    </profile>
-  </profiles>
 </project>
