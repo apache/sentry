@@ -208,7 +208,7 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
         type = null;
         break;
     }
-    if (type != null && type != PrincipalType.ROLE) {
+    if (type != null && type != PrincipalType.ROLE && type != PrincipalType.USER) {
       String msg = SentryHiveConstants.SHOW_NOT_SUPPORTED_FOR_PRINCIPAL + type;
       throw new SemanticException(msg);
     }

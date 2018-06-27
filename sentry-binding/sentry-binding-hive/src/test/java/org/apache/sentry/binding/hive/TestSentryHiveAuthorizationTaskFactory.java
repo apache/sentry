@@ -383,8 +383,14 @@ public class TestSentryHiveAuthorizationTaskFactory {
    */
   @Test
   public void testShowGrantUserOnTable() throws Exception {
-    expectSemanticException("SHOW GRANT USER " + USER + " ON TABLE " + TABLE,
-        SentryHiveConstants.SHOW_NOT_SUPPORTED_FOR_PRINCIPAL + "USER");
+    DDLWork work = analyze(parse("SHOW GRANT USER " + USER + " ON TABLE " + TABLE));
+    ShowGrantDesc grantDesc = work.getShowGrantDesc();
+    Assert.assertNotNull("Show grant should not be null", grantDesc);
+    Assert.assertEquals(PrincipalType.USER, grantDesc.getPrincipalDesc().getType());
+    Assert.assertEquals(USER, grantDesc.getPrincipalDesc().getName());
+    Assert.assertTrue("Expected table", grantDesc.getHiveObj().getTable());
+    Assert.assertEquals(TABLE, grantDesc.getHiveObj().getObject());
+    Assert.assertTrue("Expected table", grantDesc.getHiveObj().getTable());
   }
 
   /**
