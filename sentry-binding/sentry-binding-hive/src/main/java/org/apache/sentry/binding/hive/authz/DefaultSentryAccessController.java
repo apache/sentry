@@ -51,6 +51,7 @@ import org.apache.sentry.binding.util.SentryAuthorizerUtil;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.exception.SentryAccessDeniedException;
+import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
 import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
@@ -234,8 +235,19 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
                 principal.getName(), authorizable));
               break;
             case USER:
-              tPrivilges.addAll(sentryClient.listPrivilegesByUserName(authenticator.getUserName(),
-                principal.getName(), authorizable));
+              try {
+                tPrivilges.addAll(sentryClient.listPrivilegesByUserName(authenticator.getUserName(),
+                  principal.getName(), authorizable));
+              } catch (SentryNoSuchObjectException e) {
+                // SentryNoSuchObjectException is thrown by Sentry when the user name requested
+                // is not found in the Sentry database. Sentry only stores user information when
+                // privileges are granted, and deletes the user when privileges are deleted to avoid
+                // stale data.
+                // To avoid throwing a nasty exception in Hive, then we return an empty list instead
+                // to let Hive execute the SHOW GRANT USER without errors.
+                LOG.info("User {} requested does not exist in Sentry", authenticator.getUserName());
+              }
+
               break;
           }
         }
@@ -246,8 +258,18 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
               principal.getName(), null));
             break;
           case USER:
-            tPrivilges.addAll(sentryClient.listPrivilegesByUserName(authenticator.getUserName(),
-              principal.getName(), null));
+            try {
+              tPrivilges.addAll(sentryClient.listPrivilegesByUserName(authenticator.getUserName(),
+                principal.getName(), null));
+            } catch (SentryNoSuchObjectException e) {
+              // SentryNoSuchObjectException is thrown by Sentry when the user name requested
+              // is not found in the Sentry database. Sentry only stores user information when
+              // privileges are granted, and deletes the user when privileges are deleted to avoid
+              // stale data.
+              // To avoid throwing a nasty exception in Hive, then we return an empty list instead
+              // to let Hive execute the SHOW GRANT USER without errors.
+              LOG.info("User {} requested does not exist in Sentry", authenticator.getUserName());
+            }
             break;
         }
       }
