@@ -782,4 +782,22 @@ public interface SentryStoreInterface {
   void updateOwnerPrivilege(final TSentryAuthorizable tAuthorizable,
                                          String ownerName,  SentryEntityType entityType,
                                          final List<Update> updates) throws Exception;
+
+  /**
+   * Returns all roles and privileges found on the Sentry database.
+   *
+   * @return A mapping between role and privileges in the form [roleName, set<privileges>].
+   *         If a role does not have privileges, then an empty set is returned for that role.
+   *         If no roles are found, then an empty map object is returned.
+   */
+  Map<String, Set<TSentryPrivilege>> getAllRolesPrivileges() throws Exception;
+
+  /**
+   * Returns all users and privileges found on the Sentry database.
+   *
+   * @return A mapping between user and privileges in the form [userName, set<privileges>].
+   *         If a user does not have privileges, then an empty set is returned for that user.
+   *         If no users are found, then an empty map object is returned.
+   */
+  Map<String, Set<TSentryPrivilege>> getAllUsersPrivileges() throws Exception;
 }

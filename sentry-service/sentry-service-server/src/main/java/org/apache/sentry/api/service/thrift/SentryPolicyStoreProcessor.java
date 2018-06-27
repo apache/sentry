@@ -1416,6 +1416,74 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     return response;
   }
 
+  @Override
+  public TSentryPrivilegesResponse list_roles_privileges(TSentryPrivilegesRequest request)
+    throws TException {
+    TSentryPrivilegesResponse response = new TSentryPrivilegesResponse();
+    String requestor = request.getRequestorUserName();
+
+    try {
+      // Throws SentryThriftAPIMismatchException if protocol version mismatch
+      validateClientVersion(request.getProtocol_version());
+
+      // Throws SentryUserException with the Status.ACCESS_DENIED status if the requestor
+      // is not an admin. Only admins can request all roles and privileges of the system.
+      authorize(requestor, getRequestorGroups(requestor));
+
+      response.setPrivilegesMap(sentryStore.getAllRolesPrivileges());
+      response.setStatus(Status.OK());
+    } catch (SentryThriftAPIMismatchException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.THRIFT_VERSION_MISMATCH(e.getMessage(), e));
+    } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (SentryUserException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (Exception e) {
+      String msg = "Could not read roles and privileges from the database: " + e.getMessage();
+      LOGGER.error(msg, e);
+      response.setStatus(Status.RuntimeError(msg, e));
+    }
+
+    return response;
+  }
+
+  @Override
+  public TSentryPrivilegesResponse list_users_privileges(TSentryPrivilegesRequest request)
+    throws TException {
+    TSentryPrivilegesResponse response = new TSentryPrivilegesResponse();
+    String requestor = request.getRequestorUserName();
+
+    try {
+      // Throws SentryThriftAPIMismatchException if protocol version mismatch
+      validateClientVersion(request.getProtocol_version());
+
+      // Throws SentryUserException with the Status.ACCESS_DENIED status if the requestor
+      // is not an admin. Only admins can request all users and privileges of the system.
+      authorize(requestor, getRequestorGroups(requestor));
+
+      response.setPrivilegesMap(sentryStore.getAllUsersPrivileges());
+      response.setStatus(Status.OK());
+    } catch (SentryThriftAPIMismatchException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.THRIFT_VERSION_MISMATCH(e.getMessage(), e));
+    } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (SentryUserException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (Exception e) {
+      String msg = "Could not read users and privileges from the database: " + e.getMessage();
+      LOGGER.error(msg, e);
+      response.setStatus(Status.RuntimeError(msg, e));
+    }
+
+    return response;
+  }
+
   /**
    * Grants owner privilege  to an authorizable.
    *

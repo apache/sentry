@@ -4322,4 +4322,113 @@ public class TestSentryStore extends org.junit.Assert {
     user = sentryStore.getMSentryUserByName(userName, false);
     assertNull(user);
   }
+
+  @Test
+  public void testGetAllRolesPrivileges() throws Exception {
+    Map<String, Set<TSentryPrivilege>> allPrivileges;
+
+    // The map must be empty (no null) if no roles exist on the system yet
+    allPrivileges = sentryStore.getAllRolesPrivileges();
+    assertNotNull(allPrivileges);
+    assertTrue(allPrivileges.isEmpty());
+
+    final String GRANTOR = "g1";
+
+    final String ROLE1 = "role1";
+    final TSentryPrivilege ROLE1_PRIV1 =
+      toTSentryPrivilege("ALL", "TABLE", "server1", "db1", "table1");
+    final TSentryPrivilege ROLE1_PRIV2 =
+      toTSentryPrivilege("SELECT", "TABLE", "server1", "db1", "table2");
+
+    createRole(ROLE1);
+    sentryStore.alterSentryGrantPrivilege(GRANTOR, SentryEntityType.ROLE, ROLE1, ROLE1_PRIV1, null);
+    sentryStore.alterSentryGrantPrivilege(GRANTOR, SentryEntityType.ROLE, ROLE1, ROLE1_PRIV2, null);
+
+    final String ROLE2 = "role2";
+    final TSentryPrivilege ROLE2_PRIV1 =
+      toTSentryPrivilege("INSERT", "DATABASE", "server1", "db1", "");
+    final TSentryPrivilege ROLE2_PRIV2 =
+      toTSentryPrivilege("ALL", "SERVER", "server1", "", "");
+
+    createRole(ROLE2);
+    sentryStore.alterSentryGrantPrivilege(GRANTOR, SentryEntityType.ROLE, ROLE2, ROLE2_PRIV1, null);
+    sentryStore.alterSentryGrantPrivilege(GRANTOR, SentryEntityType.ROLE, ROLE2, ROLE2_PRIV2, null);
+
+    final String ROLE3 = "role3";
+
+    createRole(ROLE3);
+
+    allPrivileges = sentryStore.getAllRolesPrivileges();
+
+    // Must return 3 roles, 2 roles has 2 privileges each, 1 role has no privileges
+    assertEquals(3, allPrivileges.size());
+    assertEquals(2, allPrivileges.get(ROLE1).size());
+    assertTrue(allPrivileges.get(ROLE1).contains(ROLE1_PRIV1));
+    assertTrue(allPrivileges.get(ROLE1).contains(ROLE1_PRIV2));
+    assertEquals(2, allPrivileges.get(ROLE2).size());
+    assertTrue(allPrivileges.get(ROLE2).contains(ROLE2_PRIV1));
+    assertTrue(allPrivileges.get(ROLE2).contains(ROLE2_PRIV2));
+    assertEquals(0, allPrivileges.get(ROLE3).size());
+  }
+
+  @Test
+  public void testGetAllUsersPrivileges() throws Exception {
+    Map<String, Set<TSentryPrivilege>> allPrivileges;
+
+    // The map must be empty (no null) if no roles exist on the system yet
+    allPrivileges = sentryStore.getAllUsersPrivileges();
+    assertNotNull(allPrivileges);
+    assertTrue(allPrivileges.isEmpty());
+
+    final String GRANTOR = "g1";
+
+    final String USER1 = "user1";
+    final TSentryPrivilege USER1_PRIV1 =
+      toTSentryPrivilege("ALL", "TABLE", "server1", "db1", "table1");
+    final TSentryPrivilege USER1_PRIV2 =
+      toTSentryPrivilege("SELECT", "TABLE", "server1", "db1", "table2");
+
+    createUser(USER1);
+    sentryStore.alterSentryGrantPrivilege(GRANTOR, SentryEntityType.USER, USER1, USER1_PRIV1, null);
+    sentryStore.alterSentryGrantPrivilege(GRANTOR, SentryEntityType.USER,USER1, USER1_PRIV2, null);
+
+    final String USER2 = "user2";
+    final TSentryPrivilege USER2_PRIV1 =
+      toTSentryPrivilege("INSERT", "DATABASE", "server1", "db1", "");
+    final TSentryPrivilege USER2_PRIV2 =
+      toTSentryPrivilege("ALL", "SERVER", "server1", "", "");
+
+    createUser(USER2);
+    sentryStore.alterSentryGrantPrivilege(GRANTOR, SentryEntityType.USER,USER2, USER2_PRIV1, null);
+    sentryStore.alterSentryGrantPrivilege(GRANTOR, SentryEntityType.USER,USER2, USER2_PRIV2, null);
+
+    final String USER3 = "user3";
+
+    createUser(USER3);
+
+    allPrivileges = sentryStore.getAllUsersPrivileges();
+
+    // Must return 3 roles, 2 roles has 2 privileges each, 1 role has no privileges
+    assertEquals(3, allPrivileges.size());
+    assertEquals(2, allPrivileges.get(USER1).size());
+    assertTrue(allPrivileges.get(USER1).contains(USER1_PRIV1));
+    assertTrue(allPrivileges.get(USER1).contains(USER1_PRIV2));
+    assertEquals(2, allPrivileges.get(USER2).size());
+    assertTrue(allPrivileges.get(USER2).contains(USER2_PRIV1));
+    assertTrue(allPrivileges.get(USER2).contains(USER2_PRIV2));
+    assertEquals(0, allPrivileges.get(USER3).size());
+  }
+
+  private TSentryPrivilege toTSentryPrivilege(String action, String scope, String server,
+    String dbName, String tableName) {
+    TSentryPrivilege privilege = new TSentryPrivilege();
+    privilege.setPrivilegeScope(scope);
+    privilege.setServerName(server);
+    privilege.setDbName(dbName);
+    privilege.setTableName(tableName);
+    privilege.setAction(action);
+    privilege.setCreateTime(System.currentTimeMillis());
+
+    return privilege;
+  }
 }

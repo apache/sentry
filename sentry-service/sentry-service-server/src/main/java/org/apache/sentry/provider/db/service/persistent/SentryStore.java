@@ -4718,4 +4718,73 @@ public class SentryStore implements SentryStoreInterface {
     return (PrivilegeEntity) query.execute(name);
   }
 
+  /**
+   * Returns all roles and privileges found on the Sentry database.
+   *
+   * @return A mapping between role and privileges in the form [roleName, set<privileges>].
+   *         If a role does not have privileges, then an empty set is returned for that role.
+   *         If no roles are found, then an empty map object is returned.
+   */
+  @Override
+  public Map<String, Set<TSentryPrivilege>> getAllRolesPrivileges() throws Exception {
+    return tm.executeTransaction(
+      pm -> {
+        // No need to detach objects
+        pm.setDetachAllOnCommit(false);
+
+        Query query = pm.newQuery(MSentryRole.class);
+        query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
+
+        List<MSentryRole> mSentryRoles = (List<MSentryRole>)query.execute();
+        if (mSentryRoles == null || mSentryRoles.isEmpty()) {
+          return Collections.emptyMap();
+        }
+
+        // Transform the list of privileges to a map [roleName, set<privileges>]
+        Map<String, Set<TSentryPrivilege>> allRolesPrivileges = Maps.newHashMap();
+        for (MSentryRole mSentryRole : mSentryRoles) {
+          // convertToTSentryPrivileges returns an empty set in case is null
+          Set<TSentryPrivilege> tPrivileges = convertToTSentryPrivileges(mSentryRole.getPrivileges());
+          allRolesPrivileges.put(mSentryRole.getRoleName(), tPrivileges);
+        }
+
+        return allRolesPrivileges;
+      }
+    );
+  }
+
+  /**
+   * Returns all users and privileges found on the Sentry database.
+   *
+   * @return A mapping between user and privileges in the form [userName, set<privileges>].
+   *         If a user does not have privileges, then an empty set is returned for that user.
+   *         If no users are found, then an empty map object is returned.
+   */
+  @Override
+  public Map<String, Set<TSentryPrivilege>> getAllUsersPrivileges() throws Exception {
+    return tm.executeTransaction(
+      pm -> {
+        // No need to detach objects
+        pm.setDetachAllOnCommit(false);
+
+        Query query = pm.newQuery(MSentryUser.class);
+        query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
+
+        List<MSentryUser> mSentryUsers = (List<MSentryUser>)query.execute();
+        if (mSentryUsers == null || mSentryUsers.isEmpty()) {
+          return Collections.emptyMap();
+        }
+
+        // Transform the list of privileges to a map [userName, set<privileges>]
+        Map<String, Set<TSentryPrivilege>> allUsersPrivileges = Maps.newHashMap();
+        for (MSentryUser mSentryUser : mSentryUsers) {
+          // convertToTSentryPrivileges returns an empty set in case is null
+          Set<TSentryPrivilege> tPrivileges = convertToTSentryPrivileges(mSentryUser.getPrivileges());
+          allUsersPrivileges.put(mSentryUser.getUserName(), tPrivileges);
+        }
+
+        return allUsersPrivileges;
+      }
+    );
+  }
 }

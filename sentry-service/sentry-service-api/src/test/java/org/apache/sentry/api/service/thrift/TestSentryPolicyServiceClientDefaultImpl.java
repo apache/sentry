@@ -21,10 +21,13 @@ package org.apache.sentry.api.service.thrift;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.api.common.Status;
@@ -158,5 +161,77 @@ public class TestSentryPolicyServiceClientDefaultImpl {
     response.setStatus(Status.OK());
     response.setPrivileges(privileges);
     return response;
+  }
+
+  @Test
+  public void testListAllRolesPrivileges() throws SentryUserException, TException {
+    Map<String, Set<TSentryPrivilege>> rolesPrivileges;
+    TSentryPrivilegesResponse response;
+    TSentryPrivilegesRequest request;
+
+    request = new TSentryPrivilegesRequest();
+    request.setRequestorUserName("admin");
+
+    // An empty privileges map is returned if no roles exist yet
+    response = new TSentryPrivilegesResponse();
+    response.setPrivilegesMap(Maps.newHashMap());
+    response.setStatus(Status.OK());
+    Mockito.when(mockClient.list_roles_privileges(request)).thenReturn(response);
+    rolesPrivileges = sentryClient.listAllRolesPrivileges("admin");
+    assertEquals(0, rolesPrivileges.size());
+
+    // A map of roles privileges is returned when roles exist
+    response = new TSentryPrivilegesResponse();
+    response.setPrivilegesMap(ImmutableMap.of(
+      "role1", (Set<TSentryPrivilege>)Sets.newHashSet(
+        newSentryPrivilege("TABLE", "db1", "tbl1", "ALL"),
+        newSentryPrivilege("DATABASE", "db1", "", "INSERT")),
+      "role2", (Set<TSentryPrivilege>)Sets.newHashSet(
+        newSentryPrivilege("SERVER", "", "", "ALL")),
+      "role3", Sets.<TSentryPrivilege>newHashSet()
+    ));
+    response.setStatus(Status.OK());
+    Mockito.when(mockClient.list_roles_privileges(request)).thenReturn(response);
+    rolesPrivileges = sentryClient.listAllRolesPrivileges("admin");
+    assertEquals(3, rolesPrivileges.size());
+    assertEquals(2, rolesPrivileges.get("role1").size());
+    assertEquals(1, rolesPrivileges.get("role2").size());
+    assertEquals(0, rolesPrivileges.get("role3").size());
+  }
+
+  @Test
+  public void testListAllUsersPrivileges() throws SentryUserException, TException {
+    Map<String, Set<TSentryPrivilege>> usersPrivileges;
+    TSentryPrivilegesResponse response;
+    TSentryPrivilegesRequest request;
+
+    request = new TSentryPrivilegesRequest();
+    request.setRequestorUserName("admin");
+
+    // An empty privileges map is returned if no roles exist yet
+    response = new TSentryPrivilegesResponse();
+    response.setPrivilegesMap(Maps.newHashMap());
+    response.setStatus(Status.OK());
+    Mockito.when(mockClient.list_users_privileges(request)).thenReturn(response);
+    usersPrivileges = sentryClient.listAllUsersPrivileges("admin");
+    assertEquals(0, usersPrivileges.size());
+
+    // A map of roles privileges is returned when roles exist
+    response = new TSentryPrivilegesResponse();
+    response.setPrivilegesMap(ImmutableMap.of(
+      "user1", (Set<TSentryPrivilege>)Sets.newHashSet(
+        newSentryPrivilege("TABLE", "db1", "tbl1", "ALL"),
+        newSentryPrivilege("DATABASE", "db1", "", "INSERT")),
+      "user2", (Set<TSentryPrivilege>)Sets.newHashSet(
+        newSentryPrivilege("SERVER", "", "", "ALL")),
+      "user3", Sets.<TSentryPrivilege>newHashSet()
+    ));
+    response.setStatus(Status.OK());
+    Mockito.when(mockClient.list_users_privileges(request)).thenReturn(response);
+    usersPrivileges = sentryClient.listAllUsersPrivileges("admin");
+    assertEquals(3, usersPrivileges.size());
+    assertEquals(2, usersPrivileges.get("user1").size());
+    assertEquals(1, usersPrivileges.get("user2").size());
+    assertEquals(0, usersPrivileges.get("user3").size());
   }
 }

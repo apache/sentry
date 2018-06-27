@@ -1178,4 +1178,38 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
       throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
     }
   }
+
+  @Override
+  public Map<String, Set<TSentryPrivilege>> listAllRolesPrivileges(String requestorUserName)
+    throws SentryUserException {
+    TSentryPrivilegesRequest request = new TSentryPrivilegesRequest();
+    request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
+    request.setRequestorUserName(requestorUserName);
+
+    try {
+      TSentryPrivilegesResponse response = client.list_roles_privileges(request);
+      Status.throwIfNotOk(response.getStatus());
+
+      return response.getPrivilegesMap();
+    } catch (TException e) {
+      throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
+    }
+  }
+
+  @Override
+  public Map<String, Set<TSentryPrivilege>> listAllUsersPrivileges(String requestorUserName)
+    throws SentryUserException {
+    TSentryPrivilegesRequest request = new TSentryPrivilegesRequest();
+    request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
+    request.setRequestorUserName(requestorUserName);
+
+    try {
+      TSentryPrivilegesResponse response = client.list_users_privileges(request);
+      Status.throwIfNotOk(response.getStatus());
+
+      return response.getPrivilegesMap();
+    } catch (TException e) {
+      throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
+    }
+  }
 }

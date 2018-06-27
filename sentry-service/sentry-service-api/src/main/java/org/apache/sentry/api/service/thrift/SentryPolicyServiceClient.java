@@ -300,5 +300,26 @@ public interface SentryPolicyServiceClient extends AutoCloseable {
    */
   long notifyHmsNotification(TSentryHmsEventNotification sentryHmsEventNotification) throws SentryUserException;
 
+  /**
+   * Lists all roles and their privileges found on the Sentry server. If a role does not have
+   * any privileges assigned, then returns an empty set of privileges for that role.
+   *
+   * @param requestorUserName : user on whose behalf the request is issued
+   * @return A mapping between role and privileges in the form [roleName, set<privileges>].
+   *         If a role does not have privileges, then an empty set is returned for that role.
+   * @throws SentryUserException if an error occurs requesting the privileges from the server.
+   */
+  Map<String, Set<TSentryPrivilege>> listAllRolesPrivileges(String requestorUserName) throws SentryUserException;
 
+  /**
+   * Lists all users and their privileges found on the Sentry server. Sentry does not keep
+   * users without privileges, but if a user name is stale, then this method returns an
+   * empty set of privileges for that user.
+   *
+   * @param requestorUserName : user on whose behalf the request is issued
+   * @return A mapping between user and privileges in the form [userName, set<privileges>].
+   *         If a stale user does not have privileges, then an empty set is returned for that user.
+   * @throws SentryUserException if an error occurs requesting the privileges from the server.
+   */
+  Map<String, Set<TSentryPrivilege>> listAllUsersPrivileges(String requestorUserName) throws SentryUserException;
 }
