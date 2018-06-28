@@ -357,9 +357,10 @@ struct TSentryHmsEventNotification {
 2: required i64 id, # Requested ID
 #  Constructed from enum org.apache.hadoop.hive.metastore.messaging.EventMessage.EventType
 3: required string eventType, # Type of the event which resulted in owner update request
-4: required TSentryObjectOwnerType ownerType, # Type of the owner
-5: required string ownerName, # owner name
-6: required TSentryAuthorizable authorizable
+4: required TSentryAuthorizable authorizable, # Authorizable object
+5: optional TSentryObjectOwnerType ownerType, # Type of the owner
+6: optional string ownerName # owner name
+
 }
 
 struct TSentryHmsEventNotificationResponse {

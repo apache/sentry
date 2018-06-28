@@ -30,6 +30,7 @@ import org.apache.hadoop.hive.metastore.events.DropTableEvent;
 import org.apache.hadoop.hive.metastore.events.AlterTableEvent;
 import org.apache.hadoop.hive.metastore.events.ListenerEvent;
 import org.apache.hadoop.hive.metastore.messaging.EventMessage.EventType;
+import org.apache.sentry.api.common.ThriftConstants;
 import org.apache.sentry.api.service.thrift.TSentryAuthorizable;
 import org.apache.sentry.api.service.thrift.TSentryHmsEventNotification;
 import org.apache.sentry.api.service.thrift.TSentryObjectOwnerType;
@@ -72,63 +73,70 @@ class SentryHmsEvent {
    * Construct SentryHmsEvent from CreateTableEvent
    *
    * event, transaction, owner and authorizable info is initialized from event.
+   * @param inServerName name of the server associated with the event
    * @param event CreateTableEvent
    */
-  public SentryHmsEvent(CreateTableEvent event) {
+  public SentryHmsEvent(String inServerName, CreateTableEvent event) {
     this(event, EventType.CREATE_TABLE);
     setOwnerInfo(event.getTable());
-    setAuthorizable(event.getTable());
+    setAuthorizable(inServerName, event.getTable());
   }
 
   /**
    * Construct SentryHmsEvent from DropTableEvent
    *
    * event, transaction, owner and authorizable info is initialized from event.
+   * @param inServerName name of the server associated with the event
    * @param event DropTableEvent
    */
-  public SentryHmsEvent(DropTableEvent event) {
+  public SentryHmsEvent(String inServerName, DropTableEvent event) {
     this(event, EventType.DROP_TABLE);
     setOwnerInfo(event.getTable());
-    setAuthorizable(event.getTable());
+    setAuthorizable(inServerName, event.getTable());
   }
 
   /**
    * Construct SentryHmsEvent from AlterTableEvent
    *
    * event, transaction, owner and authorizable info is initialized from event.
+   * @param inServerName name of the server associated with the event
    * @param event AlterTableEvent
    */
-  public SentryHmsEvent(AlterTableEvent event) {
+  public SentryHmsEvent(String inServerName, AlterTableEvent event) {
     this(event, EventType.ALTER_TABLE);
     if(!StringUtils.equals(event.getOldTable().getOwner(), event.getNewTable().getOwner())) {
-      // Owner Changed.
+      // Owner Changed. We don't set owner info for other cases of alter table.
+      // In this way, sentry server only updates owner privilege when object is created, dropped or
+      // owner is updated
       setOwnerInfo(event.getNewTable());
     }
-    setAuthorizable(event.getNewTable());
+    setAuthorizable(inServerName, event.getNewTable());
   }
 
   /**
    * Construct SentryHmsEvent from CreateDatabaseEvent
    *
    * event, transaction, owner and authorizable info is initialized from event.
+   * @param inServerName name of the server associated with the event
    * @param event CreateDatabaseEvent
    */
-  public SentryHmsEvent(CreateDatabaseEvent event) {
+  public SentryHmsEvent(String inServerName, CreateDatabaseEvent event) {
     this(event, EventType.CREATE_DATABASE);
     setOwnerInfo(event.getDatabase());
-    setAuthorizable(event.getDatabase());
+    setAuthorizable(inServerName, event.getDatabase());
   }
 
   /**
    * Construct SentryHmsEvent from DropDatabaseEvent
    *
    * event, transaction, owner and authorizable info is initialized from event.
+   * @param inServerName name of the server associated with the event
    * @param event DropDatabaseEvent
    */
-  public SentryHmsEvent(DropDatabaseEvent event) {
+  public SentryHmsEvent(String inServerName, DropDatabaseEvent event) {
     this(event, EventType.DROP_DATABASE);
     setOwnerInfo(event.getDatabase());
-    setAuthorizable(event.getDatabase());
+    setAuthorizable(inServerName, event.getDatabase());
   }
 
   public EventType getEventType() {
@@ -153,17 +161,17 @@ class SentryHmsEvent {
             getTSentryHmsObjectOwnerType(database.getOwnerType()) : null;
   }
 
-  private void setAuthorizable(Table table) {
+  private void setAuthorizable(String serverName, Table table) {
     if (authorizable == null) {
-      authorizable = new TSentryAuthorizable();
+      authorizable = new TSentryAuthorizable(serverName);
     }
     authorizable.setDb((table != null) ? table.getDbName() : null);
     authorizable.setTable((table != null) ? table.getTableName() : null);
   }
 
-  private void setAuthorizable(Database database) {
+  private void setAuthorizable(String serverName, Database database) {
     if (authorizable == null) {
-      authorizable = new TSentryAuthorizable();
+      authorizable = new TSentryAuthorizable(serverName);
     }
     authorizable.setDb((database != null) ? database.getName() : null);
   }
@@ -183,6 +191,7 @@ class SentryHmsEvent {
    */
   public TSentryHmsEventNotification getHmsEventNotification() {
     TSentryHmsEventNotification updateAndSyncIDRequest = new TSentryHmsEventNotification();
+    updateAndSyncIDRequest.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
     updateAndSyncIDRequest.setOwnerName(ownerName);
     updateAndSyncIDRequest.setOwnerType(ownerType);
     updateAndSyncIDRequest.setAuthorizable(authorizable);

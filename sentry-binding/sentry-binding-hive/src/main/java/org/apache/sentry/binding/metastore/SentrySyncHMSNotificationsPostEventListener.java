@@ -39,6 +39,7 @@ import org.apache.hadoop.hive.metastore.events.ListenerEvent;
 import org.apache.hadoop.hive.metastore.messaging.EventMessage.EventType;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.api.service.thrift.SentryPolicyServiceClient;
+import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.apache.sentry.service.thrift.SentryServiceClientFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +54,7 @@ public class SentrySyncHMSNotificationsPostEventListener extends MetaStoreEventL
       .getLogger(SentrySyncHMSNotificationsPostEventListener.class);
 
   private final HiveAuthzConf authzConf;
+  private final String serverName;
 
   /*
    * Latest processed ID by the Sentry server. May only increase.
@@ -83,6 +85,7 @@ public class SentrySyncHMSNotificationsPostEventListener extends MetaStoreEventL
     }
 
     authzConf = HiveAuthzConf.getAuthzConf((HiveConf) config);
+    serverName = getServerName();
   }
 
   /**
@@ -97,7 +100,7 @@ public class SentrySyncHMSNotificationsPostEventListener extends MetaStoreEventL
     if (failedEvent(tableEvent, EventType.CREATE_TABLE)) {
       return;
     }
-    SentryHmsEvent event = new SentryHmsEvent(tableEvent);
+    SentryHmsEvent event = new SentryHmsEvent(serverName, tableEvent);
     notifyHmsEvent(event);
   }
 
@@ -113,7 +116,7 @@ public class SentrySyncHMSNotificationsPostEventListener extends MetaStoreEventL
     if (failedEvent(tableEvent, EventType.DROP_TABLE)) {
       return;
     }
-    SentryHmsEvent event = new SentryHmsEvent(tableEvent);
+    SentryHmsEvent event = new SentryHmsEvent(serverName, tableEvent);
     notifyHmsEvent(event);
   }
 
@@ -153,7 +156,7 @@ public class SentrySyncHMSNotificationsPostEventListener extends MetaStoreEventL
       return;
     }
 
-    SentryHmsEvent event = new SentryHmsEvent(tableEvent);
+    SentryHmsEvent event = new SentryHmsEvent(serverName, tableEvent);
     notifyHmsEvent(event);
   }
 
@@ -184,7 +187,7 @@ public class SentrySyncHMSNotificationsPostEventListener extends MetaStoreEventL
     if (failedEvent(dbEvent, EventType.CREATE_DATABASE)) {
       return;
     }
-    SentryHmsEvent event = new SentryHmsEvent(dbEvent);
+    SentryHmsEvent event = new SentryHmsEvent(serverName, dbEvent);
     notifyHmsEvent(event);
   }
 
@@ -200,7 +203,7 @@ public class SentrySyncHMSNotificationsPostEventListener extends MetaStoreEventL
     if (failedEvent(dbEvent, EventType.DROP_DATABASE)) {
       return;
     }
-    SentryHmsEvent event = new SentryHmsEvent(dbEvent);
+    SentryHmsEvent event = new SentryHmsEvent(serverName, dbEvent);
     notifyHmsEvent(event);
   }
 
@@ -305,5 +308,15 @@ public class SentrySyncHMSNotificationsPostEventListener extends MetaStoreEventL
       return false;
     }
     return true;
+  }
+
+  private String getServerName() {
+    String serverName = authzConf.get(AuthzConfVars.AUTHZ_SERVER_NAME.getVar());
+    if (!StringUtils.isEmpty(serverName)) {
+      return serverName;
+    }
+
+    return authzConf.get(AuthzConfVars.AUTHZ_SERVER_NAME_DEPRECATED.getVar(),
+        AuthzConfVars.AUTHZ_SERVER_NAME_DEPRECATED.getDefault());
   }
 }

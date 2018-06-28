@@ -35,6 +35,7 @@ import org.apache.sentry.api.service.thrift.TSentryAuthorizable;
 import org.apache.sentry.api.service.thrift.TSentryHmsEventNotification;
 import org.apache.sentry.api.service.thrift.TSentryObjectOwnerType;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
+import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.api.service.thrift.SentryPolicyServiceClient;
 import org.junit.Before;
@@ -56,6 +57,7 @@ public class TestSentrySyncHMSNotificationsPostEventListener {
   private static final boolean SUCCESSFUL_STATUS = true;
   private static final boolean EVENT_ID_SET = true;
   private static final boolean EVENT_ID_UNSET = false;
+  private static final String SERVER1 = "server1";
   private static final String DBNAME = "db1";
   private static final String TABLENAME = "table1";
   private static final String TABLENAME_NEW = "table_new";
@@ -75,6 +77,7 @@ public class TestSentrySyncHMSNotificationsPostEventListener {
 
     HiveConf hiveConf = new HiveConf(TestSentrySyncHMSNotificationsPostEventListener.class);
     hiveConf.set(HiveAuthzConf.HIVE_SENTRY_CONF_URL, "file://" + sentryConfFile);
+    hiveConf.set(AuthzConfVars.AUTHZ_SERVER_NAME.getVar(), SERVER1);
 
     // Instead of generating an empty sentry-site.xml, we just write the same info from HiveConf.
     // The SentrySyncHMSNotificationsPostEventListener won't use any information from it after all.
@@ -103,7 +106,7 @@ public class TestSentrySyncHMSNotificationsPostEventListener {
 
     callAllEventsThatSynchronize(EventType.CREATE_DATABASE, SUCCESSFUL_STATUS, eventId++);
     TSentryHmsEventNotification notification = new TSentryHmsEventNotification();
-    notification.setAuthorizable(new TSentryAuthorizable());
+    notification.setAuthorizable(new TSentryAuthorizable(SERVER1));
 
     notification.setId(eventId - 1);
     notification.setEventType(EventType.CREATE_DATABASE.toString());
@@ -173,7 +176,7 @@ public class TestSentrySyncHMSNotificationsPostEventListener {
 
     TSentryHmsEventNotification notification = new TSentryHmsEventNotification();
 
-    notification.setAuthorizable(new TSentryAuthorizable());
+    notification.setAuthorizable(new TSentryAuthorizable(SERVER1));
 
     notification.setId(eventId);
     notification.setEventType(EventMessage.EventType.CREATE_TABLE.toString());
@@ -199,7 +202,7 @@ public class TestSentrySyncHMSNotificationsPostEventListener {
 
     TSentryHmsEventNotification notification = new TSentryHmsEventNotification();
 
-    notification.setAuthorizable(new TSentryAuthorizable());
+    notification.setAuthorizable(new TSentryAuthorizable(SERVER1));
 
     notification.setId(eventId);
     notification.setEventType(EventMessage.EventType.DROP_TABLE.toString());
@@ -225,7 +228,7 @@ public class TestSentrySyncHMSNotificationsPostEventListener {
 
     TSentryHmsEventNotification notification = new TSentryHmsEventNotification();
 
-    notification.setAuthorizable(new TSentryAuthorizable());
+    notification.setAuthorizable(new TSentryAuthorizable(SERVER1));
 
     notification.setId(eventId);
     notification.setEventType(EventMessage.EventType.CREATE_DATABASE.toString());
@@ -250,7 +253,7 @@ public class TestSentrySyncHMSNotificationsPostEventListener {
 
     TSentryHmsEventNotification notification = new TSentryHmsEventNotification();
 
-    notification.setAuthorizable(new TSentryAuthorizable());
+    notification.setAuthorizable(new TSentryAuthorizable(SERVER1));
 
     notification.setId(eventId);
     notification.setEventType(EventType.DROP_DATABASE.toString());
@@ -282,7 +285,7 @@ public class TestSentrySyncHMSNotificationsPostEventListener {
 
     TSentryHmsEventNotification notification = new TSentryHmsEventNotification();
 
-    notification.setAuthorizable(new TSentryAuthorizable());
+    notification.setAuthorizable(new TSentryAuthorizable(SERVER1));
 
     notification.setId(eventId);
     notification.setEventType(EventType.ALTER_TABLE.toString());
@@ -315,7 +318,7 @@ public class TestSentrySyncHMSNotificationsPostEventListener {
 
     TSentryHmsEventNotification notification = new TSentryHmsEventNotification();
 
-    notification.setAuthorizable(new TSentryAuthorizable());
+    notification.setAuthorizable(new TSentryAuthorizable(SERVER1));
 
     notification.setId(eventId);
     notification.setEventType(EventType.ALTER_TABLE.toString());
@@ -346,7 +349,7 @@ public class TestSentrySyncHMSNotificationsPostEventListener {
 
     TSentryHmsEventNotification notification = new TSentryHmsEventNotification();
 
-    notification.setAuthorizable(new TSentryAuthorizable());
+    notification.setAuthorizable(new TSentryAuthorizable(SERVER1));
 
     notification.setId(eventId);
     notification.setEventType(EventType.ALTER_TABLE.toString());
@@ -412,7 +415,7 @@ public class TestSentrySyncHMSNotificationsPostEventListener {
   private void verifyInvocations() throws Exception {
     TSentryHmsEventNotification notification = new TSentryHmsEventNotification();
     int i = 1;
-    notification.setAuthorizable(new TSentryAuthorizable());
+    notification.setAuthorizable(new TSentryAuthorizable(SERVER1));
 
     notification.setId(i);
     notification.setEventType(EventMessage.EventType.CREATE_DATABASE.toString());
