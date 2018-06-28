@@ -103,104 +103,110 @@ limitations under the License.
       <artifactId>sentry-binding-hive</artifactId>
     </dependency>
   </dependencies>
-  <build>
-    <plugins>
-     <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>assemble</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <inherited>false</inherited>
-            <configuration>
-              <finalName>apache-sentry-${project.version}</finalName>
-              <descriptors>
-                <descriptor>src/main/assembly/src.xml</descriptor>
-                <descriptor>src/main/assembly/bin.xml</descriptor>
-              </descriptors>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-        <version>1.14</version>
-        <executions>
-          <execution>
-            <id>add-third-party</id>
-            <goals>
-              <goal>add-third-party</goal>
-            </goals>
-            <configuration>
-              <fileTemplate>${project.basedir}/src/license/THIRD-PARTY.ftl</fileTemplate>
-              <licenseMerges>
-                <licenseMerge>The Apache Software License, Version 2.0|Apache License, Version 2.0</licenseMerge>
-                <licenseMerge>The Apache Software License, Version 2.0|Apache Public License 2.0</licenseMerge>
-                <licenseMerge>The Apache Software License, Version 2.0|Apache 2</licenseMerge>
-                <licenseMerge>The Apache Software License, Version 2.0|Apache License</licenseMerge>
-                <licenseMerge>The Apache Software License, Version 2.0|Apache License 2.0</licenseMerge>
-                <licenseMerge>The Apache Software License, Version 2.0|Apache License Version 2</licenseMerge>
-                <licenseMerge>The Apache Software License, Version 2.0|Apache License Version 2.0</licenseMerge>
-                <licenseMerge>The Apache Software License, Version 2.0|Apache Software License - Version 2.0</licenseMerge>
-                <licenseMerge>The Apache Software License, Version 2.0|Apache v2</licenseMerge>
-                <licenseMerge>The Apache Software License, Version 2.0|Apache 2.0</licenseMerge>
-                <licenseMerge>The Apache Software License, Version 2.0|Apache</licenseMerge>
-                <licenseMerge>The Apache Software License, Version 2.0|Apache_2_0_license</licenseMerge>
-                <licenseMerge>Mozilla Public License Version 1.1|MPL 1.1</licenseMerge>
-                <licenseMerge>MIT License|The MIT License</licenseMerge>
-                <licenseMerge>CDDL_1.0|CDDL 1.0</licenseMerge>
-                <licenseMerge>CDDL_1.0|COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0</licenseMerge>
-                <licenseMerge>CDDL_1.0|Common_Development_and_Distribution_License_(CDDL)_v1_0</licenseMerge>
-                <licenseMerge>CDDL_1.0|Common Development and Distribution License (CDDL) v1.0</licenseMerge>
-                <licenseMerge>CDDL_1.0|CDDL 1.0 license</licenseMerge>
-                <licenseMerge>CDDL_1.0|CDDL 2</licenseMerge>
-                <licenseMerge>BSD License|BSD license|BSD|BSD_style|BSD licence|New BSD License|New BSD license</licenseMerge>
-                <licenseMerge>BSD 2-clause|The BSD License</licenseMerge>
-                <licenseMerge>Eclipse Public License-1|Common_Public_License_Version_1_0</licenseMerge>
-                <licenseMerge>Eclipse Public License-1|Eclipse_Public_License_-_Version_1_0</licenseMerge>
-                <licenseMerge>Eclipse Public License-1|EPL 1.0 license</licenseMerge>
-                <licenseMerge>GPL|GNU General Public Library</licenseMerge>
-              </licenseMerges>
-              <excludedGroups>${project.groupId}.*</excludedGroups>
-              <useMissingFile>true</useMissingFile>
-            </configuration>
-          </execution>
-          <execution>
-            <goals>
-              <goal>aggregate-download-licenses</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.rat</groupId>
-        <artifactId>apache-rat-plugin</artifactId>
-      </plugin>
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>compile</phase>
-            <configuration>
-              <target>
-                <concat destfile="${project.build.directory}/LICENSE.txt" fixlastline="yes" append="no">
-                  <fileset file="${project.basedir}/../LICENSE.txt" />
-                  <fileset file="${project.build.directory}/generated-sources/license/THIRD-PARTY.txt" />
-                </concat>
-              </target>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
+
+  <profiles>
+    <profile>
+      <id>dist</id>
+      <build>
+        <plugins>
+         <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>assemble</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+                <inherited>false</inherited>
+                <configuration>
+                  <finalName>apache-sentry-${project.version}</finalName>
+                  <descriptors>
+                    <descriptor>src/main/assembly/src.xml</descriptor>
+                    <descriptor>src/main/assembly/bin.xml</descriptor>
+                  </descriptors>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>license-maven-plugin</artifactId>
+            <version>1.14</version>
+            <executions>
+              <execution>
+                <id>add-third-party</id>
+                <goals>
+                  <goal>add-third-party</goal>
+                </goals>
+                <configuration>
+                  <fileTemplate>${project.basedir}/src/license/THIRD-PARTY.ftl</fileTemplate>
+                  <licenseMerges>
+                    <licenseMerge>The Apache Software License, Version 2.0|Apache License, Version 2.0</licenseMerge>
+                    <licenseMerge>The Apache Software License, Version 2.0|Apache Public License 2.0</licenseMerge>
+                    <licenseMerge>The Apache Software License, Version 2.0|Apache 2</licenseMerge>
+                    <licenseMerge>The Apache Software License, Version 2.0|Apache License</licenseMerge>
+                    <licenseMerge>The Apache Software License, Version 2.0|Apache License 2.0</licenseMerge>
+                    <licenseMerge>The Apache Software License, Version 2.0|Apache License Version 2</licenseMerge>
+                    <licenseMerge>The Apache Software License, Version 2.0|Apache License Version 2.0</licenseMerge>
+                    <licenseMerge>The Apache Software License, Version 2.0|Apache Software License - Version 2.0</licenseMerge>
+                    <licenseMerge>The Apache Software License, Version 2.0|Apache v2</licenseMerge>
+                    <licenseMerge>The Apache Software License, Version 2.0|Apache 2.0</licenseMerge>
+                    <licenseMerge>The Apache Software License, Version 2.0|Apache</licenseMerge>
+                    <licenseMerge>The Apache Software License, Version 2.0|Apache_2_0_license</licenseMerge>
+                    <licenseMerge>Mozilla Public License Version 1.1|MPL 1.1</licenseMerge>
+                    <licenseMerge>MIT License|The MIT License</licenseMerge>
+                    <licenseMerge>CDDL_1.0|CDDL 1.0</licenseMerge>
+                    <licenseMerge>CDDL_1.0|COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0</licenseMerge>
+                    <licenseMerge>CDDL_1.0|Common_Development_and_Distribution_License_(CDDL)_v1_0</licenseMerge>
+                    <licenseMerge>CDDL_1.0|Common Development and Distribution License (CDDL) v1.0</licenseMerge>
+                    <licenseMerge>CDDL_1.0|CDDL 1.0 license</licenseMerge>
+                    <licenseMerge>CDDL_1.0|CDDL 2</licenseMerge>
+                    <licenseMerge>BSD License|BSD license|BSD|BSD_style|BSD licence|New BSD License|New BSD license</licenseMerge>
+                    <licenseMerge>BSD 2-clause|The BSD License</licenseMerge>
+                    <licenseMerge>Eclipse Public License-1|Common_Public_License_Version_1_0</licenseMerge>
+                    <licenseMerge>Eclipse Public License-1|Eclipse_Public_License_-_Version_1_0</licenseMerge>
+                    <licenseMerge>Eclipse Public License-1|EPL 1.0 license</licenseMerge>
+                    <licenseMerge>GPL|GNU General Public Library</licenseMerge>
+                  </licenseMerges>
+                  <excludedGroups>${project.groupId}.*</excludedGroups>
+                  <useMissingFile>true</useMissingFile>
+                </configuration>
+              </execution>
+              <execution>
+                <goals>
+                  <goal>aggregate-download-licenses</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.rat</groupId>
+            <artifactId>apache-rat-plugin</artifactId>
+          </plugin>
+          <plugin>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>compile</phase>
+                <configuration>
+                  <target>
+                    <concat destfile="${project.build.directory}/LICENSE.txt" fixlastline="yes" append="no">
+                      <fileset file="${project.basedir}/../LICENSE.txt" />
+                      <fileset file="${project.build.directory}/generated-sources/license/THIRD-PARTY.txt" />
+                    </concat>
+                  </target>
+                </configuration>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
 
