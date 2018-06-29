@@ -254,50 +254,83 @@ public class TestSentryStore extends org.junit.Assert {
 
   @Test
   public void testURI() throws Exception {
-    String roleName = "test-dup-role";
+    String roleName1 = "test-role1";
+    String roleName2 = "test-role2";
     String grantor = "g1";
-    String uri = "file:///var/folders/dt/9zm44z9s6bjfxbrm4v36lzdc0000gp/T/1401860678102-0/data/kv1.dat";
-    createRole(roleName);
-    TSentryPrivilege tSentryPrivilege = new TSentryPrivilege("URI", "server1", "ALL");
-    tSentryPrivilege.setURI(uri);
-    sentryStore.alterSentryGrantPrivilege(grantor, SentryEntityType.ROLE, roleName, tSentryPrivilege, null);
+    String uri1 = "file:///var/folders/dt/9zm44z9s6bjfxbrm4v36lzdc0000gp/T/1401860678102-0/data/kv1.dat";
+    String uri2 = "file:///var/folders/dt/9zm44z9s6bjfxbrm4v36lzdc0000gp/T/1401860678102-0/data/kv2.dat";
+    createRole(roleName1);
+    createRole(roleName2);
+    TSentryPrivilege tSentryPrivilege1 = new TSentryPrivilege("URI", "server1", "ALL");
+    tSentryPrivilege1.setURI(uri1);
+    TSentryPrivilege tSentryPrivilege2 = new TSentryPrivilege("URI", "server1", "ALL");
+    tSentryPrivilege2.setURI(uri2);
+    sentryStore.alterSentryGrantPrivilege(grantor, SentryEntityType.ROLE, roleName1, tSentryPrivilege1, null);
+    sentryStore.alterSentryGrantPrivilege(grantor, SentryEntityType.ROLE, roleName2, tSentryPrivilege2, null);
 
-    TSentryAuthorizable tSentryAuthorizable = new TSentryAuthorizable();
-    tSentryAuthorizable.setUri(uri);
-    tSentryAuthorizable.setServer("server1");
+    TSentryAuthorizable tSentryAuthorizable1 = new TSentryAuthorizable();
+    tSentryAuthorizable1.setUri(uri1);
+    tSentryAuthorizable1.setServer("server1");
+
+    TSentryAuthorizable tSentryAuthorizable2 = new TSentryAuthorizable();
+    tSentryAuthorizable2.setUri(uri2);
+    tSentryAuthorizable2.setServer("server1");
 
     Set<TSentryPrivilege> privileges =
-        sentryStore.getTSentryPrivileges(SentryEntityType.ROLE, new HashSet<String>(Arrays.asList(roleName)), tSentryAuthorizable);
+        sentryStore.getTSentryPrivileges(SentryEntityType.ROLE, new HashSet<String>(Arrays.asList(roleName1, roleName2)), tSentryAuthorizable1);
 
+    assertTrue(privileges.size() == 1);
+
+    //Test with other URI Authorizable
+    privileges =
+        sentryStore.getTSentryPrivileges(SentryEntityType.ROLE, new HashSet<String>(Arrays.asList(roleName1, roleName2)), tSentryAuthorizable2);
     assertTrue(privileges.size() == 1);
 
     Set<TSentryGroup> tSentryGroups = new HashSet<TSentryGroup>();
     tSentryGroups.add(new TSentryGroup("group1"));
-    sentryStore.alterSentryRoleAddGroups(grantor, roleName, tSentryGroups);
-    sentryStore.alterSentryRoleAddUsers(roleName, Sets.newHashSet("user1"));
+    sentryStore.alterSentryRoleAddGroups(grantor, roleName1, tSentryGroups);
+    sentryStore.alterSentryRoleAddUsers(roleName1, Sets.newHashSet("user1"));
+    sentryStore.alterSentryRoleAddGroups(grantor, roleName2, tSentryGroups);
+    sentryStore.alterSentryRoleAddUsers(roleName2, Sets.newHashSet("user1"));
 
-    TSentryActiveRoleSet thriftRoleSet = new TSentryActiveRoleSet(true, new HashSet<String>(Arrays.asList(roleName)));
+    TSentryActiveRoleSet thriftRoleSet = new TSentryActiveRoleSet(true, new HashSet<String>(Arrays.asList(roleName1,roleName2)));
 
     // list privilege for group only
     Set<String> privs = sentryStore.listSentryPrivilegesForProvider(
         new HashSet<String>(Arrays.asList("group1")), Sets.newHashSet(""), thriftRoleSet,
-        tSentryAuthorizable);
-
+        tSentryAuthorizable1);
     assertTrue(privs.size()==1);
-    assertTrue(privs.contains("server=server1->uri=" + uri + "->action=all"));
+    assertTrue(privs.contains("server=server1->uri=" + uri1 + "->action=all"));
+
+    privs = sentryStore.listSentryPrivilegesForProvider(
+        new HashSet<String>(Arrays.asList("group1")), Sets.newHashSet(""), thriftRoleSet,
+        tSentryAuthorizable2);
+    assertTrue(privs.size()==1);
+    assertTrue(privs.contains("server=server1->uri=" + uri2 + "->action=all"));
 
     // list privilege for user only
     privs = sentryStore.listSentryPrivilegesForProvider(new HashSet<String>(Arrays.asList("")),
-        Sets.newHashSet("user1"), thriftRoleSet, tSentryAuthorizable);
+        Sets.newHashSet("user1"), thriftRoleSet, tSentryAuthorizable1);
     assertTrue(privs.size() == 1);
-    assertTrue(privs.contains("server=server1->uri=" + uri + "->action=all"));
+    assertTrue(privs.contains("server=server1->uri=" + uri1 + "->action=all"));
+
+    privs = sentryStore.listSentryPrivilegesForProvider(new HashSet<String>(Arrays.asList("")),
+        Sets.newHashSet("user1"), thriftRoleSet, tSentryAuthorizable2);
+    assertTrue(privs.size() == 1);
+    assertTrue(privs.contains("server=server1->uri=" + uri2 + "->action=all"));
 
     // list privilege for both user and group
     privs = sentryStore.listSentryPrivilegesForProvider(
         new HashSet<String>(Arrays.asList("group1")), Sets.newHashSet("user1"), thriftRoleSet,
-        tSentryAuthorizable);
+        tSentryAuthorizable1);
     assertTrue(privs.size() == 1);
-    assertTrue(privs.contains("server=server1->uri=" + uri + "->action=all"));
+    assertTrue(privs.contains("server=server1->uri=" + uri1 + "->action=all"));
+
+    privs = sentryStore.listSentryPrivilegesForProvider(
+        new HashSet<String>(Arrays.asList("group1")), Sets.newHashSet("user1"), thriftRoleSet,
+        tSentryAuthorizable2);
+    assertTrue(privs.size() == 1);
+    assertTrue(privs.contains("server=server1->uri=" + uri2 + "->action=all"));
   }
 
   @Test
