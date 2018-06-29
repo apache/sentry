@@ -30,9 +30,7 @@ import org.apache.hadoop.hive.metastore.events.DropTableEvent;
 import org.apache.hadoop.hive.metastore.events.AlterTableEvent;
 import org.apache.hadoop.hive.metastore.events.ListenerEvent;
 import org.apache.hadoop.hive.metastore.messaging.EventMessage.EventType;
-import org.apache.sentry.api.common.ThriftConstants;
 import org.apache.sentry.api.service.thrift.TSentryAuthorizable;
-import org.apache.sentry.api.service.thrift.TSentryHmsEventNotification;
 import org.apache.sentry.api.service.thrift.TSentryObjectOwnerType;
 
 import java.util.Map;
@@ -147,6 +145,18 @@ class SentryHmsEvent {
     return eventId;
   }
 
+  public TSentryObjectOwnerType getOwnerType() {
+    return ownerType;
+  }
+
+  public String getOwnerName() {
+    return ownerName;
+  }
+
+  public TSentryAuthorizable getAuthorizable() {
+    return authorizable;
+  }
+
   private void setOwnerInfo(Table table) {
     ownerName = (table != null) ? table.getOwner() : null;
     // Hive 2.3.2 currently support owner type. Assuming user as the type for now.
@@ -182,22 +192,6 @@ class SentryHmsEvent {
    */
   public void setEventId(long eventId) {
     this.eventId = eventId;
-  }
-
-  /**
-   * Constructs notification message that is sent to sentry server.
-   *
-   * @return notification event.
-   */
-  public TSentryHmsEventNotification getHmsEventNotification() {
-    TSentryHmsEventNotification updateAndSyncIDRequest = new TSentryHmsEventNotification();
-    updateAndSyncIDRequest.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
-    updateAndSyncIDRequest.setOwnerName(ownerName);
-    updateAndSyncIDRequest.setOwnerType(ownerType);
-    updateAndSyncIDRequest.setAuthorizable(authorizable);
-    updateAndSyncIDRequest.setId(eventId);
-    updateAndSyncIDRequest.setEventType(eventType.toString());
-    return updateAndSyncIDRequest;
   }
 
   /**

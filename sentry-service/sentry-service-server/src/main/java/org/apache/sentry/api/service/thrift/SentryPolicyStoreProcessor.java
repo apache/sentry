@@ -1356,9 +1356,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   public TSentryHmsEventNotificationResponse sentry_notify_hms_event
           (TSentryHmsEventNotification request) throws TException{
     TSentryHmsEventNotificationResponse response = new TSentryHmsEventNotificationResponse();
-    final Timer.Context timerContext = sentryMetrics.notificationProcessTimer.time();
     EventType eventType = EventType.valueOf(request.getEventType());
-    try {
+    try (Timer.Context timerContext = sentryMetrics.notificationProcessTimer.time()) {
       switch (eventType) {
         case CREATE_DATABASE:
         case CREATE_TABLE:
@@ -1416,9 +1415,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
       LOGGER.error(msg, e);
         response.setStatus(Status.RuntimeError(msg, e));
-    } finally {
-      timerContext.stop();
     }
+
     return response;
   }
 

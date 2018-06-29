@@ -354,12 +354,13 @@ struct TSentrySyncIDResponse {
 
 struct TSentryHmsEventNotification {
 1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V2,
-2: required i64 id, # Requested ID
+2: required string requestorUserName, # user on whose behalf the request is issued
+3: required i64 id, # Requested ID
 #  Constructed from enum org.apache.hadoop.hive.metastore.messaging.EventMessage.EventType
-3: required string eventType, # Type of the event which resulted in owner update request
-4: required TSentryAuthorizable authorizable, # Authorizable object
-5: optional TSentryObjectOwnerType ownerType, # Type of the owner
-6: optional string ownerName # owner name
+4: required string eventType, # Type of the event which resulted in owner update request
+5: required TSentryAuthorizable authorizable, # Authorizable object
+6: optional TSentryObjectOwnerType ownerType, # Type of the owner
+7: optional string ownerName # owner name
 
 }
 

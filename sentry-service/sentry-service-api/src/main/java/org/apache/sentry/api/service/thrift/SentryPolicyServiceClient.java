@@ -295,10 +295,19 @@ public interface SentryPolicyServiceClient extends AutoCloseable {
 
   /**
    * Notifies sentry server with the HMS Event and related metadata.
-   * @param sentryHmsEventNotification Event Notification message.
+   *
+   * @param requestorUserName The user who is making the HMS event notification.
+   * @param eventId The unique identifier of the HMS event
+   * @param eventType The type of the HMS event. This is the string representation of the
+   *                  Hive EventMessage.EventType class.
+   * @param ownerType The owner type of the event if ownership was set or changed.
+   * @param ownerName The owner name of the event if ownership was set or changed.
+   * @param authorizable The object affected of the HMS event.
    * @return The most recent processed notification ID.
    */
-  long notifyHmsNotification(TSentryHmsEventNotification sentryHmsEventNotification) throws SentryUserException;
+  long notifyHmsEvent(String requestorUserName, long eventId, String eventType,
+    TSentryObjectOwnerType ownerType, String ownerName,
+    TSentryAuthorizable authorizable) throws SentryUserException;
 
   /**
    * Lists all roles and their privileges found on the Sentry server. If a role does not have

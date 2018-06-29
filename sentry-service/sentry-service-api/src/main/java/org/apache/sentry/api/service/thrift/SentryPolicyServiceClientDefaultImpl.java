@@ -1168,9 +1168,20 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
     }
   }
 
-  public long notifyHmsNotification(TSentryHmsEventNotification request)
+  public long notifyHmsEvent(String requestorUserName, long eventId, String eventType,
+    TSentryObjectOwnerType ownerType, String ownerName, TSentryAuthorizable authorizable)
           throws SentryUserException {
+    TSentryHmsEventNotification request = new TSentryHmsEventNotification();
+
     try {
+      request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
+      request.setRequestorUserName(requestorUserName);
+      request.setId(eventId);
+      request.setEventType(eventType);
+      request.setOwnerType(ownerType);
+      request.setOwnerName(ownerName);
+      request.setAuthorizable(authorizable);
+
       TSentryHmsEventNotificationResponse response = client.sentry_notify_hms_event(request);
       Status.throwIfNotOk(response.getStatus());
       return response.getId();
