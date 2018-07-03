@@ -984,6 +984,20 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     return getGroupsFromUserName(this.conf, userName);
   }
 
+  /**
+   *
+   * @param userName
+   * @return True, if the user belongs to sentry admin group, otherwise false.
+   * @throws SentryUserException
+   */
+  private boolean isSentryAdminUser(String userName) throws SentryUserException {
+    Set<String> ownerGroups = getGroupsFromUserName(this.conf, userName);
+    if (inAdminGroups(ownerGroups)) {
+      return true;
+    }
+    return false;
+  }
+
   public static Set<String> getGroupsFromUserName(Configuration conf,
       String userName) throws SentryUserException {
     String groupMapping = conf.get(ServerConfig.SENTRY_STORE_GROUP_MAPPING,
@@ -1503,6 +1517,13 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       return;
     }
 
+    if(request.getOwnerType() == TSentryObjectOwnerType.USER &&
+            isSentryAdminUser(request.getOwnerName())) {
+        LOGGER.debug(String.format("%s, belongs to Sentry Admin group, Owner privilege not granted to %s",
+            request.getOwnerName(), request.getAuthorizable().toString()));
+      return;
+    }
+
     TSentryPrivilege ownerPrivilege = constructOwnerPrivilege(request.getAuthorizable());
     if (ownerPrivilege == null) {
       LOGGER.debug("Owner privilege is not added");
@@ -1590,9 +1611,17 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
         }
       }
     }
-    // Revokes old owner privileges and grants owner privilege for new owner.
-    sentryStore.updateOwnerPrivilege(request.getAuthorizable(), request.getOwnerName(),
-        entityType, updateList);
+    if(request.getOwnerType() == TSentryObjectOwnerType.USER &&
+            isSentryAdminUser(request.getOwnerName())) {
+      LOGGER.debug(String.format("%s, belongs to Sentry Admin group, Owner privilege not granted to %s",
+              request.getOwnerName(), request.getAuthorizable().toString()));
+      // New Owner belongs to sentry admin group. There is no need to add owner privilege.
+      sentryStore.revokeOwnerPrivileges(request.getAuthorizable(),updateList);
+    } else {
+      // Revokes old owner privileges and grants owner privilege for new owner.
+      sentryStore.updateOwnerPrivilege(request.getAuthorizable(), request.getOwnerName(),
+              entityType, updateList);
+    }
     //TODO Implement notificationHandlerInvoker API for granting user priv and invoke it.
     //TODO Implement Audit Log API's and invoke them here.
   }

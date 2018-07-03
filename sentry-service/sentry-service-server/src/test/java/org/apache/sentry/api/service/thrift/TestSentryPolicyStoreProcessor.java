@@ -32,12 +32,14 @@ import org.apache.sentry.api.common.Status;
 import org.apache.sentry.api.common.ThriftConstants;
 import org.apache.sentry.core.common.exception.SentryInvalidInputException;
 import org.apache.sentry.core.model.db.AccessConstants;
+import org.apache.sentry.provider.common.GroupMappingService;
 import org.apache.sentry.provider.db.service.persistent.CounterWait;
 import org.apache.sentry.service.common.ServiceConstants;
 import org.apache.sentry.core.common.exception.SentrySiteConfigurationException;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.service.common.ServiceConstants.SentryEntityType;
 import org.apache.sentry.service.common.ServiceConstants.ServerConfig;
+import org.junit.After;
 import org.junit.Assert;
 
 import org.apache.hadoop.conf.Configuration;
@@ -55,12 +57,34 @@ public class TestSentryPolicyStoreProcessor {
   private Configuration conf;
   private static final SentryStore sentryStore = Mockito.mock(SentryStore.class);
   private static final CounterWait counterWait = Mockito.mock(CounterWait.class);
+  private static final String ADMIN_GROUP = "admin_group";
+  private static final String ADMIN_USER = "admin_user";
+  private static final String NOT_ADMIN_USER = "not_admin_user";
+  private static final String NOT_ADMIN_GROUP = "not_admin_group";
+
+  public static class MockGroupMapping implements GroupMappingService {
+    public MockGroupMapping(Configuration conf, String resource) { //NOPMD
+    }
+    @Override
+    public Set<String> getGroups(String user) {
+      if (user.equalsIgnoreCase(ADMIN_USER)) {
+        return Sets.newHashSet(ADMIN_GROUP);
+      } else if (user.equalsIgnoreCase(NOT_ADMIN_USER)){
+        return Sets.newHashSet(NOT_ADMIN_GROUP);
+      } else {
+        return Collections.emptySet();
+      }
+    }
+  }
+
   @Before
   public void setup() throws Exception{
     conf = new Configuration(false);
     //Check behaviour when DB name is not set
     conf.setBoolean(ServiceConstants.ServerConfig.SENTRY_ENABLE_OWNER_PRIVILEGES, true);
-
+    conf.set(ServerConfig.ADMIN_GROUPS, ADMIN_GROUP);
+    conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING,
+            MockGroupMapping.class.getName());
     Mockito.when(sentryStore.getRoleCountGauge()).thenReturn(new Gauge< Long >() {
       @Override
       public Long getValue() {
@@ -117,6 +141,12 @@ public class TestSentryPolicyStoreProcessor {
     Mockito.doAnswer((invocation) -> {
       return counterWait;
     }).when(sentryStore).getCounterWait();
+  }
+
+  @After
+  public void reset () {
+    Mockito.reset(sentryStore);
+    Mockito.reset(counterWait);
   }
   @Test(expected=SentrySiteConfigurationException.class)
   public void testConfigNotNotificationHandler() throws Exception {
@@ -333,6 +363,15 @@ public class TestSentryPolicyStoreProcessor {
   Mockito.verify(
           sentryStore, Mockito.times(1)
   ).alterSentryGrantOwnerPrivilege(OWNER, SentryEntityType.USER, ownerPrivilege, null);
+
+  Mockito.reset(sentryStore);
+  // Verify that owner privilege is not granted when owner belongs to sentry admin group.
+  notification.setOwnerType(TSentryObjectOwnerType.USER);
+  notification.setOwnerName(ADMIN_USER);
+  sentryServiceHandler.sentry_notify_hms_event(notification);
+  Mockito.verify(
+          sentryStore, Mockito.times(0)).alterSentryGrantOwnerPrivilege(OWNER, SentryEntityType.USER,
+          ownerPrivilege, null);
   }
 
 
@@ -367,10 +406,21 @@ public class TestSentryPolicyStoreProcessor {
     Mockito.verify(
             sentryStore, Mockito.times(1)
     ).alterSentryGrantOwnerPrivilege(OWNER, SentryEntityType.USER, ownerPrivilege, null);
+
+    Mockito.reset(sentryStore);
+    // Verify that owner privilege is not granted when owner belongs to sentry admin group.
+    notification.setOwnerType(TSentryObjectOwnerType.USER);
+    notification.setOwnerName(ADMIN_USER);
+    sentryServiceHandler.sentry_notify_hms_event(notification);
+    Mockito.verify(
+        sentryStore, Mockito.times(0)).alterSentryGrantOwnerPrivilege(OWNER, SentryEntityType.USER,
+        ownerPrivilege, null);
   }
 
   @Test
   public void testAlterTableEventProcessing() throws Exception {
+
+    conf.setBoolean(ServiceConstants.ServerConfig.SENTRY_ENABLE_OWNER_PRIVILEGES, true);
 
     SentryPolicyStoreProcessor sentryServiceHandler =
             new SentryPolicyStoreProcessor(ApiConstants.SentryPolicyServiceConstants.SENTRY_POLICY_SERVICE_NAME,
@@ -381,11 +431,27 @@ public class TestSentryPolicyStoreProcessor {
 
     TSentryHmsEventNotification notification = new TSentryHmsEventNotification();
     notification.setId(1L);
-    notification.setOwnerType(TSentryObjectOwnerType.ROLE);
-    notification.setOwnerName(OWNER);
     notification.setAuthorizable(authorizable);
     notification.setEventType(EventType.ALTER_TABLE.toString());
 
+
+    // Verify that owner privilege is not granted when owner belongs to sentry admin group.
+    notification.setOwnerType(TSentryObjectOwnerType.USER);
+    notification.setOwnerName(ADMIN_USER);
+    sentryServiceHandler.sentry_notify_hms_event(notification);
+    // Verify Sentry Store API to update the privilege is not invoked when ownership is transferred to
+    // user belonging to admin group
+    Mockito.verify(
+            sentryStore, Mockito.times(0)
+    ).updateOwnerPrivilege(Mockito.eq(authorizable), Mockito.eq(OWNER), Mockito.eq(SentryEntityType.ROLE),
+            Mockito.anyList());
+
+    Mockito.verify(
+            sentryStore, Mockito.times(1)
+    ).revokeOwnerPrivileges(Mockito.eq(authorizable), Mockito.anyList());
+
+    notification.setOwnerType(TSentryObjectOwnerType.ROLE);
+    notification.setOwnerName(OWNER);
     sentryServiceHandler.sentry_notify_hms_event(notification);
 
     //Verify Sentry Store is invoked to grant privilege.
