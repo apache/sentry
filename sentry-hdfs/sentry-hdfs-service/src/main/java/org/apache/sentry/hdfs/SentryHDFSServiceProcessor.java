@@ -117,7 +117,7 @@ public class SentryHDFSServiceProcessor implements SentryHDFSService.Iface {
    */
   private List<TPathsUpdate> getPathsUpdatesFrom(TAuthzUpdateRequest request) throws Exception {
     LOGGER.debug("PATHS updates requested from HDFS [ImgNum={}, SeqNum={}]",
-          request.getPathSeqNum(), request.getPathImgNum());
+        request.getPathImgNum(), request.getPathSeqNum());
 
     // If another paths updates request is in progress by another HDFS NameNode, then we
     // return an empty image for now to avoid a large memory consumption
