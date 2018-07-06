@@ -202,6 +202,8 @@ public abstract class TestHDFSIntegrationBase {
   protected static Boolean hdfsSyncEnabled = true;
   protected static Boolean hiveSyncOnCreate = false;
   protected static Boolean hiveSyncOnDrop = true;
+  protected static Boolean ownerPrivilegeEnabled = false;
+  protected static Boolean ownerPrivilegeGrantEnabled = false;
   protected static Configuration hadoopConf;
   protected static final Map<String, String> sentryProperties = Maps.newHashMap();
   protected static Configuration sentryConf = new Configuration(false);
@@ -875,7 +877,15 @@ public abstract class TestHDFSIntegrationBase {
                     "org.apache.sentry.api.service.thrift.SentryPolicyStoreProcessorFactory,org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
             sentryProperties.put("sentry.policy.store.plugins", "org.apache.sentry.hdfs.SentryPlugin");
           }
-            for (Map.Entry<String, String> entry : sentryProperties.entrySet()) {
+          if(ownerPrivilegeEnabled) {
+            sentryProperties.put("sentry.enable.owner.privileges", "true");
+
+            if(ownerPrivilegeGrantEnabled) {
+              sentryProperties.put("sentry.grant.owner.privileges.with.grant", "true");
+            }
+          }
+
+          for (Map.Entry<String, String> entry : sentryProperties.entrySet()) {
             sentryConf.set(entry.getKey(), entry.getValue());
           }
           sentryServer = SentrySrvFactory.create(SentrySrvFactory.SentrySrvType.INTERNAL_SERVER,

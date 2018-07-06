@@ -1647,6 +1647,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
             ServerConfig.SENTRY_OWNER_PRIVILEGE_WITH_GRANT_DEFAULT);
 
     TSentryPrivilege ownerPrivilege = new TSentryPrivilege();
+    ownerPrivilege.setServerName(authorizable.getServer());
     ownerPrivilege.setDbName(authorizable.getDb());
     if(!Strings.isNullOrEmpty(authorizable.getTable())) {
       ownerPrivilege.setTableName(authorizable.getTable());
