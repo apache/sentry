@@ -17,7 +17,7 @@
  */
 package org.apache.sentry.hdfs;
 
-import com.codahale.metrics.Timer;
+import sentry.com.codahale.metrics.Timer;
 import org.apache.sentry.provider.db.service.persistent.SentryStoreInterface;
 
 import javax.annotation.concurrent.ThreadSafe;

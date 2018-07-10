@@ -48,6 +48,7 @@ limitations under the License.
           <artifactId>testng</artifactId>
         </exclusion>
       </exclusions>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>

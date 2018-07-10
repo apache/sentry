@@ -44,6 +44,8 @@
         <exclude>com.jolbox:bonecp</exclude>
         <exclude>org.apache.hive:hive-beeline</exclude>
         <exclude>org.apache.derby:derby</exclude>
+        <!-- SENTRY-2283 multiple versions of metrics cause failures on startup -->
+        <exclude>io.dropwizard.metrics:*</exclude>
       </excludes>
     </dependencySet>
 <!--

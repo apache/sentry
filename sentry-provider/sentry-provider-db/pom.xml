@@ -195,14 +195,17 @@ limitations under the License.
     <dependency>
       <groupId>io.dropwizard.metrics</groupId>
       <artifactId>metrics-core</artifactId>
+      <version>${metrics.version}</version>
     </dependency>
     <dependency>
       <groupId>io.dropwizard.metrics</groupId>
       <artifactId>metrics-servlets</artifactId>
+      <version>${metrics.version}</version>
     </dependency>
     <dependency>
       <groupId>io.dropwizard.metrics</groupId>
       <artifactId>metrics-jvm</artifactId>
+      <version>${metrics.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -304,7 +307,6 @@ limitations under the License.
         <version>${maven.shade.plugin.version}</version>
         <executions>
           <execution>
-            <id>curator-shade</id>
             <phase>package</phase>
             <goals>
               <goal>shade</goal>
@@ -317,6 +319,7 @@ limitations under the License.
                   <include>org.apache.curator:curator-x-discovery</include>
                   <include>org.apache.curator:curator-framework</include>
                   <include>org.apache.curator:curator-client</include>
+                  <include>io.dropwizard.metrics:*</include>
                 </includes>
               </artifactSet>
               <relocations>
@@ -325,8 +328,17 @@ limitations under the License.
                   <pattern>org.apache.curator</pattern>
                   <shadedPattern>sentry.org.apache.curator</shadedPattern>
                 </relocation>
+                <relocation>
+                  <pattern>io.dropwizard.metrics</pattern>
+                  <shadedPattern>sentry.io.dropwizard.metrics</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>com.codahale.metrics</pattern>
+                  <shadedPattern>sentry.com.codahale.metrics</shadedPattern>
+                </relocation>
               </relocations>
-              <shadedArtifactAttached>false</shadedArtifactAttached>
+              <shadeSourcesContent>true</shadeSourcesContent>
+              <createSourcesJar>true</createSourcesJar>
             </configuration>
           </execution>
         </executions>
