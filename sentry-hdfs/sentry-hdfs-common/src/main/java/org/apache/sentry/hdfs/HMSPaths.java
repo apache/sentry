@@ -878,7 +878,13 @@ public class HMSPaths implements AuthzPaths {
     if (!oldPathElements.equals(newPathElements)) {
       Entry oldEntry = root.find(oldPathElements.toArray(new String[0]), false);
       Entry newParent = root.createParent(newPathElements);
-      oldEntry.moveTo(newParent, newPathElements.get(newPathElements.size() - 1));
+
+      if (oldEntry == null) {
+        LOG.warn(String.format("%s Moving old paths for renameAuthzObject({%s, %s} -> {%s, %s}) is skipped. Cannot find entry for old name",
+            this, oldName, assemblePaths(oldPathElems), newName, assemblePaths(newPathElems)));
+      } else {
+        oldEntry.moveTo(newParent, newPathElements.get(newPathElements.size() - 1));
+      }
     }
 
     // Re-write authObj from oldName to newName.
