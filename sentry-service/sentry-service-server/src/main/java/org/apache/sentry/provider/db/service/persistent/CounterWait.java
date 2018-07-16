@@ -188,6 +188,7 @@ public class CounterWait {
   public long waitFor(long value) throws InterruptedException, TimeoutException {
     // Fast path - counter value already reached, no need to block
     if (value <= currentId.get()) {
+      LOGGER.debug("Value {} reached", value);
       return currentId.get();
     }
 
@@ -199,6 +200,7 @@ public class CounterWait {
     // value event is enqueued, the counter value already reached the requested
     // value. In this case we return immediately.
     if (value <= currentId.get()) {
+      LOGGER.debug("Value {} reached", value);
       return currentId.get();
     }
 
@@ -209,8 +211,8 @@ public class CounterWait {
     // the event's blocking queue will be non-empty and the waitFor() below
     // will not block, so it is safe to wake up before the wait.
     // So sit tight and wait patiently.
+    LOGGER.debug("Blocked, waiting for value {}", value);
     eid.waitFor();
-    LOGGER.debug("CounterWait added new value to waitFor: value = {}, currentId = {}", value, currentId.get());
     return currentId.get();
   }
 
@@ -240,7 +242,7 @@ public class CounterWait {
         return;
       }
       // Due for wake-up call
-      LOGGER.debug("CounterWait wakeup: event = {} is less than value = {}", e.getValue(), value);
+      LOGGER.debug("Unblocking, Value {} reached", e.getValue());
       e.wakeup();
     }
   }
