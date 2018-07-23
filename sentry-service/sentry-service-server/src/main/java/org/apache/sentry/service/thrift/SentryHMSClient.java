@@ -44,7 +44,6 @@ import java.util.Collections;
 import java.util.Map;
 
 import static com.codahale.metrics.MetricRegistry.name;
-import static java.util.Collections.emptyMap;
 
 /**
  * Wrapper class for <Code>HiveMetaStoreClient</Code>
@@ -55,7 +54,6 @@ import static java.util.Collections.emptyMap;
 public class SentryHMSClient implements AutoCloseable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryHMSClient.class);
-  private static final String NOT_CONNECTED_MSG = "Client is not connected to HMS";
 
   private final Configuration conf;
   private HiveMetaStoreClient client = null;
@@ -111,7 +109,7 @@ public class SentryHMSClient implements AutoCloseable {
   /**
    * Disconnects the HMS client.
    */
-  public void disconnect() throws Exception {
+  public void disconnect() {
     try {
       if (client != null) {
         LOGGER.info("Closing the HMS client connection");
@@ -130,7 +128,7 @@ public class SentryHMSClient implements AutoCloseable {
    * <p>This is similar to disconnect. As this class implements AutoClosable, close should be
    * implemented.
    */
-  public void close() throws Exception {
+  public void close() {
     disconnect();
   }
 
@@ -139,11 +137,15 @@ public class SentryHMSClient implements AutoCloseable {
    *
    * @return Full path snapshot and the last notification id on success
    */
-  public PathsImage getFullSnapshot() {
-    if (client == null) {
-      LOGGER.error(NOT_CONNECTED_MSG);
-      return new PathsImage(Collections.<String, Collection<String>>emptyMap(),
-          SentryConstants.EMPTY_NOTIFICATION_ID, SentryConstants.EMPTY_PATHS_SNAPSHOT_ID);
+  public PathsImage getFullSnapshot() throws Exception{
+    if(!isConnected()) {
+      try {
+        connect();
+      } catch (Exception e) {
+        LOGGER.warn("Failed to connect to HMS Server. HMS may not be up. Will try again ", e);
+        return new PathsImage(Collections.<String, Collection<String>>emptyMap(),
+                SentryConstants.EMPTY_NOTIFICATION_ID, SentryConstants.EMPTY_PATHS_SNAPSHOT_ID);
+      }
     }
 
     try {
@@ -218,12 +220,18 @@ public class SentryHMSClient implements AutoCloseable {
       // lastProcessedNotificationID instead of getting it from persistent store.
       return new PathsImage(pathsFullSnapshot, currentEventId,
         SentryConstants.EMPTY_PATHS_SNAPSHOT_ID);
-    } catch (TException failure) {
-      LOGGER.error("Fetching a new HMS snapshot cannot continue because an error occurred during "
-          + "the HMS communication: ", failure);
-      LOGGER.error("Root Exception", ExceptionUtils.getRootCause(failure));
+    } catch (Exception exception) {
+      LOGGER.error("Root Exception", ExceptionUtils.getRootCause(exception));
+      if(exception instanceof TException) {
+        LOGGER.error("Fetching new HMS snapshot failed because of HMS communication. HMS seems to be restarted. " +
+                "Will try again.");
+      } else {
+        LOGGER.error("Fetching new HMS snapshot failed. Will try again.");
+      }
+      // Closing the connection towards HMS.
+      close();
       return new PathsImage(Collections.<String, Collection<String>>emptyMap(),
-        SentryConstants.EMPTY_NOTIFICATION_ID, SentryConstants.EMPTY_PATHS_SNAPSHOT_ID);
+              SentryConstants.EMPTY_NOTIFICATION_ID, SentryConstants.EMPTY_PATHS_SNAPSHOT_ID);
     }
   }
 
@@ -233,7 +241,7 @@ public class SentryHMSClient implements AutoCloseable {
    * @return HMS snapshot. Snapshot consists of a mapping from auth object name to the set of paths
    *     corresponding to that name.
    */
-  private Map<String, Collection<String>> fetchFullUpdate() {
+  private Map<String, Collection<String>> fetchFullUpdate() throws Exception{
     LOGGER.info("Request full HMS snapshot");
     try (FullUpdateInitializer updateInitializer =
              new FullUpdateInitializer(hiveConnectionFactory, conf);
@@ -241,10 +249,10 @@ public class SentryHMSClient implements AutoCloseable {
       Map<String, Collection<String>> pathsUpdate = updateInitializer.getFullHMSSnapshot();
       LOGGER.info("Obtained full HMS snapshot");
       return pathsUpdate;
-    } catch (Exception ignored) {
+    } catch (Exception exception) {
       failedSnapshotsCount.inc();
-      LOGGER.error("Snapshot created failed ", ignored);
-      return emptyMap();
+      LOGGER.error("Snapshot created failed ", exception);
+      throw exception;
     }
   }
 }
