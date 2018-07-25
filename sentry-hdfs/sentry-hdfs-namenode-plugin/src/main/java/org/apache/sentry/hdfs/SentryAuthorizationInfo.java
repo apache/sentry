@@ -31,6 +31,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.AclEntry;
 import org.apache.hadoop.util.StringUtils;
+import org.apache.sentry.api.common.SentryServiceUtil;
 import org.apache.sentry.hdfs.Updateable.Update;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -195,10 +196,12 @@ public class SentryAuthorizationInfo implements Runnable {
     V newUpdateable = updateable;
     if (!updates.isEmpty()) {
       if (updates.get(0).hasFullImage()) {
-        LOG.debug(String.format("Process Update : FULL IMAGE [%s][%d][%d]",
+        String logMessage = String.format("Process Update : FULL IMAGE [%s][%d][%d]",
             newUpdateable.getClass().getSimpleName(),
             updates.get(0).getSeqNum(),
-            updates.get(0).getImgNum()));
+            updates.get(0).getImgNum());
+        LOG.info(logMessage);
+        System.out.println(SentryServiceUtil.getCurrentTimeStampWithMessage(logMessage));
         newUpdateable = (V)newUpdateable.updateFull(updates.remove(0));
       }
       // Any more elements ?

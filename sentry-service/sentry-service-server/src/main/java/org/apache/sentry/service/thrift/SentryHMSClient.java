@@ -30,6 +30,7 @@ import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.NotificationEvent;
 import org.apache.hadoop.hive.metastore.api.NotificationEventResponse;
 import org.apache.hadoop.hive.metastore.messaging.MessageDeserializer;
+import org.apache.sentry.api.common.SentryServiceUtil;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageDeserializer;
 import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.provider.db.service.persistent.PathsImage;
@@ -242,12 +243,17 @@ public class SentryHMSClient implements AutoCloseable {
    *     corresponding to that name.
    */
   private Map<String, Collection<String>> fetchFullUpdate() throws Exception{
-    LOGGER.info("Request full HMS snapshot");
+    String logMessage = "Request full HMS snapshot";
+    LOGGER.info(logMessage);
+    System.out.println(SentryServiceUtil.getCurrentTimeStampWithMessage(logMessage));
+
     try (FullUpdateInitializer updateInitializer =
              new FullUpdateInitializer(hiveConnectionFactory, conf);
          Context context = updateTimer.time()) {
       Map<String, Collection<String>> pathsUpdate = updateInitializer.getFullHMSSnapshot();
-      LOGGER.info("Obtained full HMS snapshot");
+      logMessage = "Obtained full HMS snapshot";
+      LOGGER.info(logMessage);
+      System.out.println(SentryServiceUtil.getCurrentTimeStampWithMessage(logMessage));
       return pathsUpdate;
     } catch (Exception exception) {
       failedSnapshotsCount.inc();
