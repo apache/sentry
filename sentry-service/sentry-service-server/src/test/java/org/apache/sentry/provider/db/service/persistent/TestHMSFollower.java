@@ -16,6 +16,7 @@
  */
 package  org.apache.sentry.provider.db.service.persistent;
 
+import static org.apache.sentry.hdfs.ServiceConstants.ServerConfig.SENTRY_HMS_FETCH_SIZE;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -1293,5 +1294,73 @@ public class TestHMSFollower {
 
     verify(sentryStore, times(1)).renamePrivilege(authorizable, newAuthorizable,
         NotificationProcessor.getPermUpdatableOnRename(authorizable, newAuthorizable));
+  }
+
+  /**
+   * Constructs events and fetch a portion of them. Make sure that appropriate sentry store API's
+   * are invoke when the event is processed by hms follower.
+   *
+   * @throws Exception
+   */
+  @Test
+  public void testPartialHMSFetch() throws Exception {
+    final long SENTRY_PROCESSED_EVENT_ID = 1L;
+    final long HMS_PROCESSED_EVENT_ID = 1L;
+
+    SentryHMSClient sentryHmsClient = Mockito.mock(SentryHMSClient.class);
+    // Mock that returns a full snapshot
+    Map<String, Collection<String>> snapshotObjects = new HashMap<>();
+    snapshotObjects.put("db", Sets.newHashSet("/db"));
+    snapshotObjects.put("db.table", Sets.newHashSet("/db/table"));
+    PathsImage fullSnapshot = new PathsImage(snapshotObjects, HMS_PROCESSED_EVENT_ID, 1);
+
+    when(sentryHmsClient.getFullSnapshot()).thenReturn(fullSnapshot);
+
+    //Just fetch 3 notificaitons at a time
+    int sentryHMSFetchSize = 3;
+    configuration.setInt(SENTRY_HMS_FETCH_SIZE, sentryHMSFetchSize);
+
+    NotificationEventResponse response = new NotificationEventResponse();
+    NotificationEventResponse partialResponse = new NotificationEventResponse();
+
+    response.addToEvents(new NotificationEvent(1L, 0, "CREATE_DATABASE", ""));
+    partialResponse.addToEvents(new NotificationEvent(1L, 0, "CREATE_DATABASE", ""));
+    response.addToEvents(new NotificationEvent(2L, 0, "CREATE_TABLE", ""));
+    partialResponse.addToEvents(new NotificationEvent(2L, 0, "CREATE_TABLE", ""));
+    response.addToEvents(new NotificationEvent(3L, 0, "ALTER_TABLE", ""));
+    partialResponse.addToEvents(new NotificationEvent(3L, 0, "ALTER_TABLE", ""));
+    response.addToEvents(new NotificationEvent(4L, 0, "ALTER_TABLE", ""));
+    response.addToEvents(new NotificationEvent(5L, 0, "ALTER_TABLE", ""));
+
+    when(hmsClientMock.getNextNotification(Mockito.eq(0L), Mockito.eq(Integer.MAX_VALUE),
+        Mockito.anyObject())).thenReturn(response);
+    when(hmsClientMock.getNextNotification(Mockito.eq(0L), Mockito.eq(sentryHMSFetchSize),
+        Mockito.anyObject())).thenReturn(partialResponse);
+    when(hmsClientMock.getCurrentNotificationEventId()).thenReturn(new CurrentNotificationEventId(SENTRY_PROCESSED_EVENT_ID));
+
+    HMSFollower hmsFollower = new HMSFollower(configuration, sentryStore, null,
+        hmsConnectionMock, hiveInstance);
+    hmsFollower.setSentryHmsClient(sentryHmsClient);
+
+    // 1st run should not fetch full snapshot but should fetch notifications from 0
+    // and persists them
+    when(sentryStore.getLastProcessedNotificationID()).thenReturn(SENTRY_PROCESSED_EVENT_ID);
+    when(sentryStore.isHmsNotificationEmpty()).thenReturn(false);
+    hmsFollower.run();
+    verify(sentryStore, times(0)).persistFullPathsImage(
+        fullSnapshot.getPathImage(), fullSnapshot.getId());
+    // Making sure that HMS client is invoked to get all the notifications
+    // starting from event-id 0
+    verify(hmsClientMock, times(0)).getNextNotification(Mockito.eq(0L),
+        Mockito.eq(Integer.MAX_VALUE), Mockito.anyObject());
+    verify(hmsClientMock, times(1)).getNextNotification(Mockito.eq(0L),
+        Mockito.eq(sentryHMSFetchSize), Mockito.anyObject());
+    verify(sentryStore, times(1)).persistLastProcessedNotificationID(1L);
+    verify(sentryStore, times(1)).persistLastProcessedNotificationID(2L);
+    verify(sentryStore, times(1)).persistLastProcessedNotificationID(3L);
+    verify(sentryStore, times(0)).persistLastProcessedNotificationID(4L);
+    verify(sentryStore, times(0)).persistLastProcessedNotificationID(5L);
+
+    reset(sentryStore, hmsClientMock);
   }
 }

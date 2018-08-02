@@ -160,4 +160,37 @@ public class TestHiveNotificationFetcher {
       assertEquals("ALTER_TABLE", events.get(1).getEventType());
     }
   }
+
+  @Test
+  public void testPartialFetchesFromHMS() throws Exception {
+    SentryStore store = Mockito.mock(SentryStore.class);
+    HiveConnectionFactory hmsConnection = Mockito.mock(HiveConnectionFactory.class);
+    HiveMetaStoreClient hmsClient = Mockito.mock(HiveMetaStoreClient.class);
+
+    Mockito.when(hmsConnection.connect()).thenReturn(new HMSClient(hmsClient));
+
+    try (HiveNotificationFetcher fetcher = new HiveNotificationFetcher(store, hmsConnection)) {
+      List<NotificationEvent> events;
+
+      Mockito.when(hmsClient.getNextNotification(0, Integer.MAX_VALUE, null))
+          .thenReturn(new NotificationEventResponse(
+              Arrays.<NotificationEvent>asList(
+                  new NotificationEvent(1L, 0, "CREATE_DATABASE", ""),
+                  new NotificationEvent(2L, 0, "CREATE_TABLE", "")
+              )
+          ));
+      Mockito.when(hmsClient.getNextNotification(0, 1, null))
+          .thenReturn(new NotificationEventResponse(
+              Arrays.<NotificationEvent>asList(
+                  new NotificationEvent(1L, 0, "CREATE_DATABASE", "")
+              )
+          ));
+
+      int sentryHMSFetchSize = 1;
+      events = fetcher.fetchNotifications(0, sentryHMSFetchSize);
+      assertEquals(1, events.size());
+      assertEquals(1, events.get(0).getEventId());
+      assertEquals("CREATE_DATABASE", events.get(0).getEventType());
+    }
+  }
 }

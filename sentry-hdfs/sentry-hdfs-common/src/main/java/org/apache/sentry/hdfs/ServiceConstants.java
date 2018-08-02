@@ -49,6 +49,9 @@ public class ServiceConstants {
     public static final String SENTRY_HDFS_INTEGRATION_PATH_PREFIXES = "sentry.hdfs.integration.path.prefixes";
     public static final String[] SENTRY_HDFS_INTEGRATION_PATH_PREFIXES_DEFAULT =
             new String[]{"/user/hive/warehouse"};
+
+    public static final String SENTRY_HMS_FETCH_SIZE = "sentry.hms.fetch.size";
+    public static final int SENTRY_HMS_FETCH_SIZE_DEFAULT = -1;
   }
 
   public static class ClientConfig {

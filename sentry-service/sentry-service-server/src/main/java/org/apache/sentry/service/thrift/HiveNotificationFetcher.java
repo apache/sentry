@@ -73,7 +73,7 @@ public final class HiveNotificationFetcher implements AutoCloseable {
    * @return A list of newer notifications unseen by Sentry.
    * @throws Exception If an error occurs on the HMS communication.
    */
-  List<NotificationEvent> fetchNotifications(long lastEventId, int maxEvents) throws Exception {
+  public List<NotificationEvent> fetchNotifications(long lastEventId, int maxEvents) throws Exception {
     NotificationFilter filter = null;
 
     /*
