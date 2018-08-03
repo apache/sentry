@@ -71,7 +71,7 @@ public class TestSentryStoreImportExport {
   @BeforeClass
   public static void setupEnv() throws Exception {
     dataDir = new File(Files.createTempDir(), "sentry_policy_db");
-    Configuration conf = new Configuration(false);
+    Configuration conf = new Configuration(true);
     conf.set(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
     conf.set(ServerConfig.SENTRY_STORE_JDBC_URL, "jdbc:derby:;databaseName=" + dataDir.getPath()
         + ";create=true");

@@ -79,7 +79,7 @@ public class TestSentryPolicyStoreProcessor {
 
   @Before
   public void setup() throws Exception{
-    conf = new Configuration(false);
+    conf = new Configuration(true);
     //Check behaviour when DB name is not set
     conf.setBoolean(ServiceConstants.ServerConfig.SENTRY_ENABLE_OWNER_PRIVILEGES, true);
     conf.set(ServerConfig.ADMIN_GROUPS, ADMIN_GROUP);

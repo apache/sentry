@@ -112,7 +112,7 @@ public class TestSentryServer implements Closeable {
   }
 
   private Configuration getServerConfig () {
-    Configuration conf = new Configuration(false);
+    Configuration conf = new Configuration(true);
     conf.set(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_NONE);
     conf.set(ServerConfig.SENTRY_VERIFY_SCHEM_VERSION, "false");
     conf.set(ServerConfig.ADMIN_GROUPS, ADMIN_GROUP + ",solr");
@@ -129,7 +129,7 @@ public class TestSentryServer implements Closeable {
   }
 
   private Configuration getClientConfig() {
-    Configuration conf = new Configuration(false);
+    Configuration conf = new Configuration(true);
     conf.set(ServerConfig.SECURITY_MODE, ServerConfig.SECURITY_MODE_NONE);
     conf.set(ApiConstants.ClientConfig.SERVER_RPC_ADDRESS, sentryService.getAddress().getHostName());
     conf.set(ApiConstants.ClientConfig.SERVER_RPC_PORT, String.valueOf(sentryService.getAddress().getPort()));

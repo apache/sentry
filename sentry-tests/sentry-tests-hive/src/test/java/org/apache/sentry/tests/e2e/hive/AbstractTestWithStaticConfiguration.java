@@ -475,7 +475,7 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
 
   private static void setupSentryService() throws Exception {
 
-    sentryConf = new Configuration(false);
+    sentryConf = new Configuration(true);
 
     properties.put(HiveServerFactory.AUTHZ_PROVIDER_BACKEND,
         SimpleDBProviderBackend.class.getName());
@@ -551,7 +551,7 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
 
     if (clientKerberos) {
       if (sentryConf == null ) {
-        sentryConf = new Configuration(false);
+        sentryConf = new Configuration(true);
       }
       final String SENTRY_HOST = System.getProperty("sentry.host", SERVER_HOST);
       final String SERVER_KERBEROS_PRINCIPAL = "sentry/" + SENTRY_HOST + "@" + REALM;

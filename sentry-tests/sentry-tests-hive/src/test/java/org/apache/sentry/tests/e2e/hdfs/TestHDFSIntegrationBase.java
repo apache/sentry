@@ -206,7 +206,7 @@ public abstract class TestHDFSIntegrationBase {
   protected static Boolean ownerPrivilegeGrantEnabled = false;
   protected static Configuration hadoopConf;
   protected static final Map<String, String> sentryProperties = Maps.newHashMap();
-  protected static Configuration sentryConf = new Configuration(false);
+  protected static Configuration sentryConf = new Configuration(true);
 
   protected static File assertCreateDir(File dir) {
     if(!dir.isDirectory()) {

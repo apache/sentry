@@ -39,7 +39,7 @@ public abstract class SentryStoreIntegrationBase {
 
   @BeforeClass
   public static void setup() throws Exception {
-    conf = new Configuration(false);
+    conf = new Configuration(true);
     setup(conf);
     sentryStore = new DelegateSentryStore(conf);
   }

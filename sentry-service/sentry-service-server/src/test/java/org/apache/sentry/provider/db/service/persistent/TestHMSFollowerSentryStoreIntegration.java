@@ -73,7 +73,7 @@ public class TestHMSFollowerSentryStoreIntegration {
   // SentryStore related
   @BeforeClass
   public static void setup() throws Exception {
-    conf = new Configuration(false);
+    conf = new Configuration(true);
     final String ourUrl = UserProvider.SCHEME_NAME + ":///";
     conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, ourUrl);
 

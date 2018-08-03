@@ -64,7 +64,7 @@ public abstract class AbstractTestWithDbProvider extends AbstractTestWithHiveSer
   }
 
   public static void createContext() throws Exception {
-    conf = new Configuration(false);
+    conf = new Configuration(true);
     policyFile = PolicyFile.setAdminOnServer1(ADMINGROUP);
     properties.put(HiveServerFactory.AUTHZ_PROVIDER_BACKEND, SimpleDBProviderBackend.class.getName());
     properties.put(ConfVars.HIVE_AUTHORIZATION_TASK_FACTORY.varname,

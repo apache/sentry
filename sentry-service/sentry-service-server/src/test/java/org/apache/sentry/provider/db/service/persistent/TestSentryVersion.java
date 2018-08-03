@@ -39,7 +39,7 @@ public class TestSentryVersion {
   @Before
   public void setup() throws Exception {
     dataDir = new File(Files.createTempDir(), "sentry_policy_db");
-    conf = new Configuration(false);
+    conf = new Configuration(true);
     conf.set(ServerConfig.SENTRY_STORE_JDBC_URL, "jdbc:derby:;databaseName="
         + dataDir.getPath() + ";create=true");
     conf.set(ServerConfig.SENTRY_STORE_JDBC_PASS, "dummy");

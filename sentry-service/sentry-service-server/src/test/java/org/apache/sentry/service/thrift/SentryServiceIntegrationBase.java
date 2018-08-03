@@ -71,7 +71,7 @@ public abstract class SentryServiceIntegrationBase extends SentryMiniKdcTestcase
   protected static File clientKeytab;
   protected static UserGroupInformation clientUgi;
   protected static boolean kerberos;
-  protected final static Configuration conf = new Configuration(false);
+  protected final static Configuration conf = new Configuration(true);
   protected PolicyFile policyFile;
   protected File policyFilePath;
   protected static Properties kdcConfOverlay = new Properties();

@@ -33,7 +33,7 @@ public class TestNotificationHandlerInvoker {
 
   @Before
   public void setup() throws Exception {
-    conf = new Configuration(false);
+    conf = new Configuration(true);
     handler = Mockito.spy(new NotificationHandler(conf) {});
     invoker = new NotificationHandlerInvoker(conf,
         Lists.newArrayList(new ThrowingNotificationHandler(conf), handler));
