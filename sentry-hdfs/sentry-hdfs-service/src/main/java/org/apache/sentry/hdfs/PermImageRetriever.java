@@ -18,7 +18,7 @@
 package org.apache.sentry.hdfs;
 
 import sentry.com.codahale.metrics.Timer.Context;
-import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntity;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegePrincipal;
 import org.apache.sentry.hdfs.service.thrift.TPermissionsUpdate;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
 import org.apache.sentry.hdfs.service.thrift.TRoleChanges;
@@ -57,7 +57,7 @@ public class PermImageRetriever implements ImageRetriever<PermissionsUpdate> {
       // with a corresponding delta change sequence number.
       PermissionsImage permImage = sentryStore.retrieveFullPermssionsImage();
       long curSeqNum = permImage.getCurSeqNum();
-      Map<String, Map<TPrivilegeEntity, String>> privilegeImage =
+      Map<String, Map<TPrivilegePrincipal, String>> privilegeImage =
           permImage.getPrivilegeImage();
       Map<String, List<String>> roleImage =
           permImage.getRoleImage();
@@ -71,12 +71,12 @@ public class PermImageRetriever implements ImageRetriever<PermissionsUpdate> {
           new HashMap<String, TPrivilegeChanges>(),
           new HashMap<String, TRoleChanges>());
 
-      for (Map.Entry<String, Map<TPrivilegeEntity, String>> privEnt : privilegeImage.entrySet()) {
+      for (Map.Entry<String, Map<TPrivilegePrincipal, String>> privEnt : privilegeImage.entrySet()) {
         String authzObj = privEnt.getKey();
-        Map<TPrivilegeEntity,String> privMap = privEnt.getValue();
+        Map<TPrivilegePrincipal,String> privMap = privEnt.getValue();
         DBUpdateForwarder.translateOwnerPrivileges(privMap);
         tPermUpdate.putToPrivilegeChanges(authzObj, new TPrivilegeChanges(
-        authzObj, privMap, new HashMap<TPrivilegeEntity, String>()));
+        authzObj, privMap, new HashMap<TPrivilegePrincipal, String>()));
       }
 
       for (Map.Entry<String, List<String>> privEnt : roleImage.entrySet()) {

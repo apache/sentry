@@ -23,8 +23,8 @@ import java.util.List;
 
 import org.apache.hadoop.fs.permission.AclEntryType;
 import org.apache.hadoop.fs.permission.FsAction;
-import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntity;
-import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntityType;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegePrincipal;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegePrincipalType;
 import org.apache.hadoop.fs.permission.AclEntry;
 import org.junit.Assert;
 import org.junit.Test;
@@ -56,7 +56,7 @@ public class TestSentryPermissions {
     SentryPermissions.RoleInfo roleInfo = new SentryPermissions.RoleInfo("role1");
     roleInfo.addGroup("group1");
     roleInfo.addGroup("group2");
-    TPrivilegeEntity roleEntity = new TPrivilegeEntity(TPrivilegeEntityType.ROLE, "role1");
+    TPrivilegePrincipal roleEntity = new TPrivilegePrincipal(TPrivilegePrincipalType.ROLE, "role1");
 
     perms.addRoleInfo(roleInfo);
 
@@ -77,7 +77,7 @@ public class TestSentryPermissions {
   public void testSentryUserPermissions() {
     String authorizable = "db1.tb1";
     FsAction fsAction = FsAction.ALL;
-    TPrivilegeEntity userEntity = new TPrivilegeEntity(TPrivilegeEntityType.USER, "user1");
+    TPrivilegePrincipal userEntity = new TPrivilegePrincipal(TPrivilegePrincipalType.USER, "user1");
 
     SentryPermissions perms = new SentryPermissions();
     SentryPermissions.PrivilegeInfo pInfo = new SentryPermissions.PrivilegeInfo(authorizable);
@@ -98,7 +98,7 @@ public class TestSentryPermissions {
     String authorizable = null;
     // Add read permission for database
     authorizable = "db1";
-    TPrivilegeEntity userEntity = new TPrivilegeEntity(TPrivilegeEntityType.USER, "user1");
+    TPrivilegePrincipal userEntity = new TPrivilegePrincipal(TPrivilegePrincipalType.USER, "user1");
 
     SentryPermissions perms = new SentryPermissions();
     SentryPermissions.PrivilegeInfo pInfo = new SentryPermissions.PrivilegeInfo(authorizable);
@@ -127,8 +127,8 @@ public class TestSentryPermissions {
     SentryPermissions.RoleInfo roleInfo = new SentryPermissions.RoleInfo("role1");
     roleInfo.addGroup("group1");
     roleInfo.addGroup("group2");
-    TPrivilegeEntity roleEntity = new TPrivilegeEntity(TPrivilegeEntityType.ROLE, "role1");
-    TPrivilegeEntity userEntity = new TPrivilegeEntity(TPrivilegeEntityType.USER, "user1");
+    TPrivilegePrincipal roleEntity = new TPrivilegePrincipal(TPrivilegePrincipalType.ROLE, "role1");
+    TPrivilegePrincipal userEntity = new TPrivilegePrincipal(TPrivilegePrincipalType.USER, "user1");
 
     perms.addRoleInfo(roleInfo);
 

@@ -57,7 +57,7 @@ public class TSentryHmsEventNotification implements org.apache.thrift.TBase<TSen
   private long id; // required
   private String eventType; // required
   private TSentryAuthorizable authorizable; // required
-  private TSentryObjectOwnerType ownerType; // optional
+  private TSentryPrincipalType ownerType; // optional
   private String ownerName; // optional
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
@@ -69,7 +69,7 @@ public class TSentryHmsEventNotification implements org.apache.thrift.TBase<TSen
     AUTHORIZABLE((short)5, "authorizable"),
     /**
      * 
-     * @see TSentryObjectOwnerType
+     * @see TSentryPrincipalType
      */
     OWNER_TYPE((short)6, "ownerType"),
     OWNER_NAME((short)7, "ownerName");
@@ -159,7 +159,7 @@ public class TSentryHmsEventNotification implements org.apache.thrift.TBase<TSen
     tmpMap.put(_Fields.AUTHORIZABLE, new org.apache.thrift.meta_data.FieldMetaData("authorizable", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TSentryAuthorizable.class)));
     tmpMap.put(_Fields.OWNER_TYPE, new org.apache.thrift.meta_data.FieldMetaData("ownerType", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
-        new org.apache.thrift.meta_data.EnumMetaData(org.apache.thrift.protocol.TType.ENUM, TSentryObjectOwnerType.class)));
+        new org.apache.thrift.meta_data.EnumMetaData(org.apache.thrift.protocol.TType.ENUM, TSentryPrincipalType.class)));
     tmpMap.put(_Fields.OWNER_NAME, new org.apache.thrift.meta_data.FieldMetaData("ownerName", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
@@ -344,17 +344,17 @@ public class TSentryHmsEventNotification implements org.apache.thrift.TBase<TSen
 
   /**
    * 
-   * @see TSentryObjectOwnerType
+   * @see TSentryPrincipalType
    */
-  public TSentryObjectOwnerType getOwnerType() {
+  public TSentryPrincipalType getOwnerType() {
     return this.ownerType;
   }
 
   /**
    * 
-   * @see TSentryObjectOwnerType
+   * @see TSentryPrincipalType
    */
-  public void setOwnerType(TSentryObjectOwnerType ownerType) {
+  public void setOwnerType(TSentryPrincipalType ownerType) {
     this.ownerType = ownerType;
   }
 
@@ -442,7 +442,7 @@ public class TSentryHmsEventNotification implements org.apache.thrift.TBase<TSen
       if (value == null) {
         unsetOwnerType();
       } else {
-        setOwnerType((TSentryObjectOwnerType)value);
+        setOwnerType((TSentryPrincipalType)value);
       }
       break;
 
@@ -890,7 +890,7 @@ public class TSentryHmsEventNotification implements org.apache.thrift.TBase<TSen
             break;
           case 6: // OWNER_TYPE
             if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
-              struct.ownerType = org.apache.sentry.api.service.thrift.TSentryObjectOwnerType.findByValue(iprot.readI32());
+              struct.ownerType = org.apache.sentry.api.service.thrift.TSentryPrincipalType.findByValue(iprot.readI32());
               struct.setOwnerTypeIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
@@ -1006,7 +1006,7 @@ public class TSentryHmsEventNotification implements org.apache.thrift.TBase<TSen
       struct.setAuthorizableIsSet(true);
       BitSet incoming = iprot.readBitSet(2);
       if (incoming.get(0)) {
-        struct.ownerType = org.apache.sentry.api.service.thrift.TSentryObjectOwnerType.findByValue(iprot.readI32());
+        struct.ownerType = org.apache.sentry.api.service.thrift.TSentryPrincipalType.findByValue(iprot.readI32());
         struct.setOwnerTypeIsSet(true);
       }
       if (incoming.get(1)) {

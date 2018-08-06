@@ -45,7 +45,7 @@ import org.apache.sentry.provider.db.service.model.MSentryHmsNotification;
 import org.apache.sentry.provider.db.service.model.MSentryPathChange;
 import org.apache.sentry.provider.db.service.model.MSentryPermChange;
 import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
-import org.apache.sentry.service.common.ServiceConstants.SentryEntityType;
+import org.apache.sentry.service.common.ServiceConstants.SentryPrincipalType;
 
 /**
  * Interface for backend sentry store.
@@ -193,7 +193,7 @@ public interface SentryStoreInterface {
    * @return : Set of thrift sentry privilege objects
    * @throws SentryInvalidInputException
    */
-  Set<TSentryPrivilege> getTSentryPrivileges(SentryEntityType entityType,
+  Set<TSentryPrivilege> getTSentryPrivileges(SentryPrincipalType entityType,
                                              Set<String> entityNames,
                                              TSentryAuthorizable authHierarchy)
     throws Exception;
@@ -757,7 +757,7 @@ public interface SentryStoreInterface {
    * @param update DeltaTransactionBlock
    * @throws Exception
    */
-  void alterSentryGrantOwnerPrivilege(final String entityName, SentryEntityType entityType,
+  void alterSentryGrantOwnerPrivilege(final String entityName, SentryPrincipalType entityType,
                                       final TSentryPrivilege privilege,
                                       final Update update) throws Exception;
 
@@ -780,7 +780,7 @@ public interface SentryStoreInterface {
    * @throws Exception
    */
   void updateOwnerPrivilege(final TSentryAuthorizable tAuthorizable,
-                                         String ownerName,  SentryEntityType entityType,
+                                         String ownerName,  SentryPrincipalType entityType,
                                          final List<Update> updates) throws Exception;
 
   /**

@@ -38,7 +38,8 @@ enum TSentryGrantOption {
   UNSET = -1
 }
 
-enum TSentryObjectOwnerType {
+enum TSentryPrincipalType {
+  NONE = 0,
   ROLE = 1,
   USER = 2
 }
@@ -190,15 +191,15 @@ struct TListSentryPrivilegesRequest {
 1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V2,
 2: required string requestorUserName, # user on whose behalf the request is issued
 
-# @Deprecated Use entityName instead to set role names or user names. This parameter will be
+# @Deprecated Use principalName instead to set role names or user names. This parameter will be
 # removed in the next major version of Sentry 3.0
 4: required string roleName, # get privileges assigned for this role
 5: optional TSentryAuthorizable authorizableHierarchy, # get privileges assigned for this role
 
-# Get privileges assigned for this entity name. This entityName should be set to a a role name
+# Get privileges assigned for this principal name. This principalName should be set to a a role name
 # or user name depending of which function you call, either list_sentry_privileges_by_role or
 # list_sentry_privileges_by_user
-6: optional string entityName
+6: optional string principalName
 }
 
 struct TListSentryPrivilegesResponse {
@@ -359,7 +360,7 @@ struct TSentryHmsEventNotification {
 #  Constructed from enum org.apache.hadoop.hive.metastore.messaging.EventMessage.EventType
 4: required string eventType, # Type of the event which resulted in owner update request
 5: required TSentryAuthorizable authorizable, # Authorizable object
-6: optional TSentryObjectOwnerType ownerType, # Type of the owner
+6: optional TSentryPrincipalType ownerType, # Type of the owner
 7: optional string ownerName # owner name
 
 }

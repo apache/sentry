@@ -306,7 +306,7 @@ public interface SentryPolicyServiceClient extends AutoCloseable {
    * @return The most recent processed notification ID.
    */
   long notifyHmsEvent(String requestorUserName, long eventId, String eventType,
-    TSentryObjectOwnerType ownerType, String ownerName,
+    TSentryPrincipalType ownerType, String ownerName,
     TSentryAuthorizable authorizable) throws SentryUserException;
 
   /**

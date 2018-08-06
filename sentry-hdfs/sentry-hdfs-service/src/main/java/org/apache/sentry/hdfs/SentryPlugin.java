@@ -30,8 +30,8 @@ import org.apache.sentry.core.common.utils.PubSub;
 import org.apache.sentry.core.common.utils.SigUtils;
 import org.apache.sentry.hdfs.ServiceConstants.ServerConfig;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
-import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntity;
-import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntityType;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegePrincipal;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegePrincipalType;
 import org.apache.sentry.hdfs.service.thrift.TRoleChanges;
 import org.apache.sentry.provider.db.SentryPolicyStorePlugin;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
@@ -263,7 +263,7 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     if (privileges.size() > 0) {
       for (TSentryPrivilege privilege : privileges) {
         if(!(PrivilegeScope.COLUMN.name().equalsIgnoreCase(privilege.getPrivilegeScope()))) {
-          PermissionsUpdate update = onAlterSentryGrantPrivilegeCore(new TPrivilegeEntity(TPrivilegeEntityType.ROLE,
+          PermissionsUpdate update = onAlterSentryGrantPrivilegeCore(new TPrivilegePrincipal(TPrivilegePrincipalType.ROLE,
                   roleName), privilege);
           if (update != null && privilegesUpdateMap != null) {
             privilegesUpdateMap.put(privilege, update);
@@ -291,7 +291,7 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     if (privileges.size() > 0) {
       for (TSentryPrivilege privilege : privileges) {
         if(!(PrivilegeScope.COLUMN.name().equalsIgnoreCase(privilege.getPrivilegeScope()))) {
-          PermissionsUpdate update = onAlterSentryGrantPrivilegeCore(new TPrivilegeEntity(TPrivilegeEntityType.USER,
+          PermissionsUpdate update = onAlterSentryGrantPrivilegeCore(new TPrivilegePrincipal(TPrivilegePrincipalType.USER,
             userName), privilege);
           if (update != null && privilegesUpdateMap != null) {
             privilegesUpdateMap.put(privilege, update);
@@ -305,7 +305,7 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     }
   }
 
-  private PermissionsUpdate onAlterSentryGrantPrivilegeCore(TPrivilegeEntity tPrivilegeEntity, TSentryPrivilege privilege)
+  private PermissionsUpdate onAlterSentryGrantPrivilegeCore(TPrivilegePrincipal TPrivilegePrincipal, TSentryPrivilege privilege)
           throws SentryPluginException {
     String authzObj = getAuthzObj(privilege);
     if (authzObj == null) {
@@ -313,7 +313,7 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     }
 
     PermissionsUpdate update = new PermissionsUpdate();
-    update.addPrivilegeUpdate(authzObj).putToAddPrivileges( tPrivilegeEntity, privilege.getAction().toUpperCase());
+    update.addPrivilegeUpdate(authzObj).putToAddPrivileges( TPrivilegePrincipal, privilege.getAction().toUpperCase());
 
     LOGGER.debug(String.format("onAlterSentryRoleGrantPrivilegeCore, Authz Perm preUpdate [ %s ]",
                   authzObj));
@@ -338,8 +338,8 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     }
     PermissionsUpdate update = new PermissionsUpdate();
     TPrivilegeChanges privUpdate = update.addPrivilegeUpdate(PermissionsUpdate.RENAME_PRIVS);
-    privUpdate.putToAddPrivileges(new TPrivilegeEntity(TPrivilegeEntityType.AUTHZ_OBJ, newAuthz), newAuthz);
-    privUpdate.putToDelPrivileges(new TPrivilegeEntity(TPrivilegeEntityType.AUTHZ_OBJ,oldAuthz), oldAuthz);
+    privUpdate.putToAddPrivileges(new TPrivilegePrincipal(TPrivilegePrincipalType.AUTHZ_OBJ, newAuthz), newAuthz);
+    privUpdate.putToDelPrivileges(new TPrivilegePrincipal(TPrivilegePrincipalType.AUTHZ_OBJ,oldAuthz), oldAuthz);
 
     LOGGER.debug("onRenameSentryPrivilege, Authz Perm preUpdate [ {} ]", oldAuthz);
     if (LOGGER.isTraceEnabled()) {
@@ -363,7 +363,7 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     if (privileges.size() > 0) {
       for (TSentryPrivilege privilege : privileges) {
         if(!("COLUMN".equalsIgnoreCase(privilege.getPrivilegeScope()))) {
-          PermissionsUpdate update = onAlterSentryRevokePrivilegeCore(new TPrivilegeEntity(TPrivilegeEntityType.ROLE,
+          PermissionsUpdate update = onAlterSentryRevokePrivilegeCore(new TPrivilegePrincipal(TPrivilegePrincipalType.ROLE,
                   roleName), privilege);
           if (update != null && privilegesUpdateMap != null) {
             privilegesUpdateMap.put(privilege, update);
@@ -392,7 +392,7 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     if (privileges.size() > 0) {
       for (TSentryPrivilege privilege : privileges) {
         if(!("COLUMN".equalsIgnoreCase(privilege.getPrivilegeScope()))) {
-          PermissionsUpdate update = onAlterSentryRevokePrivilegeCore(new TPrivilegeEntity(TPrivilegeEntityType.USER,
+          PermissionsUpdate update = onAlterSentryRevokePrivilegeCore(new TPrivilegePrincipal(TPrivilegePrincipalType.USER,
                   userName), privilege);
           if (update != null && privilegesUpdateMap != null) {
             privilegesUpdateMap.put(privilege, update);
@@ -406,7 +406,7 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     }
   }
 
-  private PermissionsUpdate onAlterSentryRevokePrivilegeCore(TPrivilegeEntity tPrivilegeEntity, TSentryPrivilege privilege)
+  private PermissionsUpdate onAlterSentryRevokePrivilegeCore(TPrivilegePrincipal TPrivilegePrincipal, TSentryPrivilege privilege)
       throws SentryPluginException {
     String authzObj = getAuthzObj(privilege);
     if (authzObj == null) {
@@ -414,7 +414,7 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     }
 
     PermissionsUpdate update = new PermissionsUpdate();
-    update.addPrivilegeUpdate(authzObj).putToDelPrivileges(tPrivilegeEntity, privilege.getAction().toUpperCase());
+    update.addPrivilegeUpdate(authzObj).putToDelPrivileges(TPrivilegePrincipal, privilege.getAction().toUpperCase());
 
     LOGGER.debug("onAlterSentryRoleRevokePrivilegeCore, Authz Perm preUpdate [ {} ]", authzObj);
     return update;
@@ -429,7 +429,7 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
     }
     PermissionsUpdate update = new PermissionsUpdate();
     update.addPrivilegeUpdate(PermissionsUpdate.ALL_AUTHZ_OBJ).putToDelPrivileges(
-            new TPrivilegeEntity(TPrivilegeEntityType.ROLE, request.getRoleName()),
+            new TPrivilegePrincipal(TPrivilegePrincipalType.ROLE, request.getRoleName()),
             PermissionsUpdate.ALL_AUTHZ_OBJ);
     update.addRoleUpdate(request.getRoleName()).addToDelGroups(PermissionsUpdate.ALL_GROUPS);
 
@@ -458,7 +458,7 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
       throw new SentryPluginException(failure.getMessage(), failure);
     }
     update.addPrivilegeUpdate(authzObj).putToDelPrivileges(
-            new TPrivilegeEntity(TPrivilegeEntityType.ROLE,PermissionsUpdate.ALL_ROLES),
+            new TPrivilegePrincipal(TPrivilegePrincipalType.ROLE,PermissionsUpdate.ALL_ROLES),
             PermissionsUpdate.ALL_ROLES);
 
     LOGGER.debug("onDropSentryPrivilege, Authz Perm preUpdate [ {} ]", authzObj);

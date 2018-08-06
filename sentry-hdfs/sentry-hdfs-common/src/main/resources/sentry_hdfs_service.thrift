@@ -26,18 +26,18 @@ namespace java org.apache.sentry.hdfs.service.thrift
 namespace php sentry.hdfs.thrift
 namespace cpp Apache.Sentry.HDFS.Thrift
 
-enum TPrivilegeEntityType {
+enum TPrivilegePrincipalType {
   ROLE,
   USER,
   AUTHZ_OBJ
 }
 
-struct TPrivilegeEntity {
+struct TPrivilegePrincipal {
 
-# Type of the privilege entity
-1: required TPrivilegeEntityType type;
+# Type of the privilege principal
+1: required TPrivilegePrincipalType type;
 
-# Value of entity
+# Value of principal
 2: required string value;
 }
 
@@ -94,11 +94,11 @@ struct TPrivilegeChanges {
 
 # The privileges that needs to be added to
 # the authorizable object.
-2: required map<TPrivilegeEntity, string> addPrivileges;
+2: required map<TPrivilegePrincipal, string> addPrivileges;
 
 # The privileges that needs to be deleted to
 # the authorizable object.
-3: required map<TPrivilegeEntity, string> delPrivileges;
+3: required map<TPrivilegePrincipal, string> delPrivileges;
 }
 
 struct TRoleChanges {

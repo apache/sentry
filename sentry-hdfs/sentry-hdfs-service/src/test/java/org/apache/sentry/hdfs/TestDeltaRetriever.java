@@ -18,8 +18,8 @@
 package org.apache.sentry.hdfs;
 
 import org.apache.sentry.core.model.db.AccessConstants;
-import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntity;
-import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntityType;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegePrincipal;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegePrincipalType;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
 import org.apache.sentry.provider.db.service.model.MSentryPathChange;
 import org.apache.sentry.provider.db.service.model.MSentryPermChange;
@@ -95,17 +95,17 @@ public class TestDeltaRetriever {
                       throws Throwable {
                 List<MSentryPermChange> permChanges = new ArrayList<>();
                 PermissionsUpdate update = new PermissionsUpdate();
-                update.addPrivilegeUpdate("obj1").putToAddPrivileges( new TPrivilegeEntity(TPrivilegeEntityType.ROLE,
+                update.addPrivilegeUpdate("obj1").putToAddPrivileges( new TPrivilegePrincipal(TPrivilegePrincipalType.ROLE,
                         "role1"), AccessConstants.OWNER);
                 MSentryPermChange perm1 = new MSentryPermChange(1,update);
                 permChanges.add(perm1);
                 update = new PermissionsUpdate();
-                update.addPrivilegeUpdate("obj1").putToAddPrivileges( new TPrivilegeEntity(TPrivilegeEntityType.USER,
+                update.addPrivilegeUpdate("obj1").putToAddPrivileges( new TPrivilegePrincipal(TPrivilegePrincipalType.USER,
                         "user1"), AccessConstants.OWNER);
                 MSentryPermChange perm2 = new MSentryPermChange(2,update);
                 permChanges.add(perm2);
                 update = new PermissionsUpdate();
-                update.addPrivilegeUpdate("obj1").putToDelPrivileges( new TPrivilegeEntity(TPrivilegeEntityType.ROLE,
+                update.addPrivilegeUpdate("obj1").putToDelPrivileges( new TPrivilegePrincipal(TPrivilegePrincipalType.ROLE,
                         "user1"), AccessConstants.OWNER);
                 MSentryPermChange perm3 = new MSentryPermChange(2,update);
                 permChanges.add(perm3);
@@ -120,10 +120,10 @@ public class TestDeltaRetriever {
 
     for(PermissionsUpdate update : permUpdates) {
       for(TPrivilegeChanges priv : update.getPrivilegeUpdates()) {
-        for(Map.Entry<TPrivilegeEntity,String> privEntry : priv.getAddPrivileges().entrySet()) {
+        for(Map.Entry<TPrivilegePrincipal,String> privEntry : priv.getAddPrivileges().entrySet()) {
           assertEquals(AccessConstants.ALL, privEntry.getValue());
         }
-        for(Map.Entry<TPrivilegeEntity,String> privEntry : priv.getDelPrivileges().entrySet()) {
+        for(Map.Entry<TPrivilegePrincipal,String> privEntry : priv.getDelPrivileges().entrySet()) {
           assertEquals(AccessConstants.ALL, privEntry.getValue());
         }
       }

@@ -133,7 +133,7 @@ public class TestSentryPolicyServiceClientDefaultImpl {
     return privilege;
   }
 
-  private static TListSentryPrivilegesRequest listSentryPrivilegesRequest(String requestorUser, String entityName, List<? extends Authorizable> authorizable) {
+  private static TListSentryPrivilegesRequest listSentryPrivilegesRequest(String requestorUser, String principalName, List<? extends Authorizable> authorizable) {
     return Mockito.argThat(new ArgumentMatcher<TListSentryPrivilegesRequest>() {
       @Override
       public boolean matches(Object o) {
@@ -151,7 +151,7 @@ public class TestSentryPolicyServiceClientDefaultImpl {
         }
 
         return (request.getRequestorUserName().equalsIgnoreCase(requestorUser) &&
-                request.getEntityName().equalsIgnoreCase(entityName));
+                request.getPrincipalName().equalsIgnoreCase(principalName));
       }
     });
   }

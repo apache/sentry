@@ -29,8 +29,8 @@ import org.apache.hadoop.fs.permission.AclEntry;
 import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.sentry.hdfs.SentryPermissions.PrivilegeInfo;
 import org.apache.sentry.hdfs.SentryPermissions.RoleInfo;
-import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntity;
-import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntityType;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegePrincipal;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegePrincipalType;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
 import org.apache.sentry.hdfs.service.thrift.TRoleChanges;
 import org.apache.sentry.hdfs.service.thrift.sentry_hdfs_serviceConstants;
@@ -124,13 +124,13 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
   }
 
   private void applyPrivilegeUpdates(PermissionsUpdate update) {
-    TPrivilegeEntity addPrivEntity, delPrivEntity;
+    TPrivilegePrincipal addPrivEntity, delPrivEntity;
     for (TPrivilegeChanges pUpdate : update.getPrivilegeUpdates()) {
       if (pUpdate.getAuthzObj().equals(PermissionsUpdate.RENAME_PRIVS)) {
         addPrivEntity = pUpdate.getAddPrivileges().keySet().iterator().next();
         delPrivEntity = pUpdate.getDelPrivileges().keySet().iterator().next();
-        if(addPrivEntity.getType() != TPrivilegeEntityType.AUTHZ_OBJ ||
-             delPrivEntity.getType() != TPrivilegeEntityType.AUTHZ_OBJ) {
+        if(addPrivEntity.getType() != TPrivilegePrincipalType.AUTHZ_OBJ ||
+             delPrivEntity.getType() != TPrivilegePrincipalType.AUTHZ_OBJ) {
           LOG.warn("Invalid Permission Update, Received Rename update with wrong data, (Add) Type: {}, Value:{} " +
             "(Del) Type: {}, Value:{}", addPrivEntity.getType(), addPrivEntity.getValue(),
             delPrivEntity.getType(), delPrivEntity.getValue());
@@ -144,11 +144,11 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
         // Db, but no explicit grants on Table.. then the authzObject associated
         // with the table will never exist.
         if (privilegeInfo != null) {
-          Map<TPrivilegeEntity, FsAction> allPermissions = privilegeInfo.getAllPermissions();
+          Map<TPrivilegePrincipal, FsAction> allPermissions = privilegeInfo.getAllPermissions();
           perms.delPrivilegeInfo(oldAuthzObj);
           perms.removeParentChildMappings(oldAuthzObj);
           PrivilegeInfo newPrivilegeInfo = new PrivilegeInfo(newAuthzObj);
-          for (Map.Entry<TPrivilegeEntity, FsAction> e : allPermissions.entrySet()) {
+          for (Map.Entry<TPrivilegePrincipal, FsAction> e : allPermissions.entrySet()) {
             newPrivilegeInfo.setPermission(e.getKey(), e.getValue());
           }
           perms.addPrivilegeInfo(newPrivilegeInfo);
@@ -164,7 +164,7 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
         }
       }
       PrivilegeInfo pInfo = perms.getPrivilegeInfo(pUpdate.getAuthzObj());
-      for (Map.Entry<TPrivilegeEntity, String> aMap : pUpdate.getAddPrivileges().entrySet()) {
+      for (Map.Entry<TPrivilegePrincipal, String> aMap : pUpdate.getAddPrivileges().entrySet()) {
         if (pInfo == null) {
           pInfo = new PrivilegeInfo(pUpdate.getAuthzObj());
         }
@@ -179,7 +179,7 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
       if (pInfo != null) {
         perms.addPrivilegeInfo(pInfo);
         perms.addParentChildMappings(pUpdate.getAuthzObj());
-        for (Map.Entry<TPrivilegeEntity, String> dMap : pUpdate.getDelPrivileges().entrySet()) {
+        for (Map.Entry<TPrivilegePrincipal, String> dMap : pUpdate.getDelPrivileges().entrySet()) {
           if (dMap.getKey().getValue().equals(PermissionsUpdate.ALL_ROLES)) {
             // Remove all privileges
             perms.delPrivilegeInfo(pUpdate.getAuthzObj());
@@ -243,8 +243,8 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
     PermissionsUpdate retVal = new PermissionsUpdate(currSeqNum, true);
     for (PrivilegeInfo pInfo : perms.getAllPrivileges()) {
       TPrivilegeChanges pUpdate = retVal.addPrivilegeUpdate(pInfo.getAuthzObj());
-      for (Map.Entry<TPrivilegeEntity, FsAction> ent : pInfo.getAllPermissions().entrySet()) {
-        pUpdate.putToAddPrivileges(new TPrivilegeEntity(ent.getKey()),
+      for (Map.Entry<TPrivilegePrincipal, FsAction> ent : pInfo.getAllPermissions().entrySet()) {
+        pUpdate.putToAddPrivileges(new TPrivilegePrincipal(ent.getKey()),
                 ent.getValue().SYMBOL);
       }
     }

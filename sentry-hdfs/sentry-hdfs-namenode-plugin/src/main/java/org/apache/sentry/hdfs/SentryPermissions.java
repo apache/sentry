@@ -23,8 +23,8 @@ import org.apache.hadoop.fs.permission.AclEntry;
 import org.apache.hadoop.fs.permission.AclEntryScope;
 import org.apache.hadoop.fs.permission.AclEntryType;
 import org.apache.hadoop.fs.permission.FsAction;
-import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntity;
-import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntityType;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegePrincipal;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegePrincipalType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,24 +32,24 @@ public class SentryPermissions implements AuthzPermissions {
 
   public static class PrivilegeInfo {
     private final String authzObj;
-    // It is safe to use TPrivilegeEntity as key as it implements the hashCode and equals API's.
+    // It is safe to use TPrivilegePrincipal as key as it implements the hashCode and equals API's.
     // Equals() API would help in handling hash collisions.
-    private final Map<TPrivilegeEntity, FsAction> privilegeEntityFsActionMap = new HashMap<TPrivilegeEntity, FsAction>();
+    private final Map<TPrivilegePrincipal, FsAction> privilegeEntityFsActionMap = new HashMap<TPrivilegePrincipal, FsAction>();
     public PrivilegeInfo(String authzObj) {
       this.authzObj = authzObj;
     }
-    public PrivilegeInfo setPermission(TPrivilegeEntity privilegeEntity, FsAction perm) {
+    public PrivilegeInfo setPermission(TPrivilegePrincipal privilegeEntity, FsAction perm) {
       privilegeEntityFsActionMap.put(privilegeEntity, perm);
       return this;
     }
-    public PrivilegeInfo removePermission(TPrivilegeEntity privilegeEntity) {
+    public PrivilegeInfo removePermission(TPrivilegePrincipal privilegeEntity) {
       privilegeEntityFsActionMap.remove(privilegeEntity);
       return this;
     }
-    public FsAction getPermission(TPrivilegeEntity privilegeEntity) {
+    public FsAction getPermission(TPrivilegePrincipal privilegeEntity) {
       return privilegeEntityFsActionMap.get(privilegeEntity);
     }
-    public Map<TPrivilegeEntity, FsAction> getAllPermissions() {
+    public Map<TPrivilegePrincipal, FsAction> getAllPermissions() {
       return privilegeEntityFsActionMap;
     }
     public String getAuthzObj() {
@@ -223,7 +223,7 @@ public class SentryPermissions implements AuthzPermissions {
 
     PrivilegeInfo privilegeInfo = privileges.get(authzObj);
     if (privilegeInfo != null) {
-      for (Map.Entry<TPrivilegeEntity, FsAction> privs : privilegeInfo
+      for (Map.Entry<TPrivilegePrincipal, FsAction> privs : privilegeInfo
           .getAllPermissions().entrySet()) {
         constructHdfsPermissions(privs.getKey(), privs.getValue(), perms);
       }
@@ -268,16 +268,16 @@ public class SentryPermissions implements AuthzPermissions {
 
   /**
    * Constructs HDFS Permissions entry based on the privileges granted.
-   * @param privilegeEntity Privilege Entity
+   * @param privilegePrincipal Privilege Entity
    * @param permission Permission granted
    * @param perms
    */
-  private void constructHdfsPermissions(TPrivilegeEntity privilegeEntity, FsAction permission,
+  private void constructHdfsPermissions(TPrivilegePrincipal privilegePrincipal, FsAction permission,
     Map<HdfsAclEntity, FsAction> perms) {
     HdfsAclEntity aclEntry;
     FsAction fsAction;
-    if(privilegeEntity.getType() == TPrivilegeEntityType.ROLE) {
-      RoleInfo roleInfo = roles.get(privilegeEntity.getValue());
+    if(privilegePrincipal.getType() == TPrivilegePrincipalType.ROLE) {
+      RoleInfo roleInfo = roles.get(privilegePrincipal.getValue());
       if (roleInfo != null) {
         for (String group : roleInfo.groups) {
           aclEntry = HdfsAclEntity.constructAclEntityForGroup(group);
@@ -290,8 +290,8 @@ public class SentryPermissions implements AuthzPermissions {
           perms.put(aclEntry, fsAction.or(permission));
         }
       }
-    } else if(privilegeEntity.getType() == TPrivilegeEntityType.USER) {
-      aclEntry = HdfsAclEntity.constructAclEntityForUser(privilegeEntity.getValue());
+    } else if(privilegePrincipal.getType() == TPrivilegePrincipalType.USER) {
+      aclEntry = HdfsAclEntity.constructAclEntityForUser(privilegePrincipal.getValue());
       // fsAction is an aggregate of permissions granted to
       // the user on the object and it's parents.
       fsAction = perms.get(aclEntry);

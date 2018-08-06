@@ -23,8 +23,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.hdfs.service.thrift.TPathChanges;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
-import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntity;
-import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntityType;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegePrincipal;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegePrincipalType;
 import org.apache.sentry.provider.db.service.persistent.PermissionsImage;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.junit.Before;
@@ -84,10 +84,10 @@ public class TestImageRetriever {
               @Override
               public PermissionsImage answer(InvocationOnMock invocation)
                       throws Throwable {
-                Map<String, Map<TPrivilegeEntity, String>> privilegeMap = new HashMap<>();
-                Map<TPrivilegeEntity, String> privMap = new HashMap<>();
-                privMap.put(new TPrivilegeEntity(TPrivilegeEntityType.ROLE, "role1"), AccessConstants.OWNER);
-                privMap.put(new TPrivilegeEntity(TPrivilegeEntityType.USER, "user1"), AccessConstants.OWNER);
+                Map<String, Map<TPrivilegePrincipal, String>> privilegeMap = new HashMap<>();
+                Map<TPrivilegePrincipal, String> privMap = new HashMap<>();
+                privMap.put(new TPrivilegePrincipal(TPrivilegePrincipalType.ROLE, "role1"), AccessConstants.OWNER);
+                privMap.put(new TPrivilegePrincipal(TPrivilegePrincipalType.USER, "user1"), AccessConstants.OWNER);
                 privilegeMap.put("obj1", privMap);
                 privilegeMap.put("obj2", privMap);
                 return new PermissionsImage(new HashMap<>(), privilegeMap, 1L);
@@ -100,7 +100,7 @@ public class TestImageRetriever {
 
     assertEquals(2, permUpdate.getPrivilegeUpdates().size());
     for(TPrivilegeChanges privUpdate : permUpdate.getPrivilegeUpdates()) {
-      for(Map.Entry<TPrivilegeEntity,String> priv : privUpdate.getAddPrivileges().entrySet()) {
+      for(Map.Entry<TPrivilegePrincipal,String> priv : privUpdate.getAddPrivileges().entrySet()) {
         assertEquals(priv.getValue(), AccessConstants.ALL);
       }
     }

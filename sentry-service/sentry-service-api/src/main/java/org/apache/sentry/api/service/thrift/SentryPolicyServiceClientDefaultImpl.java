@@ -233,10 +233,10 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
     request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
     request.setRequestorUserName(requestorUserName);
 
-    // TODO: Switch from setRoleName() to setEntityName()
+    // TODO: Switch from setRoleName() to setPrincipalName()
     // The 'roleName' parameter is deprecated in Sentry 2.x, but it is still required by older
     // versions of Sentry 2.0. To keep compatibility when connecting to older versions of Sentry 2.x,
-    // then we'll use this parameter, but it will be switched for setEntityName once the roleName
+    // then we'll use this parameter, but it will be switched for setPrincipalName once the roleName
     // is removed.
     request.setRoleName(roleName);
     if (authorizable != null && !authorizable.isEmpty()) {
@@ -269,7 +269,7 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
     request.setRequestorUserName(requestorUserName);
     // TODO: Remove setRoleName() once the required field is removed
     request.setRoleName(""); // roleName is unused by it is required by Thrift
-    request.setEntityName(userName);
+    request.setPrincipalName(userName);
     if (authorizable != null && !authorizable.isEmpty()) {
       TSentryAuthorizable tSentryAuthorizable = setupSentryAuthorizable(authorizable);
       request.setAuthorizableHierarchy(tSentryAuthorizable);
@@ -1169,7 +1169,7 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
   }
 
   public long notifyHmsEvent(String requestorUserName, long eventId, String eventType,
-    TSentryObjectOwnerType ownerType, String ownerName, TSentryAuthorizable authorizable)
+    TSentryPrincipalType ownerType, String ownerName, TSentryAuthorizable authorizable)
           throws SentryUserException {
     TSentryHmsEventNotification request = new TSentryHmsEventNotification();
 

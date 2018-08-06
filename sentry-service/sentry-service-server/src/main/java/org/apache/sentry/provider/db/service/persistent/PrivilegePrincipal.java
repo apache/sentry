@@ -18,8 +18,8 @@
 
 package org.apache.sentry.provider.db.service.persistent;
 
-import org.apache.sentry.service.common.ServiceConstants.SentryEntityType;
 import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
+import org.apache.sentry.service.common.ServiceConstants.SentryPrincipalType;
 
 
 import java.util.Set;
@@ -27,11 +27,11 @@ import java.util.Set;
 /**
  * All the entities to which privileges are granted should implement this interface.
  */
-public interface PrivilegeEntity {
+public interface PrivilegePrincipal {
 
-  String getEntityName();
+  String getPrincipalName();
 
-  SentryEntityType getType();
+  SentryPrincipalType getPrincipalType();
 
   void setPrivileges(Set<MSentryPrivilege> privileges);
 

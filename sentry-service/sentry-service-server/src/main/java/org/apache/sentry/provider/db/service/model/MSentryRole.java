@@ -27,14 +27,14 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import org.apache.sentry.service.common.ServiceConstants;
-import org.apache.sentry.provider.db.service.persistent.PrivilegeEntity;
+import org.apache.sentry.provider.db.service.persistent.PrivilegePrincipal;
 
 /**
  * Database backed Sentry Role. Any changes to this object
  * require re-running the maven build so DN an re-enhance.
  */
 @PersistenceCapable
-public class MSentryRole implements PrivilegeEntity {
+public class MSentryRole implements PrivilegePrincipal {
 
   private String roleName;
   // set of privileges granted to this role
@@ -73,12 +73,12 @@ public class MSentryRole implements PrivilegeEntity {
    * Get the Name of the Role.
    * @return roleName
    */
-  public String getEntityName() {
+  public String getPrincipalName() {
     return roleName;
   }
 
-  public ServiceConstants.SentryEntityType getType() {
-    return ServiceConstants.SentryEntityType.ROLE;
+  public ServiceConstants.SentryPrincipalType getPrincipalType() {
+    return ServiceConstants.SentryPrincipalType.ROLE;
   }
 
   public String getRoleName() {
@@ -123,7 +123,7 @@ public class MSentryRole implements PrivilegeEntity {
 
   public void removePrivilege(MSentryPrivilege privilege) {
     if (privileges.remove(privilege)) {
-      privilege.removeEntity(this);
+      privilege.removePrincipal(this);
     }
   }
 
@@ -133,7 +133,7 @@ public class MSentryRole implements PrivilegeEntity {
 
   public void appendPrivilege(MSentryPrivilege privilege) {
     if (privileges.add(privilege)) {
-      privilege.appendEntity(this);
+      privilege.appendPrincipal(this);
     }
   }
 
@@ -195,7 +195,7 @@ public class MSentryRole implements PrivilegeEntity {
     // the actual privilege set in MSentryRole instance.
 
     for (MSentryPrivilege privilege : ImmutableSet.copyOf(privileges)) {
-      privilege.removeEntity(this);
+      privilege.removePrincipal(this);
     }
     Preconditions.checkState(privileges.isEmpty(), "Privileges should be empty: " + privileges);
   }

@@ -26,8 +26,8 @@ import javax.jdo.annotations.PersistenceCapable;
 import org.apache.sentry.core.common.utils.PathUtils;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
-import org.apache.sentry.provider.db.service.persistent.PrivilegeEntity;
-import org.apache.sentry.service.common.ServiceConstants.SentryEntityType;
+import org.apache.sentry.provider.db.service.persistent.PrivilegePrincipal;
+import org.apache.sentry.service.common.ServiceConstants.SentryPrincipalType;
 
 /**
  * Database backed Sentry Privilege. Any changes to this object
@@ -169,13 +169,13 @@ public class MSentryPrivilege {
 
   /**
    * Appends Role/User in the privilege.
-   * @param entity Role/User to be appended.
+   * @param principal Role/User to be appended.
    */
-  public void appendEntity(PrivilegeEntity entity) {
-    if(entity.getType() == SentryEntityType.ROLE) {
-      roles.add((MSentryRole)entity);
-    } else  if(entity.getType() == SentryEntityType.USER) {
-      users.add((MSentryUser)entity);
+  public void appendPrincipal(PrivilegePrincipal principal) {
+    if(principal.getPrincipalType() == SentryPrincipalType.ROLE) {
+      roles.add((MSentryRole)principal);
+    } else  if(principal.getPrincipalType() == SentryPrincipalType.USER) {
+      users.add((MSentryUser)principal);
     }
   }
 
@@ -187,15 +187,15 @@ public class MSentryPrivilege {
 
   /**
    * Removes Role/User in the privilege.
-   * @param entity Role/User to be removed.
+   * @param principal Role/User to be removed.
    */
-  public void removeEntity(PrivilegeEntity entity) {
-    if(entity.getType() == SentryEntityType.ROLE && (roles != null) && (roles.size() > 0)) {
-      roles.remove((MSentryRole)entity);
-    } else  if(entity.getType() == SentryEntityType.USER && (users != null) && (users.size() > 0)) {
-      users.remove((MSentryUser)entity);
+  public void removePrincipal(PrivilegePrincipal principal) {
+    if(principal.getPrincipalType() == SentryPrincipalType.ROLE && (roles != null) && (roles.size() > 0)) {
+      roles.remove((MSentryRole)principal);
+    } else  if(principal.getPrincipalType() == SentryPrincipalType.USER && (users != null) && (users.size() > 0)) {
+      users.remove((MSentryUser)principal);
     }
-    entity.removePrivilege(this);
+    principal.removePrivilege(this);
   }
 
   public void removeUser(MSentryUser user) {

@@ -4,21 +4,21 @@
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  *  @generated
  */
-package org.apache.sentry.hdfs.service.thrift;
+package org.apache.sentry.api.service.thrift;
 
 
 import java.util.Map;
 import java.util.HashMap;
 import org.apache.thrift.TEnum;
 
-public enum TPrivilegeEntityType implements org.apache.thrift.TEnum {
-  ROLE(0),
-  USER(1),
-  AUTHZ_OBJ(2);
+public enum TSentryPrincipalType implements org.apache.thrift.TEnum {
+  NONE(0),
+  ROLE(1),
+  USER(2);
 
   private final int value;
 
-  private TPrivilegeEntityType(int value) {
+  private TSentryPrincipalType(int value) {
     this.value = value;
   }
 
@@ -33,14 +33,14 @@ public enum TPrivilegeEntityType implements org.apache.thrift.TEnum {
    * Find a the enum type by its integer value, as defined in the Thrift IDL.
    * @return null if the value is not found.
    */
-  public static TPrivilegeEntityType findByValue(int value) { 
+  public static TSentryPrincipalType findByValue(int value) { 
     switch (value) {
       case 0:
-        return ROLE;
+        return NONE;
       case 1:
-        return USER;
+        return ROLE;
       case 2:
-        return AUTHZ_OBJ;
+        return USER;
       default:
         return null;
     }

@@ -31,7 +31,7 @@ import org.apache.hadoop.hive.metastore.events.AlterTableEvent;
 import org.apache.hadoop.hive.metastore.events.ListenerEvent;
 import org.apache.hadoop.hive.metastore.messaging.EventMessage.EventType;
 import org.apache.sentry.api.service.thrift.TSentryAuthorizable;
-import org.apache.sentry.api.service.thrift.TSentryObjectOwnerType;
+import org.apache.sentry.api.service.thrift.TSentryPrincipalType;
 
 import java.util.Map;
 
@@ -43,13 +43,13 @@ class SentryHmsEvent {
   private long eventId;
   private final EventType eventType;
   private String ownerName;
-  private TSentryObjectOwnerType ownerType;
+  private TSentryPrincipalType ownerType;
   private TSentryAuthorizable authorizable;
   private final Boolean isMetastoreTransactionActive;
 
-  private static final Map<PrincipalType, TSentryObjectOwnerType> mapOwnerType = ImmutableMap.of(
-          PrincipalType.ROLE, TSentryObjectOwnerType.ROLE,
-          PrincipalType.USER, TSentryObjectOwnerType.USER
+  private static final Map<PrincipalType, TSentryPrincipalType> mapOwnerType = ImmutableMap.of(
+          PrincipalType.ROLE, TSentryPrincipalType.ROLE,
+          PrincipalType.USER, TSentryPrincipalType.USER
   );
 
   /**
@@ -145,7 +145,7 @@ class SentryHmsEvent {
     return eventId;
   }
 
-  public TSentryObjectOwnerType getOwnerType() {
+  public TSentryPrincipalType getOwnerType() {
     return ownerType;
   }
 
@@ -162,7 +162,7 @@ class SentryHmsEvent {
     // Hive 2.3.2 currently support owner type. Assuming user as the type for now.
     // TODO once sentry dependency is changed to a hive version that suppots user type for table this
     // hard coding should be rempved.
-    ownerType = TSentryObjectOwnerType.USER;
+    ownerType = TSentryPrincipalType.USER;
   }
 
   private void setOwnerInfo(Database database) {
@@ -198,9 +198,9 @@ class SentryHmsEvent {
    * Converts Principle to Owner Type defined by sentry.
    *
    * @param principalType Hive Principle Type
-   * @return TSentryObjectOwnerType if the input is valid else null
+   * @return TSentryPrincipalType if the input is valid else null
    */
-  private TSentryObjectOwnerType getTSentryHmsObjectOwnerType(PrincipalType principalType) {
+  private TSentryPrincipalType getTSentryHmsObjectOwnerType(PrincipalType principalType) {
     return mapOwnerType.get(principalType);
   }
 

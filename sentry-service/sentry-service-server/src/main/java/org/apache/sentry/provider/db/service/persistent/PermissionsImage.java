@@ -18,7 +18,7 @@
 
 package org.apache.sentry.provider.db.service.persistent;
 
-import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntity;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegePrincipal;
 
 import java.util.List;
 import java.util.Map;
@@ -35,11 +35,11 @@ public class PermissionsImage {
   private final Map<String, List<String>> roleImage;
 
   // A full snapshot of hiveObj to <role/user, privileges> mapping.
-  private final Map<String, Map<TPrivilegeEntity, String>> privilegeImage;
+  private final Map<String, Map<TPrivilegePrincipal, String>> privilegeImage;
   private final long curSeqNum;
 
   public PermissionsImage(Map<String, List<String>> roleImage,
-                          Map<String, Map<TPrivilegeEntity, String>> privilegeImage, long curSeqNum) {
+                          Map<String, Map<TPrivilegePrincipal, String>> privilegeImage, long curSeqNum) {
     this.roleImage = roleImage;
     this.privilegeImage = privilegeImage;
     this.curSeqNum = curSeqNum;
@@ -49,7 +49,7 @@ public class PermissionsImage {
     return curSeqNum;
   }
 
-  public Map<String, Map<TPrivilegeEntity, String>> getPrivilegeImage() {
+  public Map<String, Map<TPrivilegePrincipal, String>> getPrivilegeImage() {
     return privilegeImage;
   }
 

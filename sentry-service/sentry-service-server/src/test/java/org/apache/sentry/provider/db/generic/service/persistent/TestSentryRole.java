@@ -102,7 +102,7 @@ public class TestSentryRole {
     //add hivePrivilege to role
     pm = openTransaction();
     MSentryRole role = getMSentryRole(pm, roleName);
-    hivePrivilege.appendEntity(role);
+    hivePrivilege.appendPrincipal(role);
     pm.makePersistent(hivePrivilege);
     commitTransaction(pm);
     //check hivePrivlege and solrPrivilege
@@ -163,7 +163,7 @@ public class TestSentryRole {
     pm = openTransaction();
     MSentryRole role = getMSentryRole(pm, roleName);
     solrPrivilege.appendRole(role);
-    hivePrivilege.appendEntity(role);
+    hivePrivilege.appendPrincipal(role);
     pm.makePersistent(solrPrivilege);
     pm.makePersistent(hivePrivilege);
     commitTransaction(pm);
@@ -221,7 +221,7 @@ public class TestSentryRole {
     //grant hivePrivilege and solrPrivilege to role
     pm = openTransaction();
     MSentryRole role = getMSentryRole(pm, roleName);
-    hivePrivilege.appendEntity(role);
+    hivePrivilege.appendPrincipal(role);
     solrPrivilege.appendRole(role);
     pm.makePersistent(hivePrivilege);
     pm.makePersistent(solrPrivilege);
@@ -256,7 +256,7 @@ public class TestSentryRole {
     role = getMSentryRole(pm, roleName);
     pm.retrieve(role);
     hivePrivilege = (MSentryPrivilege)role.getPrivileges().toArray()[0];
-    hivePrivilege.removeEntity(role);
+    hivePrivilege.removePrincipal(role);
     pm.makePersistent(hivePrivilege);
     commitTransaction(pm);
 
@@ -300,7 +300,7 @@ public class TestSentryRole {
     //grant hivePrivilege and solrPrivilege to role
     pm = openTransaction();
     MSentryRole role = getMSentryRole(pm, roleName);
-    hivePrivilege.appendEntity(role);
+    hivePrivilege.appendPrincipal(role);
     solrPrivilege.appendRole(role);
     pm.makePersistent(hivePrivilege);
     pm.makePersistent(solrPrivilege);
@@ -379,7 +379,7 @@ public class TestSentryRole {
     //grant hivePrivilege and solrPrivilege to role
     pm = openTransaction();
     MSentryRole role = getMSentryRole(pm, roleName);
-    hivePrivilege.appendEntity(role);
+    hivePrivilege.appendPrincipal(role);
     solrPrivilege.appendRole(role);
     pm.makePersistent(hivePrivilege);
     pm.makePersistent(solrPrivilege);
@@ -465,9 +465,9 @@ public class TestSentryRole {
     pm = openTransaction();
     MSentryRole role1 = getMSentryRole(pm, roleName1);
     MSentryRole role2 = getMSentryRole(pm, roleName2);
-    hivePrivilege.appendEntity(role1);
+    hivePrivilege.appendPrincipal(role1);
     solrPrivilege.appendRole(role1);
-    hivePrivilege.appendEntity(role2);
+    hivePrivilege.appendPrincipal(role2);
     solrPrivilege.appendRole(role2);
     pm.makePersistent(hivePrivilege);
     pm.makePersistent(solrPrivilege);

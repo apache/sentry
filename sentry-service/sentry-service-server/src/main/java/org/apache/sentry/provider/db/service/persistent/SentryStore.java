@@ -66,7 +66,7 @@ import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
 import org.apache.sentry.hdfs.PathsUpdate;
 import org.apache.sentry.hdfs.UniquePathsUpdate;
 import org.apache.sentry.hdfs.UpdateableAuthzPaths;
-import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntityType;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegePrincipalType;
 import org.apache.sentry.provider.db.service.model.MAuthzPathsMapping;
 import org.apache.sentry.provider.db.service.model.MAuthzPathsSnapshotId;
 import org.apache.sentry.provider.db.service.model.MSentryChange;
@@ -81,7 +81,7 @@ import org.apache.sentry.provider.db.service.model.MSentryUser;
 import org.apache.sentry.provider.db.service.model.MSentryVersion;
 import org.apache.sentry.provider.db.service.model.MSentryUtil;
 import org.apache.sentry.provider.db.service.model.MPath;
-import org.apache.sentry.hdfs.service.thrift.TPrivilegeEntity;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegePrincipal;
 import org.apache.sentry.api.common.ApiConstants.PrivilegeScope;
 import org.apache.sentry.api.service.thrift.SentryPolicyStoreProcessor;
 import org.apache.sentry.api.service.thrift.TSentryActiveRoleSet;
@@ -92,7 +92,7 @@ import org.apache.sentry.api.service.thrift.TSentryMappingData;
 import org.apache.sentry.api.service.thrift.TSentryPrivilege;
 import org.apache.sentry.api.service.thrift.TSentryPrivilegeMap;
 import org.apache.sentry.api.service.thrift.TSentryRole;
-import org.apache.sentry.service.common.ServiceConstants.SentryEntityType;
+import org.apache.sentry.service.common.ServiceConstants.SentryPrincipalType;
 import org.apache.sentry.service.common.ServiceConstants.ServerConfig;
 import org.datanucleus.store.rdbms.exceptions.MissingTableException;
 import org.slf4j.Logger;
@@ -687,7 +687,7 @@ public class SentryStore implements SentryStoreInterface {
   public void alterSentryRoleGrantPrivileges(final String grantorPrincipal,
       final String roleName, final Set<TSentryPrivilege> privileges) throws Exception {
     for (TSentryPrivilege privilege : privileges) {
-      alterSentryGrantPrivilege(grantorPrincipal, SentryEntityType.ROLE, roleName, privilege, null);
+      alterSentryGrantPrivilege(grantorPrincipal, SentryPrincipalType.ROLE, roleName, privilege, null);
     }
   }
 
@@ -696,14 +696,14 @@ public class SentryStore implements SentryStoreInterface {
    * permission change to MSentryPermChange table in a single transaction.
    *
    * @param grantorPrincipal User name
-   * @param type Type of entity to which privilege is granted.
-   * @param name the name of the entity to which privilege is granted.
+   * @param type Type of principal to which privilege is granted.
+   * @param name the name of the principal to which privilege is granted.
    * @param privilege the given privilege
    * @param update the corresponding permission delta update if any.
    * @throws Exception
    *
    */
-  synchronized void alterSentryGrantPrivilege(final String grantorPrincipal, SentryEntityType type,
+  synchronized void alterSentryGrantPrivilege(final String grantorPrincipal, SentryPrincipalType type,
      final String name, final TSentryPrivilege privilege,
      final Update update) throws Exception {
 
@@ -744,7 +744,7 @@ public class SentryStore implements SentryStoreInterface {
     Preconditions.checkNotNull(privilegesUpdateMap);
     for (TSentryPrivilege privilege : privileges) {
       Update update = privilegesUpdateMap.get(privilege);
-      alterSentryGrantPrivilege(grantorPrincipal, SentryEntityType.ROLE, roleName, privilege,
+      alterSentryGrantPrivilege(grantorPrincipal, SentryPrincipalType.ROLE, roleName, privilege,
           update);
     }
   }
@@ -775,15 +775,15 @@ public class SentryStore implements SentryStoreInterface {
    }
 
   private MSentryPrivilege alterSentryGrantPrivilegeCore(PersistenceManager pm,
-     SentryEntityType type,
+     SentryPrincipalType type,
      String entityName, TSentryPrivilege privilege)
       throws SentryNoSuchObjectException, SentryInvalidInputException {
     MSentryPrivilege mPrivilege = null;
-    PrivilegeEntity mEntity = getEntity(pm, entityName, type);
+    PrivilegePrincipal mEntity = getEntity(pm, entityName, type);
     if (mEntity == null) {
-      if(type == SentryEntityType.ROLE) {
+      if(type == SentryPrincipalType.ROLE) {
         throw noSuchRole(entityName);
-      } else if(type == SentryEntityType.USER) {
+      } else if(type == SentryPrincipalType.USER) {
         // User might not exist. Creating one.
         mEntity = new MSentryUser(entityName, System.currentTimeMillis(), Sets.newHashSet());
       }
@@ -809,11 +809,11 @@ public class SentryStore implements SentryStoreInterface {
         MSentryPrivilege mInsert =
             findMatchPrivilege(mEntity.getPrivileges(), convertToMSentryPrivilege(tNotAll));
         if (mSelect != null) {
-          mSelect.removeEntity(mEntity);
+          mSelect.removePrincipal(mEntity);
           persistPrivilege(pm, mSelect);
         }
         if (mInsert != null) {
-          mInsert.removeEntity(mEntity);
+          mInsert.removePrincipal(mEntity);
           persistPrivilege(pm, mInsert);
         }
       } else {
@@ -839,7 +839,7 @@ public class SentryStore implements SentryStoreInterface {
     if (mPrivilege == null) {
       mPrivilege = convertToMSentryPrivilege(privilege);
     }
-    mPrivilege.appendEntity(mEntity);
+    mPrivilege.appendPrincipal(mEntity);
     pm.makePersistent(mPrivilege);
     return mPrivilege;
   }
@@ -866,7 +866,7 @@ public class SentryStore implements SentryStoreInterface {
     }
 
     for (TSentryPrivilege privilege : privileges) {
-      alterSentryGrantPrivilege(grantorPrincipal, SentryEntityType.USER, userName, privilege, null);
+      alterSentryGrantPrivilege(grantorPrincipal, SentryPrincipalType.USER, userName, privilege, null);
     }
   }
 
@@ -875,18 +875,18 @@ public class SentryStore implements SentryStoreInterface {
    * permission change to MSentryPermChange table in a single transaction.
    * Creates User, if it is not already there.
    * Internally calls alterSentryGrantPrivilege.
-   * @param entityName Entity name to which permissions should be granted.
-   * @param entityType Entity Type
+   * @param principalName principalType name to which permissions should be granted.
+   * @param entityType Principal Type
    * @param privilege Privilege to be granted
    * @param update DeltaTransactionBlock
    * @throws Exception
    */
-  public void alterSentryGrantOwnerPrivilege(final String entityName, SentryEntityType entityType,
+  public void alterSentryGrantOwnerPrivilege(final String principalName, SentryPrincipalType entityType,
                                               final TSentryPrivilege privilege,
                                               final Update update) throws Exception {
     execute(update, pm -> {
       pm.setDetachAllOnCommit(false); // No need to detach objects
-      String trimmedEntityName = trimAndLower(entityName);
+      String trimmedEntityName = trimAndLower(principalName);
 
       // Alter sentry Role and grant Privilege.
       MSentryPrivilege mPrivilege = alterSentryGrantPrivilegeCore(pm, entityType,
@@ -928,7 +928,7 @@ public class SentryStore implements SentryStoreInterface {
     Preconditions.checkNotNull(privilegesUpdateMap);
     for (TSentryPrivilege privilege : privileges) {
       Update update = privilegesUpdateMap.get(privilege);
-      alterSentryGrantPrivilege(grantorPrincipal, SentryEntityType.USER, userName, privilege,
+      alterSentryGrantPrivilege(grantorPrincipal, SentryPrincipalType.USER, userName, privilege,
               update);
     }
   }
@@ -983,7 +983,7 @@ public class SentryStore implements SentryStoreInterface {
   public void alterSentryUserRevokePrivileges(final String grantorPrincipal,
       final String userName, final Set<TSentryPrivilege> tPrivileges) throws Exception {
     for (TSentryPrivilege tPrivilege : tPrivileges) {
-      alterSentryRevokePrivilege(grantorPrincipal, SentryEntityType.USER, userName, tPrivilege, null);
+      alterSentryRevokePrivilege(grantorPrincipal, SentryPrincipalType.USER, userName, tPrivilege, null);
     }
   }
 
@@ -1007,7 +1007,7 @@ public class SentryStore implements SentryStoreInterface {
     Preconditions.checkNotNull(privilegesUpdateMap);
     for (TSentryPrivilege tPrivilege : tPrivileges) {
       Update update = privilegesUpdateMap.get(tPrivilege);
-      alterSentryRevokePrivilege(grantorPrincipal, SentryEntityType.USER, userName,
+      alterSentryRevokePrivilege(grantorPrincipal, SentryPrincipalType.USER, userName,
               tPrivilege, update);
     }
   }
@@ -1025,7 +1025,7 @@ public class SentryStore implements SentryStoreInterface {
   public void alterSentryRoleRevokePrivileges(final String grantorPrincipal,
       final String roleName, final Set<TSentryPrivilege> tPrivileges) throws Exception {
     for (TSentryPrivilege tPrivilege : tPrivileges) {
-      alterSentryRevokePrivilege(grantorPrincipal, SentryEntityType.ROLE, roleName, tPrivilege, null);
+      alterSentryRevokePrivilege(grantorPrincipal, SentryPrincipalType.ROLE, roleName, tPrivilege, null);
     }
   }
 
@@ -1034,19 +1034,19 @@ public class SentryStore implements SentryStoreInterface {
    * permission change to MSentryPermChange table in a single transaction.
    *
    * @param grantorPrincipal User name
-   * @param type Type of entity to which privilege is granted.
-   * @param entityName the name of the entity from which privilege is revoked.
+   * @param type Type of principal to which privilege is granted.
+   * @param principalName the name of the principal from which privilege is revoked.
    * @param tPrivilege the given privilege
    * @param update the corresponding permission delta update transaction block
    * @throws Exception
    *
    */
-  synchronized void alterSentryRevokePrivilege(final String grantorPrincipal, SentryEntityType type,
-                                              final String entityName, final TSentryPrivilege tPrivilege,
+  synchronized void alterSentryRevokePrivilege(final String grantorPrincipal, SentryPrincipalType type,
+                                              final String principalName, final TSentryPrivilege tPrivilege,
                                               final Update update) throws Exception {
     execute(update, pm -> {
       pm.setDetachAllOnCommit(false); // No need to detach objects
-      String trimmedEntityName = safeTrimLower(entityName);
+      String trimmedEntityName = safeTrimLower(principalName);
       // first do revoke check
       grantOptionCheck(pm, grantorPrincipal, tPrivilege);
 
@@ -1075,19 +1075,19 @@ public class SentryStore implements SentryStoreInterface {
     Preconditions.checkNotNull(privilegesUpdateMap);
     for (TSentryPrivilege tPrivilege : tPrivileges) {
       Update update = privilegesUpdateMap.get(tPrivilege);
-      alterSentryRevokePrivilege(grantorPrincipal, SentryEntityType.ROLE, roleName,
+      alterSentryRevokePrivilege(grantorPrincipal, SentryPrincipalType.ROLE, roleName,
               tPrivilege, update);
     }
   }
 
-  private void alterSentryRevokePrivilegeCore(PersistenceManager pm, SentryEntityType type,
+  private void alterSentryRevokePrivilegeCore(PersistenceManager pm, SentryPrincipalType type,
       String entityName, TSentryPrivilege tPrivilege)
       throws SentryNoSuchObjectException, SentryInvalidInputException {
-    PrivilegeEntity mEntity = getEntity(pm, entityName, type);
+    PrivilegePrincipal mEntity = getEntity(pm, entityName, type);
     if (mEntity == null) {
-      if(type == SentryEntityType.ROLE) {
+      if(type == SentryPrincipalType.ROLE) {
         throw noSuchRole(entityName);
-      } else if(type == SentryEntityType.USER) {
+      } else if(type == SentryPrincipalType.USER) {
         throw noSuchUser (entityName);
       }
     }
@@ -1129,7 +1129,7 @@ public class SentryStore implements SentryStoreInterface {
    */
   private void revokePartial(PersistenceManager pm,
                              TSentryPrivilege requestedPrivToRevoke,
-                             PrivilegeEntity mEntity,
+                             PrivilegePrincipal mEntity,
                              MSentryPrivilege currentPrivilege) throws SentryInvalidInputException {
     MSentryPrivilege persistedPriv =
       getMSentryPrivilege(convertToTSentryPrivilege(currentPrivilege), pm);
@@ -1144,7 +1144,7 @@ public class SentryStore implements SentryStoreInterface {
             requestedPrivToRevoke.getAction().equalsIgnoreCase(AccessConstants.ACTION_ALL)) {
       if ((!persistedPriv.getRoles().isEmpty() || !persistedPriv.getUsers().isEmpty()) &&
               mEntity != null) {
-        persistedPriv.removeEntity(mEntity);
+        persistedPriv.removePrincipal(mEntity);
         persistPrivilege(pm, persistedPriv);
       }
     } else {
@@ -1166,18 +1166,18 @@ public class SentryStore implements SentryStoreInterface {
   }
 
   /**
-   * Persists the changes in entity
+   * Persists the changes in principal
    * @param pm persistence manager
-   * @param type Type of privilege entity
-   * @param entity privilege entity to persist
+   * @param type Type of privilege principal
+   * @param principal privilege principal to persist
    *
    */
-  private void persistEntity(PersistenceManager pm, SentryEntityType type, PrivilegeEntity entity) {
-    if (type == SentryEntityType.USER && isUserStale((MSentryUser) entity)) {
-      pm.deletePersistent(entity);
+  private void persistEntity(PersistenceManager pm, SentryPrincipalType type, PrivilegePrincipal principal) {
+    if (type == SentryPrincipalType.USER && isUserStale((MSentryUser) principal)) {
+      pm.deletePersistent(principal);
       return;
     }
-    pm.makePersistent(entity);
+    pm.makePersistent(principal);
   }
 
   private boolean isUserStale(MSentryUser user) {
@@ -1214,20 +1214,20 @@ public class SentryStore implements SentryStoreInterface {
     return false;
   }
 
-  private void revokePrivilegeAndGrantPartial(PersistenceManager pm, PrivilegeEntity mEntity,
+  private void revokePrivilegeAndGrantPartial(PersistenceManager pm, PrivilegePrincipal mEntity,
                                               MSentryPrivilege currentPrivilege,
                                               MSentryPrivilege persistedPriv,
                                               Set<String> addActions) throws SentryInvalidInputException {
     // If table / URI, remove ALL
     persistedPriv = getMSentryPrivilege(convertToTSentryPrivilege(persistedPriv), pm);
     if (persistedPriv != null) {
-      persistedPriv.removeEntity(mEntity);
+      persistedPriv.removePrincipal(mEntity);
       persistPrivilege(pm, persistedPriv);
     }
     currentPrivilege.setAction(AccessConstants.ALL);
     persistedPriv = getMSentryPrivilege(convertToTSentryPrivilege(currentPrivilege), pm);
     if (persistedPriv != null && mEntity.getPrivileges().contains(persistedPriv)) {
-      persistedPriv.removeEntity(mEntity);
+      persistedPriv.removePrincipal(mEntity);
       persistPrivilege(pm, persistedPriv);
       // add decomposed actions
       for (String addAction : addActions) {
@@ -1239,7 +1239,7 @@ public class SentryStore implements SentryStoreInterface {
         }
         mEntity.appendPrivilege(persistedPriv);
       }
-      persistedPriv.appendEntity(mEntity);
+      persistedPriv.appendPrincipal(mEntity);
       pm.makePersistent(persistedPriv);
     }
   }
@@ -1248,7 +1248,7 @@ public class SentryStore implements SentryStoreInterface {
    * Revoke privilege from role
    */
   private void revokePrivilege(PersistenceManager pm, TSentryPrivilege tPrivilege,
-                               PrivilegeEntity mEntity, MSentryPrivilege mPrivilege)
+                               PrivilegePrincipal mEntity, MSentryPrivilege mPrivilege)
     throws SentryInvalidInputException {
     if (PARTIAL_REVOKE_ACTIONS.contains(mPrivilege.getAction())) {
       // if this privilege is in partial revoke actions
@@ -1259,7 +1259,7 @@ public class SentryStore implements SentryStoreInterface {
       // we will revoke it from role directly
       MSentryPrivilege persistedPriv = getMSentryPrivilege(convertToTSentryPrivilege(mPrivilege), pm);
       if (persistedPriv != null) {
-        persistedPriv.removeEntity(mEntity);
+        persistedPriv.removePrincipal(mEntity);
         persistPrivilege(pm, persistedPriv);
       }
     }
@@ -1269,7 +1269,7 @@ public class SentryStore implements SentryStoreInterface {
    * Explore Privilege graph and collect child privileges.
    * The responsibility to commit/rollback the transaction should be handled by the caller.
    */
-  private void populateChildren(PersistenceManager pm, SentryEntityType entityType, Set<String> entityNames, MSentryPrivilege priv,
+  private void populateChildren(PersistenceManager pm, SentryPrincipalType entityType, Set<String> entityNames, MSentryPrivilege priv,
       Collection<MSentryPrivilege> children) throws SentryInvalidInputException {
     Preconditions.checkNotNull(pm);
     if (!isNULL(priv.getServerName()) || !isNULL(priv.getDbName())
@@ -1305,7 +1305,7 @@ public class SentryStore implements SentryStoreInterface {
     }
   }
 
-  private Set<MSentryPrivilege> getChildPrivileges(PersistenceManager pm, SentryEntityType entityType, Set<String> entityNames,
+  private Set<MSentryPrivilege> getChildPrivileges(PersistenceManager pm, SentryPrincipalType entityType, Set<String> entityNames,
       MSentryPrivilege parent) throws SentryInvalidInputException {
     // Column and URI do not have children
     if (!isNULL(parent.getColumnName()) || !isNULL(parent.getURI())) {
@@ -1314,9 +1314,9 @@ public class SentryStore implements SentryStoreInterface {
 
     Query query = pm.newQuery(MSentryPrivilege.class);
     QueryParamBuilder paramBuilder = null;
-    if (entityType == SentryEntityType.ROLE) {
+    if (entityType == SentryPrincipalType.ROLE) {
       paramBuilder = QueryParamBuilder.addRolesFilter(query, null, entityNames).add(SERVER_NAME, parent.getServerName());
-    } else if (entityType == SentryEntityType.USER) {
+    } else if (entityType == SentryPrincipalType.USER) {
       paramBuilder = QueryParamBuilder.addUsersFilter(query, null, entityNames).add(SERVER_NAME, parent.getServerName());
     } else {
       throw new SentryInvalidInputException("entityType" + entityType + " is not valid");
@@ -1835,7 +1835,7 @@ public class SentryStore implements SentryStoreInterface {
             });
   }
 
-  private List<MSentryPrivilege> getMSentryPrivileges(final SentryEntityType entityType, final Set<String> entityNames,
+  private List<MSentryPrivilege> getMSentryPrivileges(final SentryPrincipalType entityType, final Set<String> entityNames,
       final TSentryAuthorizable authHierarchy)
       throws Exception {
     if (entityNames == null || entityNames.isEmpty()) {
@@ -1846,9 +1846,9 @@ public class SentryStore implements SentryStoreInterface {
         pm -> {
           Query query = pm.newQuery(MSentryPrivilege.class);
           QueryParamBuilder paramBuilder = null;
-          if (entityType == SentryEntityType.ROLE) {
+          if (entityType == SentryPrincipalType.ROLE) {
             paramBuilder = QueryParamBuilder.addRolesFilter(query, null, entityNames);
-          } else if (entityType == SentryEntityType.USER) {
+          } else if (entityType == SentryPrincipalType.USER) {
             paramBuilder = QueryParamBuilder.addUsersFilter(query, null, entityNames);
           } else {
             throw new SentryInvalidInputException("entityType" + entityType + " is not valid");
@@ -1899,7 +1899,7 @@ public class SentryStore implements SentryStoreInterface {
   }
 
   private List<MSentryPrivilege> getMSentryPrivilegesByAuth(
-      final SentryEntityType entityType,
+      final SentryPrincipalType entityType,
       final Set<String> entityNames,
       final TSentryAuthorizable
       authHierarchy) throws Exception {
@@ -1909,17 +1909,17 @@ public class SentryStore implements SentryStoreInterface {
                 QueryParamBuilder paramBuilder = QueryParamBuilder.newQueryParamBuilder();
 
                 if (entityNames == null || entityNames.isEmpty()) {
-                  if (entityType == SentryEntityType.ROLE) {
+                  if (entityType == SentryPrincipalType.ROLE) {
                     paramBuilder.addString("!roles.isEmpty()");
-                  } else if (entityType == SentryEntityType.USER) {
+                  } else if (entityType == SentryPrincipalType.USER) {
                     paramBuilder.addString("!users.isEmpty()");
                   } else {
                     throw new SentryInvalidInputException("entityType: " + entityType + " is invalid");
                   }
                 } else {
-                  if (entityType == SentryEntityType.ROLE) {
+                  if (entityType == SentryPrincipalType.ROLE) {
                     QueryParamBuilder.addRolesFilter(query, paramBuilder, entityNames);
-                  } else if (entityType == SentryEntityType.USER) {
+                  } else if (entityType == SentryPrincipalType.USER) {
                     QueryParamBuilder.addUsersFilter(query, paramBuilder, entityNames);
                   } else {
                     throw new SentryInvalidInputException("entityType" + entityType + " is not valid");
@@ -1947,11 +1947,11 @@ public class SentryStore implements SentryStoreInterface {
                   return Collections.emptyList();
                 }
 
-                if (entityType == SentryEntityType.ROLE) {
+                if (entityType == SentryPrincipalType.ROLE) {
                   FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchRole");
                   grp.addMember("roles");
                   pm.getFetchPlan().addGroup("fetchRole");
-                } else if(entityType == SentryEntityType.USER) {
+                } else if(entityType == SentryPrincipalType.USER) {
                   FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchUser");
                   grp.addMember("users");
                   pm.getFetchPlan().addGroup("fetchUser");
@@ -2050,7 +2050,7 @@ public class SentryStore implements SentryStoreInterface {
     // so if not admin, don't return anything if 'roles' is empty..
     if (isAdmin || !roles.isEmpty()) {
       List<MSentryPrivilege> mSentryPrivileges =
-          getMSentryPrivilegesByAuth(SentryEntityType.ROLE, roles, authHierarchy);
+          getMSentryPrivilegesByAuth(SentryPrincipalType.ROLE, roles, authHierarchy);
       for (MSentryPrivilege priv : mSentryPrivileges) {
         for (MSentryRole role : priv.getRoles()) {
           TSentryPrivilege tPriv = convertToTSentryPrivilege(priv);
@@ -2081,11 +2081,11 @@ public class SentryStore implements SentryStoreInterface {
               List<MSentryPrivilege> mSentryPrivileges =
                       getMSentryOwnerPrivilegesByAuth(pm, authorizable);
               for (MSentryPrivilege priv : mSentryPrivileges) {
-                for (PrivilegeEntity user : priv.getUsers()) {
-                  ownerInfolist.add(new SentryOwnerInfo(user.getType(), user.getEntityName()));
+                for (PrivilegePrincipal user : priv.getUsers()) {
+                  ownerInfolist.add(new SentryOwnerInfo(user.getPrincipalType(), user.getPrincipalName()));
                 }
-                for (PrivilegeEntity role : priv.getRoles()) {
-                  ownerInfolist.add(new SentryOwnerInfo(role.getType(), role.getEntityName()));
+                for (PrivilegePrincipal role : priv.getRoles()) {
+                  ownerInfolist.add(new SentryOwnerInfo(role.getPrincipalType(), role.getPrincipalName()));
                 }
               }
               return ownerInfolist;
@@ -2109,7 +2109,7 @@ public class SentryStore implements SentryStoreInterface {
     // so if not admin, don't return anything if 'roles' is empty..
     if (isAdmin || ((userNames != null) && (!userNames.isEmpty()))) {
       List<MSentryPrivilege> mSentryPrivileges =
-          getMSentryPrivilegesByAuth(SentryEntityType.USER, userNames, authHierarchy);
+          getMSentryPrivilegesByAuth(SentryPrincipalType.USER, userNames, authHierarchy);
       for (MSentryPrivilege priv : mSentryPrivileges) {
         for (MSentryUser user : priv.getUsers()) {
           TSentryPrivilege tPriv = convertToTSentryPrivilege(priv);
@@ -2148,14 +2148,14 @@ public class SentryStore implements SentryStoreInterface {
 
   /**
    * Gets sentry privilege objects for criteria from the persistence layer
-   * @param entityType : the type of the entity (required)
-   * @param entityNames : entity names to look up (required)
+   * @param principalType : the type of the principalprincipal (required)
+   * @param principalNames : principal names to look up (required)
    * @param authHierarchy : filter push down based on auth hierarchy (optional)
    * @return : Set of thrift sentry privilege objects
    * @throws SentryInvalidInputException
    */
 
-  public Set<TSentryPrivilege> getTSentryPrivileges(SentryEntityType entityType, Set<String> entityNames,
+  public Set<TSentryPrivilege> getTSentryPrivileges(SentryPrincipalType principalType, Set<String> principalNames,
                                                     TSentryAuthorizable authHierarchy)
           throws Exception {
     if (authHierarchy.getServer() == null) {
@@ -2170,7 +2170,7 @@ public class SentryStore implements SentryStoreInterface {
     if (authHierarchy.getUri() == null && authHierarchy.getDb() == null) {
       throw new SentryInvalidInputException("One of uri or dbName must not be null !!");
     }
-    return convertToTSentryPrivileges(getMSentryPrivileges(entityType, entityNames, authHierarchy));
+    return convertToTSentryPrivileges(getMSentryPrivileges(principalType, principalNames, authHierarchy));
   }
 
   /**
@@ -2333,12 +2333,12 @@ public class SentryStore implements SentryStoreInterface {
       TSentryActiveRoleSet roleSet, TSentryAuthorizable authHierarchy) throws Exception {
     Set<String> result = Sets.newHashSet();
     Set<String> rolesToQuery = getRolesToQuery(groups, users, roleSet);
-    List<MSentryPrivilege> mSentryPrivileges = getMSentryPrivileges(SentryEntityType.ROLE, rolesToQuery, authHierarchy);
+    List<MSentryPrivilege> mSentryPrivileges = getMSentryPrivileges(SentryPrincipalType.ROLE, rolesToQuery, authHierarchy);
     for (MSentryPrivilege priv : mSentryPrivileges) {
       result.add(toAuthorizable(priv));
     }
 
-    mSentryPrivileges = getMSentryPrivileges(SentryEntityType.USER, users, authHierarchy);
+    mSentryPrivileges = getMSentryPrivileges(SentryPrincipalType.USER, users, authHierarchy);
     for (MSentryPrivilege priv : mSentryPrivileges) {
       result.add(toAuthorizable(priv));
     }
@@ -2670,16 +2670,16 @@ public class SentryStore implements SentryStoreInterface {
    * privilege based on the arguments provided.
    * @param tAuthorizable Authorizable to which owner privilege should be granted.
    * @param ownerName
-   * @param entityType
+   * @param principalType
    * @param updates Delta Updates.
    * @throws Exception
    */
   public synchronized void updateOwnerPrivilege(final TSentryAuthorizable tAuthorizable,
-      String ownerName,  SentryEntityType entityType,
+      String ownerName,  SentryPrincipalType principalType,
       final List<Update> updates) throws Exception {
     execute(updates, pm -> {
-      if(entityType == null) {
-        LOGGER.info("Invalid Entity Type");
+      if(principalType == null) {
+        LOGGER.info("Invalid principal Type");
       }
       pm.setDetachAllOnCommit(false); // No need to detach objects
       TSentryPrivilege tOwnerPrivilege = toSentryPrivilege(tAuthorizable);
@@ -2692,11 +2692,11 @@ public class SentryStore implements SentryStoreInterface {
           tOwnerPrivilege.setGrantOption(TSentryGrantOption.TRUE);
         }
         //Granting the privilege.
-        alterSentryGrantPrivilegeCore(pm, entityType, ownerName, tOwnerPrivilege);
+        alterSentryGrantPrivilegeCore(pm, principalType, ownerName, tOwnerPrivilege);
         return null;
       } catch (JDODataStoreException e) {
         throw new SentryInvalidInputException("Failed to grant owner privilege on Authorizable : " +
-                tAuthorizable.toString() + " to " + entityType.toString() + ": " + ownerName + " "
+                tAuthorizable.toString() + " to " + principalType.toString() + ": " + ownerName + " "
                 + e.getMessage());
       }
     });
@@ -2730,7 +2730,7 @@ public class SentryStore implements SentryStoreInterface {
       // Making sure of removing stale users.
       for (MSentryUser user : users) {
         user.removePrivilege(mOwnerPriv);
-        persistEntity(pm, SentryEntityType.USER, user);
+        persistEntity(pm, SentryPrincipalType.USER, user);
       }
     }
     pm.deletePersistentAll(mOwnerPrivileges);
@@ -2848,7 +2848,7 @@ public class SentryStore implements SentryStoreInterface {
       TSentryPrivilege tPrivilege,
       TSentryPrivilege newTPrivilege) throws SentryNoSuchObjectException,
       SentryInvalidInputException {
-    Collection<PrivilegeEntity> entitySet = new HashSet<>();
+    Collection<PrivilegePrincipal> entitySet = new HashSet<>();
     List<MSentryPrivilege> mPrivileges = getMSentryPrivileges(tPrivilege, pm);
     for (MSentryPrivilege mPrivilege : mPrivileges) {
       entitySet.addAll(ImmutableSet.copyOf(mPrivilege.getRoles()));
@@ -2856,8 +2856,8 @@ public class SentryStore implements SentryStoreInterface {
     }
     // Dropping the privilege
     if (newTPrivilege == null) {
-      for (PrivilegeEntity entity : entitySet) {
-        alterSentryRevokePrivilegeCore(pm, entity.getType(), entity.getEntityName(), tPrivilege);
+      for (PrivilegePrincipal principal : entitySet) {
+        alterSentryRevokePrivilegeCore(pm, principal.getPrincipalType(), principal.getPrincipalName(), tPrivilege);
       }
       return;
     }
@@ -2871,22 +2871,22 @@ public class SentryStore implements SentryStoreInterface {
       // dereferenced. If object has to be used even after that it should have been detached.
       parent = pm.detachCopy(parent);
     }
-    for (PrivilegeEntity entity : entitySet) {
+    for (PrivilegePrincipal principal : entitySet) {
       // When all the privilege associated for a user are revoked, user will be removed from the database.
       // JDO object should be not used when the associated database entry is removed. Application should use
       // a detached copy instead.
-      PrivilegeEntity detachedEntity = pm.detachCopy(entity);
+      PrivilegePrincipal detachedEntity = pm.detachCopy(principal);
       // 1. get privilege and child privileges
       Collection<MSentryPrivilege> privilegeGraph = new HashSet<>();
       if (parent != null) {
         privilegeGraph.add(parent);
-        populateChildren(pm, detachedEntity.getType(), Sets.newHashSet(detachedEntity.getEntityName()), parent, privilegeGraph);
+        populateChildren(pm, detachedEntity.getPrincipalType(), Sets.newHashSet(detachedEntity.getPrincipalName()), parent, privilegeGraph);
       } else {
-        populateChildren(pm, detachedEntity.getType(), Sets.newHashSet(detachedEntity.getEntityName()), convertToMSentryPrivilege(tPrivilege),
+        populateChildren(pm, detachedEntity.getPrincipalType(), Sets.newHashSet(detachedEntity.getPrincipalName()), convertToMSentryPrivilege(tPrivilege),
           privilegeGraph);
       }
       // 2. revoke privilege and child privileges
-      alterSentryRevokePrivilegeCore(pm, detachedEntity.getType(), detachedEntity.getEntityName(), tPrivilege);
+      alterSentryRevokePrivilegeCore(pm, detachedEntity.getPrincipalType(), detachedEntity.getPrincipalName(), tPrivilege);
       // 3. add new privilege and child privileges with new tableName
       for (MSentryPrivilege mPriv : privilegeGraph) {
         TSentryPrivilege tPriv = convertToTSentryPrivilege(mPriv);
@@ -2897,7 +2897,7 @@ public class SentryStore implements SentryStoreInterface {
           tPriv.setDbName(newTPrivilege.getDbName());
           tPriv.setTableName(newTPrivilege.getTableName());
         }
-        alterSentryGrantPrivilegeCore(pm, detachedEntity.getType(), detachedEntity.getEntityName(), tPriv);
+        alterSentryGrantPrivilegeCore(pm, detachedEntity.getPrincipalType(), detachedEntity.getPrincipalName(), tPriv);
       }
     }
   }
@@ -3064,7 +3064,7 @@ public class SentryStore implements SentryStoreInterface {
               // enable SentryPlugin(HDFS Sync feature).
               long curChangeID = getLastProcessedChangeIDCore(pm, MSentryPermChange.class);
               Map<String, List<String>> roleImage = retrieveFullRoleImageCore(pm);
-              Map<String, Map<TPrivilegeEntity, String>> privilegeMap = retrieveFullPrivilegeImageCore(pm);
+              Map<String, Map<TPrivilegePrincipal, String>> privilegeMap = retrieveFullPrivilegeImageCore(pm);
 
               return new PermissionsImage(roleImage, privilegeMap, curChangeID);
             });
@@ -3078,11 +3078,11 @@ public class SentryStore implements SentryStoreInterface {
    * @return a mapping of hiveObj to &lt role, privileges &gt
    * @throws Exception
    */
-   private Map<String, Map<TPrivilegeEntity, String>> retrieveFullPrivilegeImageCore(PersistenceManager pm)
+   private Map<String, Map<TPrivilegePrincipal, String>> retrieveFullPrivilegeImageCore(PersistenceManager pm)
         throws Exception {
      pm.setDetachAllOnCommit(false); // No need to detach objects
 
-    Map<String, Map<TPrivilegeEntity, String>> retVal = new HashMap<>();
+    Map<String, Map<TPrivilegePrincipal, String>> retVal = new HashMap<>();
     Query query = pm.newQuery(MSentryPrivilege.class);
     query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
 
@@ -3101,27 +3101,27 @@ public class SentryStore implements SentryStoreInterface {
       if (!isNULL(mPriv.getTableName())) {
         authzObj = authzObj + "." + mPriv.getTableName();
       }
-      Map<TPrivilegeEntity, String> pUpdate = retVal.get(authzObj);
+      Map<TPrivilegePrincipal, String> pUpdate = retVal.get(authzObj);
       if (pUpdate == null) {
         pUpdate = new HashMap<>();
         retVal.put(authzObj, pUpdate);
       }
       for (MSentryRole mRole : mPriv.getRoles()) {
-        pUpdate = addPrivilegeEntry (mPriv, TPrivilegeEntityType.ROLE, mRole.getRoleName(), pUpdate);
+        pUpdate = addPrivilegeEntry (mPriv, TPrivilegePrincipalType.ROLE, mRole.getRoleName(), pUpdate);
       }
       for (MSentryUser mUser : mPriv.getUsers()) {
-        pUpdate = addPrivilegeEntry (mPriv, TPrivilegeEntityType.USER, mUser.getUserName(), pUpdate);
+        pUpdate = addPrivilegeEntry (mPriv, TPrivilegePrincipalType.USER, mUser.getUserName(), pUpdate);
       }
     }
     query.closeAll();
     return retVal;
   }
 
-  private static Map<TPrivilegeEntity, String> addPrivilegeEntry(MSentryPrivilege mPriv, TPrivilegeEntityType tEntityType,
-    String entity, Map<TPrivilegeEntity, String> update) {
+  private static Map<TPrivilegePrincipal, String> addPrivilegeEntry(MSentryPrivilege mPriv, TPrivilegePrincipalType tEntityType,
+    String principal, Map<TPrivilegePrincipal, String> update) {
     String action;
     String newAction;
-    String existingPriv = update.get(entity);
+    String existingPriv = update.get(principal);
     action = mPriv.getAction().toUpperCase();
     newAction = mPriv.getAction().toUpperCase();
     if(action.equals(AccessConstants.OWNER)) {
@@ -3130,10 +3130,10 @@ public class SentryStore implements SentryStoreInterface {
     }
 
     if (existingPriv == null) {
-      update.put(new TPrivilegeEntity(tEntityType, entity),
+      update.put(new TPrivilegePrincipal(tEntityType, principal),
               newAction);
     } else {
-      update.put(new TPrivilegeEntity(tEntityType, entity), existingPriv + "," +
+      update.put(new TPrivilegePrincipal(tEntityType, principal), existingPriv + "," +
               newAction);
     }
     return update;
@@ -4187,7 +4187,7 @@ public class SentryStore implements SentryStoreInterface {
         // get the privileges for the role
         Set<TSentryPrivilege> tSentryPrivileges = entry.getValue();
         for (TSentryPrivilege tSentryPrivilege : tSentryPrivileges) {
-          alterSentryGrantPrivilegeCore(pm, SentryEntityType.ROLE, entry.getKey(), tSentryPrivilege);
+          alterSentryGrantPrivilegeCore(pm, SentryPrincipalType.ROLE, entry.getKey(), tSentryPrivilege);
         }
       }
     }
@@ -4686,15 +4686,15 @@ public class SentryStore implements SentryStoreInterface {
   }
 
   /**
-   * Get a single entity with the given name and type inside a transaction
+   * Get a single principal with the given name and type inside a transaction
    * @param pm Persistence Manager instance
    * @param name Role/user name (should not be null)
-   * @param type Type of entity
-   * @return single PrivilegeEntity with the given name and type
+   * @param type Type of principal
+   * @return single PrivilegePrincipal with the given name and type
    */
-  public PrivilegeEntity getEntity(PersistenceManager pm, String name, SentryEntityType type) {
+  public PrivilegePrincipal getEntity(PersistenceManager pm, String name, SentryPrincipalType type) {
     Query query;
-    if(type == SentryEntityType.ROLE) {
+    if(type == SentryPrincipalType.ROLE) {
       query = pm.newQuery(MSentryRole.class);
       query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
       query.setFilter("this.roleName == :roleName");
@@ -4705,7 +4705,7 @@ public class SentryStore implements SentryStoreInterface {
       query.setFilter("this.userName == :userName");
       query.setUnique(true);
     }
-    return (PrivilegeEntity) query.execute(name);
+    return (PrivilegePrincipal) query.execute(name);
   }
 
   /**
