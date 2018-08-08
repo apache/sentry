@@ -35,6 +35,7 @@ import java.util.List;
 public class CommonPrivilege implements Privilege {
 
   private ImmutableList<KeyValue> parts;
+  private boolean grantOption = false;
 
   public CommonPrivilege(String privilegeStr) {
     privilegeStr = Strings.nullToEmpty(privilegeStr).trim();
@@ -52,6 +53,14 @@ public class CommonPrivilege implements Privilege {
     if (parts.isEmpty()) {
       throw new AssertionError("Should never occur: " + privilegeStr);
     }
+
+    // check if grant option is present
+    KeyValue lastPart = parts.get(parts.size() - 1);
+    if (lastPart.getKey().equalsIgnoreCase(SentryConstants.GRANT_OPTION)) {
+      grantOption = lastPart.getValue().equalsIgnoreCase("true");
+      parts.remove(parts.size() - 1);
+    }
+
     this.parts = ImmutableList.copyOf(parts);
   }
 
@@ -62,7 +71,13 @@ public class CommonPrivilege implements Privilege {
       return false;
     }
 
-    List<KeyValue> otherParts = ((CommonPrivilege) privilege).getParts();
+    CommonPrivilege requiredPrivilege = (CommonPrivilege) privilege;
+    if ((requiredPrivilege.grantOption == true) && (this.grantOption == false)) {
+      // the required privilege wp needs grant option, but this privilege does not have grant option
+      return false;
+    }
+
+    List<KeyValue> otherParts = requiredPrivilege.getParts();
     if(parts.equals(otherParts)) {
       return true;
     }
@@ -106,12 +121,24 @@ public class CommonPrivilege implements Privilege {
     // all of the other parts are wildcards
     for (; index < parts.size(); index++) {
       KeyValue part = parts.get(index);
-      if (!SentryConstants.PRIVILEGE_WILDCARD_VALUE.equals(part.getValue())) {
+      if (!isPrivilegeActionAll(part, model.getBitFieldActionFactory())) {
         return false;
       }
     }
 
     return true;
+  }
+
+  /**
+   * Check if the action part in a privilege is ALL. Owner privilege is
+   * treated as ALL for authorization
+   * @param actionPart it must be the action of a privilege
+   * @return true if the action is ALL; false otherwise
+   */
+  private boolean isPrivilegeActionAll(KeyValue actionPart,
+      BitFieldActionFactory bitFieldActionFactory) {
+    return impliesAction(actionPart.getValue(), SentryConstants.PRIVILEGE_WILDCARD_VALUE,
+        bitFieldActionFactory);
   }
 
   @Override

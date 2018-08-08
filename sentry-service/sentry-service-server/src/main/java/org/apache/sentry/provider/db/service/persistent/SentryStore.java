@@ -2419,6 +2419,14 @@ public class SentryStore implements SentryStoreInterface {
       .add(KV_JOINER.join(SentryConstants.PRIVILEGE_NAME.toLowerCase(),
           privilege.getAction()));
     }
+
+    if (privilege.getGrantOption()) {
+      // include grant option field when it is true
+      authorizable
+          .add(KV_JOINER.join(SentryConstants.GRANT_OPTION.toLowerCase(),
+              privilege.getGrantOption()));
+    }
+
     return AUTHORIZABLE_JOINER.join(authorizable);
   }
 

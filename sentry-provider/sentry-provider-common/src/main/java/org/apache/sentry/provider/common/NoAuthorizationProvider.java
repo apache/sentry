@@ -38,6 +38,12 @@ public class NoAuthorizationProvider implements AuthorizationProvider {
   }
 
   @Override
+  public boolean hasAccess(Subject subject, List<? extends Authorizable> authorizableHierarchy,
+      Set<? extends Action> actions, boolean grantOption, ActiveRoleSet roleSet) {
+    return false;
+  }
+
+  @Override
   public GroupMappingService getGroupMapping() {
     return noGroupMappingService;
   }

@@ -622,6 +622,7 @@ public abstract class TestHDFSIntegrationBase {
         hiveConf.set("hive.metastore.uris", "thrift://localhost:" + hmsPort);
         hiveConf.set("hive.metastore.pre.event.listeners", "org.apache.sentry.binding.metastore.MetastoreAuthzBinding");
         hiveConf.set("hive.metastore.transactional.event.listeners", "org.apache.hive.hcatalog.listener.DbNotificationListener");
+        hiveConf.set("hive.metastore.event.listeners", "org.apache.sentry.binding.metastore.SentrySyncHMSNotificationsPostEventListener");
         hiveConf.set("hive.metastore.event.message.factory", "org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageFactory");
         hiveConf.set("hive.security.authorization.task.factory", "org.apache.sentry.binding.hive.SentryHiveAuthorizationTaskFactoryImpl");
         hiveConf.set("hive.server2.session.hook", "org.apache.sentry.binding.hive.HiveAuthzBindingSessionHook");

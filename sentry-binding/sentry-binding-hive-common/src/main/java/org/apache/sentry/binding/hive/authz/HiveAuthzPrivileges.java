@@ -68,6 +68,7 @@ public class HiveAuthzPrivileges {
         new HashMap<AuthorizableType,EnumSet<DBModelAction>>();
     private HiveOperationType operationType;
     private HiveOperationScope operationScope;
+    private boolean grantOption = false;
 
     public AuthzPrivilegeBuilder addInputObjectPriviledge(AuthorizableType inputObjectType, EnumSet<DBModelAction> inputPrivilege) {
       inputPrivileges.put(inputObjectType, inputPrivilege);
@@ -94,6 +95,11 @@ public class HiveAuthzPrivileges {
       return this;
     }
 
+    public AuthzPrivilegeBuilder setGrantOption(boolean requireGrantOption) {
+      this.grantOption = requireGrantOption;
+      return this;
+    }
+
     public HiveAuthzPrivileges build() {
       if (operationScope.equals(HiveOperationScope.UNKNOWN)) {
         throw new UnsupportedOperationException("Operation scope is not set");
@@ -103,7 +109,8 @@ public class HiveAuthzPrivileges {
         throw new UnsupportedOperationException("Operation scope is not set");
       }
 
-      return new HiveAuthzPrivileges(inputPrivileges, outputPrivileges, operationType, operationScope);
+      return new HiveAuthzPrivileges(inputPrivileges, outputPrivileges, operationType,
+          operationScope, grantOption);
     }
   }
 
@@ -113,14 +120,22 @@ public class HiveAuthzPrivileges {
       new HashMap<AuthorizableType,EnumSet<DBModelAction>>();
   private final HiveOperationType operationType;
   private final HiveOperationScope operationScope;
+  private final boolean grantOption;
 
   protected HiveAuthzPrivileges(Map<AuthorizableType,EnumSet<DBModelAction>> inputPrivileges,
       Map<AuthorizableType,EnumSet<DBModelAction>> outputPrivileges, HiveOperationType operationType,
       HiveOperationScope operationScope) {
+    this(inputPrivileges, outputPrivileges, operationType, operationScope, false);
+  }
+
+  protected HiveAuthzPrivileges(Map<AuthorizableType,EnumSet<DBModelAction>> inputPrivileges,
+      Map<AuthorizableType,EnumSet<DBModelAction>> outputPrivileges, HiveOperationType operationType,
+      HiveOperationScope operationScope, boolean requireGrantOption) {
     this.inputPrivileges.putAll(inputPrivileges);
     this.outputPrivileges.putAll(outputPrivileges);
     this.operationScope = operationScope;
     this.operationType = operationType;
+    this.grantOption = requireGrantOption;
   }
 
   /**
@@ -135,6 +150,13 @@ public class HiveAuthzPrivileges {
    */
   public Map<AuthorizableType, EnumSet<DBModelAction>> getOutputPrivileges() {
     return outputPrivileges;
+  }
+
+  /**
+   * @return the grantOption
+   */
+  public boolean getGrantOption() {
+    return grantOption;
   }
 
   /**

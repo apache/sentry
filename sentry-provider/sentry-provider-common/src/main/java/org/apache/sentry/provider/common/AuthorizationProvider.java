@@ -53,6 +53,22 @@ public interface AuthorizationProvider {
       Set<? extends Action> actions, ActiveRoleSet roleSet);
 
   /***
+   * Returns validate subject privileges on given Authorizable object
+   *
+   * @param subject: UserID to validate privileges
+   * @param authorizableHierarchy : List of object according to namespace hierarchy.
+   *        eg. Server->Db->Table or Server->Function
+   *        The privileges will be validated from the higher to lower scope
+   * @param actions : Privileges to validate
+   * @param requireGrantOption: true: require grant option of matching privilege; false: otherwise
+   * @param roleSet : Roles which should be used when obtaining privileges
+   * @return
+   *        True if the subject is authorized to perform requested action on the given object
+   */
+  boolean hasAccess(Subject subject, List<? extends Authorizable> authorizableHierarchy,
+      Set<? extends Action> actions, boolean requireGrantOption, ActiveRoleSet roleSet);
+
+  /***
    * Get the GroupMappingService used by the AuthorizationProvider
    *
    * @return GroupMappingService used by the AuthorizationProvider

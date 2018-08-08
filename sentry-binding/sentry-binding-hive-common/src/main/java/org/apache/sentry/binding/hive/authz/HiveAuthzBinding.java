@@ -338,7 +338,8 @@ public class HiveAuthzBinding {
       for (List<DBModelAuthorizable> inputHierarchy : inputHierarchyList) {
         if (getAuthzType(inputHierarchy).equals(key)) {
           found = true;
-          if (!authProvider.hasAccess(subject, inputHierarchy, entry.getValue(), activeRoleSet)) {
+          if (!authProvider.hasAccess(subject, inputHierarchy, entry.getValue(),
+              stmtAuthPrivileges.getGrantOption(), activeRoleSet)) {
             throw new AuthorizationException("User " + subject.getName() +
                 " does not have privileges for " + hiveOp.name());
           }
@@ -362,7 +363,8 @@ public class HiveAuthzBinding {
       for (List<DBModelAuthorizable> outputHierarchy : outputHierarchyList) {
         if (getAuthzType(outputHierarchy).equals(key)) {
           found = true;
-          if (!authProvider.hasAccess(subject, outputHierarchy, entry.getValue(), activeRoleSet)) {
+          if (!authProvider.hasAccess(subject, outputHierarchy, entry.getValue(),
+              stmtAuthPrivileges.getGrantOption(), activeRoleSet)) {
             throw new AuthorizationException("User " + subject.getName() +
                 " does not have privileges for " + hiveOp.name());
           }
