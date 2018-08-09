@@ -243,7 +243,7 @@ limitations under the License.
                     <replacements>
                         <replacement>
                             <token>%PROJECT_VERSION%</token>
-                            <value>${version}</value>
+                            <value>${project.version}</value>
                         </replacement>
                     </replacements>
                 </configuration>
