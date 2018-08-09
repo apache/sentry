@@ -784,14 +784,6 @@ public interface SentryStoreInterface {
                                          final List<Update> updates) throws Exception;
 
   /**
-   * Revokes all the owner privileges granted to an authorizable
-   * @param tAuthorizable authorizable for which owner privilege should be revoked.
-   * @param updates
-   * @throws Exception
-   */
-  void revokeOwnerPrivileges(final TSentryAuthorizable tAuthorizable, final List<Update> updates)throws Exception;
-
-  /**
    * Returns all roles and privileges found on the Sentry database.
    *
    * @return A mapping between role and privileges in the form [roleName, set<privileges>].

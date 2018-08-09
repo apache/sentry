@@ -2716,7 +2716,8 @@ public class SentryStore implements SentryStoreInterface {
    * @param updates
    * @throws Exception
    */
-  public void revokeOwnerPrivileges(final TSentryAuthorizable tAuthorizable, final List<Update> updates)
+  @VisibleForTesting
+  void revokeOwnerPrivileges(final TSentryAuthorizable tAuthorizable, final List<Update> updates)
      throws Exception{
     execute(updates, pm -> {
       pm.setDetachAllOnCommit(false);

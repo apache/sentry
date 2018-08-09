@@ -29,6 +29,8 @@ import java.sql.Statement;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.lang.StringUtils;
+import org.apache.parquet.Strings;
 import org.apache.sentry.tests.e2e.hdfs.TestHDFSIntegrationBase;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import org.apache.sentry.service.common.ServiceConstants.SentryPrincipalType;
@@ -105,7 +107,7 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
 
     // verify privileges created for new database
     verifyTableOwnerPrivilegeExistForEntity(statementUSER1_1, SentryPrincipalType.USER, Lists.newArrayList(USER1_1),
-        DB1, null, 1);
+        DB1, "", 1);
 
     // verify that user has all privilege on this database, i.e., "OWNER" means "ALL"
     // for authorization
@@ -151,7 +153,7 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
     Connection connectionUSER1_2 = hiveServer2.createConnection(USER1_2, USER1_2);
     Statement statementUSER1_2 = connectionUSER1_2.createStatement();
     verifyTableOwnerPrivilegeExistForEntity(statementUSER1_2, SentryPrincipalType.USER, Lists.newArrayList(USER1_2),
-        DB1, null, 0);
+        DB1, "", 0);
 
     // verify that user user1_2 does not have any privilege on this database except create
     try {
@@ -192,7 +194,7 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
 
     // verify no privileges created for new database
     verifyTableOwnerPrivilegeExistForEntity(statement, SentryPrincipalType.USER, Lists.newArrayList(admin),
-        DB1, null, 0);
+        DB1, "", 1);
 
     statement.close();
     connection.close();
@@ -225,7 +227,7 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
 
     // verify owner privileges created for new database no longer exists
     verifyTableOwnerPrivilegeExistForEntity(statementUSER1_1, SentryPrincipalType.USER, Lists.newArrayList(USER1_1),
-        DB1, null, 0);
+        DB1, "", 0);
 
     statement.close();
     connection.close();
@@ -374,7 +376,7 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
 
     // verify no owner privileges created for new table
     verifyTableOwnerPrivilegeExistForEntity(statement, SentryPrincipalType.USER, Lists.newArrayList(admin),
-        DB1, tableName1, 0);
+        DB1, tableName1, 1);
 
     statement.close();
     connection.close();
@@ -631,7 +633,7 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
     // verify no owner privileges to the new owner as the owner is admin user
 
     verifyTableOwnerPrivilegeExistForEntity(statement, SentryPrincipalType.USER, Lists.newArrayList(admin),
-        DB1, tableName1, 0);
+        DB1, tableName1, 1);
 
     statement.close();
     connection.close();
@@ -656,7 +658,7 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
     for (String entity : entities) {
       String command;
 
-      if (tableName == null) {
+      if (Strings.isNullOrEmpty(tableName)) {
         command = "SHOW GRANT " + entityType.toString() + " " + entity + " ON DATABASE " + dbName;
       } else {
         command = "SHOW GRANT " + entityType.toString() + " " + entity + " ON TABLE " + dbName + "." + tableName;
@@ -666,28 +668,19 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
 
       int resultSize = 0;
       while(resultSet.next()) {
-
         String actionValue = resultSet.getString(7);
         if (!actionValue.equalsIgnoreCase("owner")) {
           // only check owner privilege, and skip other privileges
           continue;
         }
+        if(!resultSet.getString(1).equalsIgnoreCase(dbName)) {
+          continue;
+        }
 
-        assertThat(resultSet.getString(1), equalToIgnoringCase(dbName)); // db name
-
-        String tableNameValue = resultSet.getString(2);
-        if (tableName != null) {
-          if (!tableNameValue.equalsIgnoreCase(tableName)) {
-            // it is possible the entity has owner privilege on both DB and table
-            // only check the owner privilege on table
-            continue;
-          }
-        } else {
-          if (!tableNameValue.equalsIgnoreCase("")) {
-            // it is possible the entity has owner privilege on both DB and table
-            // only check the owner privilege on db
-            continue;
-          }
+        if (!StringUtils.equalsIgnoreCase(tableName, resultSet.getString(2))) {
+          // it is possible the entity has owner privilege on both DB and table
+          // only check the owner privilege on table
+          continue;
         }
 
         assertThat(resultSet.getString(3), equalToIgnoringCase(""));//partition
@@ -695,7 +688,6 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
         assertThat(resultSet.getString(5), equalToIgnoringCase(entity));//principalName
         assertThat(resultSet.getString(6), equalToIgnoringCase(entityType.toString()));//principalType
         assertThat(resultSet.getBoolean(8), is(ownerPrivilegeGrantEnabled));//grantOption
-
         resultSize ++;
       }
 
