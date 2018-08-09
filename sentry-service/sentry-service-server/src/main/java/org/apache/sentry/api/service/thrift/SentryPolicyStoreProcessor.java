@@ -51,8 +51,7 @@ import org.apache.sentry.core.common.exception.SentryNoSuchObjectException;
 import org.apache.sentry.provider.db.SentryPolicyStorePlugin;
 import org.apache.sentry.provider.db.SentryPolicyStorePlugin.SentryPluginException;
 import org.apache.sentry.core.common.exception.SentryThriftAPIMismatchException;
-import org.apache.sentry.provider.db.log.entity.JsonLogEntity;
-import org.apache.sentry.provider.db.log.entity.JsonLogEntityFactory;
+import org.apache.sentry.provider.db.audit.SentryAuditLogger;
 import org.apache.sentry.provider.db.log.util.Constants;
 import org.apache.sentry.provider.db.service.persistent.SentryStoreInterface;
 import org.apache.sentry.core.common.utils.PolicyStoreConstants.PolicyStoreServerConfig;
@@ -87,6 +86,7 @@ import static org.apache.sentry.hdfs.Updateable.Update;
 public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   private static final Logger LOGGER = Logger.getLogger(SentryPolicyStoreProcessor.class);
   private static final Logger AUDIT_LOGGER = Logger.getLogger(Constants.AUDIT_LOGGER_NAME);
+
   private static final Map<TSentryPrincipalType, SentryPrincipalType> mapOwnerType = ImmutableMap.of(
           TSentryPrincipalType.ROLE, SentryPrincipalType.ROLE,
           TSentryPrincipalType.USER, SentryPrincipalType.USER
@@ -101,6 +101,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   private final Timer hmsWaitTimer =
           SentryMetrics.getInstance().
                   getTimer(name(SentryPolicyStoreProcessor.class, "hms", "wait"));
+  private final SentryAuditLogger audit;
 
   private List<SentryPolicyStorePlugin> sentryPlugins = new LinkedList<SentryPolicyStorePlugin>();
 
@@ -112,6 +113,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     this.sentryStore = store;
     this.notificationHandlerInvoker = new NotificationHandlerInvoker(conf,
         createHandlers(conf));
+    this.audit = new SentryAuditLogger(conf);
     adminGroups = ImmutableSet.copyOf(toTrimedLower(Sets.newHashSet(conf.getStrings(
         ServerConfig.ADMIN_GROUPS, new String[]{}))));
     Iterable<String> pluginClasses = ConfUtilties.CLASS_SPLITTER
@@ -236,14 +238,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       timerContext.stop();
     }
 
-    try {
-      AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance()
-          .createJsonLogEntity(request, response, conf).toJsonFormatLog());
-    } catch (Exception e) {
-      // if any exception, log the exception.
-      String msg = "Error creating audit log for create role: " + e.getMessage();
-      LOGGER.error(msg, e);
-    }
+    audit.onCreateRole(request, response);
     return response;
   }
 
@@ -310,17 +305,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       timerContext.stop();
     }
 
-    try {
-      Set<JsonLogEntity> jsonLogEntitys = JsonLogEntityFactory.getInstance().createJsonLogEntitys(
-          request, response, conf);
-      for (JsonLogEntity jsonLogEntity : jsonLogEntitys) {
-        AUDIT_LOGGER.info(jsonLogEntity.toJsonFormatLog());
-      }
-    } catch (Exception e) {
-      // if any exception, log the exception.
-      String msg = "Error creating audit log for grant privilege to role: " + e.getMessage();
-      LOGGER.error(msg, e);
-    }
+    audit.onGrantRolePrivilege(request, response);
     return response;
   }
 
@@ -399,17 +384,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       timerContext.stop();
     }
 
-    try {
-      Set<JsonLogEntity> jsonLogEntitys = JsonLogEntityFactory.getInstance().createJsonLogEntitys(
-          request, response, conf);
-      for (JsonLogEntity jsonLogEntity : jsonLogEntitys) {
-        AUDIT_LOGGER.info(jsonLogEntity.toJsonFormatLog());
-      }
-    } catch (Exception e) {
-      // if any exception, log the exception.
-      String msg = "Error creating audit log for revoke privilege from role: " + e.getMessage();
-      LOGGER.error(msg, e);
-    }
+    audit.onRevokeRolePrivilege(request, response);
     return response;
   }
 
@@ -460,14 +435,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       timerContext.stop();
     }
 
-    try {
-      AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance()
-          .createJsonLogEntity(request, response, conf).toJsonFormatLog());
-    } catch (Exception e) {
-      // if any exception, log the exception.
-      String msg = "Error creating audit log for drop role: " + e.getMessage();
-      LOGGER.error(msg, e);
-    }
+    audit.onDropRole(request, response);
     return response;
   }
 
@@ -519,14 +487,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       timerContext.stop();
     }
 
-    try {
-      AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance()
-          .createJsonLogEntity(request, response, conf).toJsonFormatLog());
-    } catch (Exception e) {
-      // if any exception, log the exception.
-      String msg = "Error creating audit log for add role to group: " + e.getMessage();
-      LOGGER.error(msg, e);
-    }
+    audit.onGrantRoleToGroup(request, response);
     return response;
   }
 
@@ -562,14 +523,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       timerContext.stop();
     }
 
-    try {
-      AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance()
-          .createJsonLogEntity(request, response, conf).toJsonFormatLog());
-    } catch (Exception e) {
-      // if any exception, log the exception.
-      String msg = "Error creating audit log for add role to user: " + e.getMessage();
-      LOGGER.error(msg, e);
-    }
+    audit.onGrantRoleToUser(request, response);
     return response;
   }
 
@@ -606,14 +560,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       timerContext.stop();
     }
 
-    try {
-      AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance()
-          .createJsonLogEntity(request, response, conf).toJsonFormatLog());
-   } catch (Exception e) {
-      // if any exception, log the exception.
-      String msg = "Error creating audit log for delete role from user: " + e.getMessage();
-      LOGGER.error(msg, e);
-    }
+    audit.onRevokeRoleFromUser(request, response);
     return response;
   }
 
@@ -666,14 +613,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       timerContext.stop();
     }
 
-    try {
-      AUDIT_LOGGER.info(JsonLogEntityFactory.getInstance()
-          .createJsonLogEntity(request, response, conf).toJsonFormatLog());
-    } catch (Exception e) {
-      // if any exception, log the exception.
-      String msg = "Error creating audit log for delete role from group: " + e.getMessage();
-      LOGGER.error(msg, e);
-    }
+    audit.onRevokeRoleFromGroup(request, response);
     return response;
   }
 
@@ -1354,7 +1294,7 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
 
   @Override
   public TSentryHmsEventNotificationResponse sentry_notify_hms_event
-          (TSentryHmsEventNotification request) throws TException{
+          (TSentryHmsEventNotification request) throws TException {
     TSentryHmsEventNotificationResponse response = new TSentryHmsEventNotificationResponse();
     EventType eventType = EventType.valueOf(request.getEventType());
     try (Timer.Context timerContext = sentryMetrics.notificationProcessTimer.time()) {
@@ -1509,8 +1449,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       return;
     }
 
-    SentryPrincipalType entityType = getSentryPrincipalType(request.getOwnerType());
-    if (entityType == null) {
+    SentryPrincipalType principalType = getSentryPrincipalType(request.getOwnerType());
+    if (principalType == null) {
       String error = "Invalid owner type : " + request.getEventType();
       LOGGER.error(error);
       throw new SentryInvalidInputException(error);
@@ -1533,11 +1473,23 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       default:
         LOGGER.error("Invalid owner Type");
     }
-    // Grants owner privilege to the entity
-    sentryStore.alterSentryGrantOwnerPrivilege(request.getOwnerName(), entityType,
-            ownerPrivilege, privilegesUpdateMap.get(ownerPrivilege));
+
+    // Grants owner privilege to the principal
+    try {
+      sentryStore.alterSentryGrantOwnerPrivilege(request.getOwnerName(), principalType,
+              ownerPrivilege, privilegesUpdateMap.get(ownerPrivilege));
+
+      audit.onGrantOwnerPrivilege(Status.OK(), request.getRequestorUserName(),
+        request.getOwnerType(), request.getOwnerName(), request.getAuthorizable());
+    } catch (Exception e) {
+      String msg = "Owner privilege for " + request.getAuthorizable() + " could not be granted: " + e.getMessage();
+      audit.onGrantOwnerPrivilege(Status.RuntimeError(msg, e), request.getRequestorUserName(),
+        request.getOwnerType(), request.getOwnerName(), request.getAuthorizable());
+
+      throw e;
+    }
+
     //TODO Implement notificationHandlerInvoker API for granting user priv and invoke it.
-    //TODO Implement Audit Log API's and invoke them here.
   }
 
   /**
@@ -1561,8 +1513,8 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       return;
     }
 
-    SentryPrincipalType entityType = getSentryPrincipalType(request.getOwnerType());
-    if(entityType == null ) {
+    SentryPrincipalType principalType = getSentryPrincipalType(request.getOwnerType());
+    if(principalType == null ) {
       String error = "Invalid owner type : " + request.getEventType();
       LOGGER.error(error);
       throw new SentryInvalidInputException(error);
@@ -1590,11 +1542,24 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
         }
       }
     }
+
     // Revokes old owner privileges and grants owner privilege for new owner.
-    sentryStore.updateOwnerPrivilege(request.getAuthorizable(), request.getOwnerName(),
-            entityType, updateList);
+    try {
+      sentryStore.updateOwnerPrivilege(request.getAuthorizable(), request.getOwnerName(),
+        principalType, updateList);
+
+      audit.onTransferOwnerPrivilege(Status.OK(), request.getRequestorUserName(),
+        request.getOwnerType(), request.getOwnerName(), request.getAuthorizable());
+    } catch (Exception e) {
+      String msg = "Owner privilege for " + request.getAuthorizable() + " could not be granted: " + e.getMessage();
+
+      audit.onTransferOwnerPrivilege(Status.RuntimeError(msg, e), request.getRequestorUserName(),
+        request.getOwnerType(), request.getOwnerName(), request.getAuthorizable());
+
+      throw e;
+    }
+
     //TODO Implement notificationHandlerInvoker API for granting user priv and invoke it.
-    //TODO Implement Audit Log API's and invoke them here.
   }
 
   /**

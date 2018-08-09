@@ -50,6 +50,8 @@ public final class Constants {
   public static final String OPERATION_DELETE_ROLE_USER = "DELETE_ROLE_FROM_USER";
   public static final String OPERATION_GRANT_PRIVILEGE = "GRANT_PRIVILEGE";
   public static final String OPERATION_REVOKE_PRIVILEGE = "REVOKE_PRIVILEGE";
+  public static final String OPERATION_GRANT_OWNER_PRIVILEGE = "GRANT_OWNER_PRIVILEGE";
+  public static final String OPERATION_TRANSFER_OWNER_PRIVILEGE = "TRANSFER_OWNER_PRIVILEGE";
 
   public static final String OBJECT_TYPE_PRINCIPAL = "PRINCIPAL";
   public static final String OBJECT_TYPE_ROLE = "ROLE";

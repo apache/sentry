@@ -26,6 +26,8 @@ import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.api.generic.thrift.TAuthorizable;
+import org.apache.sentry.api.service.thrift.TSentryAuthorizable;
+import org.apache.sentry.api.service.thrift.TSentryPrincipalType;
 import org.apache.sentry.provider.db.log.util.CommandUtil;
 import org.apache.sentry.provider.db.log.util.Constants;
 import org.apache.sentry.api.service.thrift.TAlterSentryRoleAddGroupsRequest;
@@ -88,7 +90,7 @@ public final class JsonLogEntityFactory {
   }
 
   // log entity for hive/impala grant privilege
-  public Set<JsonLogEntity> createJsonLogEntitys(
+  public Set<JsonLogEntity> createJsonLogEntities(
       TAlterSentryRoleGrantPrivilegeRequest request,
       TAlterSentryRoleGrantPrivilegeResponse response, Configuration conf) {
     ImmutableSet.Builder<JsonLogEntity> setBuilder = ImmutableSet.builder();
@@ -114,7 +116,7 @@ public final class JsonLogEntityFactory {
   }
 
   // log entity for hive/impala revoke privilege
-  public Set<JsonLogEntity> createJsonLogEntitys(
+  public Set<JsonLogEntity> createJsonLogEntities(
       TAlterSentryRoleRevokePrivilegeRequest request,
       TAlterSentryRoleRevokePrivilegeResponse response, Configuration conf) {
     ImmutableSet.Builder<JsonLogEntity> setBuilder = ImmutableSet.builder();
@@ -161,6 +163,25 @@ public final class JsonLogEntityFactory {
     String groups = getGroupsStr(request.getGroupsIterator());
     hamle.setOperationText(CommandUtil.createCmdForRoleDeleteGroup(request.getRoleName(), groups));
 
+    return hamle;
+  }
+
+  public JsonLogEntity createJsonLogEntity(String operationType, String objectType,
+    String requestorUserName, TSentryResponseStatus status, TSentryAuthorizable authorizable,
+    TSentryPrincipalType ownerType, String ownerName, Configuration conf) {
+    DBAuditMetadataLogEntity hamle = createCommonHAMLE(conf, status, requestorUserName,
+      operationType, objectType);
+
+    if (Constants.OPERATION_GRANT_OWNER_PRIVILEGE.equals(operationType)) {
+      hamle.setOperationText(CommandUtil.createCmdForImplicitGrantOwnerPrivilege(ownerType, ownerName, authorizable));
+    } else if (Constants.OPERATION_TRANSFER_OWNER_PRIVILEGE.equals(operationType)) {
+      hamle.setOperationText(CommandUtil.createCmdForImplicitTransferOwnerPrivilege(ownerType, ownerName, authorizable));
+    } else {
+      hamle.setOperationText("Unknown operation");
+    }
+
+    hamle.setDatabaseName(authorizable.getDb());
+    hamle.setTableName(authorizable.getTable());
     return hamle;
   }
 
@@ -322,7 +343,15 @@ public final class JsonLogEntityFactory {
   private DBAuditMetadataLogEntity createCommonHAMLE(Configuration conf,
       TSentryResponseStatus responseStatus, String userName, String requestClassName) {
     DBAuditMetadataLogEntity hamle = new DBAuditMetadataLogEntity();
-    setCommAttrForAMLE(hamle, conf, responseStatus, userName, requestClassName);
+    setCommAttrForAMLE(hamle, conf, responseStatus, userName, toOperationType(requestClassName),
+      toObjectType(requestClassName));
+    return hamle;
+  }
+
+  private DBAuditMetadataLogEntity createCommonHAMLE(Configuration conf,
+    TSentryResponseStatus responseStatus, String userName, String operationType, String objectType) {
+    DBAuditMetadataLogEntity hamle = new DBAuditMetadataLogEntity();
+    setCommAttrForAMLE(hamle, conf, responseStatus, userName, operationType, objectType);
     return hamle;
   }
 
@@ -330,22 +359,30 @@ public final class JsonLogEntityFactory {
       TSentryResponseStatus responseStatus, String userName, String requestClassName,
       String component) {
     GMAuditMetadataLogEntity gmamle = new GMAuditMetadataLogEntity();
-    setCommAttrForAMLE(gmamle, conf, responseStatus, userName, requestClassName);
+    setCommAttrForAMLE(gmamle, conf, responseStatus, userName, toOperationType(requestClassName),
+      toObjectType(requestClassName));
     gmamle.setComponent(component);
     return gmamle;
   }
 
   private void setCommAttrForAMLE(AuditMetadataLogEntity amle, Configuration conf,
-      TSentryResponseStatus responseStatus, String userName, String requestClassName) {
+      TSentryResponseStatus responseStatus, String userName, String operationType, String objectType) {
     amle.setUserName(userName);
     amle.setServiceName(conf.get(ServerConfig.SENTRY_SERVICE_NAME,
         ServerConfig.SENTRY_SERVICE_NAME_DEFAULT).trim());
     amle.setImpersonator(ThriftUtil.getImpersonator());
     amle.setIpAddress(ThriftUtil.getIpAddress());
-    amle.setOperation(Constants.requestTypeToOperationMap.get(requestClassName));
+    amle.setOperation(operationType);
     amle.setEventTime(Long.toString(System.currentTimeMillis()));
     amle.setAllowed(isAllowed(responseStatus));
-    amle.setObjectType(Constants.requestTypeToObjectTypeMap
-        .get(requestClassName));
+    amle.setObjectType(objectType);
+  }
+
+  private String toOperationType(String className) {
+    return Constants.requestTypeToOperationMap.get(className);
+  }
+
+  private String toObjectType(String className) {
+    return Constants.requestTypeToObjectTypeMap.get(className);
   }
 }
