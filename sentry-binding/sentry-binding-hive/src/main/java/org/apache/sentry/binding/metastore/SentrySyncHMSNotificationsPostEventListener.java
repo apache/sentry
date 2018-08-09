@@ -33,6 +33,7 @@ import org.apache.hadoop.hive.metastore.events.AddPartitionEvent;
 import org.apache.hadoop.hive.metastore.events.AlterPartitionEvent;
 import org.apache.hadoop.hive.metastore.events.AlterTableEvent;
 import org.apache.hadoop.hive.metastore.events.CreateDatabaseEvent;
+// import org.apache.hadoop.hive.metastore.events.AlterDatabaseEvent; TODO: Enable once HIVE-18031 is available
 import org.apache.hadoop.hive.metastore.events.CreateTableEvent;
 import org.apache.hadoop.hive.metastore.events.DropDatabaseEvent;
 import org.apache.hadoop.hive.metastore.events.DropPartitionEvent;
@@ -209,6 +210,24 @@ public class SentrySyncHMSNotificationsPostEventListener extends MetaStoreEventL
     SentryHmsEvent event = new SentryHmsEvent(serverName, dbEvent);
     notifyHmsEvent(event);
   }
+
+  /**
+   * Notify sentry server when database is altered
+   *
+   * @param dbEvent Alter database event
+   * @throws MetaException
+   */
+  /* TODO: Enable once HIVE-18031 is available
+  @Override
+  public void onAlterDatabase(AlterDatabaseEvent dbEvent) throws MetaException {
+    // Failure event, Need not be notified.
+    if (failedEvent(dbEvent, EventType.ALTER_DATABASE)) {
+      return;
+    }
+    SentryHmsEvent event = new SentryHmsEvent(serverName, dbEvent);
+    notifyHmsEvent(event);
+  }
+  */
 
   /**
    * Notifies sentry server about the HMS Event and related metadata.

@@ -25,6 +25,7 @@ import org.apache.hadoop.hive.metastore.api.PrincipalType;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.hadoop.hive.metastore.events.CreateDatabaseEvent;
 import org.apache.hadoop.hive.metastore.events.DropDatabaseEvent;
+// import org.apache.hadoop.hive.metastore.events.AlterDatabaseEvent; TODO: enable one HIVE-18031 is available
 import org.apache.hadoop.hive.metastore.events.CreateTableEvent;
 import org.apache.hadoop.hive.metastore.events.DropTableEvent;
 import org.apache.hadoop.hive.metastore.events.AlterTableEvent;
@@ -110,6 +111,27 @@ class SentryHmsEvent {
     }
     setAuthorizable(inServerName, event.getNewTable());
   }
+
+  /**
+   * Construct SentryHmsEvent from AlterDatabaseEvent
+   *
+   * event, transaction, owner and authorizable info is initialized from event.
+   * @param inServerName name of the server associated with the event
+   * @param event AlterDatabaseEvent
+   */
+  /* TODO: Enable once HIVE-18031 is available
+  public SentryHmsEvent(String inServerName, AlterDatabaseEvent event) {
+    this(event, EventType.ALTER_DATABASE);
+
+    if (!StringUtils.equals(event.getOldDatabase().getOwnerName(), event.getNewDatabase().getOwnerName())) {
+      // Owner Changed. We don't set owner info for other cases of alter database.
+      // In this way, sentry server only updates owner privilege when object is created, dropped or
+      // owner is updated
+      setOwnerInfo(event.getNewDatabase());
+    }
+    setAuthorizable(inServerName, event.getNewDatabase());
+  }
+  */
 
   /**
    * Construct SentryHmsEvent from CreateDatabaseEvent

@@ -278,6 +278,10 @@ public class HiveAuthzBindingHook extends HiveAuthzBindingHookBase {
       }
 
       break;
+
+    case HiveParser.TOK_ALTERDATABASE_OWNER:
+      currDB = currOutDB = new Database(ast.getChild(0).getText());
+      break;
     default:
         currDB = getCanonicalDb();
         break;

@@ -348,9 +348,11 @@ public class TestOperationsPart1 extends AbstractTestWithStaticConfiguration {
     statement = context.createStatement(connection);
     statement.execute("ALTER DATABASE " + DB1 + " SET DBPROPERTIES ('comment'='comment')");
 
+    // Negative case for admin
     connection = context.createConnection(ADMIN1);
     statement = context.createStatement(connection);
-    statement.execute("ALTER DATABASE " + DB1 + " SET OWNER USER " + USER1_1);
+    context.assertSentrySemanticException(statement, "ALTER DATABASE " + DB1 + " SET OWNER USER " + USER1_1, semanticException);
+
     statement.close();
     connection.close();
 
