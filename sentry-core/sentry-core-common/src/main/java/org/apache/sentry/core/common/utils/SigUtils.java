@@ -16,11 +16,14 @@
  */
 package org.apache.sentry.core.common.utils;
 
-import sun.misc.Signal;
-import sun.misc.SignalHandler;
-
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.misc.Signal;
+import sun.misc.SignalHandler;
 
 /**
  * This class facilitates handling signals in Sentry.
@@ -34,14 +37,13 @@ import org.slf4j.LoggerFactory;
  * This class relies on sun.misc.SignalHandler which registers signal handlers via static
  * method handle(). Therefore, SigUtils also only exposes a static method registerListener()
  * <p>
- * This class, as sun.misc.SignalHandler, supports a single signal listener per each signal.
- * The same signal listener can be used to handle multiple signals, but setting a listener
- * for the same signal twice will replace an old listener with the new one.
- * method.
+ * This class, as sun.misc.SignalHandler, supports a multiple signal listeners per each signal.
+ * The same signal listener can be used to handle multiple signals.
  */
 public final class SigUtils {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SigUtils.class);
+  private static Map<String, SigHandler> sigHandlerMap = new HashMap<>();
 
   private SigUtils() {} // to prevent class instantiation
 
@@ -56,14 +58,24 @@ public final class SigUtils {
    * to a registered signal listener.
    */
   private static class SigHandler implements SignalHandler {
-    private final SigListener listener;
-    SigHandler(SigListener listener) {
-      this.listener = listener;
+    private final Set<SigListener> listeners = new HashSet<>();
+    SigHandler() {
+    }
+    public void addListener(SigListener sigListener){
+      listeners.add(sigListener);
     }
     @Override
     public void handle(Signal sig) {
       if (sig != null) {
-        listener.onSignal(sig.toString());
+        for (SigListener listener : listeners) {
+          try {
+            LOGGER.debug("Running Signal Handler {}.onSignal()", listener.getClass().getName());
+            listener.onSignal(sig.toString());
+          } catch (Exception e) {
+            LOGGER.warn(String.format("Signal handler %s.onSignal() threw an exception:",
+                listener.getClass().getName()), e);
+          }
+        }
         // signalling is a rare yet important event - let's always log it
         LOGGER.info("Signal propagated: " + sig);
       } else {
@@ -73,10 +85,9 @@ public final class SigUtils {
   }
 
   /**
-   * Register signal listener for a specific signal.
+   * Adds a signal listener for a specific signal.
    *
-   * Only one listener per specific signal is supported. Calling this method
-   * multiple times will keep overwriting a previously set listener.
+   * Multiple listeners per specific signal are supported but execution order is indeterminate.
    *
    * @NotNull sigName
    * @NotNull sigListener
@@ -91,7 +102,12 @@ public final class SigUtils {
     if (sigName == null) {
       throw new IllegalArgumentException("NULL signal name");
     }
-    Signal.handle(new Signal(sigName), new SigHandler(sigListener));
+    if (!sigHandlerMap.containsKey(sigName)){
+      sigHandlerMap.put(sigName, new SigHandler());
+    }
+    SigHandler sigHandler = sigHandlerMap.get(sigName);
+    sigHandler.addListener(sigListener);
+    Signal.handle(new Signal(sigName), sigHandler);
     LOGGER.info("Signal Listener registered for signal " + sigName);
   }
 }
