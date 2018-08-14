@@ -101,7 +101,7 @@ public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerH
   protected final static HiveAuthzPrivileges columnMetaDataPrivilege =
       new HiveAuthzPrivileges.AuthzPrivilegeBuilder()
           .addInputObjectPriviledge(AuthorizableType.Column,
-              EnumSet.of(DBModelAction.SELECT, DBModelAction.INSERT))
+              EnumSet.of(DBModelAction.SELECT, DBModelAction.INSERT, DBModelAction.ALTER))
           .setOperationScope(HiveOperationScope.COLUMN).setOperationType(HiveOperationType.INFO)
           .build();
 

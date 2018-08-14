@@ -400,7 +400,8 @@ public class DefaultSentryValidator extends SentryHiveAuthorizationValidator {
     HiveAuthzPrivileges tableMetaDataPrivilege =
         new HiveAuthzPrivileges.AuthzPrivilegeBuilder()
             .addInputObjectPriviledge(AuthorizableType.Column,
-                EnumSet.of(DBModelAction.SELECT, DBModelAction.INSERT))
+                EnumSet.of(DBModelAction.SELECT, DBModelAction.INSERT, DBModelAction.ALTER,
+                  DBModelAction.DROP, DBModelAction.INDEX, DBModelAction.LOCK))
             .setOperationScope(HiveOperationScope.TABLE)
             .setOperationType(
                 HiveAuthzPrivileges.HiveOperationType.INFO)
