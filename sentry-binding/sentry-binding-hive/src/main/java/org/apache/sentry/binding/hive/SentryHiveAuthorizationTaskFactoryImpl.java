@@ -42,7 +42,6 @@ import org.apache.hadoop.hive.ql.plan.GrantDesc;
 import org.apache.hadoop.hive.ql.plan.GrantRevokeRoleDDL;
 import org.apache.hadoop.hive.ql.plan.PrincipalDesc;
 import org.apache.hadoop.hive.ql.plan.PrivilegeDesc;
-import org.apache.hadoop.hive.ql.plan.PrivilegeObjectDesc;
 import org.apache.hadoop.hive.ql.plan.RevokeDesc;
 import org.apache.hadoop.hive.ql.plan.RoleDDLDesc;
 import org.apache.hadoop.hive.ql.plan.ShowGrantDesc;
@@ -51,6 +50,7 @@ import org.apache.hadoop.hive.ql.security.authorization.PrivilegeRegistry;
 import org.apache.hadoop.hive.ql.security.authorization.PrivilegeType;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.sentry.core.model.db.AccessConstants;
+import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -151,16 +151,60 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
         throw new SemanticException(msg);
       }
     }
+
+    // Throws an exception if the action is not allowed to be granted on the object
+    checkAllowedPrivileges(privilegeObj, privilegeDesc);
+
     GrantDesc grantDesc = new GrantDesc(privilegeObj, privilegeDesc,
         principalDesc, userName, PrincipalType.USER, grantOption);
     return createTask(new DDLWork(inputs, outputs, grantDesc));
   }
+
+  /**
+   * Checks if a privilege is allowed to be granted in an object. It throws an exception
+   * if it is not allowed.
+   *
+   * @param privilegeObj The privilege object to get the authorizable type
+   * @param privilegeDesc The list of privileges to check
+   * @throws SemanticException If one or more of privileges are not allowed on the object
+   */
+  private void checkAllowedPrivileges(SentryHivePrivilegeObjectDesc privilegeObj,
+    List<PrivilegeDesc> privilegeDesc) throws SemanticException {
+    AuthorizableType authorizableType = null;
+
+    // Get the scope (or authorizable type) of the grant privilege
+    if (privilegeObj.getUri()) {
+      authorizableType = AuthorizableType.URI;
+    } else if (privilegeObj.getTable()) {
+      authorizableType = AuthorizableType.Table;
+    } else if (privilegeObj.getDatabase()) {
+      authorizableType = AuthorizableType.Db;
+    } else if (privilegeObj.getServer()) {
+      authorizableType = AuthorizableType.Server;
+    }
+
+    for (PrivilegeDesc privilege : privilegeDesc) {
+      PrivilegeType privType = privilege.getPrivilege().getPriv();
+
+      if (authorizableType == AuthorizableType.Table) {
+        // If a privilege comes with columns, then we treated this as column privileges
+        if (privilege.getColumns() != null && !privilege.getColumns().isEmpty() && privType != PrivilegeType.SELECT) {
+          String msg = SentryHiveConstants.PRIVILEGE_NOT_SUPPORTED + privType + " on Column";
+          throw new SemanticException(msg);
+        } else if (privType == PrivilegeType.CREATE) {
+          String msg = SentryHiveConstants.PRIVILEGE_NOT_SUPPORTED + privType + " on Table";
+          throw new SemanticException(msg);
+        }
+      }
+    }
+  }
+
   @Override
   public Task<? extends Serializable> createRevokeTask(ASTNode ast, HashSet<ReadEntity> inputs,
       HashSet<WriteEntity> outputs) throws SemanticException {
     List<PrivilegeDesc> privilegeDesc = analyzePrivilegeListDef((ASTNode) ast.getChild(0));
     List<PrincipalDesc> principalDesc = analyzePrincipalListDef((ASTNode) ast.getChild(1));
-    PrivilegeObjectDesc privilegeObj = null;
+    SentryHivePrivilegeObjectDesc privilegeObj = null;
     if (ast.getChildCount() > 2) {
       ASTNode astChild = (ASTNode) ast.getChild(2);
       privilegeObj = analyzePrivilegeObject(astChild);
@@ -174,6 +218,10 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
         throw new SemanticException(msg);
       }
     }
+
+    // Throws an exception if the action is not allowed to be granted on the object
+    checkAllowedPrivileges(privilegeObj, privilegeDesc);
+
     RevokeDesc revokeDesc = new RevokeDesc(privilegeDesc, principalDesc, privilegeObj);
     return createTask(new DDLWork(inputs, outputs, revokeDesc));
   }
@@ -398,11 +446,7 @@ public class SentryHiveAuthorizationTaskFactoryImpl implements HiveAuthorization
       if (privilegeDef.getChildCount() > 1) {
         cols = BaseSemanticAnalyzer.getColumnNames((ASTNode) privilegeDef.getChild(1));
       }
-      // Columns accept only SELECT privileges
-      if (cols != null && !privObj.getPriv().equals(PrivilegeType.SELECT)) {
-        String msg = SentryHiveConstants.PRIVILEGE_NOT_SUPPORTED + privObj.getPriv() + " on Column";
-        throw new SemanticException(msg);
-      }
+
       PrivilegeDesc privilegeDesc = new PrivilegeDesc(privObj, cols);
       ret.add(privilegeDesc);
     }

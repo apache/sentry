@@ -522,6 +522,14 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
                       action, grantOp);
                 }
               } else {
+                // Table does not accept CREATE privileges
+                if (action.equalsIgnoreCase(AccessConstants.CREATE)) {
+                  String msg =
+                    SentryHiveConstants.PRIVILEGE_NOT_SUPPORTED + privilege.getName()
+                      + " on Table";
+                  throw new HiveAuthzPluginException(msg);
+                }
+
                 if (isGrant) {
                   sentryClient.grantTablePrivilege(grantorName, roleName, serverName,
                       hivePrivObject.getDbname(), hivePrivObject.getObjectName(), action, grantOp);

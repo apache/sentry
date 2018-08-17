@@ -95,6 +95,11 @@ public class TestDescribeMetadataPrivileges extends AbstractTestWithStaticConfig
   @Test
   public void testDescribeTableWithGrantOnTable() throws Exception {
     if (action != null) {
+      if (action == DBModelAction.CREATE) {
+        // CREATE is not supported at the table level
+        return;
+      }
+      
       adminStmt.execute("GRANT " + action + " ON TABLE " + DB1 + "." + TBL1 + " TO ROLE role1");
     }
 
