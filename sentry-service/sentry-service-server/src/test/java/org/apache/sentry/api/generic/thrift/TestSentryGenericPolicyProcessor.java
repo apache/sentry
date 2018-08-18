@@ -289,6 +289,13 @@ public class TestSentryGenericPolicyProcessor extends org.junit.Assert {
     Mockito.when(mockStore.getGroupsByRoles(anyString(), anySetOf(String.class)))
     .thenReturn(Sets.newHashSet(groupName));
 
+    Set<TSentryRole> mockTRoles = Sets.newHashSet();
+    TSentryRole tSentryRole = new TSentryRole(roleName, Sets.newHashSet(groupName));
+    mockTRoles.add(tSentryRole);
+    Mockito.when(mockStore.getTSentryRolesByGroupName(anyString(), anySetOf(String.class)))
+        .thenReturn(mockTRoles);
+
+
     Mockito.when(mockStore.getPrivilegesByAuthorizable(anyString(), anyString(), anySetOf(String.class), anyListOf(Authorizable.class)))
     .thenReturn(Sets.newHashSet(mSentryGMPrivilege));
 

@@ -332,7 +332,7 @@ public class SentryStore implements SentryStoreInterface {
    * @return List of all roles
    */
   @SuppressWarnings("unchecked")
-  private List<MSentryRole> getAllRoles(PersistenceManager pm) {
+  public List<MSentryRole> getAllRoles(PersistenceManager pm) {
     Query query = pm.newQuery(MSentryRole.class);
     query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
     return (List<MSentryRole>) query.execute();
