@@ -17,6 +17,7 @@
  */
 package org.apache.sentry.api.service.thrift;
 
+import static org.apache.sentry.service.common.ServiceConstants.ServerConfig.SENTRY_DB_POLICY_STORE_OWNER_AS_PRIVILEGE;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -34,7 +35,7 @@ import org.apache.sentry.core.common.exception.SentryInvalidInputException;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.common.GroupMappingService;
 import org.apache.sentry.provider.db.service.persistent.CounterWait;
-import org.apache.sentry.service.common.ServiceConstants;
+import org.apache.sentry.service.common.SentryOwnerPrivilegeType;
 import org.apache.sentry.core.common.exception.SentrySiteConfigurationException;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.service.common.ServiceConstants.SentryPrincipalType;
@@ -81,7 +82,7 @@ public class TestSentryPolicyStoreProcessor {
   public void setup() throws Exception{
     conf = new Configuration(true);
     //Check behaviour when DB name is not set
-    conf.setBoolean(ServiceConstants.ServerConfig.SENTRY_ENABLE_OWNER_PRIVILEGES, true);
+    conf.set(SENTRY_DB_POLICY_STORE_OWNER_AS_PRIVILEGE, SentryOwnerPrivilegeType.ALL.toString());
     conf.set(ServerConfig.ADMIN_GROUPS, ADMIN_GROUP);
     conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING,
             MockGroupMapping.class.getName());
@@ -195,7 +196,7 @@ public class TestSentryPolicyStoreProcessor {
 
   @Test
   public void testConstructOwnerPrivilege() throws Exception {
-    conf.setBoolean(ServiceConstants.ServerConfig.SENTRY_ENABLE_OWNER_PRIVILEGES, false);
+    conf.set(SENTRY_DB_POLICY_STORE_OWNER_AS_PRIVILEGE, SentryOwnerPrivilegeType.NONE.toString());
     SentryPolicyStoreProcessor sentryServiceHandler =
             new SentryPolicyStoreProcessor(ApiConstants.SentryPolicyServiceConstants.SENTRY_POLICY_SERVICE_NAME,
                     conf, sentryStore);
@@ -209,7 +210,7 @@ public class TestSentryPolicyStoreProcessor {
 
 
     //Check behaviour when DB name is not set
-    conf.setBoolean(ServiceConstants.ServerConfig.SENTRY_ENABLE_OWNER_PRIVILEGES, true);
+    conf.set(SENTRY_DB_POLICY_STORE_OWNER_AS_PRIVILEGE, SentryOwnerPrivilegeType.ALL.toString());
     sentryServiceHandler =
             new SentryPolicyStoreProcessor(ApiConstants.SentryPolicyServiceConstants.SENTRY_POLICY_SERVICE_NAME,
                     conf, sentryStore);
@@ -237,8 +238,7 @@ public class TestSentryPolicyStoreProcessor {
     Assert.assertEquals(privilege, sentryServiceHandler.constructOwnerPrivilege(authorizable));
 
     //Check the behavior when grant option is configured.
-    conf.setBoolean(ServiceConstants.ServerConfig.SENTRY_OWNER_PRIVILEGE_WITH_GRANT,
-            true);
+    conf.set(SENTRY_DB_POLICY_STORE_OWNER_AS_PRIVILEGE, SentryOwnerPrivilegeType.ALL_WITH_GRANT.toString());
     sentryServiceHandler =
             new SentryPolicyStoreProcessor(ApiConstants.SentryPolicyServiceConstants.SENTRY_POLICY_SERVICE_NAME,
                     conf, sentryStore);
@@ -421,7 +421,7 @@ public class TestSentryPolicyStoreProcessor {
   @Test
   public void testAlterTableEventProcessing() throws Exception {
 
-    conf.setBoolean(ServiceConstants.ServerConfig.SENTRY_ENABLE_OWNER_PRIVILEGES, true);
+    conf.set(SENTRY_DB_POLICY_STORE_OWNER_AS_PRIVILEGE, SentryOwnerPrivilegeType.ALL.toString());
 
     SentryPolicyStoreProcessor sentryServiceHandler =
             new SentryPolicyStoreProcessor(ApiConstants.SentryPolicyServiceConstants.SENTRY_POLICY_SERVICE_NAME,

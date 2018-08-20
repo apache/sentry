@@ -248,18 +248,8 @@ public class ServiceConstants {
     public static final String SENTRY_HMS_NOTIFICATION_ID_KEEP_COUNT = "sentry.server.delta.keep.count";
     public static final int SENTRY_HMS_NOTIFICATION_ID_KEEP_COUNT_DEFAULT = 100;
 
-    /**
-     * Controls the owner privileges feature.
-     */
-    public static final String SENTRY_ENABLE_OWNER_PRIVILEGES = "sentry.enable.owner.privileges";
-    public static final Boolean SENTRY_ENABLE_OWNER_PRIVILEGES_DEFAULT = false;
-
-    /**
-     * This value is used to decide if a owner privilege created by sentry server
-     * should have grant option.
-     */
-    public static final String SENTRY_OWNER_PRIVILEGE_WITH_GRANT = "sentry.grant.owner.privileges.with.grant";
-    public static final Boolean SENTRY_OWNER_PRIVILEGE_WITH_GRANT_DEFAULT = false;
+    public static final String SENTRY_DB_POLICY_STORE_OWNER_AS_PRIVILEGE = "sentry.db.policy.store.owner.as.privilege";
+    public static final SentryOwnerPrivilegeType SENTRY_DB_POLICY_STORE_OWNER_AS_PRIVILEGE_DEFAULT = SentryOwnerPrivilegeType.NONE;
   }
 
   public static final String SENTRY_ZK_JAAS_NAME = "Sentry";

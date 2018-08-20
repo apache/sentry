@@ -92,6 +92,7 @@ import org.apache.sentry.api.service.thrift.TSentryMappingData;
 import org.apache.sentry.api.service.thrift.TSentryPrivilege;
 import org.apache.sentry.api.service.thrift.TSentryPrivilegeMap;
 import org.apache.sentry.api.service.thrift.TSentryRole;
+import org.apache.sentry.service.common.SentryOwnerPrivilegeType;
 import org.apache.sentry.service.common.ServiceConstants.SentryPrincipalType;
 import org.apache.sentry.service.common.ServiceConstants.ServerConfig;
 import org.datanucleus.store.rdbms.exceptions.MissingTableException;
@@ -273,8 +274,8 @@ public class SentryStore implements SentryStoreInterface {
     long notificationTimeout = conf.getInt(ServerConfig.SENTRY_NOTIFICATION_SYNC_TIMEOUT_MS,
             ServerConfig.SENTRY_NOTIFICATION_SYNC_TIMEOUT_DEFAULT);
     counterWait = new CounterWait(notificationTimeout, TimeUnit.MILLISECONDS);
-    ownerPrivilegeWithGrant = conf.getBoolean(ServerConfig.SENTRY_OWNER_PRIVILEGE_WITH_GRANT,
-            ServerConfig.SENTRY_OWNER_PRIVILEGE_WITH_GRANT_DEFAULT);
+
+    ownerPrivilegeWithGrant = SentryOwnerPrivilegeType.ALL_WITH_GRANT.isConfSet(conf);
   }
 
   public void setPersistUpdateDeltas(boolean persistUpdateDeltas) {

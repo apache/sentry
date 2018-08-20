@@ -73,6 +73,7 @@ import org.apache.sentry.hdfs.SentryINodeAttributesProvider;
 import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
 import org.apache.sentry.provider.file.LocalGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.file.PolicyFile;
+import org.apache.sentry.service.common.SentryOwnerPrivilegeType;
 import org.apache.sentry.service.thrift.SentryServiceClientFactory;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import org.apache.sentry.tests.e2e.hive.fs.MiniDFS;
@@ -97,6 +98,7 @@ import com.google.common.io.Files;
 import com.google.common.io.Resources;
 
 import static org.apache.sentry.hdfs.ServiceConstants.ServerConfig.SENTRY_HDFS_INTEGRATION_PATH_PREFIXES;
+import static org.apache.sentry.service.common.ServiceConstants.ServerConfig.SENTRY_DB_POLICY_STORE_OWNER_AS_PRIVILEGE;
 import static org.junit.Assert.assertFalse;
 
 /**
@@ -882,12 +884,18 @@ public abstract class TestHDFSIntegrationBase {
                     "org.apache.sentry.api.service.thrift.SentryPolicyStoreProcessorFactory,org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
             sentryProperties.put("sentry.policy.store.plugins", "org.apache.sentry.hdfs.SentryPlugin");
           }
-          if(ownerPrivilegeEnabled) {
-            sentryProperties.put("sentry.enable.owner.privileges", "true");
 
+          if (ownerPrivilegeEnabled) {
             if(ownerPrivilegeGrantEnabled) {
-              sentryProperties.put("sentry.grant.owner.privileges.with.grant", "true");
+              sentryProperties.put(SENTRY_DB_POLICY_STORE_OWNER_AS_PRIVILEGE,
+                SentryOwnerPrivilegeType.ALL_WITH_GRANT.toString());
+            } else {
+              sentryProperties.put(SENTRY_DB_POLICY_STORE_OWNER_AS_PRIVILEGE,
+                SentryOwnerPrivilegeType.ALL.toString());
             }
+          } else {
+            sentryProperties.put(SENTRY_DB_POLICY_STORE_OWNER_AS_PRIVILEGE,
+              SentryOwnerPrivilegeType.NONE.toString());
           }
 
           for (Map.Entry<String, String> entry : sentryProperties.entrySet()) {
