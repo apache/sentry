@@ -341,6 +341,7 @@ public class MSentryPrivilege {
 
     // check action implies
     if (!action.equalsIgnoreCase(AccessConstants.ALL)
+        && !action.equalsIgnoreCase(AccessConstants.OWNER)
         && !action.equalsIgnoreCase(other.action)
         && !action.equalsIgnoreCase(AccessConstants.ACTION_ALL)) {
       return false;

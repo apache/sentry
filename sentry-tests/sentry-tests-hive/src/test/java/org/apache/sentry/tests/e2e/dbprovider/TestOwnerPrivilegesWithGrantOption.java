@@ -18,12 +18,16 @@
 package org.apache.sentry.tests.e2e.dbprovider;
 
 import com.google.common.collect.Lists;
+
 import java.sql.Connection;
 import java.sql.Statement;
+
 import org.apache.sentry.service.common.ServiceConstants.SentryPrincipalType;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+
 
 public class TestOwnerPrivilegesWithGrantOption extends TestOwnerPrivileges {
   @BeforeClass
@@ -97,4 +101,54 @@ public class TestOwnerPrivilegesWithGrantOption extends TestOwnerPrivileges {
     }
   }
 
+  @Test
+  public void testPermissionGrantToRoleByOwner() throws Exception {
+    String ownerRole = "owner_role";
+    String newOwnerRole = "new_owner_role";
+    dbNames = new String[]{DB1};
+    roles = new String[]{"admin_role", ownerRole};
+
+    // create required roles, and assign them to USERGROUP1
+    setupUserRoles(roles, statement);
+
+    // create test DB
+    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statement.execute("CREATE DATABASE " + DB1);
+
+    statement.execute("CREATE ROLE " + newOwnerRole);
+    statement.execute("GRANT ROLE " + newOwnerRole + " to GROUP " + USERGROUP2);
+
+    // setup privileges for USER1
+    statement.execute("GRANT CREATE ON DATABASE " + DB1 + " TO ROLE " + ownerRole);
+    statement.execute("USE " + DB1);
+
+    // USER1_1 create table
+    Connection connectionUSER1_1 = hiveServer2.createConnection(USER1_1, USER1_1);
+    Statement statementUSER1_1 = connectionUSER1_1.createStatement();
+    statementUSER1_1.execute("CREATE TABLE " + DB1 + "." + tableName1
+            + " (under_col int comment 'the under column')");
+
+   // Verify that the user who created the table has owner privilege on the table created.
+    verifyTableOwnerPrivilegeExistForPrincipal(statement, SentryPrincipalType.USER,
+            Lists.newArrayList(USER1_1),
+            DB1, tableName1, 1);
+
+    // Owner granting privileges to another user
+    try {
+      statementUSER1_1
+              .execute("GRANT ALL ON " + DB1 + "." + tableName1 + " TO ROLE " + newOwnerRole);
+    } catch (Exception ex) {
+      Assert.fail("Exception received while granting permissions");
+    }
+
+    // Making sure that user who is granted all permissions can drop the table.
+    Connection connectionUSER2_1 = hiveServer2.createConnection(USER2_1, USER2_1);
+    Statement statementUSER2_1 = connectionUSER2_1.createStatement();
+    try {
+      statementUSER2_1
+              .execute("DROP TABLE " + DB1 + "." + tableName1 );
+    } catch (Exception ex) {
+      Assert.fail("Exception received while dropping the table");
+    }
+  }
 }
