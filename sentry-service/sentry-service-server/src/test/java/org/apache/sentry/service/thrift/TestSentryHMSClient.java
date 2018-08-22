@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Arrays;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.CurrentNotificationEventId;
@@ -36,6 +38,7 @@ import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.sentry.provider.db.service.persistent.PathsImage;
 import org.apache.thrift.TException;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -107,6 +110,11 @@ public class TestSentryHMSClient {
     client = new SentryHMSClient(conf, (HiveConnectionFactory)hiveConnectionFactory);
   }
 
+  @Before
+  public void setUp() {
+    SentryStateBank.clearAllStates();
+  }
+
   /**
    * Creating snapshot when SentryHMSClient is not connected to HMS
    */
@@ -116,6 +124,10 @@ public class TestSentryHMSClient {
     Assert.assertFalse(client.isConnected());
     PathsImage snapshotInfo = client.getFullSnapshot();
     Assert.assertTrue(snapshotInfo.getPathImage().isEmpty());
+    Assert.assertFalse("FullUpdateInitializer is not expected to be in progress",
+            SentryStateBank.isEnabled(FullUpdateInitializerState.COMPONENT, FullUpdateInitializerState.FULL_SNAPSHOT_INPROGRESS));
+    Assert.assertFalse(SentryStateBank.wereStatesEnabled(FullUpdateInitializerState.COMPONENT, new HashSet<SentryState>(
+            Arrays.asList(FullUpdateInitializerState.FULL_SNAPSHOT_INPROGRESS))));
   }
 
   /**
@@ -129,6 +141,10 @@ public class TestSentryHMSClient {
     Assert.assertTrue(client.isConnected());
     PathsImage snapshotInfo = client.getFullSnapshot();
     Assert.assertTrue(snapshotInfo.getPathImage().isEmpty());
+    Assert.assertFalse("FullUpdateInitializer is not expected to be in progress",
+            SentryStateBank.isEnabled(FullUpdateInitializerState.COMPONENT, FullUpdateInitializerState.FULL_SNAPSHOT_INPROGRESS));
+    Assert.assertTrue(SentryStateBank.wereStatesEnabled(FullUpdateInitializerState.COMPONENT, new HashSet<SentryState>(
+            Arrays.asList(FullUpdateInitializerState.FULL_SNAPSHOT_INPROGRESS))));
   }
 
   /**
@@ -164,6 +180,10 @@ public class TestSentryHMSClient {
 
     snapshotInfo = client.getFullSnapshot();
     Assert.assertTrue(snapshotInfo.getPathImage().isEmpty());
+    Assert.assertFalse("FullUpdateInitializer is not expected to be in progress",
+            SentryStateBank.isEnabled(FullUpdateInitializerState.COMPONENT, FullUpdateInitializerState.FULL_SNAPSHOT_INPROGRESS));
+    Assert.assertTrue(SentryStateBank.wereStatesEnabled(FullUpdateInitializerState.COMPONENT, new HashSet<SentryState>(
+            Arrays.asList(FullUpdateInitializerState.FULL_SNAPSHOT_INPROGRESS))));
   }
 
   /**
@@ -194,7 +214,10 @@ public class TestSentryHMSClient {
         snapshotInfo.getPathImage().get("db2.tab21"));
     Assert.assertEquals(Sets.newHashSet("db3/tab31"), snapshotInfo.getPathImage().get("db3.tab31"));
     Assert.assertEquals(snapshotInfo.getId(), mockClient.eventId);
-
+    Assert.assertFalse("FullUpdateInitializer is not expected to be in progress",
+            SentryStateBank.isEnabled(FullUpdateInitializerState.COMPONENT, FullUpdateInitializerState.FULL_SNAPSHOT_INPROGRESS));
+    Assert.assertTrue(SentryStateBank.wereStatesEnabled(FullUpdateInitializerState.COMPONENT, new HashSet<SentryState>(
+            Arrays.asList(FullUpdateInitializerState.FULL_SNAPSHOT_INPROGRESS))));
   }
 
   /**

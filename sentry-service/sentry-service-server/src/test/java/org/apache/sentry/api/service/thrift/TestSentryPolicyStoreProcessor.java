@@ -40,6 +40,8 @@ import org.apache.sentry.core.common.exception.SentrySiteConfigurationException;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.service.common.ServiceConstants.SentryPrincipalType;
 import org.apache.sentry.service.common.ServiceConstants.ServerConfig;
+import org.apache.sentry.service.thrift.FullUpdateInitializerState;
+import org.apache.sentry.service.thrift.SentryStateBank;
 import org.junit.After;
 import org.junit.Assert;
 
@@ -416,6 +418,47 @@ public class TestSentryPolicyStoreProcessor {
     Mockito.verify(
         sentryStore, Mockito.times(1)).alterSentryGrantOwnerPrivilege(ADMIN_USER, SentryPrincipalType.USER,
         ownerPrivilege, null);
+  }
+
+  @Test
+  public void testNotificationSync() throws Exception {
+
+    SentryPolicyStoreProcessor sentryServiceHandler =
+            new SentryPolicyStoreProcessor(ApiConstants.SentryPolicyServiceConstants.SENTRY_POLICY_SERVICE_NAME,
+                    conf, sentryStore);
+    TSentryAuthorizable authorizable = new TSentryAuthorizable();
+    authorizable.setDb(DBNAME);
+
+    TSentryHmsEventNotification notification = new TSentryHmsEventNotification();
+    notification.setId(1L);
+    notification.setOwnerType(TSentryPrincipalType.ROLE);
+    notification.setOwnerName(OWNER);
+    notification.setAuthorizable(authorizable);
+    notification.setEventType(EventType.CREATE_DATABASE.toString());
+
+    sentryServiceHandler.sentry_notify_hms_event(notification);
+
+    // Verify that synchronization is attempted
+    Mockito.verify(
+            sentryStore, Mockito.times(1)
+    ).getCounterWait();
+
+    Mockito.verify(counterWait, Mockito.times(1)).waitFor(1L);
+
+    SentryStateBank.enableState(FullUpdateInitializerState.COMPONENT,
+        FullUpdateInitializerState.FULL_SNAPSHOT_INPROGRESS);
+
+    sentryServiceHandler.sentry_notify_hms_event(notification);
+
+    // Verify that synchronization is not attempted because
+    // full snapshot is in progress
+    Mockito.reset(sentryStore);
+    Mockito.reset(counterWait);
+    Mockito.verify(
+            sentryStore, Mockito.times(0)
+    ).getCounterWait();
+    Mockito.verify(counterWait, Mockito.times(0)).waitFor(1L);
+
   }
 
   @Test

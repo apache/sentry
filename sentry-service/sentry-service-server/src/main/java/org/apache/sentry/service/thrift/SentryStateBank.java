@@ -67,6 +67,7 @@ public final class SentryStateBank {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SentryStateBank.class);
   private static final AtomicLongMap<String> states = AtomicLongMap.create();
+  private static final AtomicLongMap<String> allStates = AtomicLongMap.create();
   private static final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
   protected SentryStateBank() {
@@ -75,12 +76,14 @@ public final class SentryStateBank {
   @VisibleForTesting
   static void clearAllStates() {
     states.clear();
+    allStates.clear();
     LOGGER.debug("All states have been cleared.");
   }
 
   @VisibleForTesting
   static void resetComponentState(String component) {
     states.remove(component);
+    allStates.remove(component);
     LOGGER.debug("All states have been cleared for component {}", component);
   }
 
@@ -94,6 +97,7 @@ public final class SentryStateBank {
     lock.writeLock().lock();
     try {
       states.put(component, states.get(component) | state.getValue());
+      allStates.put(component, states.get(component) | state.getValue());
       if (LOGGER.isDebugEnabled()) {
         LOGGER.debug("{} entered state {}", component, state.toString());
       }
@@ -152,6 +156,26 @@ public final class SentryStateBank {
           value += state.getValue();
       }
       return (states.get(component) & value) == value;
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
+
+  /**
+   * Checks if all of the states passed in were enabled
+   *
+   * @param component The component for the states
+   * @param passedStates the SentryStates to check
+   */
+  public static boolean wereStatesEnabled(String component, Set<SentryState> passedStates) {
+    lock.readLock().lock();
+    try {
+      long value = 0L;
+
+      for (SentryState state : passedStates) {
+        value += state.getValue();
+      }
+      return (allStates.get(component) & value) == value;
     } finally {
       lock.readLock().unlock();
     }

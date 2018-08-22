@@ -63,6 +63,8 @@ import org.apache.sentry.service.common.ServiceConstants.ConfUtilties;
 import org.apache.sentry.service.common.ServiceConstants.SentryPrincipalType;
 import org.apache.sentry.service.common.ServiceConstants.ServerConfig;
 import org.apache.sentry.api.common.Status;
+import org.apache.sentry.service.thrift.FullUpdateInitializerState;
+import org.apache.sentry.service.thrift.SentryStateBank;
 import org.apache.sentry.service.thrift.TSentryResponseStatus;
 import org.apache.thrift.TException;
 import org.apache.log4j.Logger;
@@ -1631,7 +1633,14 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
    */
   long syncEventId(long eventId) {
     try {
-      return sentryStore.getCounterWait().waitFor(eventId);
+        if (!SentryStateBank.isEnabled(FullUpdateInitializerState.COMPONENT,
+            FullUpdateInitializerState.FULL_SNAPSHOT_INPROGRESS)) {
+          return sentryStore.getCounterWait().waitFor(eventId);
+        } else {
+          LOGGER.info("HMS event synchronization is disabled temporarily as sentry is in the process of " +
+                  "fetching full snapshot. No action needed");
+          return eventId;
+        }
     } catch (InterruptedException e) {
       String msg = String.format("wait request for id %d is interrupted",
               eventId);
