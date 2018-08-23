@@ -324,6 +324,11 @@ public class SentryStore implements SentryStoreInterface {
     query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
     query.setFilter("this.roleName == :roleName");
     query.setUnique(true);
+
+    FetchGroup grp = pm.getFetchGroup(MSentryRole.class, "fetchPrivileges");
+    grp.addMember("privileges");
+    pm.getFetchPlan().addGroup("fetchPrivileges");
+
     return (MSentryRole) query.execute(roleName);
   }
 
@@ -336,6 +341,11 @@ public class SentryStore implements SentryStoreInterface {
   public List<MSentryRole> getAllRoles(PersistenceManager pm) {
     Query query = pm.newQuery(MSentryRole.class);
     query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
+
+    FetchGroup grp = pm.getFetchGroup(MSentryRole.class, "fetchGroups");
+    grp.addMember("groups");
+    pm.getFetchPlan().addGroup("fetchGroups");
+
     return (List<MSentryRole>) query.execute();
   }
 
@@ -350,6 +360,11 @@ public class SentryStore implements SentryStoreInterface {
     query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
     query.setFilter("this.userName == :userName");
     query.setUnique(true);
+
+    FetchGroup grp = pm.getFetchGroup(MSentryUser.class, "fetchPrivileges");
+    grp.addMember("privileges");
+    pm.getFetchPlan().addGroup("fetchPrivileges");
+
     return (MSentryUser) query.execute(userName);
   }
 
@@ -1446,6 +1461,11 @@ public class SentryStore implements SentryStoreInterface {
     }
 
     query.setFilter(paramBuilder.toString());
+
+    FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchRolesUsers");
+    grp.addMember("roles").addMember("users");
+    pm.getFetchPlan().addGroup("fetchRolesUsers");
+
     return (List<MSentryPrivilege>) query.executeWithMap(paramBuilder.getArguments());
   }
 
@@ -1890,6 +1910,16 @@ public class SentryStore implements SentryStoreInterface {
             }
           }
 
+          if (entityType == SentryPrincipalType.ROLE) {
+            FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchRoles");
+            grp.addMember("roles");
+            pm.getFetchPlan().addGroup("fetchRoles");
+          } else if(entityType == SentryPrincipalType.USER) {
+            FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchUsers");
+            grp.addMember("users");
+            pm.getFetchPlan().addGroup("fetchUsers");
+          }
+
           query.setFilter(paramBuilder.toString());
           @SuppressWarnings("unchecked")
           List<MSentryPrivilege> result =
@@ -1949,13 +1979,13 @@ public class SentryStore implements SentryStoreInterface {
                 }
 
                 if (entityType == SentryPrincipalType.ROLE) {
-                  FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchRole");
+                  FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchRoles");
                   grp.addMember("roles");
-                  pm.getFetchPlan().addGroup("fetchRole");
+                  pm.getFetchPlan().addGroup("fetchRoles");
                 } else if(entityType == SentryPrincipalType.USER) {
-                  FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchUser");
+                  FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchUsers");
                   grp.addMember("users");
-                  pm.getFetchPlan().addGroup("fetchUser");
+                  pm.getFetchPlan().addGroup("fetchUsers");
                 }
 
                 query.setFilter(paramBuilder.toString());
@@ -2000,6 +2030,11 @@ public class SentryStore implements SentryStoreInterface {
       return Collections.emptyList();
     }
     query.setFilter(paramBuilder.toString());
+
+    FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchRolesUsers");
+    grp.addMember("roles").addMember("users");
+    pm.getFetchPlan().addGroup("fetchRolesUsers");
+
     @SuppressWarnings("unchecked")
     List<MSentryPrivilege> result = (List<MSentryPrivilege>) query.
             executeWithMap(paramBuilder.getArguments());
@@ -2236,7 +2271,13 @@ public class SentryStore implements SentryStoreInterface {
                 Query query = pm.newQuery(MSentryGroup.class);
                 query.setFilter("this.groupName == :groupName");
                 query.setUnique(true);
+
+                FetchGroup grp = pm.getFetchGroup(MSentryGroup.class, "fetchRoles");
+                grp.addMember("roles");
+                pm.getFetchPlan().addGroup("fetchRoles");
+
                 MSentryGroup mGroup = (MSentryGroup) query.execute(trimmedGroup);
+                //TODO - Below is not optimized
                 if (mGroup != null) {
                   // For each unique role found, add a new TSentryRole version of the role to result.
                   for (MSentryRole role: mGroup.getRoles()) {
@@ -2304,6 +2345,11 @@ public class SentryStore implements SentryStoreInterface {
       Query query = pm.newQuery(MSentryGroup.class);
       query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
       query.setFilter(":p1.contains(this.groupName)");
+
+      FetchGroup grp = pm.getFetchGroup(MSentryGroup.class, "fetchRoles");
+      grp.addMember("roles");
+      pm.getFetchPlan().addGroup("fetchRoles");
+
       List<MSentryGroup> sentryGroups = (List) query.execute(groups.toArray());
       if (sentryGroups != null) {
         for (MSentryGroup sentryGroup : sentryGroups) {
@@ -2320,6 +2366,11 @@ public class SentryStore implements SentryStoreInterface {
       Query query = pm.newQuery(MSentryUser.class);
       query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
       query.setFilter(":p1.contains(this.userName)");
+
+      FetchGroup grp = pm.getFetchGroup(MSentryUser.class, "fetchRoles");
+      grp.addMember("roles");
+      pm.getFetchPlan().addGroup("fetchRoles");
+
       List<MSentryUser> sentryUsers = (List) query.execute(users.toArray());
       if (sentryUsers != null) {
         for (MSentryUser sentryUser : sentryUsers) {
@@ -3117,6 +3168,11 @@ public class SentryStore implements SentryStoreInterface {
 
     query.setFilter(paramBuilder.toString());
     query.setOrdering("serverName ascending, dbName ascending, tableName ascending");
+
+    FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchRolesUsers");
+    grp.addMember("roles").addMember("users");
+    pm.getFetchPlan().addGroup("fetchRolesUsers");
+
     @SuppressWarnings("unchecked")
     List<MSentryPrivilege> privileges =
             (List<MSentryPrivilege>) query.executeWithMap(paramBuilder.getArguments());
@@ -3176,6 +3232,11 @@ public class SentryStore implements SentryStoreInterface {
     pm.setDetachAllOnCommit(false); // No need to detach objects
     Query query = pm.newQuery(MSentryGroup.class);
     query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
+
+    FetchGroup grp = pm.getFetchGroup(MSentryGroup.class, "fetchRoles");
+    grp.addMember("roles");
+    pm.getFetchPlan().addGroup("fetchRoles");
+
     @SuppressWarnings("unchecked")
     List<MSentryGroup> groups = (List<MSentryGroup>) query.execute();
     if (groups.isEmpty()) {
@@ -3795,6 +3856,11 @@ public class SentryStore implements SentryStoreInterface {
                 Query query = pm.newQuery(MSentryRole.class);
                 query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
                 List<MSentryRole> mSentryRoles;
+
+                FetchGroup grp = pm.getFetchGroup(MSentryRole.class, "fetchGroupsUsers");
+                grp.addMember("groups").addMember("users");
+                pm.getFetchPlan().addGroup("fetchGroupsUsers");
+
                 if ((roleNames == null) || roleNames.isEmpty()) {
                   mSentryRoles = (List<MSentryRole>)query.execute();
                 } else {
@@ -3881,6 +3947,10 @@ public class SentryStore implements SentryStoreInterface {
                   paramBuilder.add(TABLE_NAME, tableName);
               }
               query.setFilter(paramBuilder.toString());
+              FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchRoles");
+              grp.addMember("roles");
+              pm.getFetchPlan().addGroup("fetchRoles");
+
               @SuppressWarnings("unchecked")
               List<MSentryPrivilege> mSentryPrivileges =
                       (List<MSentryPrivilege>) query.
@@ -4718,16 +4788,25 @@ public class SentryStore implements SentryStoreInterface {
    */
   public PrivilegePrincipal getEntity(PersistenceManager pm, String name, SentryPrincipalType type) {
     Query query;
+
     if(type == SentryPrincipalType.ROLE) {
       query = pm.newQuery(MSentryRole.class);
       query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
       query.setFilter("this.roleName == :roleName");
       query.setUnique(true);
+
+      FetchGroup grp = pm.getFetchGroup(MSentryRole.class, "fetchPrivileges");
+      grp.addMember("privileges");
+      pm.getFetchPlan().addGroup("fetchPrivileges");
     } else {
       query = pm.newQuery(MSentryUser.class);
       query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
       query.setFilter("this.userName == :userName");
       query.setUnique(true);
+
+      FetchGroup grp = pm.getFetchGroup(MSentryUser.class, "fetchPrivileges");
+      grp.addMember("privileges");
+      pm.getFetchPlan().addGroup("fetchPrivileges");
     }
     return (PrivilegePrincipal) query.execute(name);
   }
@@ -4748,6 +4827,10 @@ public class SentryStore implements SentryStoreInterface {
 
         Query query = pm.newQuery(MSentryRole.class);
         query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
+
+        FetchGroup grp = pm.getFetchGroup(MSentryRole.class, "fetchPrivileges");
+        grp.addMember("privileges");
+        pm.getFetchPlan().addGroup("fetchPrivileges");
 
         List<MSentryRole> mSentryRoles = (List<MSentryRole>)query.execute();
         if (mSentryRoles == null || mSentryRoles.isEmpty()) {
@@ -4783,6 +4866,10 @@ public class SentryStore implements SentryStoreInterface {
 
         Query query = pm.newQuery(MSentryUser.class);
         query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
+
+        FetchGroup grp = pm.getFetchGroup(MSentryUser.class, "fetchPrivileges");
+        grp.addMember("privileges");
+        pm.getFetchPlan().addGroup("fetchPrivileges");
 
         List<MSentryUser> mSentryUsers = (List<MSentryUser>)query.execute();
         if (mSentryUsers == null || mSentryUsers.isEmpty()) {
