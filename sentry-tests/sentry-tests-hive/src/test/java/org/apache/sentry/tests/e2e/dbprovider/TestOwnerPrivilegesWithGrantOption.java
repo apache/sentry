@@ -44,21 +44,23 @@ public class TestOwnerPrivilegesWithGrantOption extends TestOwnerPrivileges {
    */
   @Ignore("Enable the test once HIVE-18762 is in the hiver version integrated with Sentry")
   @Test
-  public void testAuthorizeAlterTableSetOwnerByOwner() throws Exception {
+  public void testAuthorizeAlterTableSetOwnerByOwner() throws Throwable {
     String ownerRole = "owner_role";
     dbNames = new String[]{DB1};
     roles = new String[]{"admin_role", "create_db1", ownerRole};
 
     // create required roles, and assign them to USERGROUP1
-    setupUserRoles(roles, statement);
+    setupUserRoles(roles, statementAdmin);
 
     // create test DB
-    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
-    statement.execute("CREATE DATABASE " + DB1);
+    statementAdmin.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statementAdmin.execute("CREATE DATABASE " + DB1);
 
     // setup privileges for USER1
-    statement.execute("GRANT CREATE ON DATABASE " + DB1 + " TO ROLE create_db1");
-    statement.execute("USE " + DB1);
+    statementAdmin.execute("GRANT CREATE ON DATABASE " + DB1 + " TO ROLE create_db1");
+    statementAdmin.execute("USE " + DB1);
+
+    statementAdmin.execute("GRANT ROLE " + ownerRole + " TO GROUP " + USERGROUP2);
 
     // USER1_1 create table
     Connection connectionUSER1_1 = hiveServer2.createConnection(USER1_1, USER1_1);
@@ -76,21 +78,31 @@ public class TestOwnerPrivilegesWithGrantOption extends TestOwnerPrivileges {
           .execute("ALTER TABLE " + DB1 + "." + tableName1 + " SET OWNER USER " + USER2_1);
 
       // verify privileges is transferred to USER2_1
-      verifyTableOwnerPrivilegeExistForPrincipal(statement, SentryPrincipalType.USER,
+      verifyTableOwnerPrivilegeExistForPrincipal(statementAdmin, SentryPrincipalType.USER,
           Lists.newArrayList(USER2_1),
           DB1, tableName1, 1);
+
+      // Verify that HDFS ACL are not set.
+      verifyHdfsAcl(Lists.newArrayList(USER1_1), null, DB1, tableName1, null, false);
+
+      // Verify that HDFS ACL are set.
+      verifyHdfsAcl(null, Lists.newArrayList(USERGROUP2), DB1, tableName1, null, true);
+
 
       // alter table set owner for role
       statementUSER2_1
           .execute("ALTER TABLE " + DB1 + "." + tableName1 + " SET OWNER ROLE " + ownerRole);
 
       // verify privileges is transferred to ownerRole
-      verifyTableOwnerPrivilegeExistForPrincipal(statement, SentryPrincipalType.ROLE,
+      verifyTableOwnerPrivilegeExistForPrincipal(statementAdmin, SentryPrincipalType.ROLE,
           Lists.newArrayList(ownerRole),
           DB1, tableName1, 1);
 
+      // Verify that HDFS ACL are not set.
+      verifyHdfsAcl(null, Lists.newArrayList(USERGROUP2), DB1, tableName1, null, false);
+
     } finally {
-      statement.close();
+      statementAdmin.close();
       connection.close();
 
       statementUSER1_1.close();
@@ -109,18 +121,18 @@ public class TestOwnerPrivilegesWithGrantOption extends TestOwnerPrivileges {
     roles = new String[]{"admin_role", ownerRole};
 
     // create required roles, and assign them to USERGROUP1
-    setupUserRoles(roles, statement);
+    setupUserRoles(roles, statementAdmin);
 
     // create test DB
-    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
-    statement.execute("CREATE DATABASE " + DB1);
+    statementAdmin.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statementAdmin.execute("CREATE DATABASE " + DB1);
 
-    statement.execute("CREATE ROLE " + newOwnerRole);
-    statement.execute("GRANT ROLE " + newOwnerRole + " to GROUP " + USERGROUP2);
+    statementAdmin.execute("CREATE ROLE " + newOwnerRole);
+    statementAdmin.execute("GRANT ROLE " + newOwnerRole + " to GROUP " + USERGROUP2);
 
     // setup privileges for USER1
-    statement.execute("GRANT CREATE ON DATABASE " + DB1 + " TO ROLE " + ownerRole);
-    statement.execute("USE " + DB1);
+    statementAdmin.execute("GRANT CREATE ON DATABASE " + DB1 + " TO ROLE " + ownerRole);
+    statementAdmin.execute("USE " + DB1);
 
     // USER1_1 create table
     Connection connectionUSER1_1 = hiveServer2.createConnection(USER1_1, USER1_1);
@@ -129,7 +141,7 @@ public class TestOwnerPrivilegesWithGrantOption extends TestOwnerPrivileges {
             + " (under_col int comment 'the under column')");
 
    // Verify that the user who created the table has owner privilege on the table created.
-    verifyTableOwnerPrivilegeExistForPrincipal(statement, SentryPrincipalType.USER,
+    verifyTableOwnerPrivilegeExistForPrincipal(statementAdmin, SentryPrincipalType.USER,
             Lists.newArrayList(USER1_1),
             DB1, tableName1, 1);
 

@@ -65,6 +65,7 @@ import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.parquet.Strings;
 import org.apache.sentry.binding.hive.SentryHiveAuthorizationTaskFactoryImpl;
 import org.apache.sentry.binding.hive.authz.SentryHiveAuthorizerFactory;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
@@ -150,6 +151,7 @@ public abstract class TestHDFSIntegrationBase {
   protected static final int NUM_RETRIES = 10;
   protected static final int RETRY_WAIT = 1000; //ms
   protected static final String EXTERNAL_SENTRY_SERVICE = "sentry.e2etest.external.sentry";
+  protected static final String hiveWarehouseLocation = "/user/hive/warehouse";
 
   protected static MiniDFSCluster miniDFS;
   protected static InternalHiveServer hiveServer2;
@@ -225,31 +227,50 @@ public abstract class TestHDFSIntegrationBase {
     return port;
   }
 
-  protected void verifyOnAllSubDirs(String path, FsAction fsAction, String group, boolean groupShouldExist) throws Throwable {
-    verifyOnAllSubDirs(path, fsAction, group, groupShouldExist, true);
+  protected void verifyGroupPermOnAllSubDirs(String path, FsAction fsAction, String group, boolean groupShouldExist) throws Throwable {
+    verifyOnAllSubDirs(path, fsAction, null, group, groupShouldExist, true);
   }
 
-  protected void verifyOnPath(String path, FsAction fsAction, String group, boolean groupShouldExist) throws Throwable {
+  protected void verifyGroupPermOnPath(String path, FsAction fsAction, String group, boolean groupShouldExist) throws Throwable {
     long elapsed_Time = 0, start_time = System.nanoTime();
     final long TOTAL_SYNC_TIME = NUM_RETRIES * RETRY_WAIT; //ms
     while (elapsed_Time <= TOTAL_SYNC_TIME) {
       try {
-        verifyOnAllSubDirs(path, fsAction, group, groupShouldExist, false);
+        verifyOnAllSubDirs(path, fsAction, null, group, groupShouldExist, false);
         break;
       } catch (Exception ex) {
-        LOGGER.warn("verifyOnAllSubDirs fails: elapsed time = " + elapsed_Time + " ms.");
+        LOGGER.warn("verifyGroupPermOnAllSubDirs fails: elapsed time = " + elapsed_Time + " ms.");
       }
       elapsed_Time = (System.nanoTime() - start_time) / 1000000L; //ms
     }
     Assert.assertTrue(elapsed_Time <= TOTAL_SYNC_TIME);
   }
 
-  protected void verifyOnAllSubDirs(String path, FsAction fsAction, String group, boolean groupShouldExist, boolean recurse) throws Throwable {
-    verifyOnAllSubDirs(new Path(path), fsAction, group, groupShouldExist, recurse, NUM_RETRIES);
+  protected void verifyUserPermOnAllSubDirs(String path, FsAction fsAction, String user, boolean groupShouldExist) throws Throwable {
+    verifyOnAllSubDirs(path, fsAction, user, null, groupShouldExist, true);
   }
 
-  protected void verifyOnAllSubDirs(Path p, FsAction fsAction, String group, boolean groupShouldExist, boolean recurse, int retry) throws Throwable {
-    verifyOnAllSubDirsHelper(p, fsAction, group, groupShouldExist, recurse, retry);
+  protected void verifyUserPermOnPath(String path, FsAction fsAction, String user, boolean groupShouldExist) throws Throwable {
+    long elapsed_Time = 0, start_time = System.nanoTime();
+    final long TOTAL_SYNC_TIME = NUM_RETRIES * RETRY_WAIT; //ms
+    while (elapsed_Time <= TOTAL_SYNC_TIME) {
+      try {
+        verifyOnAllSubDirs(path, fsAction, user, null, groupShouldExist, false);
+        break;
+      } catch (Exception ex) {
+        LOGGER.warn("verifyGroupPermOnAllSubDirs fails: elapsed time = " + elapsed_Time + " ms.");
+      }
+      elapsed_Time = (System.nanoTime() - start_time) / 1000000L; //ms
+    }
+    Assert.assertTrue(elapsed_Time <= TOTAL_SYNC_TIME);
+  }
+
+  protected void verifyOnAllSubDirs(String path, FsAction fsAction, String user, String group, boolean groupShouldExist, boolean recurse) throws Throwable {
+    verifyOnAllSubDirs(new Path(path), fsAction, user, group, groupShouldExist, recurse, NUM_RETRIES);
+  }
+
+  protected void verifyOnAllSubDirs(Path p, FsAction fsAction, String user, String group, boolean groupShouldExist, boolean recurse, int retry) throws Throwable {
+    verifyOnAllSubDirsHelper(p, fsAction, user, group, groupShouldExist, recurse, retry);
   }
 
   /* SENTRY-1471 - fixing the validation logic.
@@ -257,24 +278,37 @@ public abstract class TestHDFSIntegrationBase {
    * b) Throw an exception instead of returning false, to pass valuable debugging info up the stack
    *    - expected vs. found permissions.
    */
-  private void verifyOnAllSubDirsHelper(Path p, FsAction fsAction, String group,
-                                           boolean groupShouldExist, boolean recurse, int retry) throws Throwable {
+  private void verifyOnAllSubDirsHelper(Path p, FsAction fsAction, String user, String group,
+                                           boolean shouldExist, boolean recurse, int retry) throws Throwable {
     FileStatus fStatus = null;
     // validate parent dir's acls
     try {
       fStatus = miniDFS.getFileSystem().getFileStatus(p);
-      if (groupShouldExist) {
-        Assert.assertEquals("Error at verifying Path action : " + p + " ;", fsAction, getAcls(p).get(group));
+      if (shouldExist) {
+        if(!Strings.isNullOrEmpty(group)) {
+          Assert.assertEquals("Error at verifying Path action : " + p + " ;", fsAction,
+                  getAcls(AclEntryType.GROUP, p).get(group));
+        }
+        if(!Strings.isNullOrEmpty(user)) {
+          Assert.assertEquals("Error at verifying Path action : " + p + " ;", fsAction,
+                  getAcls(AclEntryType.USER,p).get(user));
+        }
       } else {
-        assertFalse("Error at verifying Path : " + p + " ," +
-            " group : " + group + " ;", getAcls(p).containsKey(group));
+        if(!Strings.isNullOrEmpty(group)) {
+          assertFalse("Error at verifying Path : " + p + " ," +
+                  " group : " + group + " ;", getAcls(AclEntryType.GROUP, p).containsKey(group));
+        }
+        if(!Strings.isNullOrEmpty(user)) {
+          assertFalse("Error at verifying Path : " + p + " ," +
+                  " user : " + user + " ;", getAcls(AclEntryType.USER, p).containsKey(user));
+        }
       }
       LOGGER.info("Successfully found acls for path = " + p.getName());
     } catch (Throwable th) {
       if (retry > 0) {
         LOGGER.info("Retry: " + retry);
         Thread.sleep(RETRY_WAIT);
-        verifyOnAllSubDirsHelper(p, fsAction, group, groupShouldExist, recurse, retry - 1);
+        verifyOnAllSubDirsHelper(p, fsAction, user, group, shouldExist, recurse, retry - 1);
       } else {
         throw th;
       }
@@ -283,16 +317,16 @@ public abstract class TestHDFSIntegrationBase {
     if (recurse && fStatus.isDirectory()) {
       FileStatus[] children = miniDFS.getFileSystem().listStatus(p);
       for (FileStatus fs : children) {
-        verifyOnAllSubDirsHelper(fs.getPath(), fsAction, group, groupShouldExist, recurse, NUM_RETRIES);
+        verifyOnAllSubDirsHelper(fs.getPath(), fsAction, user, group, shouldExist, recurse, NUM_RETRIES);
       }
     }
   }
 
-  protected Map<String, FsAction> getAcls(Path path) throws Exception {
+  protected Map<String, FsAction> getAcls(AclEntryType type, Path path) throws Exception {
     AclStatus aclStatus = miniDFS.getFileSystem().getAclStatus(path);
     Map<String, FsAction> acls = new HashMap<String, FsAction>();
     for (AclEntry ent : aclStatus.getEntries()) {
-      if (ent.getType().equals(AclEntryType.GROUP)) {
+      if (ent.getType().equals(type)) {
 
         // In case of duplicate acl exist, exception should be thrown.
         if (acls.containsKey(ent.getName())) {
@@ -407,7 +441,7 @@ public abstract class TestHDFSIntegrationBase {
 
     stmt.execute("grant select on table p1 to role p1_admin");
 
-    verifyOnAllSubDirs("/user/hive/warehouse/p1", FsAction.READ_EXECUTE, "hbase", true);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/p1", FsAction.READ_EXECUTE, "hbase", true);
     // hbase user should now be allowed to read...
     hbaseUgi.doAs(new PrivilegedExceptionAction<Void>() {
       @Override
@@ -593,7 +627,7 @@ public abstract class TestHDFSIntegrationBase {
         hiveConf.set("fs.defaultFS", fsURI);
         hiveConf.set("fs.default.name", fsURI);
         hiveConf.set("hive.metastore.execute.setugi", "true");
-        hiveConf.set("hive.metastore.warehouse.dir", "hdfs:///user/hive/warehouse");
+        hiveConf.set("hive.metastore.warehouse.dir", "hdfs://" + hiveWarehouseLocation);
         hiveConf.set("javax.jdo.option.ConnectionURL", "jdbc:derby:;databaseName=" + baseDir.getAbsolutePath() + "/metastore_db;create=true");
         hiveConf.set("javax.jdo.option.ConnectionDriverName", "org.apache.derby.jdbc.EmbeddedDriver");
         hiveConf.set("javax.jdo.option.ConnectionUserName", "hive");

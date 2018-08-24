@@ -88,8 +88,8 @@ public class TestHmsNotificationProcessingWithOutHdfsSync extends TestHmsNotific
             + " TO ROLE select_tbl1");
 
     // Make sure that an ACL is added for that
-    verifyOnAllSubDirs("/user/hive/warehouse/db_1.db", FsAction.READ_EXECUTE, "hbase", false);
-    verifyOnAllSubDirs("/user/hive/warehouse/db_1.db/tb_1", FsAction.READ_EXECUTE, "hbase", false);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/db_1.db", FsAction.READ_EXECUTE, "hbase", false);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/db_1.db/tb_1", FsAction.READ_EXECUTE, "hbase", false);
 
     //Drop the object
     statement.execute("DROP DATABASE " + DB1 + " CASCADE");
@@ -140,8 +140,8 @@ public class TestHmsNotificationProcessingWithOutHdfsSync extends TestHmsNotific
             + " TO ROLE select_tbl1");
 
     // Make sure that an ACL is added for that
-    verifyOnAllSubDirs("/user/hive/warehouse/db_1.db", FsAction.READ_EXECUTE, "hbase", false);
-    verifyOnAllSubDirs("/user/hive/warehouse/db_1.db/tb_1", FsAction.READ_EXECUTE, "hbase", false);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/db_1.db", FsAction.READ_EXECUTE, "hbase", false);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/db_1.db/tb_1", FsAction.READ_EXECUTE, "hbase", false);
 
     //alter the object
     String temp = "alter table " + DB1 + "." + tableName1 + " rename to " + DB1 + "." + tableName2;
@@ -149,6 +149,6 @@ public class TestHmsNotificationProcessingWithOutHdfsSync extends TestHmsNotific
 
     Thread.sleep(WAIT_FOR_NOTIFICATION_PROCESSING);
     // Make sure that an ACL is updated got the new table name
-    verifyOnAllSubDirs("/user/hive/warehouse/db_1.db/" + tableName2, FsAction.READ_EXECUTE, "hbase", false);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/db_1.db/" + tableName2, FsAction.READ_EXECUTE, "hbase", false);
   }
 }

@@ -82,8 +82,8 @@ public class TestHmsNotificationProcessingWithOutSyncOnCreate extends TestHmsNot
 
 
     // Make sure that an ACL is added for that
-    verifyOnAllSubDirs("/user/hive/warehouse/db_1.db", FsAction.READ_EXECUTE, "hbase", true);
-    verifyOnAllSubDirs("/user/hive/warehouse/db_1.db/tb_1", FsAction.READ_EXECUTE, "hbase", true);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/db_1.db", FsAction.READ_EXECUTE, "hbase", true);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/db_1.db/tb_1", FsAction.READ_EXECUTE, "hbase", true);
 
     //Drop the object
     statement.execute("DROP DATABASE " + DB1 + " CASCADE");

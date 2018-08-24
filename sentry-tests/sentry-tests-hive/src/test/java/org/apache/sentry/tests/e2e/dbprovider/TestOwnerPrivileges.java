@@ -23,6 +23,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import com.google.common.collect.Sets;
+import com.google.common.collect.Lists;
+import com.google.common.base.Strings;
+
+import java.io.FileNotFoundException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -30,7 +34,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.parquet.Strings;
+import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.sentry.tests.e2e.hdfs.TestHDFSIntegrationBase;
 import org.apache.sentry.tests.e2e.hive.StaticUserGroup;
 import org.apache.sentry.service.common.ServiceConstants.SentryPrincipalType;
@@ -40,7 +44,6 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +64,7 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
 
   private final static String renameTag = "_new";
   protected Connection connection;
-  protected Statement statement;
+  protected Statement statementAdmin;
 
   @BeforeClass
   public static void setup() throws Exception {
@@ -75,29 +78,30 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
     super.setUpTempDir();
     admin = "hive";
     connection = hiveServer2.createConnection(admin, admin);
-    statement = connection.createStatement();
-    statement.execute("create role admin_role");
-    statement.execute("grant role admin_role to group hive");
-    statement.execute("grant all on server server1 to role admin_role");
+    statementAdmin = connection.createStatement();
+    statementAdmin.execute("create role admin_role");
+    statementAdmin.execute("grant role admin_role to group hive");
+    statementAdmin.execute("grant all on server server1 to role admin_role");
   }
 
   /**
    * Verify that the user who creases database has owner privilege on this database
+   * and also makes sure that HDFS ACL rules are updated.
    *
    * @throws Exception
    */
   @Test
-  public void testCreateDatabase() throws Exception {
+  public void testCreateDatabase() throws Throwable {
     dbNames = new String[]{DB1};
     roles = new String[]{"admin_role", "create_db1"};
 
     // create required roles
-    setupUserRoles(roles, statement);
+    setupUserRoles(roles, statementAdmin);
 
-    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statementAdmin.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
 
     // setup privileges for USER1
-    statement.execute("GRANT CREATE ON SERVER server1" + " TO ROLE create_db1");
+    statementAdmin.execute("GRANT CREATE ON SERVER server1" + " TO ROLE create_db1");
 
     // USER1 creates test DB
     Connection connectionUSER1_1 = hiveServer2.createConnection(USER1_1, USER1_1);
@@ -107,6 +111,9 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
     // verify privileges created for new database
     verifyTableOwnerPrivilegeExistForPrincipal(statementUSER1_1, SentryPrincipalType.USER, Lists.newArrayList(USER1_1),
         DB1, "", 1);
+
+    // Verify that HDFS ACL are added.
+    verifyHdfsAcl(Lists.newArrayList(USER1_1), null, DB1, null, null, true);
 
     // verify that user has all privilege on this database, i.e., "OWNER" means "ALL"
     // for authorization
@@ -118,7 +125,7 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
     statementUSER1_1.execute("DROP TABLE " + DB1 + "." + tableName1 + renameTag);
     statementUSER1_1.execute("DROP DATABASE " + DB1 + " CASCADE");
 
-    statement.close();
+    statementAdmin.close();
     connection.close();
 
     statementUSER1_1.close();
@@ -126,22 +133,23 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
   }
 
   /**
-   * Verify that the user who does not creases database has no owner privilege on this database
+   * Verify that the user who does not creases database has no owner privilege on this database and
+   * also makes sure that there are not HDFS ACL.
    *
    * @throws Exception
    */
   @Test
-  public void testCreateDatabaseNegative() throws Exception {
+  public void testCreateDatabaseNegative() throws Throwable {
     dbNames = new String[]{DB1};
     roles = new String[]{"admin_role", "create_db1"};
 
     // create required roles
-    setupUserRoles(roles, statement);
+    setupUserRoles(roles, statementAdmin);
 
-    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statementAdmin.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
 
     // setup privileges for USER1
-    statement.execute("GRANT CREATE ON SERVER server1" + " TO ROLE create_db1");
+    statementAdmin.execute("GRANT CREATE ON SERVER server1" + " TO ROLE create_db1");
 
     // USER1 creates test DB
     Connection connectionUSER1_1 = hiveServer2.createConnection(USER1_1, USER1_1);
@@ -162,8 +170,10 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
       LOGGER.info("Expected Exception when dropping database " + ex.getMessage());
     }
 
+    // Verify that HDFS ACL are not set.
+    verifyHdfsAcl(Lists.newArrayList(USER1_2), null, DB1, null, null, false);
 
-    statement.close();
+    statementAdmin.close();
     connection.close();
 
     statementUSER1_1.close();
@@ -179,44 +189,47 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
    * @throws Exception
    */
   @Test
-  public void testCreateDatabaseAdmin() throws Exception {
+  public void testCreateDatabaseAdmin() throws Throwable {
     dbNames = new String[]{DB1};
     roles = new String[]{"admin_role", "create_db1"};
 
     // create required roles
-    setupUserRoles(roles, statement);
+    setupUserRoles(roles, statementAdmin);
 
-    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statementAdmin.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
 
     // admin user creates test DB
-    statement.execute("CREATE DATABASE " + DB1);
+    statementAdmin.execute("CREATE DATABASE " + DB1);
 
-    // verify no privileges created for new database
-    verifyTableOwnerPrivilegeExistForPrincipal(statement, SentryPrincipalType.USER, Lists.newArrayList(admin),
+    // verify privileges created for new database
+    verifyTableOwnerPrivilegeExistForPrincipal(statementAdmin, SentryPrincipalType.USER, Lists.newArrayList(admin),
         DB1, "", 1);
 
-    statement.close();
+    // Verify that HDFS ACL are set.
+    verifyHdfsAcl(Lists.newArrayList(admin), null, DB1, null, null, true);
+
+    statementAdmin.close();
     connection.close();
   }
 
   /**
    * Verify that after dropping a database, the user who creases database has no owner privilege
-   * on this dropped database
+   * on this dropped database and makes sure that HDFS ACLs are updated accordingly.
    *
    * @throws Exception
    */
   @Test
-  public void testDropDatabase() throws Exception {
+  public void testDropDatabase() throws Throwable {
     dbNames = new String[]{DB1};
     roles = new String[]{"admin_role", "create_db1"};
 
     // create required roles
-    setupUserRoles(roles, statement);
+    setupUserRoles(roles, statementAdmin);
 
-    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statementAdmin.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
 
     // setup privileges for USER1
-    statement.execute("GRANT CREATE ON SERVER server1" + " TO ROLE create_db1");
+    statementAdmin.execute("GRANT CREATE ON SERVER server1" + " TO ROLE create_db1");
 
     // USER1 creates test DB and then drop it
     Connection connectionUSER1_1 = hiveServer2.createConnection(USER1_1, USER1_1);
@@ -228,7 +241,10 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
     verifyTableOwnerPrivilegeExistForPrincipal(statementUSER1_1, SentryPrincipalType.USER, Lists.newArrayList(USER1_1),
         DB1, "", 0);
 
-    statement.close();
+    // Verify that HDFS ACL are not set.
+    verifyHdfsAcl(Lists.newArrayList(USER1_1), null, DB1, null, null, false);
+
+    statementAdmin.close();
     connection.close();
 
     statementUSER1_1.close();
@@ -242,20 +258,20 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
    */
   @Ignore("Enable the test once HIVE-18031 is in the hiver version integrated with Sentry")
   @Test
-  public void testAuthorizeAlterDatabaseSetOwner() throws Exception {
+  public void testAuthorizeAlterDatabaseSetOwner() throws Throwable {
     String ownerRole = "owner_role";
     String allWithGrantRole = "allWithGrant_role";
     dbNames = new String[]{DB1};
     roles = new String[]{"admin_role", "create_on_server", ownerRole};
 
     // create required roles, and assign them to USERGROUP1
-    setupUserRoles(roles, statement);
+    setupUserRoles(roles, statementAdmin);
 
     // create test DB
-    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statementAdmin.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
 
     // setup privileges for USER1
-    statement.execute("GRANT CREATE ON SERVER " + SERVER_NAME + " TO ROLE create_on_server");
+    statementAdmin.execute("GRANT CREATE ON SERVER " + SERVER_NAME + " TO ROLE create_on_server");
 
     // USER1_1 create database
     Connection connectionUSER1_1 = hiveServer2.createConnection(USER1_1, USER1_1);
@@ -274,7 +290,7 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
 
     // admin issues alter database set owner
     try {
-      statement.execute("ALTER DATABASE " + DB1 + " SET OWNER ROLE " + ownerRole);
+      statementAdmin.execute("ALTER DATABASE " + DB1 + " SET OWNER ROLE " + ownerRole);
       Assert.fail("Expect altering database set owner to fail for admin");
     } catch (Exception ex) {
       // admin does not have all with grant option, so cannot issue this command
@@ -285,9 +301,9 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
 
     try {
       // create role that has all with grant on the table
-      statement.execute("create role " + allWithGrantRole);
-      statement.execute("grant role " + allWithGrantRole + " to group " + USERGROUP2);
-      statement.execute("GRANT ALL ON DATABASE " + DB1 + " to role " +
+      statementAdmin.execute("create role " + allWithGrantRole);
+      statementAdmin.execute("grant role " + allWithGrantRole + " to group " + USERGROUP2);
+      statementAdmin.execute("GRANT ALL ON DATABASE " + DB1 + " to role " +
           allWithGrantRole + " with grant option");
 
       // cannot issue command on a different database
@@ -305,27 +321,37 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
 
       // verify privileges is transferred to role owner_role, which is associated with USERGROUP1,
       // therefore to USER1_1
-      verifyTableOwnerPrivilegeExistForPrincipal(statement, SentryPrincipalType.ROLE,
+      verifyTableOwnerPrivilegeExistForPrincipal(statementAdmin, SentryPrincipalType.ROLE,
           Lists.newArrayList(ownerRole),
           DB1, "", 1);
+
+      // Verify that HDFS ACL are not set.
+      verifyHdfsAcl(Lists.newArrayList(USER1_1), null, DB1, null, null, false);
+
+      // Verify that HDFS ACL are set.
+      verifyHdfsAcl(null, Lists.newArrayList(USERGROUP2), DB1, null, null, true);
 
       // alter database set owner to user USER1_1 and verify privileges is transferred to USER USER1_1
       statementUSER2_1
           .execute("ALTER DATABASE " + DB1 + " SET OWNER USER " + USER1_1);
-      verifyTableOwnerPrivilegeExistForPrincipal(statement, SentryPrincipalType.USER,
+      verifyTableOwnerPrivilegeExistForPrincipal(statementAdmin, SentryPrincipalType.USER,
           Lists.newArrayList(USER1_1), DB1, "", 1);
 
       // alter database set owner to user USER2_1, who already has explicit all with grant
       statementUSER2_1
           .execute("ALTER DATABASE " + DB1 + " SET OWNER USER " + USER2_1);
-      verifyTableOwnerPrivilegeExistForPrincipal(statement, SentryPrincipalType.USER,
+      verifyTableOwnerPrivilegeExistForPrincipal(statementAdmin, SentryPrincipalType.USER,
           Lists.newArrayList(USER2_1),
           DB1, "", 1);
 
-    } finally {
-      statement.execute("drop role " + allWithGrantRole);
+      // Verify that HDFS ACL are set.
+      verifyHdfsAcl(Lists.newArrayList(USER2_1), null, DB1, tableName1, null, true);
 
-      statement.close();
+
+    } finally {
+      statementAdmin.execute("drop role " + allWithGrantRole);
+
+      statementAdmin.close();
       connection.close();
 
       statementUSER1_1.close();
@@ -338,25 +364,26 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
 
 
   /**
-   * Verify that the user who creases table has owner privilege on this table
+   * Verify that the user who creases table has owner privilege on this table and
+   * and makes sure that HDFS ACLs are updated accordingly.
    *
    * @throws Exception
    */
   @Test
-  public void testCreateTable() throws Exception {
+  public void testCreateTable() throws Throwable {
     dbNames = new String[]{DB1};
     roles = new String[]{"admin_role", "create_db1"};
 
     // create required roles
-    setupUserRoles(roles, statement);
+    setupUserRoles(roles, statementAdmin);
 
     // create test DB
-    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
-    statement.execute("CREATE DATABASE " + DB1);
+    statementAdmin.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statementAdmin.execute("CREATE DATABASE " + DB1);
 
     // setup privileges for USER1
-    statement.execute("GRANT CREATE ON DATABASE " + DB1 + " TO ROLE create_db1");
-    statement.execute("USE " + DB1);
+    statementAdmin.execute("GRANT CREATE ON DATABASE " + DB1 + " TO ROLE create_db1");
+    statementAdmin.execute("USE " + DB1);
 
     // USER1 create table
     Connection connectionUSER1_1 = hiveServer2.createConnection(USER1_1, USER1_1);
@@ -369,6 +396,9 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
     verifyTableOwnerPrivilegeExistForPrincipal(statementUSER1_1, SentryPrincipalType.USER, Lists.newArrayList(USER1_1),
         DB1, tableName1, 1);
 
+    // Verify that HDFS ACL are added.
+    verifyHdfsAcl(Lists.newArrayList(USER1_1), null, DB1, tableName1, null, true);
+
     // verify that user has all privilege on this table, i.e., "OWNER" means "ALL"
     // for authorization
     statementUSER1_1.execute("INSERT INTO TABLE " + DB1 + "." + tableName1 + " VALUES (35)");
@@ -380,7 +410,8 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
     Thread.sleep(WAIT_BEFORE_TESTVERIFY);
     statementUSER1_1.execute("DROP TABLE " + DB1 + "." + tableName1 + renameTag);
 
-    statement.close();
+
+    statementAdmin.close();
     connection.close();
 
     statementUSER1_1.close();
@@ -389,25 +420,25 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
 
   /**
    * Verify that the user who creases table has owner privilege on this table, but cannot
-   * access tables created by others
+   * access tables created by others and makes sure that HDFS ACLs are updated accordingly.
    *
    * @throws Exception
    */
   @Test
-  public void testCreateTableNegative() throws Exception {
+  public void testCreateTableNegative() throws Throwable {
     dbNames = new String[]{DB1};
     roles = new String[]{"admin_role", "create_db1"};
 
     // create required roles
-    setupUserRoles(roles, statement);
+    setupUserRoles(roles, statementAdmin);
 
     // create test DB
-    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
-    statement.execute("CREATE DATABASE " + DB1);
+    statementAdmin.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statementAdmin.execute("CREATE DATABASE " + DB1);
 
     // setup privileges for USER1 and USER2
-    statement.execute("GRANT CREATE ON DATABASE " + DB1 + " TO ROLE create_db1");
-    statement.execute("USE " + DB1);
+    statementAdmin.execute("GRANT CREATE ON DATABASE " + DB1 + " TO ROLE create_db1");
+    statementAdmin.execute("USE " + DB1);
 
     // USER1 create table
     Connection connectionUSER1_1 = hiveServer2.createConnection(USER1_1, USER1_1);
@@ -443,8 +474,10 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
     } catch  (Exception ex) {
       LOGGER.info("Expected Exception when dropping table: " + ex.getMessage());
     }
+    // Verify that HDFS ACL are not set.
+    verifyHdfsAcl(Lists.newArrayList(USER1_2), null, DB1, tableName1, null, false);
 
-    statement.close();
+    statementAdmin.close();
     connection.close();
 
     statementUSER1_1.close();
@@ -460,47 +493,51 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
    * @throws Exception
    */
   @Test
-  public void testCreateTableAdmin() throws Exception {
+  public void testCreateTableAdmin() throws Throwable {
     dbNames = new String[]{DB1};
     roles = new String[]{"admin_role", "create_db1"};
 
     // create required roles
-    setupUserRoles(roles, statement);
+    setupUserRoles(roles, statementAdmin);
 
-    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statementAdmin.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
 
     // admin creates test DB and then drop it
-    statement.execute("CREATE DATABASE " + DB1);
-    statement.execute("CREATE TABLE " + DB1 + "." + tableName1
+    statementAdmin.execute("CREATE DATABASE " + DB1);
+    statementAdmin.execute("CREATE TABLE " + DB1 + "." + tableName1
         + " (under_col int comment 'the under column')");
 
-    // verify no owner privileges created for new table
-    verifyTableOwnerPrivilegeExistForPrincipal(statement, SentryPrincipalType.USER, Lists.newArrayList(admin),
+    // verify owner privileges created for new table
+    verifyTableOwnerPrivilegeExistForPrincipal(statementAdmin, SentryPrincipalType.USER, Lists.newArrayList(admin),
         DB1, tableName1, 1);
 
-    statement.close();
+    // Verify that HDFS ACL are set.
+    verifyHdfsAcl(Lists.newArrayList(admin), null, DB1, tableName1, null, true);
+
+    statementAdmin.close();
     connection.close();
   }
 
   /**
    * Verify that the user who creases table and then drops it has no owner privilege on this table
+   * and makes sure that HDFS ACLs are updated accordingly.
    *
    * @throws Exception
    */
   @Test
-  public void testDropTable() throws Exception {
+  public void testDropTable() throws Throwable {
     dbNames = new String[]{DB1};
     roles = new String[]{"admin_role", "create_db1"};
 
     // create required roles
-    setupUserRoles(roles, statement);
+    setupUserRoles(roles, statementAdmin);
 
     // create test DB
-    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
-    statement.execute("CREATE DATABASE " + DB1);
+    statementAdmin.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statementAdmin.execute("CREATE DATABASE " + DB1);
 
     // setup privileges for USER1
-    statement.execute("GRANT CREATE ON DATABASE " + DB1 + " TO ROLE create_db1");
+    statementAdmin.execute("GRANT CREATE ON DATABASE " + DB1 + " TO ROLE create_db1");
 
     // USER1 create table
     Connection connectionUSER1_1 = hiveServer2.createConnection(USER1_1, USER1_1);
@@ -513,7 +550,7 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
     verifyTableOwnerPrivilegeExistForPrincipal(statementUSER1_1, SentryPrincipalType.USER, Lists.newArrayList(USER1_1),
         DB1, tableName1, 0);
 
-    statement.close();
+    statementAdmin.close();
     connection.close();
   }
 
@@ -524,20 +561,20 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
    */
   @Ignore("Enable the test once HIVE-18762 is in the hiver version integrated with Sentry")
   @Test
-  public void testAlterTable() throws Exception {
+  public void testAlterTable() throws Throwable {
     dbNames = new String[]{DB1};
     roles = new String[]{"admin_role", "create_db1", "owner_role"};
 
     // create required roles
-    setupUserRoles(roles, statement);
+    setupUserRoles(roles, statementAdmin);
 
     // create test DB
-    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
-    statement.execute("CREATE DATABASE " + DB1);
+    statementAdmin.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statementAdmin.execute("CREATE DATABASE " + DB1);
 
     // setup privileges for USER1
-    statement.execute("GRANT CREATE ON DATABASE " + DB1 + " TO ROLE create_db1");
-    statement.execute("USE " + DB1);
+    statementAdmin.execute("GRANT CREATE ON DATABASE " + DB1 + " TO ROLE create_db1");
+    statementAdmin.execute("USE " + DB1);
 
     // USER1 create table
     Connection connectionUSER1_1 = hiveServer2.createConnection(USER1_1, USER1_1);
@@ -550,6 +587,9 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
     verifyTableOwnerPrivilegeExistForPrincipal(statementUSER1_1, SentryPrincipalType.USER, Lists.newArrayList(USER1_1),
         DB1, tableName1, 1);
 
+    // Verify that HDFS ACL are set.
+    verifyHdfsAcl(Lists.newArrayList(USER1_1), null, DB1, tableName1, null, true);
+
     // verify that user has all privilege on this table, i.e., "OWNER" means "ALL"
     // for authorization
     statementUSER1_1.execute("INSERT INTO TABLE " + DB1 + "." + tableName1 + " VALUES (35)");
@@ -557,6 +597,13 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
     // Changing the owner to a role
     statementUSER1_1.execute("ALTER TABLE " + DB1 + "." + tableName1 + " SET OWNER ROLE " +
         "owner_role");
+
+    // Verify that HDFS ACL are not set.
+    verifyHdfsAcl(Lists.newArrayList(USER1_1), null, DB1, tableName1, null, false);
+
+    // Verify that HDFS ACL are set.
+    verifyHdfsAcl(null, Lists.newArrayList(USERGROUP1), DB1, tableName1, null, true);
+
 
     // alter table rename is not blocked for notification processing in upstream due to
     // hive bug HIVE-18783, which is fixed in Hive 2.4.0 and 3.0
@@ -583,7 +630,9 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
     verifyTableOwnerPrivilegeExistForPrincipal(statementUSER1_1, SentryPrincipalType.USER, Lists.newArrayList(USER1_1),
         DB1, tableName1, 1);
 
-    statement.close();
+    statementAdmin.close();
+
+    statementAdmin.close();
     connection.close();
 
     statementUSER1_1.close();
@@ -604,15 +653,15 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
     roles = new String[]{"admin_role", "create_db1", ownerRole};
 
     // create required roles, and assign them to USERGROUP1
-    setupUserRoles(roles, statement);
+    setupUserRoles(roles, statementAdmin);
 
     // create test DB
-    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
-    statement.execute("CREATE DATABASE " + DB1);
+    statementAdmin.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statementAdmin.execute("CREATE DATABASE " + DB1);
 
     // setup privileges for USER1
-    statement.execute("GRANT CREATE ON DATABASE " + DB1 + " TO ROLE create_db1");
-    statement.execute("USE " + DB1);
+    statementAdmin.execute("GRANT CREATE ON DATABASE " + DB1 + " TO ROLE create_db1");
+    statementAdmin.execute("USE " + DB1);
 
     // USER1_1 create table
     Connection connectionUSER1_1 = hiveServer2.createConnection(USER1_1, USER1_1);
@@ -644,7 +693,7 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
 
     // admin issues alter table set owner
     try {
-      statement.execute("ALTER TABLE " + DB1 + "." + tableName1 + " SET OWNER ROLE " + ownerRole);
+      statementAdmin.execute("ALTER TABLE " + DB1 + "." + tableName1 + " SET OWNER ROLE " + ownerRole);
       Assert.fail("Expect altering table set owner to fail for admin");
     } catch (Exception ex) {
       // admin does not have grant option, so cannot issue this command
@@ -655,9 +704,9 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
 
     try {
       // create role that has all with grant on the table
-      statement.execute("create role " + allWithGrantRole);
-      statement.execute("grant role " + allWithGrantRole + " to group " + USERGROUP2);
-      statement.execute("grant all on table " + DB1 + "." + tableName1 + " to role " +
+      statementAdmin.execute("create role " + allWithGrantRole);
+      statementAdmin.execute("grant role " + allWithGrantRole + " to group " + USERGROUP2);
+      statementAdmin.execute("grant all on table " + DB1 + "." + tableName1 + " to role " +
           allWithGrantRole + " with grant option");
 
       // cannot issue command on a different table
@@ -675,27 +724,27 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
 
       // verify privileges is transferred to role owner_role, which is associated with USERGROUP1,
       // therefore to USER1_1
-      verifyTableOwnerPrivilegeExistForPrincipal(statement, SentryPrincipalType.ROLE,
+      verifyTableOwnerPrivilegeExistForPrincipal(statementAdmin, SentryPrincipalType.ROLE,
           Lists.newArrayList(ownerRole),
           DB1, tableName1, 1);
 
       // alter table set owner to user USER1_1 and verify privileges is transferred to USER USER1_1
       statementUSER2_1
           .execute("ALTER TABLE " + DB1 + "." + tableName1 + " SET OWNER USER " + USER1_1);
-      verifyTableOwnerPrivilegeExistForPrincipal(statement, SentryPrincipalType.USER,
+      verifyTableOwnerPrivilegeExistForPrincipal(statementAdmin, SentryPrincipalType.USER,
           Lists.newArrayList(USER1_1), DB1, tableName1, 1);
 
       // alter table set owner to user USER2_1, who already has explicit all with grant
       statementUSER2_1
           .execute("ALTER TABLE " + DB1 + "." + tableName1 + " SET OWNER USER " + USER2_1);
-      verifyTableOwnerPrivilegeExistForPrincipal(statement, SentryPrincipalType.USER,
+      verifyTableOwnerPrivilegeExistForPrincipal(statementAdmin, SentryPrincipalType.USER,
           Lists.newArrayList(USER2_1),
           DB1, tableName1, 1);
 
     } finally {
-      statement.execute("drop role " + allWithGrantRole);
+      statementAdmin.execute("drop role " + allWithGrantRole);
 
-      statement.close();
+      statementAdmin.close();
       connection.close();
 
       statementUSER1_1.close();
@@ -717,15 +766,15 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
     roles = new String[]{"admin_role", "create_db1"};
 
     // create required roles
-    setupUserRoles(roles, statement);
+    setupUserRoles(roles, statementAdmin);
 
     // create test DB
-    statement.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
-    statement.execute("CREATE DATABASE " + DB1);
+    statementAdmin.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statementAdmin.execute("CREATE DATABASE " + DB1);
 
     // setup privileges for USER1
-    statement.execute("GRANT CREATE ON DATABASE " + DB1 + " TO ROLE create_db1");
-    statement.execute("USE " + DB1);
+    statementAdmin.execute("GRANT CREATE ON DATABASE " + DB1 + " TO ROLE create_db1");
+    statementAdmin.execute("USE " + DB1);
 
     // USER1 create table
     Connection connectionUSER1_1 = hiveServer2.createConnection(USER1_1, USER1_1);
@@ -734,7 +783,7 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
         + " (under_col int comment 'the under column')");
 
     // verify owner privileges created for new table
-    verifyTableOwnerPrivilegeExistForPrincipal(statement, SentryPrincipalType.USER, Lists.newArrayList(USER1_1),
+    verifyTableOwnerPrivilegeExistForPrincipal(statementAdmin, SentryPrincipalType.USER, Lists.newArrayList(USER1_1),
         DB1, tableName1, 1);
 
     // Changing the owner to an admin user
@@ -743,10 +792,10 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
 
     // verify no owner privileges to the new owner as the owner is admin user
 
-    verifyTableOwnerPrivilegeExistForPrincipal(statement, SentryPrincipalType.USER, Lists.newArrayList(admin),
+    verifyTableOwnerPrivilegeExistForPrincipal(statementAdmin, SentryPrincipalType.USER, Lists.newArrayList(admin),
         DB1, tableName1, 1);
 
-    statement.close();
+    statementAdmin.close();
     connection.close();
   }
 
@@ -756,8 +805,8 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
     userRoles.remove("admin_role");
 
     for (String roleName : userRoles) {
-      statement.execute("CREATE ROLE " + roleName);
-      statement.execute("GRANT ROLE " + roleName + " to GROUP " + USERGROUP1);
+      statementAdmin.execute("CREATE ROLE " + roleName);
+      statementAdmin.execute("GRANT ROLE " + roleName + " to GROUP " + USERGROUP1);
     }
   }
 
@@ -808,4 +857,47 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
       resultSet.close();
     }
   }
+
+  /**
+   * Verifies HDFS ACL for users and groups.
+   * ACL could be because of explicit privilege grants or implicit owner privileges
+   *
+   * @param users list of users for which the ACL entries should be verified
+   * @param groups list of groups for which the ACL entries should be verified
+   * @param dbName Database name
+   * @param tableName  Table Name
+   * @param location Location of the database/table
+   * @param areAclExpected whether ACL entries are expected
+   * @throws Throwable If verification fails.
+   */
+   protected void verifyHdfsAcl(List<String> users, List<String> groups,
+      String dbName, String tableName, String location, boolean areAclExpected) throws Throwable {
+     String locationToVerify = location;
+     try {
+       if (Strings.isNullOrEmpty(locationToVerify)) {
+         if (tableName == null) {
+           locationToVerify = hiveWarehouseLocation + "/" + dbName + ".db";
+         } else {
+           locationToVerify = hiveWarehouseLocation + "/" + dbName + ".db" + "/" + tableName;
+         }
+       }
+
+       if (users != null && !users.isEmpty()) {
+         for (String user : users) {
+           verifyUserPermOnAllSubDirs(locationToVerify, FsAction.ALL, user, areAclExpected);
+         }
+       }
+
+       if (groups != null && !groups.isEmpty()) {
+         for (String group : groups) {
+           verifyGroupPermOnAllSubDirs(locationToVerify, FsAction.ALL, group, areAclExpected);
+         }
+       }
+     } catch (FileNotFoundException e) {
+       // If ACL's are not expected, This exception is consumed.
+       if(areAclExpected) {
+         throw e;
+       }
+     }
+   }
 }

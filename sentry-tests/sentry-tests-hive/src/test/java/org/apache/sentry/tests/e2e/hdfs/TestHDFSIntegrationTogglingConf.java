@@ -106,9 +106,9 @@ public class TestHDFSIntegrationTogglingConf extends TestHDFSIntegrationBase {
     stmt.execute("use db1");
     stmt.execute("grant all on table p2 to role tab_role");
     stmt.execute("use default");
-    verifyOnAllSubDirs("/user/hive/warehouse/db1.db", FsAction.ALL, "hbase", false);
-    verifyOnAllSubDirs("/user/hive/warehouse/db1.db/p2", FsAction.ALL, "flume", false);
-    verifyOnPath("/user/hive/warehouse/db1.db", FsAction.ALL, "flume", false);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/db1.db", FsAction.ALL, "hbase", false);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/db1.db/p2", FsAction.ALL, "flume", false);
+    verifyGroupPermOnPath("/user/hive/warehouse/db1.db", FsAction.ALL, "flume", false);
 
     //Enabling HDFS sync back in sentry server
     enableHdfsSync(0);
@@ -157,18 +157,18 @@ public class TestHDFSIntegrationTogglingConf extends TestHDFSIntegrationBase {
     stmt.execute("grant role p1_admin to group hbase");
 
     // Verify default db is inaccessible initially
-    verifyOnAllSubDirs("/user/hive/warehouse", null, "hbase", false);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse", null, "hbase", false);
 
-    verifyOnAllSubDirs("/user/hive/warehouse/p1", null, "hbase", false);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/p1", null, "hbase", false);
 
     stmt.execute("grant all on database db1 to role db_role");
     stmt.execute("use db1");
     stmt.execute("grant all on table p2 to role tab_role");
     stmt.execute("use default");
-    verifyOnAllSubDirs("/user/hive/warehouse/db1.db", FsAction.ALL, "hbase", true);
-    verifyOnAllSubDirs("/user/hive/warehouse/db1.db/p2", FsAction.ALL, "hbase", true);
-    verifyOnAllSubDirs("/user/hive/warehouse/db1.db/p2", FsAction.ALL, "flume", true);
-    verifyOnPath("/user/hive/warehouse/db1.db", FsAction.ALL, "flume", false);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/db1.db", FsAction.ALL, "hbase", true);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/db1.db/p2", FsAction.ALL, "hbase", true);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/db1.db/p2", FsAction.ALL, "flume", true);
+    verifyGroupPermOnPath("/user/hive/warehouse/db1.db", FsAction.ALL, "flume", false);
 
     loadData(stmt);
 
@@ -178,14 +178,14 @@ public class TestHDFSIntegrationTogglingConf extends TestHDFSIntegrationBase {
     disableHdfsSync(0);
 
     stmt.execute("revoke all on database db1 from role db_role");
-    verifyOnAllSubDirs("/user/hive/warehouse/db1.db", FsAction.ALL, "hbase", false);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/db1.db", FsAction.ALL, "hbase", false);
 
     // create a table and grant all to db_role
     stmt.execute("create database db6");
     stmt.execute("grant all on database db6 to role db_role");
 
     // verify that db_role does not have required ACL's as HDFS sync is disabled in sentry server.
-    verifyOnAllSubDirs("/user/hive/warehouse/db6.db", FsAction.ALL, "hbase", false);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/db6.db", FsAction.ALL, "hbase", false);
 
     //Create table in db6 and grant all privileges to tab role
     stmt.execute("use db6");
@@ -193,7 +193,7 @@ public class TestHDFSIntegrationTogglingConf extends TestHDFSIntegrationBase {
     stmt.execute("grant all on table db6.p1 to role tab_role");
 
     // verify that tab_role does not have required permissions
-    verifyOnAllSubDirs("/user/hive/warehouse/db6.db/p1", FsAction.ALL, "flume", false);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/db6.db/p1", FsAction.ALL, "flume", false);
 
     //Enabling HDFS sync in sentry server
     enableHdfsSync(0);
@@ -202,8 +202,8 @@ public class TestHDFSIntegrationTogglingConf extends TestHDFSIntegrationBase {
     // db_role and tab_role should have required privileges.
     // Checks below will make sure that sentry/NN have the updates that happened
     // to HMS objects when HDFS was disabled.
-    verifyOnAllSubDirs("/user/hive/warehouse/db6.db", FsAction.ALL, "hbase", true);
-    verifyOnAllSubDirs("/user/hive/warehouse/db6.db/p1", FsAction.ALL, "flume", true);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/db6.db", FsAction.ALL, "hbase", true);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/db6.db/p1", FsAction.ALL, "flume", true);
 
     stmt.close();
     conn.close();

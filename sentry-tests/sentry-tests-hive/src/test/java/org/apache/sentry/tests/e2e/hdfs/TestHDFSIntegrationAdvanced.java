@@ -74,9 +74,9 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
     stmt.execute("grant select on table t1 to role tab_role");
     stmt.execute("grant role tab_role to group flume");
 
-    verifyOnAllSubDirs("/user/hive/warehouse/db1.db/t1", FsAction.READ_EXECUTE, "flume", true);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/db1.db/t1", FsAction.READ_EXECUTE, "flume", true);
     stmt.execute("INSERT INTO TABLE t1 VALUES (1)");
-    verifyOnAllSubDirs("/user/hive/warehouse/db1.db/t1", FsAction.READ_EXECUTE, "flume", true);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/db1.db/t1", FsAction.READ_EXECUTE, "flume", true);
 
   }
 
@@ -123,26 +123,26 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
     miniDFS.getFileSystem().mkdirs(new Path("/tmp/external/tab1_loc"));
     stmt.execute("use " + dbName);
     stmt.execute("create external table tab1(a int) location 'file:///tmp/external/tab1_loc'");
-    verifyOnAllSubDirs("/tmp/external/tab1_loc", null, StaticUserGroup.USERGROUP1, false);
+    verifyGroupPermOnAllSubDirs("/tmp/external/tab1_loc", null, StaticUserGroup.USERGROUP1, false);
 
     //External partitioned table on local file system
     miniDFS.getFileSystem().mkdirs(new Path("/tmp/external/tab2_loc/i=1"));
     stmt.execute("create external table tab2 (s string) partitioned by (i int) location 'file:///tmp/external/tab2_loc'");
-    verifyOnAllSubDirs("/tmp/external/tab2_loc", null, StaticUserGroup.USERGROUP1, false);
+    verifyGroupPermOnAllSubDirs("/tmp/external/tab2_loc", null, StaticUserGroup.USERGROUP1, false);
     //Partition on local file system
     stmt.execute("alter table tab2 add partition (i=1)");
     stmt.execute("alter table tab2 partition (i=1) set location 'file:///tmp/external/tab2_loc/i=1'");
 
-    verifyOnAllSubDirs("/tmp/external/tab2_loc/i=1", null, StaticUserGroup.USERGROUP1, false);
+    verifyGroupPermOnAllSubDirs("/tmp/external/tab2_loc/i=1", null, StaticUserGroup.USERGROUP1, false);
 
     //HDFS to local file system, also make sure does not specifying scheme still works
     stmt.execute("create external table tab3(a int) location '/tmp/external/tab3_loc'");
     // SENTRY-546
     // SENTRY-1471 - fixing the validation logic revealed that FsAction.ALL is the right value.
-    verifyOnAllSubDirs("/tmp/external/tab3_loc", FsAction.ALL, StaticUserGroup.USERGROUP1, true);
-    // verifyOnAllSubDirs("/tmp/external/tab3_loc", null, StaticUserGroup.USERGROUP1, true);
+    verifyGroupPermOnAllSubDirs("/tmp/external/tab3_loc", FsAction.ALL, StaticUserGroup.USERGROUP1, true);
+    // verifyGroupPermOnAllSubDirs("/tmp/external/tab3_loc", null, StaticUserGroup.USERGROUP1, true);
     stmt.execute("alter table tab3 set location 'file:///tmp/external/tab3_loc'");
-    verifyOnAllSubDirs("/tmp/external/tab3_loc", null, StaticUserGroup.USERGROUP1, false);
+    verifyGroupPermOnAllSubDirs("/tmp/external/tab3_loc", null, StaticUserGroup.USERGROUP1, false);
 
     //Local file system to HDFS
     stmt.execute("create table tab4(a int) location 'file:///tmp/external/tab4_loc'");
@@ -150,8 +150,8 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
     miniDFS.getFileSystem().mkdirs(new Path("/tmp/external/tab4_loc"));
     // SENTRY-546
     // SENTRY-1471 - fixing the validation logic revealed that FsAction.ALL is the right value.
-    verifyOnAllSubDirs("/tmp/external/tab4_loc", FsAction.ALL, StaticUserGroup.USERGROUP1, true);
-    // verifyOnAllSubDirs("/tmp/external/tab4_loc", null, StaticUserGroup.USERGROUP1, true);
+    verifyGroupPermOnAllSubDirs("/tmp/external/tab4_loc", FsAction.ALL, StaticUserGroup.USERGROUP1, true);
+    // verifyGroupPermOnAllSubDirs("/tmp/external/tab4_loc", null, StaticUserGroup.USERGROUP1, true);
     stmt.close();
     conn.close();
   }
@@ -197,7 +197,7 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
 
     // When the table creation failed, the path will not be managed by sentry. And the
     // permission of the path will not be hive:hive.
-    verifyOnAllSubDirs("/tmp/external/p1", null, StaticUserGroup.HIVE, true);
+    verifyGroupPermOnAllSubDirs("/tmp/external/p1", null, StaticUserGroup.HIVE, true);
 
     stmt.close();
     conn.close();
@@ -243,7 +243,7 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
 
     // When the table creation failed, the path will not be managed by sentry. And the
     // permission of the path will not be hive:hive.
-    verifyOnAllSubDirs("/tmp/external/p1", null, StaticUserGroup.HIVE, true);
+    verifyGroupPermOnAllSubDirs("/tmp/external/p1", null, StaticUserGroup.HIVE, true);
 
     stmt.close();
     conn.close();
@@ -292,7 +292,7 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
 
     // When the table dropping failed, the path will still be managed by sentry. And the
     // permission of the path still should be hive:hive.
-    verifyOnAllSubDirs(tmpHDFSPartitionStr, FsAction.ALL, StaticUserGroup.HIVE, true);
+    verifyGroupPermOnAllSubDirs(tmpHDFSPartitionStr, FsAction.ALL, StaticUserGroup.HIVE, true);
 
     stmt.close();
     conn.close();
@@ -339,7 +339,7 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
 
     // When the partition dropping failed, the path for the partition will still
     // be managed by sentry. And the permission of the path still should be hive:hive.
-    verifyOnAllSubDirs(tmpHDFSPartitionStr, FsAction.ALL, StaticUserGroup.HIVE, true);
+    verifyGroupPermOnAllSubDirs(tmpHDFSPartitionStr, FsAction.ALL, StaticUserGroup.HIVE, true);
 
     stmt.close();
     conn.close();
@@ -600,7 +600,7 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
     Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
 
     // Verify that user_group1 has insert(write_execute) permission on '/tmp/external/p1'.
-    verifyOnAllSubDirs("/tmp/external/p1", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP1, true);
+    verifyGroupPermOnAllSubDirs("/tmp/external/p1", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP1, true);
 
     // Create external table tab2 and partition on location '/tmp/external'.
     // Create tab2_role, and grant it with select permission on table tab2 to user_group2.
@@ -612,8 +612,8 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
     Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
 
     // Verify that user_group2 have select(read_execute) permission on both paths.
-    verifyOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/tab2", FsAction.READ_EXECUTE, StaticUserGroup.USERGROUP2, true);
-    verifyOnPath(tmpHDFSDirStr, FsAction.READ_EXECUTE, StaticUserGroup.USERGROUP2, true);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/tab2", FsAction.READ_EXECUTE, StaticUserGroup.USERGROUP2, true);
+    verifyGroupPermOnPath(tmpHDFSDirStr, FsAction.READ_EXECUTE, StaticUserGroup.USERGROUP2, true);
 
     // Create table tab3 and partition on the same location '/tmp/external' as tab2.
     // Create tab3_role, and grant it with insert permission on table tab3 to user_group3.
@@ -626,29 +626,29 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
 
     // When two partitions of different tables pointing to the same location with different grants,
     // ACLs should have union (no duplicates) of both rules.
-    verifyOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/tab3", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
-    verifyOnPath(tmpHDFSDirStr, FsAction.READ_EXECUTE, StaticUserGroup.USERGROUP2, true);
-    verifyOnPath(tmpHDFSDirStr, FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/tab3", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
+    verifyGroupPermOnPath(tmpHDFSDirStr, FsAction.READ_EXECUTE, StaticUserGroup.USERGROUP2, true);
+    verifyGroupPermOnPath(tmpHDFSDirStr, FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
 
     // When alter the table name (tab2 to be tabx), ACLs should remain the same.
     stmt.execute("alter table tab2 rename to tabx");
     Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
-    verifyOnPath(tmpHDFSDirStr, FsAction.READ_EXECUTE, StaticUserGroup.USERGROUP2, true);
-    verifyOnPath(tmpHDFSDirStr, FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
+    verifyGroupPermOnPath(tmpHDFSDirStr, FsAction.READ_EXECUTE, StaticUserGroup.USERGROUP2, true);
+    verifyGroupPermOnPath(tmpHDFSDirStr, FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
 
     // When drop a partition that shares the same location with other partition belonging to
     // other table, should still have the other table permissions.
     stmt.execute("ALTER TABLE tabx DROP PARTITION (month = 1)");
     Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
-    verifyOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/tab3", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
-    verifyOnPath(tmpHDFSDirStr, FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/tab3", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
+    verifyGroupPermOnPath(tmpHDFSDirStr, FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
 
     // When drop a table that has a partition shares the same location with other partition
     // belonging to other table, should still have the other table permissions.
     stmt.execute("DROP TABLE IF EXISTS tabx");
     Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
-    verifyOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/tab3", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
-    verifyOnPath(tmpHDFSDirStr, FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/tab3", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
+    verifyGroupPermOnPath(tmpHDFSDirStr, FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP3, true);
 
     stmt.close();
     conn.close();
@@ -688,12 +688,12 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
     Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
 
     // Verify that user_group1 has insert(write_execute) permission on '/tmp/external/p1'.
-    verifyOnAllSubDirs("/tmp/external/p1", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP1, true);
+    verifyGroupPermOnAllSubDirs("/tmp/external/p1", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP1, true);
 
     // When two partitions of the same table pointing to the same location,
     // ACLS should not be repeated. Exception will be thrown if there are duplicates.
     stmt.execute("alter table tab1 add partition (month = 2) location '/tmp/external/p1'");
-    verifyOnPath("/tmp/external/p1", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP1, true);
+    verifyGroupPermOnPath("/tmp/external/p1", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP1, true);
 
     stmt.close();
     conn.close();
@@ -730,7 +730,7 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
     Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
 
     // Verify that user_group1 has insert(write_execute) permission on '/tmp/external/p1'.
-    verifyOnAllSubDirs("/tmp/external/p1", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP1, true);
+    verifyGroupPermOnAllSubDirs("/tmp/external/p1", FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP1, true);
 
     // Create table tab2 on the same location '/tmp/external/p1' as table tab1.
     // Create tab2_role, and grant it with select permission on table tab2 to user_group1.
@@ -741,12 +741,12 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
 
     // When two tables pointing to the same location, ACLS should have union (no duplicates)
     // of both rules.
-    verifyOnPath("/tmp/external/p1", FsAction.ALL, StaticUserGroup.USERGROUP1, true);
+    verifyGroupPermOnPath("/tmp/external/p1", FsAction.ALL, StaticUserGroup.USERGROUP1, true);
 
     // When drop table tab1, ACLs of tab2 still remain.
     stmt.execute("DROP TABLE IF EXISTS tab1");
     Thread.sleep(WAIT_BEFORE_TESTVERIFY);//Wait till sentry cache is updated in Namenode
-    verifyOnPath("/tmp/external/p1", FsAction.READ_EXECUTE, StaticUserGroup.USERGROUP1, true);
+    verifyGroupPermOnPath("/tmp/external/p1", FsAction.READ_EXECUTE, StaticUserGroup.USERGROUP1, true);
 
     stmt.close();
     conn.close();
@@ -805,7 +805,7 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
      //      /tmp/external                   (location without scheme)
      // Assert.assertEquals("/tmp/external", hmsClient.getTable(dbName, tblName).getSd().getLocation());
 
-     verifyOnPath("/tmp/external", FsAction.ALL, StaticUserGroup.HIVE, true);
+     verifyGroupPermOnPath("/tmp/external", FsAction.ALL, StaticUserGroup.HIVE, true);
 
      stmt.close();
      conn.close();
@@ -850,11 +850,11 @@ public class TestHDFSIntegrationAdvanced extends TestHDFSIntegrationBase {
 
       // Verify that the permissions are preserved.
       String newTblPath = Paths.get("/user/hive/warehouse", dbName + ".db", newTblName).toString();
-      verifyOnAllSubDirs(newTblPath, FsAction.ALL, StaticUserGroup.HIVE, true);
-      verifyOnAllSubDirs(newTblPath, FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP1, true);
+      verifyGroupPermOnAllSubDirs(newTblPath, FsAction.ALL, StaticUserGroup.HIVE, true);
+      verifyGroupPermOnAllSubDirs(newTblPath, FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP1, true);
       String newPatPath = new File(newTblPath, patName).toString();
-      verifyOnPath(newPatPath, FsAction.ALL, StaticUserGroup.ADMINGROUP, true);
-      verifyOnPath(newPatPath, FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP1, true);
+      verifyGroupPermOnPath(newPatPath, FsAction.ALL, StaticUserGroup.ADMINGROUP, true);
+      verifyGroupPermOnPath(newPatPath, FsAction.WRITE_EXECUTE, StaticUserGroup.USERGROUP1, true);
     }
   }
 }
