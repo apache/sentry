@@ -224,6 +224,12 @@ limitations under the License.
       <artifactId>hadoop-yarn-common</artifactId>
       <version>${hadoop.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>jackson-mapper-asl</artifactId>
+          <groupId>org.codehaus.jackson</groupId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
@@ -333,6 +339,12 @@ limitations under the License.
       <artifactId>hadoop-aws</artifactId>
       <version>${hadoop.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>jackson-databind</artifactId>
+          <groupId>com.fasterxml.jackson.core</groupId>
+        </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
   <build>
