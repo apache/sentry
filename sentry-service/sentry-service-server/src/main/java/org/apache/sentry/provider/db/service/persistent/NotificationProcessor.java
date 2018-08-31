@@ -448,7 +448,7 @@ final class NotificationProcessor {
     String tableName = addPartitionMessage.getTable();
     List<String> locations = addPartitionMessage.getLocations();
     if ((dbName == null) || (tableName == null) || (locations == null)) {
-      LOGGER.warn(String.format("Create table event has incomplete information. "
+      LOGGER.warn(String.format("Add partition event has incomplete information. "
               + "dbName = %s, tableName = %s, locations = %s",
           StringUtils.defaultIfBlank(dbName, "null"),
           StringUtils.defaultIfBlank(tableName, "null"),
