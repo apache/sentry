@@ -83,6 +83,7 @@ limitations under the License.
     <kafka.version>1.0.0</kafka.version>
     <libfb303.version>0.9.3</libfb303.version>
     <libthrift.version>0.9.3</libthrift.version>
+    <lombok.version>1.18.2</lombok.version>
     <log4j.version>1.2.16</log4j.version>
     <maven.antrun.plugin.version>1.7</maven.antrun.plugin.version>
     <maven.eclipse.plugin.version>2.9</maven.eclipse.plugin.version>
@@ -481,6 +482,12 @@ limitations under the License.
             <artifactId>log4j-web</artifactId>
           </exclusion>
         </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <version>${lombok.version}</version>
+        <scope>provided</scope>
       </dependency>
       <dependency>
         <groupId>org.apache.hive</groupId>
@@ -1115,6 +1122,8 @@ limitations under the License.
                   <exclude>**/THIRD-PARTY.properties</exclude>
                   <exclude>**/THIRD-PARTY.ftl</exclude>
                   <exclude>**/resources/licences/*</exclude>
+                  <!-- Lombok Config File -->
+                  <exclude>lombok.config</exclude>
                 </excludes>
               </configuration>
             </execution>
