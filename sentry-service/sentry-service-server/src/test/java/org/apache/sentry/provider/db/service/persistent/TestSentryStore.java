@@ -44,6 +44,7 @@ import org.apache.hadoop.security.alias.CredentialProvider;
 import org.apache.hadoop.security.alias.CredentialProviderFactory;
 import org.apache.hadoop.security.alias.UserProvider;
 import org.apache.sentry.SentryOwnerInfo;
+import org.apache.sentry.api.common.ApiConstants.PrivilegeScope;
 import org.apache.sentry.api.service.thrift.TSentryPrivilegeMap;
 import org.apache.sentry.core.common.exception.SentryAccessDeniedException;
 import org.apache.sentry.core.common.exception.SentryInvalidInputException;
@@ -920,6 +921,81 @@ public class TestSentryStore extends org.junit.Assert {
     List<MSentryPrivilege> list = sentryStore.getAllMSentryPrivileges();
     assertEquals(list.size(), 0);
 
+  }
+
+  @Test
+  public void testDropIndividualPrivilegesWhenGrantAllIsGranted() throws Exception {
+    final String GRANTOR = "g1";
+    final String ROLE_NAME = "r1";
+    final String SERVER_NAME = "server1";
+    final String DB_NAME = "db1";
+    final String TABLE_NAME = "table1";
+
+    TSentryPrivilege allPrivilege = toTSentryPrivilege(AccessConstants.ACTION_ALL,
+      PrivilegeScope.SERVER.toString(), SERVER_NAME, DB_NAME, TABLE_NAME, TSentryGrantOption.FALSE);
+
+    TSentryPrivilege allWithGrant = toTSentryPrivilege(AccessConstants.ACTION_ALL,
+      PrivilegeScope.SERVER.toString(), SERVER_NAME, DB_NAME, TABLE_NAME, TSentryGrantOption.TRUE);
+
+    TSentryPrivilege ownerPrivilege = toTSentryPrivilege(AccessConstants.OWNER,
+      PrivilegeScope.DATABASE.toString(), SERVER_NAME, DB_NAME, TABLE_NAME);
+
+    Set<TSentryPrivilege> grantPrivileges = Sets.newHashSet(
+      toTSentryPrivilege(AccessConstants.SELECT, PrivilegeScope.SERVER.toString(), SERVER_NAME,
+        DB_NAME, TABLE_NAME),
+      toTSentryPrivilege(AccessConstants.INSERT, PrivilegeScope.SERVER.toString(), SERVER_NAME,
+        DB_NAME, TABLE_NAME),
+      toTSentryPrivilege(AccessConstants.CREATE, PrivilegeScope.SERVER.toString(), SERVER_NAME,
+        DB_NAME, TABLE_NAME),
+      toTSentryPrivilege(AccessConstants.ALTER, PrivilegeScope.SERVER.toString(), SERVER_NAME,
+        DB_NAME, TABLE_NAME),
+      toTSentryPrivilege(AccessConstants.DROP, PrivilegeScope.SERVER.toString(), SERVER_NAME,
+        DB_NAME, TABLE_NAME),
+      toTSentryPrivilege(AccessConstants.INDEX, PrivilegeScope.SERVER.toString(), SERVER_NAME,
+        DB_NAME, TABLE_NAME),
+      toTSentryPrivilege(AccessConstants.LOCK, PrivilegeScope.SERVER.toString(), SERVER_NAME,
+        DB_NAME, TABLE_NAME),
+
+      // This special privilege will not be removed when granting all privileges
+      ownerPrivilege
+    );
+
+    // Grant individual privileges to a role
+    createRole(ROLE_NAME);
+    sentryStore.alterSentryRoleGrantPrivileges(GRANTOR, ROLE_NAME, grantPrivileges);
+
+    // Check those individual privileges are granted
+    Set<TSentryPrivilege> rolePrivileges = sentryStore.getAllTSentryPrivilegesByRoleName(ROLE_NAME);
+    assertEquals(grantPrivileges.size(), rolePrivileges.size());
+    for (TSentryPrivilege privilege : grantPrivileges) {
+      assertTrue(String.format("Privilege %s was not granted.", privilege.getAction()),
+        rolePrivileges.contains(privilege));
+    }
+
+    // Grant the ALL privilege (this should remove all individual privileges, and grant only ALL)
+    sentryStore.alterSentryRoleGrantPrivileges(GRANTOR, ROLE_NAME, Sets.newHashSet(allPrivilege));
+
+    // Check the ALL and OWNER privileges are the only privileges
+    rolePrivileges = sentryStore.getAllTSentryPrivilegesByRoleName(ROLE_NAME);
+    assertEquals(2, rolePrivileges.size()); // ALL and OWNER privileges should be there
+    assertTrue("Privilege ALL was not granted.", rolePrivileges.contains(allPrivilege));
+    assertTrue("Privilege OWNER was dropped.", rolePrivileges.contains(ownerPrivilege));
+
+    // Check the ALL WITH GRANT privilege just replaces the ALL and keeps the OWNER privilege
+    sentryStore.alterSentryRoleGrantPrivileges(GRANTOR, ROLE_NAME, Sets.newHashSet(allWithGrant));
+    rolePrivileges = sentryStore.getAllTSentryPrivilegesByRoleName(ROLE_NAME);
+    assertTrue("Privilege ALL WITH GRANT was not granted.", rolePrivileges.contains(allWithGrant));
+    assertTrue("Privilege OWNER was dropped.", rolePrivileges.contains(ownerPrivilege));
+
+    // Check the ALL privilege just replaces the ALL WITH GRANT and keeps the OWNER privilege
+    sentryStore.alterSentryRoleGrantPrivileges(GRANTOR, ROLE_NAME, Sets.newHashSet(allPrivilege));
+    rolePrivileges = sentryStore.getAllTSentryPrivilegesByRoleName(ROLE_NAME);
+    assertTrue("Privilege ALL was not granted.", rolePrivileges.contains(allPrivilege));
+    assertTrue("Privilege OWNER was dropped.", rolePrivileges.contains(ownerPrivilege));
+
+
+    // Clean-up test
+    sentryStore.dropSentryRole(ROLE_NAME);
   }
 
   //TODO Use new transaction Manager logic, Instead of
@@ -4462,6 +4538,13 @@ public class TestSentryStore extends org.junit.Assert {
     privilege.setAction(action);
     privilege.setCreateTime(System.currentTimeMillis());
 
+    return privilege;
+  }
+
+  private TSentryPrivilege toTSentryPrivilege(String action, String scope, String server,
+    String dbName, String tableName, TSentryGrantOption grantOption) {
+    TSentryPrivilege privilege = toTSentryPrivilege(action, scope, server, dbName, tableName);
+    privilege.setGrantOption(grantOption);
     return privilege;
   }
 }

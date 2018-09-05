@@ -813,25 +813,11 @@ public class SentryStore implements SentryStoreInterface {
     if ((!isNULL(privilege.getColumnName()) || !isNULL(privilege.getTableName())
         || !isNULL(privilege.getDbName()))
         && !AccessConstants.OWNER.equalsIgnoreCase(privilege.getAction())) {
-      // If Grant is for ALL and Either INSERT/SELECT already exists..
+      // If Grant is for ALL and individual privileges already exists (i.e. insert/select/create..)
       // need to remove it and GRANT ALL..
       if (AccessConstants.ALL.equalsIgnoreCase(privilege.getAction())
           || AccessConstants.ACTION_ALL.equalsIgnoreCase(privilege.getAction())) {
-        TSentryPrivilege tNotAll = new TSentryPrivilege(privilege);
-        tNotAll.setAction(AccessConstants.SELECT);
-        MSentryPrivilege mSelect =
-            findMatchPrivilege(mEntity.getPrivileges(), convertToMSentryPrivilege(tNotAll));
-        tNotAll.setAction(AccessConstants.INSERT);
-        MSentryPrivilege mInsert =
-            findMatchPrivilege(mEntity.getPrivileges(), convertToMSentryPrivilege(tNotAll));
-        if (mSelect != null) {
-          mSelect.removePrincipal(mEntity);
-          persistPrivilege(pm, mSelect);
-        }
-        if (mInsert != null) {
-          mInsert.removePrincipal(mEntity);
-          persistPrivilege(pm, mInsert);
-        }
+        dropPrivilegesForGrantAll(pm, mEntity, privilege);
       } else {
         // If Grant is for Either INSERT/SELECT and ALL already exists..
         // do nothing..
@@ -858,6 +844,39 @@ public class SentryStore implements SentryStoreInterface {
     mPrivilege.appendPrincipal(mEntity);
     pm.makePersistent(mPrivilege);
     return mPrivilege;
+  }
+
+  /**
+   * Drop all individual privileges from the privilege entity that form the grant all operation.
+   *
+   * @param pm The PersistenceManager to persist the changes.
+   * @param principal The Sentry principal from where to drop the privileges.
+   * @param privilege The Sentry privilege that has the authorizable object from where to drop the privileges.
+   * @throws SentryInvalidInputException If an error occurs when dropping the privileges.
+   */
+  private void dropPrivilegesForGrantAll(PersistenceManager pm, PrivilegePrincipal principal,
+    TSentryPrivilege privilege) throws SentryInvalidInputException {
+
+    // Re-use this object to search for the specific privilege
+    TSentryPrivilege tNotAll = new TSentryPrivilege(privilege);
+
+    for (String action : ALL_ACTIONS) {
+      // These privileges do not form part of the grant all operation.
+      // For instance, a role/user may have the OWNER and ALL privileges together.
+      if (action.equalsIgnoreCase(AccessConstants.OWNER)) {
+        continue;
+      }
+
+      // Set the action to search in the set of privileges of the entity
+      tNotAll.setAction(action);
+
+      MSentryPrivilege mAction =
+        findMatchPrivilege(principal.getPrivileges(), convertToMSentryPrivilege(tNotAll));
+      if (mAction != null) {
+        mAction.removePrincipal(principal);
+        persistPrivilege(pm, mAction);
+      }
+    }
   }
 
   /**
