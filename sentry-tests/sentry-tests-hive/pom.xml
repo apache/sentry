@@ -229,6 +229,10 @@ limitations under the License.
           <artifactId>jackson-mapper-asl</artifactId>
           <groupId>org.codehaus.jackson</groupId>
         </exclusion>
+        <exclusion>
+          <artifactId>jackson-xc</artifactId>
+          <groupId>org.codehaus.jackson</groupId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
@@ -342,6 +346,10 @@ limitations under the License.
       <exclusions>
         <exclusion>
           <artifactId>jackson-databind</artifactId>
+          <groupId>com.fasterxml.jackson.core</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>jackson-annotations</artifactId>
           <groupId>com.fasterxml.jackson.core</groupId>
         </exclusion>
       </exclusions>
