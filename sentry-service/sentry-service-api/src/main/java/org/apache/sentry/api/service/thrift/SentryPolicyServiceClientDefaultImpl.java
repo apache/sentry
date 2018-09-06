@@ -927,14 +927,14 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
   }
 
   @Override
-  public Map<TSentryAuthorizable, TSentryPrivilegeMap> listPrivilegsbyAuthorizable(
+  public Map<TSentryAuthorizable, TSentryPrivilegeMap> listPrivilegesbyAuthorizable(
     String requestorUserName, Set<List<? extends Authorizable>> authorizables, Set<String> groups,
     ActiveRoleSet roleSet) throws SentryUserException {
-    return listPrivilegsbyAuthorizable(requestorUserName, authorizables, groups, null, roleSet);
+    return listPrivilegesbyAuthorizable(requestorUserName, authorizables, groups, null, roleSet);
   }
 
   @Override
-  public Map<TSentryAuthorizable, TSentryPrivilegeMap> listPrivilegsbyAuthorizable
+  public Map<TSentryAuthorizable, TSentryPrivilegeMap> listPrivilegesbyAuthorizable
     (
       String requestorUserName,
       Set<List<? extends Authorizable>> authorizables, Set<String> groups,
@@ -947,7 +947,7 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
   }
 
   @Override
-  public SentryObjectPrivileges getAllPrivilegsbyAuthorizable
+  public SentryObjectPrivileges getAllPrivilegesbyAuthorizable
   (
     String requestorUserName,
     Set<List<? extends Authorizable>> authorizables, Set<String> groups,

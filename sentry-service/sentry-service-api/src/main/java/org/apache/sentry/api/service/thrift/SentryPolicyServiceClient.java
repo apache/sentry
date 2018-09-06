@@ -216,7 +216,7 @@ public interface SentryPolicyServiceClient extends AutoCloseable {
       List<? extends Authorizable> oldAuthorizables, List<? extends Authorizable> newAuthorizables)
       throws SentryUserException;
 
-  Map<TSentryAuthorizable, TSentryPrivilegeMap> listPrivilegsbyAuthorizable(
+  Map<TSentryAuthorizable, TSentryPrivilegeMap> listPrivilegesbyAuthorizable(
       String requestorUserName, Set<List<? extends Authorizable>> authorizables,
       Set<String> groups, ActiveRoleSet roleSet) throws SentryUserException;
 
@@ -238,7 +238,7 @@ public interface SentryPolicyServiceClient extends AutoCloseable {
    * @return A list of privileges on the specified authorizable object.
    * @throws SentryUserException In case an error occurs while getting the list of privileges.
    */
-  Map<TSentryAuthorizable, TSentryPrivilegeMap> listPrivilegsbyAuthorizable(
+  Map<TSentryAuthorizable, TSentryPrivilegeMap> listPrivilegesbyAuthorizable(
     String requestorUserName, Set<List<? extends Authorizable>> authorizables,
     Set<String> groups, Set<String> users, ActiveRoleSet roleSet) throws SentryUserException;
 
@@ -260,7 +260,7 @@ public interface SentryPolicyServiceClient extends AutoCloseable {
    * @return A an instance of SentryObjectPrivileges on the specified authorizable object.
    * @throws SentryUserException In case an error occurs while getting the list of privileges.
    */
-  SentryObjectPrivileges getAllPrivilegsbyAuthorizable(
+  SentryObjectPrivileges getAllPrivilegesbyAuthorizable(
       String requestorUserName, Set<List<? extends Authorizable>> authorizables,
       Set<String> groups, Set<String> users, ActiveRoleSet roleSet) throws SentryUserException;
 

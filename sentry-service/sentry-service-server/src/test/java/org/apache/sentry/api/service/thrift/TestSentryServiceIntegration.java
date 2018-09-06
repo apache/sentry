@@ -700,37 +700,37 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
 
         // verify for null group and null roleset
         Map<TSentryAuthorizable, TSentryPrivilegeMap> authPrivMap = client
-            .listPrivilegsbyAuthorizable(requestorUserName, authorizableSet, null, null);
+            .listPrivilegesbyAuthorizable(requestorUserName, authorizableSet, null, null);
         assertEquals(expectedResults, authPrivMap);
 
         // verify for null group and specific roleset
-        authPrivMap = client.listPrivilegsbyAuthorizable(requestorUserName, authorizableSet,
+        authPrivMap = client.listPrivilegesbyAuthorizable(requestorUserName, authorizableSet,
             null, new ActiveRoleSet(testRoleSet));
         assertEquals(expectedResults, authPrivMap);
 
         // verify for null group and specific roleset
-        authPrivMap = client.listPrivilegsbyAuthorizable(requestorUserName, authorizableSet, null,
+        authPrivMap = client.listPrivilegesbyAuthorizable(requestorUserName, authorizableSet, null,
             ActiveRoleSet.ALL);
         assertEquals(expectedResults, authPrivMap);
 
         // verify for specific group and null roleset
-        authPrivMap = client.listPrivilegsbyAuthorizable(requestorUserName, authorizableSet,
+        authPrivMap = client.listPrivilegesbyAuthorizable(requestorUserName, authorizableSet,
             testGroupSet, null);
         assertEquals(expectedResults, authPrivMap);
 
         // verify for specific group and specific roleset
-        authPrivMap = client.listPrivilegsbyAuthorizable(requestorUserName, authorizableSet,
+        authPrivMap = client.listPrivilegesbyAuthorizable(requestorUserName, authorizableSet,
             testGroupSet, new ActiveRoleSet(testRoleSet));
         assertEquals(expectedResults, authPrivMap);
 
         // verify for specific group and ALL roleset
-        authPrivMap = client.listPrivilegsbyAuthorizable(requestorUserName, authorizableSet,
+        authPrivMap = client.listPrivilegesbyAuthorizable(requestorUserName, authorizableSet,
             testGroupSet, ActiveRoleSet.ALL);
         assertEquals(expectedResults, authPrivMap);
 
         // verify users not belonging to any group are not shown anything
         authPrivMap = client
-            .listPrivilegsbyAuthorizable("random", authorizableSet,
+            .listPrivilegesbyAuthorizable("random", authorizableSet,
                 new HashSet<String>(), ActiveRoleSet.ALL);
         expectedResults.clear();
         expectedResults.put(
@@ -798,7 +798,7 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
         Set<List<? extends Authorizable>> authorizableSet = Sets.newHashSet();
         authorizableSet.add(db2TabAuthrizable);
         Map<TSentryAuthorizable, TSentryPrivilegeMap> authPrivMap = client
-            .listPrivilegsbyAuthorizable(requestorUserName, authorizableSet, null, null);
+            .listPrivilegesbyAuthorizable(requestorUserName, authorizableSet, null, null);
 
         assertEquals(expectedResults, authPrivMap);
       }});
@@ -862,7 +862,7 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
         Set<List<? extends Authorizable>> authorizableSet = Sets.newHashSet();
         authorizableSet.add(uri1Authrizable);
         Map<TSentryAuthorizable, TSentryPrivilegeMap> authPrivMap = client
-            .listPrivilegsbyAuthorizable(requestorUserName, authorizableSet, null, null);
+            .listPrivilegesbyAuthorizable(requestorUserName, authorizableSet, null, null);
 
         assertEquals(expectedResults, authPrivMap);
       }});
@@ -933,38 +933,38 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
 
         // list privileges with null group and roles
         Map<TSentryAuthorizable, TSentryPrivilegeMap> authPrivMap = client
-            .listPrivilegsbyAuthorizable(user1, authorizableSet, null, null);
+            .listPrivilegesbyAuthorizable(user1, authorizableSet, null, null);
         assertEquals(expectedResults, authPrivMap);
 
         // list privileges with empty group set and null roles
-        authPrivMap = client.listPrivilegsbyAuthorizable(user1, authorizableSet,
+        authPrivMap = client.listPrivilegesbyAuthorizable(user1, authorizableSet,
             new HashSet<String>(), null);
         assertEquals(expectedResults, authPrivMap);
 
         // list privileges with null group set and ALL roleset
-        authPrivMap = client.listPrivilegsbyAuthorizable(user1, authorizableSet,
+        authPrivMap = client.listPrivilegesbyAuthorizable(user1, authorizableSet,
             null, new ActiveRoleSet(true));
         assertEquals(expectedResults, authPrivMap);
 
         // list privileges with user1's group set and null roles
-        authPrivMap = client.listPrivilegsbyAuthorizable(user1, authorizableSet,
+        authPrivMap = client.listPrivilegesbyAuthorizable(user1, authorizableSet,
             userGroupNames1, null);
         assertEquals(expectedResults, authPrivMap);
 
         // list privileges with user1's group set and ALL roles
-        authPrivMap = client.listPrivilegsbyAuthorizable(user1, authorizableSet,
+        authPrivMap = client.listPrivilegesbyAuthorizable(user1, authorizableSet,
             userGroupNames1, new ActiveRoleSet(true));
         assertEquals(expectedResults, authPrivMap);
 
         // list privileges with null group and user's specific roles with uppercase name
-        authPrivMap = client.listPrivilegsbyAuthorizable(user1, authorizableSet,
+        authPrivMap = client.listPrivilegesbyAuthorizable(user1, authorizableSet,
             null, new ActiveRoleSet(Sets.newHashSet(roleName1.toUpperCase())));
         assertEquals(expectedResults, authPrivMap);
 
         // verify that user1 can't query group2
         try {
-          client.listPrivilegsbyAuthorizable(user1, authorizableSet, userGroupNames2, null);
-          fail("listPrivilegsbyAuthorizable() should fail for user1 accessing " + group2);
+          client.listPrivilegesbyAuthorizable(user1, authorizableSet, userGroupNames2, null);
+          fail("listPrivilegesbyAuthorizable() should fail for user1 accessing " + group2);
         } catch (SentryAccessDeniedException e) {
           // expected
         }
@@ -972,8 +972,8 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
         // verify that user1 can't query role2
         ActiveRoleSet roleSet2 = new ActiveRoleSet(Sets.newHashSet(roleName2));
         try {
-          client.listPrivilegsbyAuthorizable(user1, authorizableSet, null, roleSet2);
-          fail("listPrivilegsbyAuthorizable() should fail for user1 accessing " + roleName2);
+          client.listPrivilegesbyAuthorizable(user1, authorizableSet, null, roleSet2);
+          fail("listPrivilegesbyAuthorizable() should fail for user1 accessing " + roleName2);
         } catch (SentryAccessDeniedException e) {
           // expected
         }

@@ -311,7 +311,7 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
       if (authorizableSet != null && !authorizableSet.isEmpty()) {
         hiveAuthzBinding = new HiveAuthzBinding(hiveHook, this.conf, authzConf);
         sentryObjectPrivileges = sentryClient
-            .getAllPrivilegsbyAuthorizable(authenticator.getUserName(), authorizableSet, null, users, hiveAuthzBinding.getActiveRoleSet());
+            .getAllPrivilegesbyAuthorizable(authenticator.getUserName(), authorizableSet, null, users, hiveAuthzBinding.getActiveRoleSet());
       } else {
         String msg =
             SentryHiveConstants.SHOW_NOT_SUPPORTED_FOR_PRINCIPAL + "object name [" + privObj.getObjectName() + "] does not exist";
@@ -327,10 +327,10 @@ public class DefaultSentryAccessController extends SentryHiveAccessController {
       HiveOperation hiveOp = HiveOperation.SHOW_GRANT;
       executeOnFailureHooks(hiveOp, e);
     } catch (SentryUserException e) {
-      String msg = "Error when sentryClient listPrivilegsbyAuthorizable: " + e;
+      String msg = "Error when sentryClient listPrivilegesbyAuthorizable: " + e;
       executeOnErrorHooks(msg, e);
     } catch (Exception e) {
-      String msg = "Error when sentryClient listPrivilegsbyAuthorizable: " + e;
+      String msg = "Error when sentryClient listPrivilegesbyAuthorizable: " + e;
       executeOnErrorHooks(msg, e);
     } finally {
       closeClient();
