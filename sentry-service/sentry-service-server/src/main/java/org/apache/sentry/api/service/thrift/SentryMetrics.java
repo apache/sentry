@@ -113,6 +113,10 @@ public final class SentryMetrics {
       name(SentryPolicyStoreProcessor.class, "list-privileges-for-provider"));
   final Timer listPrivilegesByAuthorizableTimer = METRIC_REGISTRY.timer(
       name(SentryPolicyStoreProcessor.class, "list-privileges-by-authorizable"));
+  final Timer listRolesPrivilegesTimer = METRIC_REGISTRY.timer(
+      name(SentryPolicyStoreProcessor.class, "list-roles-privileges"));
+  final Timer listUsersPrivilegesTimer = METRIC_REGISTRY.timer(
+    name(SentryPolicyStoreProcessor.class, "list-users-privileges"));
   final Timer notificationProcessTimer = METRIC_REGISTRY.timer(
           name(SentryPolicyStoreProcessor.class, "process-hsm-notification"));
 
