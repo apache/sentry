@@ -58,8 +58,8 @@
 
   <property>
     <name>sentry.store.jdbc.user</name>
-    <value>Setnry</value>
-    <description>Userid for connecting to backend db </description>
+    <value>Sentry</value>
+    <description>The username of the user that connects to the Sentry database</description>
   </property>
 
   <property>
