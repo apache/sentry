@@ -962,6 +962,7 @@ limitations under the License.
     <module>sentry-tools</module>
     <module>sentry-service</module>
     <module>sentry-dist</module>
+    <module>sentry-spi</module>
   </modules>
 
   <build>
