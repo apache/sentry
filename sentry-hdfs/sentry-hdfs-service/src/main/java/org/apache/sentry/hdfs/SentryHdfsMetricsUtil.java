@@ -18,10 +18,10 @@
 
 package org.apache.sentry.hdfs;
 
-import sentry.com.codahale.metrics.Counter;
-import sentry.com.codahale.metrics.Histogram;
-import sentry.com.codahale.metrics.MetricRegistry;
-import sentry.com.codahale.metrics.Timer;
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
 import org.apache.sentry.api.service.thrift.SentryMetrics;
 
 /**

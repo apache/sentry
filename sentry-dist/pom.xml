@@ -101,6 +101,32 @@ limitations under the License.
     <dependency>
       <groupId>org.apache.sentry</groupId>
       <artifactId>sentry-binding-hive</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.sentry</groupId>
+          <artifactId>sentry-provider-db</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.sentry</groupId>
+      <artifactId>sentry-service-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+    <groupId>org.apache.sentry</groupId>
+    <artifactId>sentry-service-api</artifactId>
+    <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.sentry</groupId>
+      <artifactId>sentry-policy-engine</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.sentry</groupId>
+      <artifactId>sentry-binding-hive-follower</artifactId>
+      <version>${project.version}</version>
     </dependency>
   </dependencies>
 

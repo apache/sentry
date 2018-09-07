@@ -951,6 +951,7 @@ limitations under the License.
   </dependencyManagement>
 
   <modules>
+    <module>sentry-thirdparty</module>
     <module>sentry-core</module>
     <module>sentry-binding</module>
     <module>sentry-provider</module>

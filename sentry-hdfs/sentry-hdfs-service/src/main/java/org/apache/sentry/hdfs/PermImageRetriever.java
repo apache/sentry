@@ -17,7 +17,7 @@
  */
 package org.apache.sentry.hdfs;
 
-import sentry.com.codahale.metrics.Timer.Context;
+import com.codahale.metrics.Timer.Context;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegePrincipal;
 import org.apache.sentry.hdfs.service.thrift.TPermissionsUpdate;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegeChanges;
