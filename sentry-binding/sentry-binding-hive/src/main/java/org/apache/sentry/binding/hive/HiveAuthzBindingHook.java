@@ -149,6 +149,7 @@ public class HiveAuthzBindingHook extends HiveAuthzBindingHookBase {
         currTab = extractTable((ASTNode)ast.getFirstChildWithType(HiveParser.TOK_TABNAME));
         currDB = extractDatabase((ASTNode) ast.getChild(0));
         indexURI = extractTableLocation(ast);//As index location is captured using token HiveParser.TOK_TABLELOCATION
+        isAlterViewAs = isAlterViewAsOperation(ast);
         break;
       case HiveParser.TOK_ALTERINDEX_REBUILD:
         currTab = extractTable((ASTNode)ast.getChild(0)); //type is not TOK_TABNAME
@@ -297,6 +298,13 @@ public class HiveAuthzBindingHook extends HiveAuthzBindingHookBase {
       List<Task<? extends Serializable>> rootTasks) throws SemanticException {
     HiveOperation stmtOperation = context.getHiveOperation();
     HiveAuthzPrivileges stmtAuthObject;
+
+    // Hive has a bug that changes the operation of the ALTER VIEW AS SELECT to CREATEVIEW.
+    // isAlterViewAs is validated in the preAnalyze method which looks fo this operation
+    // in the ASTNode tree.
+    if (stmtOperation == HiveOperation.CREATEVIEW && isAlterViewAs) {
+      stmtOperation = HiveOperation.ALTERVIEW_AS;
+    }
 
     stmtAuthObject = HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(stmtOperation);
 

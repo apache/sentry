@@ -75,7 +75,7 @@ public class TestOperationsPart1 extends AbstractTestWithStaticConfiguration {
     privileges.put("all_db1_view1", "server=server1->db=" + DB1  + "->action=all");
     privileges.put("drop_db1_view1", "server=server1->db=" + DB1  + "->action=drop");
     privileges.put("select_db1_tb2", "server=server1->db=" + DB1 + "->table=tb2->action=select");
-
+    privileges.put("alter_db1_view1", "server=server1->db=" + DB1  + "->table=view1->action=alter");
   }
 
   @Before
@@ -730,10 +730,10 @@ public class TestOperationsPart1 extends AbstractTestWithStaticConfiguration {
 
     policyFile
         .addPermissionsToRole("select_db1_tb2", privileges.get("select_db1_tb2"))
-        .addPermissionsToRole("create_db1_view1", privileges.get("create_db1_view1"))
+        .addPermissionsToRole("alter_db1_view1", privileges.get("alter_db1_view1"))
         .addPermissionsToRole("drop_db1_view1", privileges.get("drop_db1_view1"))
         .addPermissionsToRole("create_db1", privileges.get("create_db1"))
-        .addRolesToGroup(USERGROUP1, "select_db1_tb2", "create_db1_view1", "drop_db1_view1", "create_db1")
+        .addRolesToGroup(USERGROUP1, "select_db1_tb2", "alter_db1_view1")
         .addPermissionsToRole("select_db1_view1", privileges.get("select_db1_view1"))
         .addRolesToGroup(USERGROUP2, "create_db1", "select_db1_view1");
     writePolicyFile(policyFile);

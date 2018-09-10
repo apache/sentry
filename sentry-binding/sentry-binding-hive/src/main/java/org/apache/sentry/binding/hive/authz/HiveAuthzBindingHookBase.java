@@ -112,6 +112,10 @@ public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerH
   // require table-level privileges.
   protected boolean isDescTableBasic = false;
 
+  // Flag that specifies if the operation to validate is an ALTER VIEW AS SELECT.
+  // Note: Hive sends CREATEVIEW even if ALTER VIEW AS SELECT is used.
+  protected boolean isAlterViewAs = false;
+
   public HiveAuthzBindingHookBase() throws Exception {
     SessionState session = SessionState.get();
     if(session == null) {
@@ -407,8 +411,10 @@ public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerH
         outputHierarchy.add(entityHierarchy);
       }
       // workaround for metadata queries.
-      // Capture the table name in pre-analyze and include that in the input entity list
-      if (currTab != null) {
+      // Capture the table name in pre-analyze and include that in the input entity list.
+      // The exception is for ALTERVIEW_AS operations which puts the table to read as input and
+      // the view as output. Having the view as input again will case extra privileges to be given.
+      if (currTab != null && stmtOperation != HiveOperation.ALTERVIEW_AS) {
         List<DBModelAuthorizable> externalAuthorizableHierarchy = new ArrayList<DBModelAuthorizable>();
         externalAuthorizableHierarchy.add(hiveAuthzBinding.getAuthServer());
         externalAuthorizableHierarchy.add(currDB);
@@ -897,5 +903,28 @@ public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerH
   protected Subject getCurrentSubject(HiveSemanticAnalyzerHookContext context) {
     // Extract the username from the hook context
     return new Subject(context.getUserName());
+  }
+
+  /**
+   * Returns true if the ASTNode tree is an ALTER VIEW AS SELECT operation.
+   * <p>
+   * The ASTNode with an ALTER VIEW AS SELECT is formed as follows:*
+   *   Root: TOK_ALTERVIEW
+   *     Child(0): TOK_TABNAME
+   *     Child(1): TOK_QUERY    <-- This is the SELECT operation
+   *
+   * @param ast The ASTNode that Hive created while parsing the ALTER VIEW operation.
+   * @return True if it is an ALTER VIEW AS SELECT operation; False otherwise.
+   */
+  protected boolean isAlterViewAsOperation(ASTNode ast) {
+    if (ast == null || ast.getToken().getType() != HiveParser.TOK_ALTERVIEW) {
+      return false;
+    }
+
+    if (ast.getChildCount() <= 1 || ast.getChild(1).getType() != HiveParser.TOK_QUERY) {
+      return false;
+    }
+
+    return true;
   }
 }
