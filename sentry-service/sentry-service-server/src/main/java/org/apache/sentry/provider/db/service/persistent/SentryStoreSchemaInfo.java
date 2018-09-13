@@ -18,14 +18,15 @@
 
 package org.apache.sentry.provider.db.service.persistent;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
+import java.util.Map;
 import org.apache.sentry.core.common.exception.SentryUserException;
 
 public class SentryStoreSchemaInfo {
@@ -34,7 +35,7 @@ public class SentryStoreSchemaInfo {
   private static final String INIT_FILE_PREFIX = "sentry-";
   private static final String VERSION_UPGRADE_LIST = "upgrade.order";
   private final String dbType;
-  private final String sentrySchemaVersions[];
+  private final Map<String, List<String>> sentrySchemaVersions;
   private final String sentryScriptDir;
 
   private static final String SENTRY_VERSION = "2.1.0";
@@ -43,21 +44,18 @@ public class SentryStoreSchemaInfo {
       throws SentryUserException {
     this.sentryScriptDir = sentryScriptDir;
     this.dbType = dbType;
+
     // load upgrade order for the given dbType
-    List<String> upgradeOrderList = new ArrayList<String>();
     String upgradeListFile = getSentryStoreScriptDir() + File.separator
         + VERSION_UPGRADE_LIST + "." + dbType;
-    try (BufferedReader bfReader = new BufferedReader(new FileReader(upgradeListFile))) {
-      String currSchemaVersion;
-      while ((currSchemaVersion = bfReader.readLine()) != null) {
-        upgradeOrderList.add(currSchemaVersion.trim());
-      }
+
+    try {
+      sentrySchemaVersions = SentryUpgradeOrder.readUpgradeGraph(new FileReader(upgradeListFile));
     } catch (FileNotFoundException e) {
       throw new SentryUserException("File " + upgradeListFile + " not found ", e);
     } catch (IOException e) {
       throw new SentryUserException("Error reading " + upgradeListFile, e);
     }
-    sentrySchemaVersions = upgradeOrderList.toArray(new String[0]);
   }
 
   public String getSentrySchemaVersion() {
@@ -66,31 +64,24 @@ public class SentryStoreSchemaInfo {
 
   public List<String> getUpgradeScripts(String fromSchemaVer)
       throws SentryUserException {
-    List<String> upgradeScriptList = new ArrayList<String>();
-
     // check if we are already at current schema level
     if (getSentryVersion().equals(fromSchemaVer)) {
-      return upgradeScriptList;
+      return Collections.emptyList();
     }
 
-    // Find the list of scripts to execute for this upgrade
-    int firstScript = sentrySchemaVersions.length;
-    for (int i = 0; i < sentrySchemaVersions.length; i++) {
-      String fromVersion = sentrySchemaVersions[i].split("-to-")[0];
-      if (fromVersion.equals(fromSchemaVer)) {
-        firstScript = i;
-        break;
-      }
-    }
-    if (firstScript == sentrySchemaVersions.length) {
+    List<String> upgradePathList =
+      SentryUpgradeOrder.getUpgradePath(sentrySchemaVersions, fromSchemaVer, getSentrySchemaVersion());
+    if (upgradePathList.isEmpty()) {
       throw new SentryUserException("Unknown version specified for upgrade "
-          + fromSchemaVer + " Sentry schema may be too old or newer");
+        + fromSchemaVer + " Sentry schema may be too old or newer");
     }
 
-    for (int i = firstScript; i < sentrySchemaVersions.length; i++) {
-      String scriptFile = generateUpgradeFileName(sentrySchemaVersions[i]);
-      upgradeScriptList.add(scriptFile);
+    // Create a new list with the script file paths of the upgrade order path obtained before
+    List<String> upgradeScriptList = new LinkedList<>();
+    for (String upgradePath : upgradePathList) {
+      upgradeScriptList.add(generateUpgradeFileName(upgradePath));
     }
+
     return upgradeScriptList;
   }
 
