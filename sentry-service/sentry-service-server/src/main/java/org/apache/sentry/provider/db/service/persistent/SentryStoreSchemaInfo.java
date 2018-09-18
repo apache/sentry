@@ -38,7 +38,7 @@ public class SentryStoreSchemaInfo {
   private final Map<String, List<String>> sentrySchemaVersions;
   private final String sentryScriptDir;
 
-  private static final String SENTRY_VERSION = "2.1.0";
+  private static final String SENTRY_VERSION = "2.2.0";
 
   public SentryStoreSchemaInfo(String sentryScriptDir, String dbType)
       throws SentryUserException {
