@@ -19,6 +19,7 @@
 package org.apache.sentry.provider.db.log.appender;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.junit.Assert.assertTrue;
 
@@ -55,7 +56,7 @@ public class TestRollingFileWithoutDeleteAppender {
     for (int i = 0; i < 99; i++) {
       if (i < 10) {
         sentryLogger.debug("Hello---" + i);
-      } else if (i < 100) {
+      } else {
         sentryLogger.debug("Hello--" + i);
       }
     }
@@ -63,7 +64,7 @@ public class TestRollingFileWithoutDeleteAppender {
     if (dataDir != null) {
       File[] files = dataDir.listFiles();
       if (files != null) {
-        assertEquals(files.length, 10);
+        assertEquals(10, files.length);
       } else {
         fail("Excepted 10 log files.");
       }
@@ -74,8 +75,7 @@ public class TestRollingFileWithoutDeleteAppender {
   }
 
   /***
-   * Generate log enough to cause a single rollover. Verify the file name format
-   * @throws Throwable
+   * Generate log enough to cause rollovers. Verify the file name format
    */
   @Test
   public void testFileNamePattern() throws Throwable {
@@ -87,13 +87,12 @@ public class TestRollingFileWithoutDeleteAppender {
     appender.setMaximumFileSize(10);
     sentryLogger.addAppender(appender);
     sentryLogger.debug("123456789012345");
+    sentryLogger.debug("123456789012345");
     File[] files = dataDir.listFiles();
-    if (files != null) {
-      assertEquals(files.length, 2);
-      assertTrue(files[0].getName().contains("auditLog.log."));
-      assertTrue(files[1].getName().contains("auditLog.log."));
-    } else {
-      fail("Excepted 2 log files.");
+    assertNotNull(files);
+    assertEquals(3, files.length);
+    for (int i = 0; i < 3; i++) {
+      assertTrue(files[i].getName().matches("auditLog\\.log\\.\\d+"));
     }
   }
 

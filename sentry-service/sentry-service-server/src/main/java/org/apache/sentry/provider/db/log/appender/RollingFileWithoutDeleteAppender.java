@@ -48,7 +48,7 @@ public class RollingFileWithoutDeleteAppender extends FileAppender {
 
   /**
    * Instantiate a RollingFileAppender and open the file designated by
-   * <code>filename</code>. The opened filename will become the ouput
+   * <code>filename</code>. The opened filename will become the output
    * destination for this appender.
    * <p>
    * If the <code>append</code> parameter is true, the file will be appended to.
@@ -86,7 +86,7 @@ public class RollingFileWithoutDeleteAppender extends FileAppender {
    * <code>File</code> is renamed <code>File.yyyyMMddHHmmss</code> and closed. A
    * new <code>File</code> is created to receive further log output.
    */
-  // synchronization not necessary since doAppend is alreasy synched
+  // synchronization not necessary since doAppend is already synched
   public void rollOver() {
     if (qw != null) {
       long size = ((CountingQuietWriter) qw).getCount();
@@ -170,6 +170,20 @@ public class RollingFileWithoutDeleteAppender extends FileAppender {
 
   // Mangled file name. Append the current timestamp
   private static String getLogFileName(String oldFileName) {
-    return oldFileName + "." + Long.toString(System.currentTimeMillis());
+    return getFileNameWithoutTimestamp(oldFileName) + "."
+        + Long.toString(System.currentTimeMillis());
+  }
+
+  /**
+   * Remove trailing timestamp from filename
+   * @param fileName original filename with or without trailing timestamp
+   * @return Filename without trailing timestamp
+   */
+  private static String getFileNameWithoutTimestamp(String fileName) {
+    if (fileName.matches("^.*\\.\\d+$")) {
+      return fileName.substring(0, fileName.lastIndexOf('.'));
+    } else {
+      return fileName;
+    }
   }
 }
