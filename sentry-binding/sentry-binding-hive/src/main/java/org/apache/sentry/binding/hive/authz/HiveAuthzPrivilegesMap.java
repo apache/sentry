@@ -120,7 +120,7 @@ public class HiveAuthzPrivilegesMap {
 
     /* TODO: once HIVE-18762 is in the hiver version integrated with Sentry, uncomment this block
     HiveAuthzPrivileges alterTableSetOwnerPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
-        addInputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.ALL)).
+        addOutputObjectPriviledge(AuthorizableType.Table, EnumSet.of(DBModelAction.ALL)).
         setOperationScope(HiveOperationScope.TABLE).
         setOperationType(HiveOperationType.DDL).
         setGrantOption(true).

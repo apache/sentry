@@ -276,6 +276,18 @@ public class HiveAuthzBindingHook extends HiveAuthzBindingHookBase {
           ASTNode newTableNode = (ASTNode)childASTNode.getChild(0);
           currOutDB = extractDatabase(newTableNode);
         }
+
+        // only get DB and table name from TOK_TABNAME for "ALTER TABLE SET OWNER" command
+        // otherwise, it is possible to mistake output table name as input table name. Ideally,
+        // the root token type of the command should be "TOK_ALTERTABLE_OWNER", not "TOK_ALTERTABLE"
+        String command = context.getCommand();
+        if (command != null && command.toLowerCase().contains("set owner") &&
+            "TOK_TABNAME".equals(childASTNode.getText())) {
+
+          extractDbTableNameFromTOKTABLE(childASTNode);
+          currDB = currOutDB;
+          currTab = currOutTab;
+        }
       }
 
       break;
