@@ -260,6 +260,10 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       if (request.isSetPrivilege()) {
         request.setPrivileges(Sets.newHashSet(request.getPrivilege()));
       }
+
+      // Throw an exception if one of the grants is not permitted.
+      SentryServiceUtil.checkDbExplicitGrantsPermitted(conf, request.getPrivileges());
+
       // TODO: now only has SentryPlugin. Once add more SentryPolicyStorePlugins,
       // TODO: need to differentiate the updates for different Plugins.
       Preconditions.checkState(sentryPlugins.size() <= 1);

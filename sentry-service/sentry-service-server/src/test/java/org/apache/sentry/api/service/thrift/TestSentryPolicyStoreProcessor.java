@@ -42,6 +42,7 @@ import org.apache.sentry.service.common.ServiceConstants.SentryPrincipalType;
 import org.apache.sentry.service.common.ServiceConstants.ServerConfig;
 import org.apache.sentry.service.thrift.FullUpdateInitializerState;
 import org.apache.sentry.service.thrift.SentryStateBank;
+import org.apache.thrift.TException;
 import org.junit.After;
 import org.junit.Assert;
 
@@ -54,6 +55,7 @@ import org.mockito.Mockito;
 
 public class TestSentryPolicyStoreProcessor {
 
+  private static final String SERVERNAME = "server1";
   private static final String DBNAME = "db1";
   private static final String TABLENAME = "table1";
   private static final String OWNER = "owner1";
@@ -331,6 +333,7 @@ public class TestSentryPolicyStoreProcessor {
   private static TSentryPrivilege newSentryPrivilege(String scope, String dbname, String tablename, String action) {
     TSentryPrivilege privilege = new TSentryPrivilege();
     privilege.setPrivilegeScope(scope);
+    privilege.setServerName(SERVERNAME);
     privilege.setDbName(dbname);
     privilege.setTableName(tablename);
     privilege.setAction(action);
@@ -607,5 +610,54 @@ public class TestSentryPolicyStoreProcessor {
     Assert.assertEquals(2, returnedResp.getPrivilegesMap().get("user1").size());
     Assert.assertEquals(1, returnedResp.getPrivilegesMap().get("user2").size());
     Assert.assertEquals(0, returnedResp.getPrivilegesMap().get("user3").size());
+  }
+
+  @Test
+  public void testGrantNotPermittedPrivilegesThrowsException() throws TException {
+    MockGroupMappingService.addUserGroupMapping("admin", Sets.newHashSet("admin"));
+
+    Configuration conf = new Configuration();
+    conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING, MockGroupMappingService.class.getName());
+    conf.set(ServerConfig.ADMIN_GROUPS, "admin");
+    conf.set(ServerConfig.SENTRY_DB_EXPLICIT_GRANTS_PERMITTED, "ALL,SELECT,INSERT,CREATE");
+
+    // Initialize the SentryPolicyStoreProcessor with the permitted grants
+    SentryPolicyStoreProcessor policyStoreProcessor = null;
+    try {
+      policyStoreProcessor = new SentryPolicyStoreProcessor(ApiConstants.SentryPolicyServiceConstants.SENTRY_POLICY_SERVICE_NAME,
+          conf, sentryStore);
+    } catch (Exception e) {
+      Assert.fail("SentryPolicyStoreProcessor constructor should not throw an exception.");
+    }
+
+    TAlterSentryRoleGrantPrivilegeResponse response = null;
+    TAlterSentryRoleGrantPrivilegeRequest request =
+      new TAlterSentryRoleGrantPrivilegeRequest(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT, "admin", "role1");
+
+    // Attempt to grant the ALTER privilege
+    request.setPrivileges(Sets.newHashSet(newSentryPrivilege("SERVER", "", "", "ALTER")));
+    response = policyStoreProcessor.alter_sentry_role_grant_privilege(request);
+    Assert.assertEquals("Grant ALTER should not be permitted.",
+      Status.ACCESS_DENIED.getCode(), response.getStatus().getValue());
+
+    // Attempt to grant the SELECT privilege
+    request.setPrivileges(Sets.newHashSet(newSentryPrivilege("SERVER", "", "", "SELECT")));
+    response = policyStoreProcessor.alter_sentry_role_grant_privilege(request);
+    Assert.assertEquals("Grant SELECT should be permitted.",
+      Status.OK.getCode(), response.getStatus().getValue());
+
+    // Attempt to grant the ALTER,SELECT privilege
+    request.setPrivileges(Sets.newHashSet(
+      newSentryPrivilege("SERVER", "", "", "ALTER"),
+      newSentryPrivilege("SERVER", "", "", "SELECT")
+    ));
+
+    response = policyStoreProcessor.alter_sentry_role_grant_privilege(request);
+    Assert.assertEquals("Grant ALTER should not be permitted.",
+      Status.ACCESS_DENIED.getCode(), response.getStatus().getValue());
+    assertTrue("ALTER privileges should not be permitted",
+      response.getStatus().getMessage().contains("ALTER"));
+    Assert.assertFalse("SELECT privileges should be permitted",
+      response.getStatus().getMessage().contains("SELECT"));
   }
 }

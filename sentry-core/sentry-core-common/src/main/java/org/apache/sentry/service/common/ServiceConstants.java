@@ -250,6 +250,12 @@ public class ServiceConstants {
 
     public static final String SENTRY_DB_POLICY_STORE_OWNER_AS_PRIVILEGE = "sentry.db.policy.store.owner.as.privilege";
     public static final SentryOwnerPrivilegeType SENTRY_DB_POLICY_STORE_OWNER_AS_PRIVILEGE_DEFAULT = SentryOwnerPrivilegeType.NONE;
+
+    /**
+     * List of privileges that are permitted to be granted by Sentry DB clients
+     */
+    public static final String SENTRY_DB_EXPLICIT_GRANTS_PERMITTED = "sentry.db.explicit.grants.permitted";
+    public static final String SENTRY_DB_EXPLICIT_GRANTS_PERMITTED_DEFAULT = "";
   }
 
   public static final String SENTRY_ZK_JAAS_NAME = "Sentry";
