@@ -825,10 +825,11 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     Set<TSentryPrivilege> privilegeSet = new HashSet<TSentryPrivilege>();
     String subject = request.getRequestorUserName();
 
-    // The 'entityName' parameter is made optional in thrift, so we need to check that is not
+    // The 'principalName' parameter is made optional in thrift, so we need to check that is not
     // null before proceed.
     TSentryResponseStatus status =
-      checkRequiredParameter(request.getPrincipalName(), "entityName parameter must not be null");
+      checkRequiredParameter(request.getPrincipalName(),
+                             "principalName parameter must not be null");
     if (status != null) {
       response.setStatus(status);
       return response;
@@ -870,6 +871,74 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     } catch (SentryThriftAPIMismatchException e) {
       LOGGER.error(e.getMessage(), e);
       response.setStatus(Status.THRIFT_VERSION_MISMATCH(e.getMessage(), e));
+    } catch (Exception e) {
+      String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
+      LOGGER.error(msg, e);
+      response.setStatus(Status.RuntimeError(msg, e));
+    } finally {
+      timerContext.stop();
+    }
+    return response;
+  }
+
+  @Override
+  public TListSentryPrivilegesResponse list_sentry_privileges_by_user_and_itsgroups(
+          TListSentryPrivilegesRequest request) throws TException {
+    final Timer.Context timerContext = sentryMetrics.listPrivilegesForUserTimer.time();
+    TListSentryPrivilegesResponse response = new TListSentryPrivilegesResponse();
+
+    // The 'principalName' parameter is made optional in thrift, so we need to
+    // check that is not null before proceed.
+    TSentryResponseStatus status = checkRequiredParameter(request.getPrincipalName(),
+                                                          "principalName parameter must not be null");
+    if (status != null) {
+      response.setStatus(status);
+      return response;
+    }
+
+    String requestor = request.getRequestorUserName();
+    String principalName = request.getPrincipalName().trim();
+    Set<TSentryPrivilege> privilegeSet = new HashSet<>();
+
+    try {
+      validateClientVersion(request.getProtocol_version());
+
+      // To allow listing the privileges, the requestor user must be part of
+      // the admins group, or the requestor user must be the same user requesting
+      // privileges for.
+      Set<String> requestorGroups = getRequestorGroups(requestor);
+      Boolean admin = inAdminGroups(requestorGroups);
+      if(!admin && !principalName.equalsIgnoreCase(requestor)) {
+        throw new SentryAccessDeniedException("Access denied to " + requestor);
+      }
+
+      // Get the groups the user is associated with.
+      Set<String> principalGroups;
+      if (principalName.equals(requestor)) {
+        principalGroups = requestorGroups;
+      } else {
+        principalGroups = getRequestorGroups(principalName);
+      }
+      Set<String> principalUsers = new HashSet<>();
+      principalUsers.add(principalName);
+      privilegeSet.addAll(sentryStore.listSentryPrivilegesByUsersAndGroups(
+              principalGroups, principalUsers,
+              new TSentryActiveRoleSet(true, null),
+              request.getAuthorizableHierarchy()));
+      response.setPrivileges(privilegeSet);
+      response.setStatus(Status.OK());
+    } catch (SentryThriftAPIMismatchException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.THRIFT_VERSION_MISMATCH(e.getMessage(), e));
+    } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (SentryInvalidInputException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.InvalidInput(e.getMessage(), e));
+    } catch (SentryUserException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
     } catch (Exception e) {
       String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
       LOGGER.error(msg, e);

@@ -196,7 +196,7 @@ struct TListSentryPrivilegesRequest {
 4: required string roleName, # get privileges assigned for this role
 5: optional TSentryAuthorizable authorizableHierarchy, # get privileges assigned for this role
 
-# Get privileges assigned for this principal name. This principalName should be set to a a role name
+# Get privileges assigned for this principal name. This principalName should be set to a role name
 # or user name depending of which function you call, either list_sentry_privileges_by_role or
 # list_sentry_privileges_by_user
 6: optional string principalName
@@ -407,8 +407,16 @@ service SentryPolicyService
   TListSentryRolesResponse list_sentry_roles_by_group(1:TListSentryRolesRequest request)
   TListSentryRolesResponse list_sentry_roles_by_user(1:TListSentryRolesForUserRequest request)
 
+  # List sentry privileges granted to the given role, filterted
+  # based on authorization hierarchy if present.
   TListSentryPrivilegesResponse list_sentry_privileges_by_role(1:TListSentryPrivilegesRequest request)
+  # List sentry privileges granted to the given user, filterted
+  # based on authorization hierarchy if present.
   TListSentryPrivilegesResponse list_sentry_privileges_by_user(1:TListSentryPrivilegesRequest request)
+  # List sentry privileges granted to the given user and the groups
+  # the user associated with, filterted based on authorization
+  # hierarchy if present.
+  TListSentryPrivilegesResponse list_sentry_privileges_by_user_and_itsgroups(1:TListSentryPrivilegesRequest request)
 
   # For use with ProviderBackend.getPrivileges only
   TListSentryPrivilegesForProviderResponse list_sentry_privileges_for_provider(1:TListSentryPrivilegesForProviderRequest request)

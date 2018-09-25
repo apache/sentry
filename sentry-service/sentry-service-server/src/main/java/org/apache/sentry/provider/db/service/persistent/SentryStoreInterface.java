@@ -216,18 +216,38 @@ public interface SentryStoreInterface {
   Set<TSentryPrivilege> getAllTSentryPrivilegesByUserName(String userName) throws Exception;
 
   /**
-   * Set of Sentry Privileges for provider.
-   * @param groups
-   * @param users
-   * @param roleSet
-   * @param authHierarchy
-   * @return
+   * Gets sentry privileges granted to the given user and groups from the
+   * persistence layer. This method is only intent to be used for provider.
+   * @param groups the set of group names
+   * @param users the set of user names
+   * @param roleSet the active roleSet
+   * @param authHierarchy filter push down based on auth hierarchy (optional)
+   * @return a set of sentry privilege string belongs to the given users
+   *         and groups.
    * @throws Exception
    */
   Set<String> listSentryPrivilegesForProvider(Set<String> groups,
                                               Set<String> users,
                                               TSentryActiveRoleSet roleSet,
                                               TSentryAuthorizable authHierarchy)
+    throws Exception;
+
+  /**
+   * Similar to {@link SentryStoreInterface#listSentryPrivilegesForProvider(Set, Set,
+   * TSentryActiveRoleSet, TSentryAuthorizable)}, but returns a set of thrift sentry
+   * privilege objects instead.
+   * @param groups the set of group names
+   * @param users the set of user names
+   * @param roleSet the active roleSet
+   * @param authHierarchy filter push down based on auth hierarchy (optional)
+   * @return a set of thrift sentry privilege objects belongs to the given
+   *         users and groups.
+   * @throws Exception
+   */
+  Set<TSentryPrivilege> listSentryPrivilegesByUsersAndGroups(Set<String> groups,
+                                                             Set<String> users,
+                                                             TSentryActiveRoleSet roleSet,
+                                                             TSentryAuthorizable authHierarchy)
     throws Exception;
 
   /**

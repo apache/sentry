@@ -2400,27 +2400,38 @@ public class SentryStore implements SentryStoreInterface {
     return result;
   }
 
-  Set<String> listAllSentryPrivilegesForProvider(Set<String> groups, Set<String> users,
+  public Set<TSentryPrivilege> listSentryPrivilegesByUsersAndGroups(
+      Set<String> groups, Set<String> users, TSentryActiveRoleSet roleSet,
+      TSentryAuthorizable authHierarchy) throws Exception {
+    return convertToTSentryPrivileges(listSentryPrivilegesForProviderCore(
+        groups, users, roleSet, authHierarchy));
+  }
+
+  Set<String> listAllSentryPrivilegesForProvider(
+      Set<String> groups, Set<String> users,
       TSentryActiveRoleSet roleSet) throws Exception {
     return listSentryPrivilegesForProvider(groups, users, roleSet, null);
   }
 
-
-  public Set<String> listSentryPrivilegesForProvider(Set<String> groups, Set<String> users,
-      TSentryActiveRoleSet roleSet, TSentryAuthorizable authHierarchy) throws Exception {
+  public Set<String> listSentryPrivilegesForProvider(
+      Set<String> groups, Set<String> users, TSentryActiveRoleSet roleSet,
+      TSentryAuthorizable authHierarchy) throws Exception {
     Set<String> result = Sets.newHashSet();
-    Set<String> rolesToQuery = getRolesToQuery(groups, users, roleSet);
-    List<MSentryPrivilege> mSentryPrivileges = getMSentryPrivileges(SentryPrincipalType.ROLE, rolesToQuery, authHierarchy);
+    Set<MSentryPrivilege> mSentryPrivileges = listSentryPrivilegesForProviderCore(
+        groups, users, roleSet, authHierarchy);
     for (MSentryPrivilege priv : mSentryPrivileges) {
       result.add(toAuthorizable(priv));
     }
-
-    mSentryPrivileges = getMSentryPrivileges(SentryPrincipalType.USER, users, authHierarchy);
-    for (MSentryPrivilege priv : mSentryPrivileges) {
-      result.add(toAuthorizable(priv));
-    }
-
     return result;
+  }
+
+  private Set<MSentryPrivilege> listSentryPrivilegesForProviderCore(Set<String> groups, Set<String> users,
+      TSentryActiveRoleSet roleSet, TSentryAuthorizable authHierarchy) throws Exception {
+    Set<MSentryPrivilege> privilegeSet = Sets.newHashSet();
+    Set<String> rolesToQuery = getRolesToQuery(groups, users, roleSet);
+    privilegeSet.addAll(getMSentryPrivileges(SentryPrincipalType.ROLE, rolesToQuery, authHierarchy));
+    privilegeSet.addAll(getMSentryPrivileges(SentryPrincipalType.USER, users, authHierarchy));
+    return privilegeSet;
   }
 
   public boolean hasAnyServerPrivileges(Set<String> groups, Set<String> users,

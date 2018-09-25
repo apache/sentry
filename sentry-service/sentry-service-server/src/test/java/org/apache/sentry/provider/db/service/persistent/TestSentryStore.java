@@ -4273,6 +4273,49 @@ public class TestSentryStore extends org.junit.Assert {
   }
 
   @Test
+  public void testListSentryPrivilegesForUsersAndGroups() throws Exception {
+    String roleName = "role1";
+    String groupName = "list-privs-g1";
+    String userName = "u1";
+    String grantor = "g1";
+    sentryStore.createSentryRole(roleName);
+
+    TSentryPrivilege privilege1 = new TSentryPrivilege();
+    privilege1.setPrivilegeScope("TABLE");
+    privilege1.setServerName("server1");
+    privilege1.setDbName("db1");
+    privilege1.setTableName("tbl1");
+    privilege1.setAction("SELECT");
+    privilege1.setCreateTime(System.currentTimeMillis());
+    sentryStore.alterSentryGrantPrivilege(grantor, SentryPrincipalType.ROLE, roleName, privilege1, null);
+
+    TSentryPrivilege privilege2 = new TSentryPrivilege();
+    privilege2.setPrivilegeScope("SERVER");
+    privilege2.setServerName("server1");
+    privilege2.setCreateTime(System.currentTimeMillis());
+    sentryStore.alterSentryGrantPrivilege(grantor, SentryPrincipalType.USER, userName, privilege2, null);
+
+    Set<TSentryGroup> groups = Sets.newHashSet();
+    TSentryGroup group = new TSentryGroup();
+    group.setGroupName(groupName);
+    groups.add(group);
+    sentryStore.alterSentryRoleAddGroups(grantor, roleName, groups);
+
+    // list-privs-g1 has privilege1
+    // u1 has privilege2
+    Set<TSentryPrivilege> expectedPrivs = new HashSet<>();
+    expectedPrivs.add(privilege1);
+    expectedPrivs.add(privilege2);
+
+    assertEquals(expectedPrivs,
+                 sentryStore.listSentryPrivilegesByUsersAndGroups(
+                     Sets.newHashSet(groupName),
+                     Sets.newHashSet(userName),
+                     new TSentryActiveRoleSet(true, new HashSet<>()),
+                     null));
+  }
+
+  @Test
   public void testListSentryPrivilegesForProviderForUser() throws Exception {
     String userName1 = "list-privs-user1";
     String userName2 = "list-privs-user2";
