@@ -41,24 +41,20 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 
 /**
- * Mapping users to groups
- * parse the ini file with section [users] that contains the user names.
- * For each user in that list, there's section that contains the group
- * name for that user If there's no user section or no group section for
- * one of users, then just print a warning and continue.
- * Example -
+ * User to group mapping service for testing.
+ *
+ * The user to group mapping is configured via an INI file, located via the
+ * <pre>sentry.store.group.mapping.resource</pre> configuration.
+ *
+ * Each user in the configuration is associated with zero or more
+ * comma-separated groups, for example:
+ *
+ * <pre>
  * [users]
- * usr1
- * usr2
- *
- * [[usr1]
- * group1
- * group11
- *
- * [usr2]
- * group21
- * group22
- *
+ * usr1=grp1
+ * usr2=grp1,grp2
+ * usr3=""
+ * </pre>
  */
 public class LocalGroupMappingService implements GroupMappingService {
 
