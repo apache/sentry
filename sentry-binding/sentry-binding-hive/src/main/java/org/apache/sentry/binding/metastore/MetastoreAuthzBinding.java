@@ -20,6 +20,7 @@ package org.apache.sentry.binding.metastore;
 import java.io.IOException;
 import java.util.List;
 
+import java.util.Set;
 import javax.security.auth.login.LoginException;
 
 import org.apache.hadoop.conf.Configuration;
@@ -48,8 +49,8 @@ public class MetastoreAuthzBinding extends MetastoreAuthzBindingBase {
 
   @Override
   protected void authorizeMetastoreAccess(HiveOperation hiveOp,
-      List<List<DBModelAuthorizable>> inputHierarchy,
-      List<List<DBModelAuthorizable>> outputHierarchy) throws InvalidOperationException {
+      Set<List<DBModelAuthorizable>> inputHierarchy,
+      Set<List<DBModelAuthorizable>> outputHierarchy) throws InvalidOperationException {
     if (isSentryCacheOutOfSync()) {
       throw invalidOperationException(new SentryUserException(
           "Metastore/Sentry cache is out of sync"));

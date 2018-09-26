@@ -23,6 +23,7 @@ import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -167,10 +168,10 @@ public class DefaultSentryValidator extends SentryHiveAuthorizationValidator {
         return;
       }
 
-      List<List<DBModelAuthorizable>> inputHierarchyList =
+      Set<List<DBModelAuthorizable>> inputHierarchyList =
           SentryAuthorizerUtil.convert2SentryPrivilegeList(hiveAuthzBinding.getAuthServer(),
               inputHObjs);
-      List<List<DBModelAuthorizable>> outputHierarchyList =
+      Set<List<DBModelAuthorizable>> outputHierarchyList =
           SentryAuthorizerUtil.convert2SentryPrivilegeList(hiveAuthzBinding.getAuthServer(),
               outputHObjs);
 
@@ -238,8 +239,8 @@ public class DefaultSentryValidator extends SentryHiveAuthorizationValidator {
   }
 
   private void addExtendHierarchy(HiveOperation hiveOp, HiveAuthzPrivileges stmtAuthPrivileges,
-      List<List<DBModelAuthorizable>> inputHierarchyList,
-      List<List<DBModelAuthorizable>> outputHierarchyList, String command,
+      Set<List<DBModelAuthorizable>> inputHierarchyList,
+      Set<List<DBModelAuthorizable>> outputHierarchyList, String command,
       HiveAuthzBinding hiveAuthzBinding) throws HiveAuthzPluginException,
       HiveAccessControlException {
     String currDatabase = null;
@@ -413,8 +414,8 @@ public class DefaultSentryValidator extends SentryHiveAuthorizationValidator {
       Database database;
       database = new Database(obj.getDbname());
 
-      List<List<DBModelAuthorizable>> inputHierarchy = new ArrayList<List<DBModelAuthorizable>>();
-      List<List<DBModelAuthorizable>> outputHierarchy = new ArrayList<List<DBModelAuthorizable>>();
+      Set<List<DBModelAuthorizable>> inputHierarchy = new HashSet<List<DBModelAuthorizable>>();
+      Set<List<DBModelAuthorizable>> outputHierarchy = new HashSet<List<DBModelAuthorizable>>();
       List<DBModelAuthorizable> externalAuthorizableHierarchy =
           new ArrayList<DBModelAuthorizable>();
       externalAuthorizableHierarchy.add(hiveAuthzBinding.getAuthServer());
@@ -466,8 +467,8 @@ public class DefaultSentryValidator extends SentryHiveAuthorizationValidator {
 
       database = new Database(obj.getObjectName());
 
-      List<List<DBModelAuthorizable>> inputHierarchy = new ArrayList<List<DBModelAuthorizable>>();
-      List<List<DBModelAuthorizable>> outputHierarchy = new ArrayList<List<DBModelAuthorizable>>();
+      Set<List<DBModelAuthorizable>> inputHierarchy = new HashSet<List<DBModelAuthorizable>>();
+      Set<List<DBModelAuthorizable>> outputHierarchy = new HashSet<List<DBModelAuthorizable>>();
       List<DBModelAuthorizable> externalAuthorizableHierarchy =
           new ArrayList<DBModelAuthorizable>();
       externalAuthorizableHierarchy.add(hiveAuthzBinding.getAuthServer());

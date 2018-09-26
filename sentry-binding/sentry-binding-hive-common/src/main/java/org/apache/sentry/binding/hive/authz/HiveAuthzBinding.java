@@ -289,17 +289,19 @@ public class HiveAuthzBinding {
 
   /**
    * Validate the privilege for the given operation for the given subject
-   * @param hiveOp
-   * @param stmtAuthPrivileges
-   * @param subject
    * @param currDB
    * @param inputEntities
    * @param outputEntities
+   * @param hiveOp
+   * @param stmtAuthPrivileges
+   * @param subject
+   * @param inputHierarchyList
+   * @param outputHierarchyList
    * @throws AuthorizationException
    */
   public void authorize(HiveOperation hiveOp, HiveAuthzPrivileges stmtAuthPrivileges,
-      Subject subject, List<List<DBModelAuthorizable>> inputHierarchyList,
-      List<List<DBModelAuthorizable>> outputHierarchyList)
+      Subject subject, Set<List<DBModelAuthorizable>> inputHierarchyList,
+      Set<List<DBModelAuthorizable>> outputHierarchyList)
           throws AuthorizationException {
     if (!open) {
       throw new IllegalStateException("Binding has been closed");

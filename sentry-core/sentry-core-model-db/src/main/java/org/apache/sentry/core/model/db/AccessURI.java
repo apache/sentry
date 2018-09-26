@@ -71,4 +71,27 @@ public class AccessURI implements DBModelAuthorizable {
   public String getTypeName() {
     return getAuthzType().name();
   }
+
+  @Override
+  public int hashCode() {
+    return uriName.hashCode();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+
+    if(o == null) {
+      return false;
+    }
+
+    if(!(o instanceof AccessURI)) {
+      return false;
+    }
+
+    if(((AccessURI) o).getName() ==  null) {
+      return false;
+    }
+
+    return ((AccessURI) o).getName().equals(uriName);
+  }
 }

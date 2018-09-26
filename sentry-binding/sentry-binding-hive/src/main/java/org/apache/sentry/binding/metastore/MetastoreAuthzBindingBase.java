@@ -19,6 +19,7 @@ package org.apache.sentry.binding.metastore;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import java.util.HashSet;
 import java.util.Iterator;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -74,10 +75,10 @@ public abstract class MetastoreAuthzBindingBase extends MetaStorePreEventListene
    * Build the set of object hierarchies ie fully qualified db model objects
    */
   protected static class HierarcyBuilder {
-    private List<List<DBModelAuthorizable>> authHierarchy;
+    private Set<List<DBModelAuthorizable>> authHierarchy;
 
     public HierarcyBuilder() {
-      authHierarchy = new ArrayList<List<DBModelAuthorizable>>();
+      authHierarchy = new HashSet<List<DBModelAuthorizable>>();
     }
 
     public HierarcyBuilder addServerToOutput(Server server) {
@@ -122,7 +123,7 @@ public abstract class MetastoreAuthzBindingBase extends MetaStorePreEventListene
       return this;
     }
 
-    public List<List<DBModelAuthorizable>> build() {
+    public Set<List<DBModelAuthorizable>> build() {
       return authHierarchy;
     }
   }
@@ -403,8 +404,8 @@ public abstract class MetastoreAuthzBindingBase extends MetaStorePreEventListene
    * @throws InvalidOperationException
    */
   protected abstract void authorizeMetastoreAccess(HiveOperation hiveOp,
-      List<List<DBModelAuthorizable>> inputHierarchy,
-      List<List<DBModelAuthorizable>> outputHierarchy)
+      Set<List<DBModelAuthorizable>> inputHierarchy,
+      Set<List<DBModelAuthorizable>> outputHierarchy)
       throws InvalidOperationException;
 
   public Server getAuthServer() {

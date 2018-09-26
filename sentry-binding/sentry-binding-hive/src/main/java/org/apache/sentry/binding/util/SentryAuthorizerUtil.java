@@ -18,6 +18,7 @@ import com.google.common.base.Splitter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -146,9 +147,9 @@ public class SentryAuthorizerUtil {
    * @param server
    * @param privilges
    */
-  public static List<List<DBModelAuthorizable>> convert2SentryPrivilegeList(Server server,
+  public static Set<List<DBModelAuthorizable>> convert2SentryPrivilegeList(Server server,
       List<HivePrivilegeObject> privilges) {
-    List<List<DBModelAuthorizable>> hierarchyList = new ArrayList<List<DBModelAuthorizable>>();
+    Set<List<DBModelAuthorizable>> hierarchyList = new HashSet<List<DBModelAuthorizable>>();
     if (privilges != null && !privilges.isEmpty()) {
       for (HivePrivilegeObject p : privilges) {
         hierarchyList.addAll(getAuthzHierarchy(server, p));

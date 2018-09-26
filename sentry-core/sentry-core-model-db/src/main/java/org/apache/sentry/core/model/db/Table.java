@@ -49,4 +49,27 @@ public class Table implements TableOrView {
   public String getTypeName() {
     return getAuthzType().name();
   }
+
+  @Override
+  public int hashCode() {
+    return name.hashCode();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+
+    if(o == null) {
+      return false;
+    }
+
+    if(!(o instanceof Table)) {
+      return false;
+    }
+
+    if(((Table) o).getName() ==  null) {
+      return false;
+    }
+
+    return ((Table) o).getName().equals(name);
+  }
 }

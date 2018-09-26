@@ -48,4 +48,27 @@ public class Database implements DBModelAuthorizable {
   public String getTypeName() {
     return getAuthzType().name();
   }
+
+  @Override
+  public int hashCode() {
+    return name.hashCode();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+
+    if(o == null) {
+      return false;
+    }
+
+    if(!(o instanceof Database)) {
+      return false;
+    }
+
+    if(((Database) o).getName() ==  null) {
+      return false;
+    }
+
+    return ((Database) o).getName().equals(name);
+  }
 }
