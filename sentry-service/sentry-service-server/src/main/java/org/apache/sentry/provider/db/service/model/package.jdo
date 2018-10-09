@@ -256,7 +256,7 @@
     </class>
 
     <class name="MAuthzPathsMapping" identity-type="datastore" table="AUTHZ_PATHS_MAPPING" detachable="true">
-       <datastore-identity>
+       <datastore-identity strategy="increment">
          <column name="AUTHZ_OBJ_ID"/>
        </datastore-identity>
        <index name="AUTHZ_SNAPSHOT_ID_INDEX" unique="false">
@@ -288,7 +288,7 @@
      </class>
 
     <class name="MPath" identity-type="datastore" table="AUTHZ_PATH" detachable="true">
-      <datastore-identity>
+      <datastore-identity strategy="increment">
         <column name="PATH_ID"/>
       </datastore-identity>
       <field name="path">

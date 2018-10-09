@@ -256,6 +256,14 @@ public class ServiceConstants {
      */
     public static final String SENTRY_DB_EXPLICIT_GRANTS_PERMITTED = "sentry.db.explicit.grants.permitted";
     public static final String SENTRY_DB_EXPLICIT_GRANTS_PERMITTED_DEFAULT = "";
+
+    /**
+     * This value sets the allocation size used by datanucleus for the values it auto generates.
+     * This is used when the strategy is explicitly mentioned in JDO. With native(default) this configuration
+     * is not used.
+     */
+    public static final String SENTRY_DB_VALUE_GENERATION_ALLOCATION_SIZE = "sentry.db.valuegeneration.allocation.size";
+    public static final int SENTRY_DB_VALUE_GENERATION_ALLOCATION_SIZE_DEFAULT = 100;
   }
 
   public static final String SENTRY_ZK_JAAS_NAME = "Sentry";

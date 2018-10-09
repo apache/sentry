@@ -4571,6 +4571,36 @@ public class TestSentryStore extends org.junit.Assert {
     assertEquals(0, allPrivileges.get(USER3).size());
   }
 
+  @Test
+  public void testPersistFullPathsImageWithHugeData() throws Exception {
+    Map<String, Collection<String>> authzPaths = new HashMap<>();
+    String[] prefixes = {"/user/hive/warehouse"};
+    // Makes sure that authorizable object could be associated
+    // with different paths and can be properly persisted into database.
+    for(int db_index = 1 ; db_index <= 10; db_index++) {
+      String db_name = "db" + db_index;
+      for( int table_index = 1; table_index <= 15; table_index++) {
+        Set<String> paths = Sets.newHashSet();
+        String table_name = "tb" + table_index;
+        String location = "/u/h/w/" + db_name + "/" + table_name;
+        for (int part_index = 1; part_index <= 30; part_index++) {
+          paths.add(location + "/" + part_index);
+        }
+        authzPaths.put(db_name+table_name, paths);
+      }
+    }
+    long notificationID = 110000;
+    sentryStore.persistFullPathsImage(authzPaths, notificationID);
+    PathsUpdate pathsUpdate = sentryStore.retrieveFullPathsImageUpdate(prefixes);
+    long savedNotificationID = sentryStore.getLastProcessedNotificationID();
+    assertEquals(1, pathsUpdate.getImgNum());
+    TPathsDump pathDump = pathsUpdate.toThrift().getPathsDump();
+    assertNotNull(pathDump);
+    Map<Integer, TPathEntry> nodeMap = pathDump.getNodeMap();
+    assertTrue(nodeMap.size() > 0);
+    assertEquals(notificationID, savedNotificationID);
+  }
+
   private TSentryPrivilege toTSentryPrivilege(String action, String scope, String server,
     String dbName, String tableName) {
     TSentryPrivilege privilege = new TSentryPrivilege();

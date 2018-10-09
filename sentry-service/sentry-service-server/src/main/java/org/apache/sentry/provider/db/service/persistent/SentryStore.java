@@ -249,6 +249,9 @@ public class SentryStore implements SentryStoreInterface {
     // Disallow operations outside of transactions
     prop.setProperty("datanucleus.NontransactionalRead", "false");
     prop.setProperty("datanucleus.NontransactionalWrite", "false");
+    int allocationSize = conf.getInt(ServerConfig.SENTRY_DB_VALUE_GENERATION_ALLOCATION_SIZE, ServerConfig.
+            SENTRY_DB_VALUE_GENERATION_ALLOCATION_SIZE_DEFAULT);
+    prop.setProperty("datanucleus.valuegeneration.increment.allocationSize", Integer.toString(allocationSize));
     return prop;
   }
 
