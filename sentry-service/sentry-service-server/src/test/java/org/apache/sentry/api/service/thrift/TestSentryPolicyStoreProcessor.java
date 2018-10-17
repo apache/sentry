@@ -137,6 +137,18 @@ public class TestSentryPolicyStoreProcessor {
         return 0L;
       }
     });
+    Mockito.when(sentryStore.getAuthzObjectsCountGauge()).thenReturn(new Gauge< Long >() {
+      @Override
+      public Long getValue() {
+        return 0L;
+      }
+    });
+    Mockito.when(sentryStore.getAuthzPathsCountGauge()).thenReturn(new Gauge< Long >() {
+      @Override
+      public Long getValue() {
+        return 0L;
+      }
+    });
 
     Mockito.doAnswer((invocation) -> {
       long id = (long) invocation.getArguments()[0];

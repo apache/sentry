@@ -419,7 +419,7 @@ public class HMSFollower implements Runnable, AutoCloseable, PubSub.Subscriber {
       }
       try {
         if (hdfsSyncEnabled) {
-          String logMessage = String.format("Persisting full snapshot for notification Id = %d", snapshotInfo.getId());
+          String logMessage = String.format("Persisting full snapshot for notification Id = %d. Number of authorization objects = %d", snapshotInfo.getId(), snapshotInfo.getPathImage().size());
           LOGGER.info(logMessage);
           System.out.println(SentryServiceUtil.getCurrentTimeStampWithMessage(logMessage));
           sentryStore.persistFullPathsImage(snapshotInfo.getPathImage(), snapshotInfo.getId());

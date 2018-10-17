@@ -175,8 +175,12 @@ public final class SentryMetrics {
           sentryStore.getLastPathsSnapshotIdGauge());
       addGauge(SentryStore.class, "hms.perm.change.id",
           sentryStore.getPermChangeIdGauge());
-      addGauge(SentryStore.class, "hms.psth.change.id",
+      addGauge(SentryStore.class, "hms.path.change.id",
           sentryStore.getPathChangeIdGauge());
+      addGauge(SentryStore.class, "hms.authz_objects_count",
+          sentryStore.getAuthzObjectsCountGauge());
+      addGauge(SentryStore.class, "hms.authz_paths_count",
+          sentryStore.getAuthzPathsCountGauge());
       gaugesAdded = true;
     }
   }

@@ -473,6 +473,16 @@ public interface SentryStoreInterface {
   Gauge<Long> getPathChangeIdGauge();
 
   /**
+   * @return Number of objects persisted
+   */
+  Gauge<Long> getAuthzObjectsCountGauge();
+
+  /**
+   * @return Number of objects persisted
+   */
+  Gauge<Long> getAuthzPathsCountGauge();
+
+  /**
    * Assign a given role to a set of groups. As well as persist the corresponding
    * permission change to MSentryPermChange table in a single transaction.
    *
