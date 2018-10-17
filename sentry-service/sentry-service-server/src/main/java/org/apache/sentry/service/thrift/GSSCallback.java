@@ -26,8 +26,11 @@ import javax.security.sasl.AuthorizeCallback;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.SaslRpcServer;
+import org.apache.hadoop.security.authentication.util.KerberosName;
+import org.apache.hadoop.security.authentication.util.KerberosName.NoMatchingRule;
 import org.apache.sentry.core.common.exception.ConnectionDeniedException;
 import org.apache.sentry.service.common.ServiceConstants.ServerConfig;
+import org.slf4j.LoggerFactory;
 
 public class GSSCallback extends SaslRpcServer.SaslGssCallbackHandler {
 
@@ -60,7 +63,30 @@ public class GSSCallback extends SaslRpcServer.SaslGssCallbackHandler {
     if (allowedPrincipals == null) {
       return false;
     }
-    String principalShortName = getShortName(principal);
+    String principalShortName;
+    if (KerberosName.hasRulesBeenSet()) {
+      try {
+        KerberosName krbName = new KerberosName(principal);
+        principalShortName = krbName.getShortName();
+        //To accommodate HADOOP-12751 where some versions don't throw NoMatchingRule exception
+        if (principalShortName.equals(principal)) {
+          principalShortName = getShortName(principal);
+        }
+      } catch (NoMatchingRule e) {
+        LoggerFactory.getLogger(GSSCallback.class)
+            .debug("No matching rule found for principal " + principal, e);
+        principalShortName = getShortName(principal);
+      } catch (Exception e) {
+        LoggerFactory.getLogger(GSSCallback.class)
+            .debug("Cannot derive short name from KerberosName. "
+                + "Use principal name prefix to authenticate", e);
+        principalShortName = getShortName(principal);
+      }
+
+    } else {
+      principalShortName = getShortName(principal);
+    }
+
     List<String> items = Arrays.asList(allowedPrincipals.split("\\s*,\\s*"));
     for (String item : items) {
       if (comparePrincipals(item, principalShortName)) {
