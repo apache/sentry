@@ -363,6 +363,147 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
     }
   }
 
+  /**
+   * Verify that if the same user is owner of both DB and table, after alter DB's owner,
+   * the table owner is still that user
+   *
+   * @throws Exception
+   */
+  @Ignore("Enable the test once HIVE-18031 is in the hiver version integrated with Sentry")
+  @Test
+  public void testAlterDBNotDropTableOwnerSameOwner() throws Exception {
+    String allWithGrantRole = "allWithGrant_role";
+    String ownerRole = "owner_role";
+    dbNames = new String[]{DB1};
+    roles = new String[]{"admin_role", "create_db1", "owner_role"};
+
+    // create required roles
+    setupUserRoles(roles, statementAdmin);
+
+    // remove test DB if it exists
+    statementAdmin.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+
+    // setup privileges for USER1
+    statementAdmin.execute("GRANT CREATE ON SERVER server1 TO ROLE create_db1");
+
+    // USER1 creates test DB
+    Connection connectionUSER1_1 = hiveServer2.createConnection(USER1_1, USER1_1);
+    Statement statementUSER1_1 = connectionUSER1_1.createStatement();
+    statementUSER1_1.execute("CREATE DATABASE " + DB1);
+    statementUSER1_1.execute("USE " + DB1);
+
+    // USER1 create table
+    statementUSER1_1.execute("CREATE TABLE " + DB1 + "." + tableName1
+        + " (under_col int comment 'the under column')");
+
+    // verify privileges created for new database
+    verifyTableOwnerPrivilegeExistForPrincipal(statementUSER1_1, SentryPrincipalType.USER, Lists.newArrayList(USER1_1),
+        DB1, "", 1);
+
+    // verify privileges created for new table
+    verifyTableOwnerPrivilegeExistForPrincipal(statementUSER1_1, SentryPrincipalType.USER, Lists.newArrayList(USER1_1),
+        DB1, tableName1, 1);
+
+    // change db owner
+    // setup all privilege for USERGROUP2
+    statementAdmin.execute("create role " + allWithGrantRole);
+    statementAdmin.execute("grant role " + allWithGrantRole + " to group " + USERGROUP2);
+    statementAdmin.execute("GRANT ALL ON DATABASE " + DB1 + " to role " +
+        allWithGrantRole + " with grant option");
+    Connection connectionUSER2_1 = hiveServer2.createConnection(USER2_1, USER2_1);
+    Statement statementUSER2_1 = connectionUSER2_1.createStatement();
+    statementUSER2_1.execute("ALTER DATABASE " + DB1 + " SET OWNER ROLE " + "owner_role");
+
+    // Verify that new owner has owner privilege on DB
+    verifyTableOwnerPrivilegeExistForPrincipal(statementAdmin, SentryPrincipalType.ROLE,
+        Lists.newArrayList(ownerRole), DB1, "", 1);
+
+    // Verify table still has its owner
+    verifyTableOwnerPrivilegeExistForPrincipal(statementUSER1_1, SentryPrincipalType.USER, Lists.newArrayList(USER1_1),
+        DB1, tableName1, 1);
+
+    statementAdmin.execute("DROP ROLE " + allWithGrantRole);
+
+    statementAdmin.close();
+    connection.close();
+
+    statementUSER1_1.close();
+    connectionUSER1_1.close();
+
+    statementUSER2_1.close();
+    connectionUSER2_1.close();
+  }
+
+  /**
+   * Verify that if owner of DB is different from owner of its table, after alter DB's owner,
+   * the table owner still exists
+   *
+   * @throws Exception
+   */
+  @Ignore("Enable the test once HIVE-18031 is in the hiver version integrated with Sentry")
+  @Test
+  public void testAlterDBNotDropTableOwnerDifferentOwner() throws Exception {
+    String allWithGrantRole = "allWithGrant_role";
+    String ownerRole = "owner_role";
+    dbNames = new String[]{DB1};
+    roles = new String[]{"admin_role", "create_db1", "owner_role"};
+
+    // create required roles
+    setupUserRoles(roles, statementAdmin);
+
+    // remove test DB if it exists, then create the DB, so its owner is admin
+    statementAdmin.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statementAdmin.execute("CREATE DATABASE " + DB1);
+
+    // setup privileges for USER1
+    statementAdmin.execute("GRANT CREATE ON SERVER server1 TO ROLE create_db1");
+    Connection connectionUSER1_1 = hiveServer2.createConnection(USER1_1, USER1_1);
+    Statement statementUSER1_1 = connectionUSER1_1.createStatement();
+    statementUSER1_1.execute("USE " + DB1);
+
+    // USER1 create table and becomes owner of that table
+    statementUSER1_1.execute("CREATE TABLE " + DB1 + "." + tableName1
+        + " (under_col int comment 'the under column')");
+
+    // verify privileges created for new database
+    verifyTableOwnerPrivilegeExistForPrincipal(statementAdmin, SentryPrincipalType.USER, Lists.newArrayList(admin),
+        DB1, "", 1);
+
+    // verify privileges created for new table
+    verifyTableOwnerPrivilegeExistForPrincipal(statementUSER1_1, SentryPrincipalType.USER, Lists.newArrayList(USER1_1),
+        DB1, tableName1, 1);
+
+    // change db owner
+    // setup all privilege for USERGROUP2
+    statementAdmin.execute("create role " + allWithGrantRole);
+    statementAdmin.execute("grant role " + allWithGrantRole + " to group " + USERGROUP2);
+    statementAdmin.execute("GRANT ALL ON DATABASE " + DB1 + " to role " +
+        allWithGrantRole + " with grant option");
+    Connection connectionUSER2_1 = hiveServer2.createConnection(USER2_1, USER2_1);
+    Statement statementUSER2_1 = connectionUSER2_1.createStatement();
+    statementUSER2_1.execute("ALTER DATABASE " + DB1 + " SET OWNER ROLE " + "owner_role");
+
+    // Verify that new owner has owner privilege on DB
+    verifyTableOwnerPrivilegeExistForPrincipal(statementAdmin, SentryPrincipalType.ROLE,
+        Lists.newArrayList(ownerRole), DB1, "", 1);
+
+    // Verify table still has its owner
+    verifyTableOwnerPrivilegeExistForPrincipal(statementUSER1_1, SentryPrincipalType.USER, Lists.newArrayList(USER1_1),
+        DB1, tableName1, 1);
+
+    statementAdmin.execute("DROP ROLE " + allWithGrantRole);
+
+    statementAdmin.close();
+    connection.close();
+
+    statementUSER1_1.close();
+    connectionUSER1_1.close();
+
+    statementUSER2_1.close();
+    connectionUSER2_1.close();
+  }
+
+
 
   /**
    * Verify that the user who creases table has owner privilege on this table and
