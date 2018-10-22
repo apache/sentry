@@ -3483,7 +3483,7 @@ public class TestSentryStore extends org.junit.Assert {
     names.add("bar");
     names.add("bob");
 
-    paramBuilder.addSet("prefix == ", names);
+    paramBuilder.addSet("prefix == ", names, true);
     assertEquals("(prefix == :var0 && prefix == :var1 && prefix == :var2)",
             paramBuilder.toString());
     params = paramBuilder.getArguments();

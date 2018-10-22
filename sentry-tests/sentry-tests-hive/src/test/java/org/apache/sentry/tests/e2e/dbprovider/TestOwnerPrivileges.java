@@ -134,6 +134,60 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
   }
 
   /**
+   * Verify that the user who creases database has owner privilege on this database
+   * and also makes sure that HDFS ACL rules are updated.
+   *
+   * @throws Exception
+   */
+  @Test
+  public void testCreateDatabaseUserNameCase() throws Throwable {
+    dbNames = new String[]{DB1};
+    roles = new String[]{"admin_role", "create_db1"};
+    String USER1_1_UPPERCASE = USER1_1.toUpperCase();
+
+    // create required roles
+    setupUserRoles(roles, statementAdmin);
+
+    statementAdmin.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+
+    // setup privileges for USER1
+    statementAdmin.execute("GRANT CREATE ON SERVER server1" + " TO ROLE create_db1");
+
+    Connection connectionUSER1_1 = hiveServer2.createConnection(USER1_1, USER1_1);
+    Statement statementUSER1_1 = connectionUSER1_1.createStatement();
+    Connection connectionUSER1_1_UPPERCASE = hiveServer2.createConnection(USER1_1_UPPERCASE, USER1_1_UPPERCASE);
+    Statement statementUSER1_1_UPPERCASE = connectionUSER1_1_UPPERCASE.createStatement();
+
+    try {
+      // USER1 creates test DB
+      statementUSER1_1.execute("CREATE DATABASE " + DB1);
+
+      // verify privileges created for new database
+      verifyTableOwnerPrivilegeExistForPrincipal(statementUSER1_1, SentryPrincipalType.USER,
+          Lists.newArrayList(USER1_1),
+          DB1, "", 1);
+
+      try {
+        statementUSER1_1_UPPERCASE.execute("CREATE TABLE " + DB1 + "." + tableName1
+            + " (under_col int comment 'the under column')");
+        Assert.fail("Expect creating table to fail for user " + USER1_1_UPPERCASE);
+      } catch (HiveSQLException ex) {
+        LOGGER.info(
+            "Expect creating table to fail for user " + USER1_1_UPPERCASE + ". " + ex.getMessage());
+      }
+    } finally {
+      statementAdmin.close();
+      connection.close();
+
+      statementUSER1_1.close();
+      connectionUSER1_1.close();
+
+      statementUSER1_1_UPPERCASE.close();
+      connectionUSER1_1_UPPERCASE.close();
+    }
+  }
+
+  /**
    * Verify that the user who does not creases database has no owner privilege on this database and
    * also makes sure that there are not HDFS ACL.
    *
@@ -257,7 +311,7 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
    *
    * @throws Exception
    */
-  @Ignore("Enable the test once HIVE-18031 is in the hiver version integrated with Sentry")
+  @Ignore("Enable the test once HIVE-18031 is in the hive version integrated with Sentry")
   @Test
   public void testAuthorizeAlterDatabaseSetOwner() throws Throwable {
     String ownerRole = "owner_role";
@@ -364,12 +418,92 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
   }
 
   /**
+   * Verify that the user who can call alter database set owner on this table, and the user
+   * case is preserved
+   *
+   * @throws Exception
+   */
+  @Ignore("Enable the test once HIVE-18031 is in the hive version integrated with Sentry")
+  @Test
+  public void testAuthorizeAlterDatabaseSetOwnerUserNameCase() throws Exception {
+    String ownerRole = "owner_role";
+    String allWithGrantRole = "allWithGrant_role";
+    dbNames = new String[]{DB1};
+    roles = new String[]{"admin_role", "create_on_server", ownerRole};
+    String USER1_2_UPPERCASE = USER1_2.toUpperCase();
+
+    // create required roles, and assign them to USERGROUP1
+    setupUserRoles(roles, statementAdmin);
+
+    // create test DB
+    statementAdmin.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+
+    // setup privileges for USER1
+    statementAdmin.execute("GRANT CREATE ON SERVER " + SERVER_NAME + " TO ROLE create_on_server");
+
+    Connection connectionUSER1_1 = hiveServer2.createConnection(USER1_1, USER1_1);
+    Statement statementUSER1_1 = connectionUSER1_1.createStatement();
+    Connection connectionUSER1_2_UPPERCASE = hiveServer2.createConnection(USER1_2_UPPERCASE, USER1_2_UPPERCASE);
+    Statement statementUSER1_2_UPPERCASE = connectionUSER1_2_UPPERCASE.createStatement();
+    Connection connectionUSER2_1 = hiveServer2.createConnection(USER2_1, USER2_1);
+    Statement statementUSER2_1 = connectionUSER2_1.createStatement();
+
+    // USER1_1 create database and becomes owner of DB1
+    statementUSER1_1.execute("CREATE DATABASE " + DB1);
+
+    // create role that has all with grant on the table, and assign to USERGROUP2
+    // so USER2_1 can alter DB1 owner
+    statementAdmin.execute("create role " + allWithGrantRole);
+    statementAdmin.execute("grant role " + allWithGrantRole + " to group " + USERGROUP2);
+    statementAdmin.execute("GRANT ALL ON DATABASE " + DB1 + " to role " +
+        allWithGrantRole + " with grant option");
+
+    try {
+      // user2_1 having all with grant on this DB and can issue command: alter database set owner
+      // alter database set owner to a user USER1_2
+      statementUSER2_1
+          .execute("ALTER DATABASE " + DB1 + " SET OWNER USER " + USER1_2);
+
+      // verify privileges is transferred to user USER1_2
+      verifyTableOwnerPrivilegeExistForPrincipal(statementAdmin, SentryPrincipalType.USER,
+          Lists.newArrayList(USER1_2),
+          DB1, "", 1);
+
+      // verify that another user whose name differ from USER1_2 only in case cannot share the
+      // owner privilege with USER1_2
+      try {
+        statementUSER1_2_UPPERCASE.execute("CREATE TABLE " + DB1 + "." + tableName1
+            + " (under_col int comment 'the under column')");
+        Assert.fail("Expect creating table to fail for user " + USER1_2_UPPERCASE);
+      } catch (HiveSQLException ex) {
+        LOGGER.info(
+            "Expect creating table to fail for user " + USER1_2_UPPERCASE + ". " + ex.getMessage());
+      }
+    } finally {
+      statementAdmin.execute("drop role " + allWithGrantRole);
+
+      statementAdmin.close();
+      connection.close();
+
+      statementUSER1_1.close();
+      connectionUSER1_1.close();
+
+      statementUSER1_2_UPPERCASE.close();
+      connectionUSER1_2_UPPERCASE.close();
+
+      statementUSER2_1.close();
+      connectionUSER2_1.close();
+    }
+  }
+
+
+  /**
    * Verify that if the same user is owner of both DB and table, after alter DB's owner,
    * the table owner is still that user
    *
    * @throws Exception
    */
-  @Ignore("Enable the test once HIVE-18031 is in the hiver version integrated with Sentry")
+  @Ignore("Enable the test once HIVE-18031 is in the hive version integrated with Sentry")
   @Test
   public void testAlterDBNotDropTableOwnerSameOwner() throws Exception {
     String allWithGrantRole = "allWithGrant_role";
@@ -440,7 +574,7 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
    *
    * @throws Exception
    */
-  @Ignore("Enable the test once HIVE-18031 is in the hiver version integrated with Sentry")
+  @Ignore("Enable the test once HIVE-18031 is in the hive version integrated with Sentry")
   @Test
   public void testAlterDBNotDropTableOwnerDifferentOwner() throws Exception {
     String allWithGrantRole = "allWithGrant_role";
@@ -630,6 +764,66 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
   }
 
   /**
+   * Verify that the user who creases table has owner privilege on this table, and owner case
+   * is preserved
+   *
+   * @throws Exception
+   */
+  @Test
+  public void testCreateTableUserNameCase() throws Exception {
+    dbNames = new String[]{DB1};
+    roles = new String[]{"admin_role", "create_db1"};
+    String USER1_1_UPPERCASE = USER1_1.toUpperCase();
+
+    // create required roles
+    setupUserRoles(roles, statementAdmin);
+
+    // create test DB
+    statementAdmin.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statementAdmin.execute("CREATE DATABASE " + DB1);
+
+    // setup privileges for USER1
+    statementAdmin.execute("GRANT CREATE ON DATABASE " + DB1 + " TO ROLE create_db1");
+    statementAdmin.execute("USE " + DB1);
+
+    Connection connectionUSER1_1 = hiveServer2.createConnection(USER1_1, USER1_1);
+    Statement statementUSER1_1 = connectionUSER1_1.createStatement();
+    Connection connectionUSER1_1_UPPERCASE = hiveServer2.createConnection(USER1_1_UPPERCASE, USER1_1_UPPERCASE);
+    Statement statementUSER1_1_UPPERCASE = connectionUSER1_1_UPPERCASE.createStatement();
+
+    try {
+      // USER1 create table
+      statementUSER1_1.execute("CREATE TABLE " + DB1 + "." + tableName1
+          + " (under_col int comment 'the under column')");
+
+      // verify privileges created for new table
+      verifyTableOwnerPrivilegeExistForPrincipal(statementUSER1_1, SentryPrincipalType.USER,
+          Lists.newArrayList(USER1_1),
+          DB1, tableName1, 1);
+
+      // verify that USER1_1_UPPERCASE does not have privilege on this table
+      try {
+        statementUSER1_1_UPPERCASE
+            .execute("INSERT INTO TABLE " + DB1 + "." + tableName1 + " VALUES (35)");
+        Assert.fail("Expect inserting table to fail for user " + USER1_1_UPPERCASE);
+      } catch (HiveSQLException ex) {
+        LOGGER.info(
+            "Expect inserting table to fail for user " + USER1_1_UPPERCASE + ". " + ex
+                .getMessage());
+      }
+    } finally {
+      statementAdmin.close();
+      connection.close();
+
+      statementUSER1_1.close();
+      connectionUSER1_1.close();
+
+      statementUSER1_1_UPPERCASE.close();
+      connectionUSER1_1_UPPERCASE.close();
+    }
+  }
+
+  /**
    * Verify that no owner privilege is created on table created by an admin user
    *
    * @throws Exception
@@ -701,7 +895,7 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
    *
    * @throws Exception
    */
-  @Ignore("Enable the test once HIVE-18762 is in the hiver version integrated with Sentry")
+  @Ignore("Enable the test once HIVE-18762 is in the hive version integrated with Sentry")
   @Test
   public void testAlterTable() throws Throwable {
     dbNames = new String[]{DB1};
@@ -782,12 +976,99 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
   }
 
   /**
+   * Verify that the owner privilege is updated when the ownership is changed, and its user name
+   * case is preserved
+   *
+   * @throws Exception
+   */
+  @Ignore("Enable the test once HIVE-18762 is in the hive version integrated with Sentry")
+  @Test
+  public void testAlterTableUserNameCase() throws Exception {
+    dbNames = new String[]{DB1};
+    String allWithGrantRole = "allWithGrant_role";
+    roles = new String[]{"admin_role", "create_db1", "owner_role"};
+    String USER1_2_UPPERCASE = USER1_2.toUpperCase();
+
+    // create required roles
+    setupUserRoles(roles, statementAdmin);
+
+    // create test DB
+    statementAdmin.execute("DROP DATABASE IF EXISTS " + DB1 + " CASCADE");
+    statementAdmin.execute("CREATE DATABASE " + DB1);
+
+    // setup privileges for USER1
+    statementAdmin.execute("GRANT CREATE ON DATABASE " + DB1 + " TO ROLE create_db1");
+    statementAdmin.execute("USE " + DB1);
+
+    Connection connectionUSER1_1 = hiveServer2.createConnection(USER1_1, USER1_1);
+    Statement statementUSER1_1 = connectionUSER1_1.createStatement();
+    Connection connectionUSER1_2_UPPERCASE = hiveServer2.createConnection(USER1_2_UPPERCASE, USER1_2_UPPERCASE);
+    Statement statementUSER1_2_UPPERCASE = connectionUSER1_2_UPPERCASE.createStatement();
+    Connection connectionUSER2_1 = hiveServer2.createConnection(USER2_1, USER2_1);
+    Statement statementUSER2_1 = connectionUSER2_1.createStatement();
+
+    // USER1 create table
+    statementUSER1_1.execute("CREATE TABLE " + DB1 + "." + tableName1
+        + " (under_col int comment 'the under column')");
+
+    // create role that has all with grant on the table, and assign to USERGROUP2
+    // so USER2_1 can alter DB1.tableName1 owner
+    statementAdmin.execute("create role " + allWithGrantRole);
+    statementAdmin.execute("grant role " + allWithGrantRole + " to group " + USERGROUP2);
+    statementAdmin.execute("GRANT ALL ON DATABASE " + DB1 + " to role " +
+        allWithGrantRole + " with grant option");
+
+    // verify privileges created for new table
+    verifyTableOwnerPrivilegeExistForPrincipal(statementUSER1_1, SentryPrincipalType.USER, Lists.newArrayList(USER1_1),
+        DB1, tableName1, 1);
+
+    try {
+      // user2_1 having all with grant on this DB and can issue command: alter table set owner
+      // to set owner to USER1_2
+      statementUSER2_1
+          .execute("ALTER TABLE " + DB1 + "." + tableName1 + " SET OWNER USER " + USER1_2);
+
+      // verify privileges is transferred to user USER1_2
+      verifyTableOwnerPrivilegeExistForPrincipal(statementAdmin, SentryPrincipalType.USER,
+          Lists.newArrayList(USER1_2),
+          DB1, tableName1, 1);
+
+      // verify that another user whose name differ from USER1_2 only in case cannot share the
+      // owner privilege with USER1_2
+      try {
+        statementUSER1_2_UPPERCASE
+            .execute("INSERT INTO TABLE " + DB1 + "." + tableName1 + " VALUES (35)");
+        Assert.fail("Expect inserting table to fail for user " + USER1_2_UPPERCASE);
+      } catch (HiveSQLException ex) {
+        LOGGER.info(
+            "Expect inserting table to fail for user " + USER1_2_UPPERCASE + ". " + ex
+                .getMessage());
+      }
+    } finally {
+
+      statementAdmin.execute("drop role " + allWithGrantRole);
+
+      statementAdmin.close();
+      connection.close();
+
+      statementUSER1_1.close();
+      connectionUSER1_1.close();
+
+      statementUSER1_2_UPPERCASE.close();
+      connectionUSER1_2_UPPERCASE.close();
+
+      statementUSER2_1.close();
+      connectionUSER2_1.close();
+    }
+  }
+
+  /**
    * Verify that the owner privilege is updated when the ownership is changed when DB name
    * is not explicitly specified
    *
    * @throws Exception
    */
-  @Ignore("Enable the test once HIVE-18762 is in the hiver version integrated with Sentry")
+  @Ignore("Enable the test once HIVE-18762 is in the hive version integrated with Sentry")
   @Test
   public void testAlterTableWithoutDB() throws Exception {
     dbNames = new String[]{DB1};
@@ -865,7 +1146,7 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
    *
    * @throws Exception
    */
-  @Ignore("Enable the test once HIVE-18762 is in the hiver version integrated with Sentry")
+  @Ignore("Enable the test once HIVE-18762 is in the hive version integrated with Sentry")
   @Test
   public void testAlterTableNegativeWithoutDB() throws Exception {
     dbNames = new String[]{DB1};
@@ -950,7 +1231,7 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
    *
    * @throws Exception
    */
-  @Ignore("Enable the test once HIVE-18762 is in the hiver version integrated with Sentry")
+  @Ignore("Enable the test once HIVE-18762 is in the hive version integrated with Sentry")
   @Test
   public void testAuthorizeAlterTableSetOwner() throws Exception {
     String ownerRole = "owner_role";
@@ -1069,7 +1350,7 @@ public class TestOwnerPrivileges extends TestHDFSIntegrationBase {
    * Verify that no owner privilege is granted when the ownership is changed to sentry admin user
    * @throws Exception
    */
-  @Ignore("Enable the test once HIVE-18762 is in the hiver version integrated with Sentry")
+  @Ignore("Enable the test once HIVE-18762 is in the hive version integrated with Sentry")
   @Test
   public void testAlterTableAdmin() throws Exception {
     dbNames = new String[]{DB1};

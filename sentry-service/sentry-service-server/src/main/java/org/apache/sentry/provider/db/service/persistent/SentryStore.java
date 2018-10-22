@@ -386,7 +386,7 @@ public class SentryStore implements SentryStoreInterface {
     tm.executeTransactionWithRetry(
         pm -> {
           pm.setDetachAllOnCommit(false); // No need to detach objects
-          String trimmedUserName = trimAndLower(userName);
+          String trimmedUserName = userName.trim();
           if (getUser(pm, trimmedUserName) != null) {
             throw new SentryAlreadyExistsException("User: " + trimmedUserName);
           }
@@ -759,13 +759,13 @@ public class SentryStore implements SentryStoreInterface {
 
     execute(update, pm -> {
       pm.setDetachAllOnCommit(false); // No need to detach objects
-      String trimmedEntityName = trimAndLower(name);
+
       // first do grant check
       grantOptionCheck(pm, grantorPrincipal, privilege);
 
       // Alter sentry Role and grant Privilege.
       MSentryPrivilege mPrivilege = alterSentryGrantPrivilegeCore(pm, type,
-              trimmedEntityName, privilege);
+              name, privilege);
 
       if (mPrivilege != null) {
         // update the privilege to be the one actually updated.
@@ -829,6 +829,12 @@ public class SentryStore implements SentryStoreInterface {
      String entityName, TSentryPrivilege privilege)
       throws SentryNoSuchObjectException, SentryInvalidInputException {
     MSentryPrivilege mPrivilege = null;
+
+    entityName = entityName.trim();
+    if (type.equals(SentryPrincipalType.ROLE)) {
+      entityName = entityName.toLowerCase();
+    }
+
     PrivilegePrincipal mEntity = getEntity(pm, entityName, type);
     if (mEntity == null) {
       if(type == SentryPrincipalType.ROLE) {
@@ -955,11 +961,10 @@ public class SentryStore implements SentryStoreInterface {
                                               final Update update) throws Exception {
     execute(update, pm -> {
       pm.setDetachAllOnCommit(false); // No need to detach objects
-      String trimmedEntityName = trimAndLower(principalName);
 
       // Alter sentry Role and grant Privilege.
       MSentryPrivilege mPrivilege = alterSentryGrantPrivilegeCore(pm, entityType,
-              trimmedEntityName, privilege);
+          principalName, privilege);
 
       if (mPrivilege != null) {
         // update the privilege to be the one actually updated.
@@ -1024,7 +1029,7 @@ public class SentryStore implements SentryStoreInterface {
     return tm.executeTransaction(
         new TransactionBlock<MSentryUser>() {
           public MSentryUser execute(PersistenceManager pm) throws Exception {
-            String trimmedUserName = trimAndLower(userName);
+            String trimmedUserName = userName.trim();
             MSentryUser sentryUser = getUser(pm, trimmedUserName);
             if (sentryUser == null) {
               if (throwExceptionIfNotExist) {
@@ -1115,11 +1120,11 @@ public class SentryStore implements SentryStoreInterface {
                                               final Update update) throws Exception {
     execute(update, pm -> {
       pm.setDetachAllOnCommit(false); // No need to detach objects
-      String trimmedEntityName = safeTrimLower(principalName);
+
       // first do revoke check
       grantOptionCheck(pm, grantorPrincipal, tPrivilege);
 
-      alterSentryRevokePrivilegeCore(pm, type, trimmedEntityName, tPrivilege);
+      alterSentryRevokePrivilegeCore(pm, type, principalName, tPrivilege);
       return null;
     });
   }
@@ -1152,6 +1157,15 @@ public class SentryStore implements SentryStoreInterface {
   private void alterSentryRevokePrivilegeCore(PersistenceManager pm, SentryPrincipalType type,
       String entityName, TSentryPrivilege tPrivilege)
       throws SentryNoSuchObjectException, SentryInvalidInputException {
+    if (entityName == null) {
+      throw new SentryInvalidInputException("Null entityName");
+    }
+
+    entityName = entityName.trim();
+    if (type.equals(SentryPrincipalType.ROLE)) {
+      entityName = entityName.toLowerCase();
+    }
+
     PrivilegePrincipal mEntity = getEntity(pm, entityName, type);
     if (mEntity == null) {
       if(type == SentryPrincipalType.ROLE) {
@@ -1467,7 +1481,7 @@ public class SentryStore implements SentryStoreInterface {
 
   private void dropSentryUserCore(PersistenceManager pm, String userName)
       throws SentryNoSuchObjectException {
-    String lUserName = trimAndLower(userName);
+    String lUserName = userName.trim();
     MSentryUser sentryUser = getUser(pm, lUserName);
     if (sentryUser == null) {
       throw noSuchUser(lUserName);
@@ -3996,7 +4010,7 @@ public class SentryStore implements SentryStoreInterface {
                   mSentryRoles = (List<MSentryRole>)query.execute();
                 } else {
                   QueryParamBuilder paramBuilder = QueryParamBuilder.newQueryParamBuilder(QueryParamBuilder.Op.OR);
-                  paramBuilder.addSet("roleName == ", roleNames);
+                  paramBuilder.addSet("roleName == ", roleNames, true);
                   query.setFilter(paramBuilder.toString());
                   mSentryRoles =
                           (List<MSentryRole>) query.executeWithMap(paramBuilder.getArguments());

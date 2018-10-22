@@ -317,7 +317,7 @@ public class QueryParamBuilder {
     if (roleNames == null || roleNames.isEmpty()) {
       return paramBuilder;
     }
-    paramBuilder.newChild().addSet("role.roleName == ", roleNames);
+    paramBuilder.newChild().addSet("role.roleName == ", roleNames, true);
     paramBuilder.addString("roles.contains(role)");
     return paramBuilder;
   }
@@ -339,7 +339,7 @@ public class QueryParamBuilder {
     if (userNames == null || userNames.isEmpty()) {
       return paramBuilder;
     }
-    paramBuilder.newChild().addSet("user.userName == ", userNames);
+    paramBuilder.newChild().addSet("user.userName == ", userNames, false);
     paramBuilder.addString("users.contains(user)");
     return paramBuilder;
   }
@@ -362,7 +362,7 @@ public class QueryParamBuilder {
    * @param values
    * @return this
    */
-  QueryParamBuilder addSet(String prefix, Iterable<String> values) {
+  QueryParamBuilder addSet(String prefix, Iterable<String> values, boolean toLowerCase) {
     if (values == null) {
       return this;
     }
@@ -371,7 +371,8 @@ public class QueryParamBuilder {
     for(String name: values) {
       // Append index to the varName
       String vName = "var" + paramId.toString();
-      addCustomParam(prefix + ":" + vName, vName, name.trim().toLowerCase());
+
+      addCustomParam(prefix + ":" + vName, vName, (toLowerCase) ? name.trim().toLowerCase() : name.trim());
       paramId.incrementAndGet();
     }
     return this;
