@@ -240,6 +240,7 @@ public class SentrySolrPluginImpl implements AuthorizationPlugin {
         case SCHEMA_READ_PERM: {
           return binding.authorize(userName, SolrAuthzUtil.getSchemaAuthorizables(authCtx), QUERY);
         }
+        case METRICS_HISTORY_READ_PERM:
         case METRICS_READ_PERM: {
           return binding.authorize(userName, Collections.singleton(AdminOperation.METRICS), QUERY);
         }

@@ -28,7 +28,7 @@ limitations under the License.
   <description>end to end tests for sentry-solr integration</description>
   <properties>
     <!-- Harmonize the jetty version with the SOLR version -->
-    <jettyVersion>9.3.20.v20170531</jettyVersion>
+    <jettyVersion>9.4.11.v20180605</jettyVersion>
   </properties>
 
   <dependencies>
