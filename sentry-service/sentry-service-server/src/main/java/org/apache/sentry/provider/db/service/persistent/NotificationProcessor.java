@@ -131,9 +131,13 @@ final class NotificationProcessor {
       throws SentryInvalidInputException {
     PermissionsUpdate update = new PermissionsUpdate(SentryConstants.INIT_CHANGE_ID, false);
     String authzObj = SentryServiceUtil.getAuthzObj(authorizable);
+
+    // The value of TPrivilegePrincipal being PermissionsUpdate.ALL_PRIVS indicates that all privileges
+    // associated with this authorizable should be deleted, including both role and user, i.e.,
+    // the key value of TPrivilegePrincipalType.ROLE is ignored.
     update.addPrivilegeUpdate(authzObj)
-        .putToDelPrivileges(new TPrivilegePrincipal(TPrivilegePrincipalType.ROLE, PermissionsUpdate.ALL_ROLES),
-                PermissionsUpdate.ALL_ROLES);
+        .putToDelPrivileges(new TPrivilegePrincipal(TPrivilegePrincipalType.ROLE, PermissionsUpdate.ALL_PRIVS),
+                PermissionsUpdate.ALL_PRIVS);
     return update;
   }
 

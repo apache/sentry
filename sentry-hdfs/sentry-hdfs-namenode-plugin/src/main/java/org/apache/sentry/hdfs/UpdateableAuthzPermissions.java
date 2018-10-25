@@ -180,7 +180,7 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
         perms.addPrivilegeInfo(pInfo);
         perms.addParentChildMappings(pUpdate.getAuthzObj());
         for (Map.Entry<TPrivilegePrincipal, String> dMap : pUpdate.getDelPrivileges().entrySet()) {
-          if (dMap.getKey().getValue().equals(PermissionsUpdate.ALL_ROLES)) {
+          if (dMap.getKey().getValue().equals(PermissionsUpdate.ALL_PRIVS)) {
             // Remove all privileges
             perms.delPrivilegeInfo(pUpdate.getAuthzObj());
             perms.removeParentChildMappings(pUpdate.getAuthzObj());

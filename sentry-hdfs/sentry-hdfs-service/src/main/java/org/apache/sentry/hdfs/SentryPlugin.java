@@ -457,9 +457,13 @@ public class SentryPlugin implements SentryPolicyStorePlugin, SigUtils.SigListen
         + failure.toString(), failure);
       throw new SentryPluginException(failure.getMessage(), failure);
     }
+
+    // The value of TPrivilegePrincipal being PermissionsUpdate.ALL_PRIVS indicates that all privileges
+    // associated with this authorizable should be deleted, including both role and user, i.e.,
+    // the key value of TPrivilegePrincipalType.ROLE is ignored.
     update.addPrivilegeUpdate(authzObj).putToDelPrivileges(
-            new TPrivilegePrincipal(TPrivilegePrincipalType.ROLE,PermissionsUpdate.ALL_ROLES),
-            PermissionsUpdate.ALL_ROLES);
+            new TPrivilegePrincipal(TPrivilegePrincipalType.ROLE,PermissionsUpdate.ALL_PRIVS),
+            PermissionsUpdate.ALL_PRIVS);
 
     LOGGER.debug("onDropSentryPrivilege, Authz Perm preUpdate [ {} ]", authzObj);
     if (LOGGER.isTraceEnabled()) {
