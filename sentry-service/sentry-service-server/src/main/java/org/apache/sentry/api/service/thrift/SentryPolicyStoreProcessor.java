@@ -37,6 +37,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.messaging.EventMessage.EventType;
 import org.apache.sentry.SentryOwnerInfo;
 import org.apache.sentry.api.common.ThriftConstants;
+import org.apache.sentry.core.common.exception.SentryGrantDeniedException;
 import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.exception.SentrySiteConfigurationException;
 import org.apache.sentry.core.common.utils.SentryConstants;
@@ -245,6 +246,60 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     return response;
   }
 
+  /**
+   * Throws an exception if one of the set of privileges passed as a parameter cannot be granted by
+   * the grantor user.
+   *
+   * <p/> The check is done by looking at the grant option flag each user or user/group role have
+   * stored on the DB, and compare it with set of privileges that the user is attempting to grant.
+   * If one of the privileges has the grant option disabled, then this method throws an exception
+   * to let the caller know it cannot continue with the grant of the privilege.
+   *
+   * @param grantorUser The user who is attempting to grant the set or privileges.
+   * @param checkPrivileges The set of privileges to check.
+   * @throws Exception If the user does not have grant privileges.
+   */
+  private void checkGrantOptionPrivileges(String grantorUser, Set<TSentryPrivilege> checkPrivileges)
+    throws Exception {
+    Preconditions.checkNotNull(checkPrivileges, "Privileges to check for grant option must not be null.");
+
+    Set<String> groups = getGroupsFromUserName(conf, grantorUser);
+    if (groups != null && inAdminGroups(groups)) {
+      // grantorUser is part of one of the admin groups, so we permit the grant action
+      return;
+    }
+
+    // Get all the privileges a user has (either directly granted to the user or through a role
+    // which the user belongs too)
+    Set<TSentryPrivilege> userPrivileges = sentryStore.listSentryPrivilegesByUsersAndGroups(
+      groups, Collections.singleton(grantorUser), new TSentryActiveRoleSet(true, null), null
+    );
+
+    if (userPrivileges == null || userPrivileges.isEmpty()) {
+      throw new SentryGrantDeniedException(
+        String.format("User %s does not have privileges to grant.", grantorUser));
+    }
+
+    // Check if each privilege grant will be permitted. Throws an exception in the first privilege
+    // that is not permitted.
+    for (TSentryPrivilege checkPrivilege : checkPrivileges) {
+      boolean hasGrant = false;
+      for (TSentryPrivilege p : userPrivileges) {
+        if (p.getGrantOption() == TSentryGrantOption.TRUE
+            && SentryPolicyStoreUtils.privilegeImplies(p, checkPrivilege)) {
+          hasGrant = true;
+          break;
+        }
+      }
+
+      if (!hasGrant) {
+        throw new SentryGrantDeniedException(
+          String.format("User %s does not have privileges to grant %s.", grantorUser,
+            checkPrivilege.getAction().toUpperCase()));
+      }
+    }
+  }
+
   @Override
   public TAlterSentryRoleGrantPrivilegeResponse alter_sentry_role_grant_privilege
   (TAlterSentryRoleGrantPrivilegeRequest request) throws TException {
@@ -264,6 +319,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       // Throw an exception if one of the grants is not permitted.
       SentryServiceUtil.checkDbExplicitGrantsPermitted(conf, request.getPrivileges());
 
+      // Throw an exception if the user has not rights to grant one of the grants requested
+      checkGrantOptionPrivileges(request.getRequestorUserName(), request.getPrivileges());
+
       // TODO: now only has SentryPlugin. Once add more SentryPolicyStorePlugins,
       // TODO: need to differentiate the updates for different Plugins.
       Preconditions.checkState(sentryPlugins.size() <= 1);
@@ -273,11 +331,11 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       }
 
       if (!privilegesUpdateMap.isEmpty()) {
-        sentryStore.alterSentryRoleGrantPrivileges(request.getRequestorUserName(),
-            request.getRoleName(), request.getPrivileges(), privilegesUpdateMap);
+        sentryStore.alterSentryRoleGrantPrivileges(request.getRoleName(),
+          request.getPrivileges(), privilegesUpdateMap);
       } else {
-        sentryStore.alterSentryRoleGrantPrivileges(request.getRequestorUserName(),
-            request.getRoleName(), request.getPrivileges());
+        sentryStore.alterSentryRoleGrantPrivileges(request.getRoleName(),
+          request.getPrivileges());
       }
       GrantPrivilegeRequestValidator.validate(request);
       response.setStatus(Status.OK());
@@ -332,6 +390,9 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
         request.setPrivileges(Sets.newHashSet(request.getPrivilege()));
       }
 
+      // Throw an exception if the user has not rights to revoke one of the revokes requested
+      checkGrantOptionPrivileges(request.getRequestorUserName(), request.getPrivileges());
+
       // TODO: now only has SentryPlugin. Once add more SentryPolicyStorePlugins,
       // TODO: need to differentiate the updates for different Plugins.
       Preconditions.checkState(sentryPlugins.size() <= 1);
@@ -341,11 +402,11 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
       }
 
       if (!privilegesUpdateMap.isEmpty()) {
-        sentryStore.alterSentryRoleRevokePrivileges(request.getRequestorUserName(),
-            request.getRoleName(), request.getPrivileges(), privilegesUpdateMap);
+        sentryStore.alterSentryRoleRevokePrivileges(request.getRoleName(),
+          request.getPrivileges(), privilegesUpdateMap);
       } else {
-        sentryStore.alterSentryRoleRevokePrivileges(request.getRequestorUserName(),
-            request.getRoleName(), request.getPrivileges());
+        sentryStore.alterSentryRoleRevokePrivileges(request.getRoleName(),
+          request.getPrivileges());
       }
       RevokePrivilegeRequestValidator.validate(request);
       response.setStatus(Status.OK());

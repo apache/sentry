@@ -17,6 +17,8 @@
  */
 package org.apache.sentry.api.service.thrift;
 
+import static org.apache.sentry.core.model.db.AccessConstants.ALL;
+import static org.apache.sentry.core.model.db.AccessConstants.SELECT;
 import static org.apache.sentry.service.common.ServiceConstants.ServerConfig.SENTRY_DB_POLICY_STORE_OWNER_AS_PRIVILEGE;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -671,5 +673,162 @@ public class TestSentryPolicyStoreProcessor {
       response.getStatus().getMessage().contains("ALTER"));
     Assert.assertFalse("SELECT privileges should be permitted",
       response.getStatus().getMessage().contains("SELECT"));
+  }
+
+  @Test
+  public void testGrantToRoleWithGrantCheck() throws Exception {
+    final String DB = "db";
+    final String ROLE = "role";
+    final String USER = "user";
+
+    SentryPolicyStoreProcessorTestUtils test = new SentryPolicyStoreProcessorTestUtils(conf, sentryStore);
+
+    final TSentryPrivilege ALL_ON_DB = test.newPrivilegeOnDatabase(ALL, SERVERNAME, DB);
+    final TSentryPrivilege ALL_ON_DB_WGRANT = test.newPrivilegeOnDatabaseWithGrant(ALL, SERVERNAME, DB);
+    final TSentryPrivilege SELECT_ON_DB = test.newPrivilegeOnDatabase(SELECT, SERVERNAME, DB);
+    final TSentryPrivilege SELECT_ON_DB_WGRANT = test.newPrivilegeOnDatabaseWithGrant(SELECT, SERVERNAME, DB);
+
+    // Admin user can grant privileges
+    test.givenUser(ADMIN_USER).grantPrivilegeToRole(ALL_ON_DB, ROLE)
+      .verify(Status.OK);
+    test.givenUser(ADMIN_USER).grantPrivilegeToRole(ALL_ON_DB_WGRANT, ROLE)
+      .verify(Status.OK);
+    test.givenUser(ADMIN_USER).grantPrivilegeToRole(SELECT_ON_DB, ROLE)
+      .verify(Status.OK);
+    test.givenUser(ADMIN_USER).grantPrivilegeToRole(SELECT_ON_DB_WGRANT, ROLE)
+      .verify(Status.OK);
+
+    // User without grant option cannot grant privileges
+    test.givenUser(USER).grantPrivilegeToRole(ALL_ON_DB, ROLE)
+      .whenRequestStorePrivilegesReturn(Collections.emptySet())
+      .verify(Status.ACCESS_DENIED);
+    test.givenUser(USER).grantPrivilegeToRole(ALL_ON_DB_WGRANT, ROLE)
+      .whenRequestStorePrivilegesReturn(Collections.emptySet())
+      .verify(Status.ACCESS_DENIED);
+    test.givenUser(USER).grantPrivilegeToRole(SELECT_ON_DB, ROLE)
+      .whenRequestStorePrivilegesReturn(Collections.emptySet())
+      .verify(Status.ACCESS_DENIED);
+    test.givenUser(USER).grantPrivilegeToRole(SELECT_ON_DB_WGRANT, ROLE)
+      .whenRequestStorePrivilegesReturn(Collections.emptySet())
+      .verify(Status.ACCESS_DENIED);
+    test.givenUser(USER).grantPrivilegeToRole(ALL_ON_DB, ROLE)
+      .whenRequestStorePrivilegesReturn(Collections.singleton(SELECT_ON_DB_WGRANT))
+      .verify(Status.ACCESS_DENIED);
+
+    // User with grant option can grant privileges
+    test.givenUser(USER).grantPrivilegeToRole(ALL_ON_DB, ROLE)
+      .whenRequestStorePrivilegesReturn(Collections.singleton(ALL_ON_DB_WGRANT))
+      .verify(Status.OK);
+    test.givenUser(USER).grantPrivilegeToRole(SELECT_ON_DB, ROLE)
+      .whenRequestStorePrivilegesReturn(Collections.singleton(ALL_ON_DB_WGRANT))
+      .verify(Status.OK);
+    test.givenUser(USER).grantPrivilegeToRole(SELECT_ON_DB, ROLE)
+      .whenRequestStorePrivilegesReturn(Collections.singleton(SELECT_ON_DB_WGRANT))
+      .verify(Status.OK);
+
+    // User with grant option can grant privileges with grant option
+    test.givenUser(USER).grantPrivilegeToRole(ALL_ON_DB_WGRANT, ROLE)
+      .whenRequestStorePrivilegesReturn(Collections.singleton(ALL_ON_DB_WGRANT))
+      .verify(Status.OK);
+    test.givenUser(USER).grantPrivilegeToRole(SELECT_ON_DB_WGRANT, ROLE)
+      .whenRequestStorePrivilegesReturn(Collections.singleton(ALL_ON_DB_WGRANT))
+      .verify(Status.OK);
+    test.givenUser(USER).grantPrivilegeToRole(SELECT_ON_DB_WGRANT, ROLE)
+      .whenRequestStorePrivilegesReturn(Collections.singleton(SELECT_ON_DB_WGRANT))
+      .verify(Status.OK);
+  }
+
+  @Test
+  public void testRevokeFromRoleWithGrantCheck() throws Exception {
+    final String DB = "db";
+    final String ROLE = "role";
+    final String USER = "user";
+
+    SentryPolicyStoreProcessorTestUtils test = new SentryPolicyStoreProcessorTestUtils(conf, sentryStore);
+
+    final TSentryPrivilege ALL_ON_DB = test.newPrivilegeOnDatabase(ALL, SERVERNAME, DB);
+    final TSentryPrivilege ALL_ON_DB_WGRANT = test.newPrivilegeOnDatabaseWithGrant(ALL, SERVERNAME, DB);
+    final TSentryPrivilege SELECT_ON_DB = test.newPrivilegeOnDatabase(SELECT, SERVERNAME, DB);
+    final TSentryPrivilege SELECT_ON_DB_WGRANT = test.newPrivilegeOnDatabaseWithGrant(SELECT, SERVERNAME, DB);
+
+    // Admin user can revoke privileges
+    test.givenUser(ADMIN_USER).revokePrivilegeFromRole(ALL_ON_DB, ROLE)
+      .verify(Status.OK);
+    test.givenUser(ADMIN_USER).revokePrivilegeFromRole(ALL_ON_DB_WGRANT, ROLE)
+      .verify(Status.OK);
+    test.givenUser(ADMIN_USER).revokePrivilegeFromRole(SELECT_ON_DB, ROLE)
+      .verify(Status.OK);
+    test.givenUser(ADMIN_USER).revokePrivilegeFromRole(SELECT_ON_DB_WGRANT, ROLE)
+      .verify(Status.OK);
+
+    // User without grant option cannot revoke privileges
+    test.givenUser(USER).revokePrivilegeFromRole(ALL_ON_DB, ROLE)
+      .whenRequestStorePrivilegesReturn(Collections.emptySet())
+      .verify(Status.ACCESS_DENIED);
+    test.givenUser(USER).revokePrivilegeFromRole(ALL_ON_DB_WGRANT, ROLE)
+      .whenRequestStorePrivilegesReturn(Collections.emptySet())
+      .verify(Status.ACCESS_DENIED);
+    test.givenUser(USER).revokePrivilegeFromRole(SELECT_ON_DB, ROLE)
+      .whenRequestStorePrivilegesReturn(Collections.emptySet())
+      .verify(Status.ACCESS_DENIED);
+    test.givenUser(USER).revokePrivilegeFromRole(SELECT_ON_DB_WGRANT, ROLE)
+      .whenRequestStorePrivilegesReturn(Collections.emptySet())
+      .verify(Status.ACCESS_DENIED);
+    test.givenUser(USER).revokePrivilegeFromRole(ALL_ON_DB, ROLE)
+      .whenRequestStorePrivilegesReturn(Collections.singleton(SELECT_ON_DB_WGRANT))
+      .verify(Status.ACCESS_DENIED);
+
+    // User with grant option can revoke privileges
+    test.givenUser(USER).revokePrivilegeFromRole(ALL_ON_DB, ROLE)
+      .whenRequestStorePrivilegesReturn(Collections.singleton(ALL_ON_DB_WGRANT))
+      .verify(Status.OK);
+    test.givenUser(USER).revokePrivilegeFromRole(SELECT_ON_DB, ROLE)
+      .whenRequestStorePrivilegesReturn(Collections.singleton(ALL_ON_DB_WGRANT))
+      .verify(Status.OK);
+    test.givenUser(USER).revokePrivilegeFromRole(SELECT_ON_DB, ROLE)
+      .whenRequestStorePrivilegesReturn(Collections.singleton(SELECT_ON_DB_WGRANT))
+      .verify(Status.OK);
+
+    // User with grant option can revoke privileges with grant option
+    test.givenUser(USER).revokePrivilegeFromRole(ALL_ON_DB_WGRANT, ROLE)
+      .whenRequestStorePrivilegesReturn(Collections.singleton(ALL_ON_DB_WGRANT))
+      .verify(Status.OK);
+    test.givenUser(USER).revokePrivilegeFromRole(SELECT_ON_DB_WGRANT, ROLE)
+      .whenRequestStorePrivilegesReturn(Collections.singleton(ALL_ON_DB_WGRANT))
+      .verify(Status.OK);
+    test.givenUser(USER).revokePrivilegeFromRole(SELECT_ON_DB_WGRANT, ROLE)
+      .whenRequestStorePrivilegesReturn(Collections.singleton(SELECT_ON_DB_WGRANT))
+      .verify(Status.OK);
+  }
+
+  @Test
+  public void testGrantCheckWithColumn() throws Exception {
+    final String DB = "db";
+    final String TABLE = "table";
+    final String COLUMN = "column";
+    final String ROLE = "role";
+    final String USER = "user";
+
+    SentryPolicyStoreProcessorTestUtils test = new SentryPolicyStoreProcessorTestUtils(conf, sentryStore);
+
+    final TSentryPrivilege SELECT_ON_TABLE = test.newPrivilegeOnTable(SELECT, SERVERNAME, DB, TABLE);
+    final TSentryPrivilege SELECT_ON_TABLE_WGRANT = test.newPrivilegeOnTableWithGrant(SELECT, SERVERNAME, DB, TABLE);
+    final TSentryPrivilege SELECT_ON_COLUMN = test.newPrivilegeOnColumn(SELECT, SERVERNAME, DB, TABLE, COLUMN);
+
+    // Admin user can revoke privileges
+    test.givenUser(ADMIN_USER).grantPrivilegeToRole(SELECT_ON_TABLE_WGRANT, ROLE)
+      .verify(Status.OK);
+    test.givenUser(ADMIN_USER).grantPrivilegeToRole(SELECT_ON_COLUMN, ROLE)
+      .verify(Status.OK);
+
+    // User with grant option on table can grant select on a column
+    test.givenUser(USER).grantPrivilegeToRole(SELECT_ON_COLUMN, ROLE)
+      .whenRequestStorePrivilegesReturn(Collections.singleton(SELECT_ON_TABLE_WGRANT))
+      .verify(Status.OK);
+
+    // User without grant option on table cannot grant select on a column
+    test.givenUser(USER).grantPrivilegeToRole(SELECT_ON_COLUMN, ROLE)
+      .whenRequestStorePrivilegesReturn(Collections.singleton(SELECT_ON_TABLE))
+      .verify(Status.ACCESS_DENIED);
   }
 }

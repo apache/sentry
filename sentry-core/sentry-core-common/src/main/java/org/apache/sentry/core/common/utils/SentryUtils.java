@@ -18,6 +18,9 @@
 
 package org.apache.sentry.core.common.utils;
 
+import static org.apache.sentry.core.common.utils.SentryConstants.NULL_COL;
+
+import com.google.common.base.Strings;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -73,5 +76,14 @@ public final class SentryUtils {
     }
 
     return collapsedStrings.toString();
+  }
+
+  /**
+   * Function to check if a string is null, empty or @NULL_COLL specifier
+   * @param s string input, and can be null.
+   * @return True if the input string represents a NULL string - when it is null, empty or equals @NULL_COL
+   */
+  public static boolean isNULL(String s) {
+    return Strings.isNullOrEmpty(s) || s.equals(NULL_COL);
   }
 }

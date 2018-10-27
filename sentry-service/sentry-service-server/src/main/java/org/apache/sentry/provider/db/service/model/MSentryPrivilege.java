@@ -24,6 +24,7 @@ import java.util.Set;
 import javax.jdo.annotations.PersistenceCapable;
 
 import org.apache.sentry.core.common.utils.PathUtils;
+import org.apache.sentry.core.common.utils.SentryUtils;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.persistent.PrivilegePrincipal;
@@ -351,7 +352,7 @@ public class MSentryPrivilege {
   }
 
   private boolean isNULL(String s) {
-    return SentryStore.isNULL(s);
+    return SentryUtils.isNULL(s);
   }
 
   public boolean isActionALL() {
