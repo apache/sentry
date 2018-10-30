@@ -20,6 +20,7 @@ package org.apache.sentry.provider.db.service.persistent;
 
 import static org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars.AUTHZ_SERVER_NAME;
 
+import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import java.io.File;
 import org.apache.commons.io.FileUtils;
@@ -176,11 +177,11 @@ public class TestHMSFollowerSentryStoreIntegration {
     privilege_server.setServerName(serverName1);
     privilege_server.setCreateTime(System.currentTimeMillis());
 
-    sentryStore.alterSentryGrantPrivilege(ServiceConstants.SentryPrincipalType.ROLE, roleName1, privilege1, null);
+    sentryStore.alterSentryGrantPrivileges(ServiceConstants.SentryPrincipalType.ROLE, roleName1, Sets.newHashSet(privilege1), null);
 
-    sentryStore.alterSentryGrantPrivilege(ServiceConstants.SentryPrincipalType.ROLE, roleName1, privilege1_2, null);
-    sentryStore.alterSentryGrantPrivilege(ServiceConstants.SentryPrincipalType.ROLE, roleName1, privilege_server, null);
-    sentryStore.alterSentryGrantPrivilege(ServiceConstants.SentryPrincipalType.ROLE, roleName1, privilege1_3, null);
+    sentryStore.alterSentryGrantPrivileges(ServiceConstants.SentryPrincipalType.ROLE, roleName1, Sets.newHashSet(privilege1_2), null);
+    sentryStore.alterSentryGrantPrivileges(ServiceConstants.SentryPrincipalType.ROLE, roleName1, Sets.newHashSet(privilege_server), null);
+    sentryStore.alterSentryGrantPrivileges(ServiceConstants.SentryPrincipalType.ROLE, roleName1, Sets.newHashSet(privilege1_3), null);
 
     // Create notification events to drop the table
     StorageDescriptor sd = new StorageDescriptor();
@@ -235,11 +236,11 @@ public class TestHMSFollowerSentryStoreIntegration {
     privilege_server.setServerName(serverName1);
     privilege_server.setCreateTime(System.currentTimeMillis());
 
-    sentryStore.alterSentryGrantPrivilege(ServiceConstants.SentryPrincipalType.ROLE, roleName1, privilege1, null);
+    sentryStore.alterSentryGrantPrivileges(ServiceConstants.SentryPrincipalType.ROLE, roleName1, Sets.newHashSet(privilege1), null);
 
-    sentryStore.alterSentryGrantPrivilege(ServiceConstants.SentryPrincipalType.ROLE, roleName1, privilege1_2, null);
-    sentryStore.alterSentryGrantPrivilege(ServiceConstants.SentryPrincipalType.ROLE, roleName1, privilege_server, null);
-    sentryStore.alterSentryGrantPrivilege(ServiceConstants.SentryPrincipalType.ROLE, roleName1, privilege1_3, null);
+    sentryStore.alterSentryGrantPrivileges(ServiceConstants.SentryPrincipalType.ROLE, roleName1, Sets.newHashSet(privilege1_2), null);
+    sentryStore.alterSentryGrantPrivileges(ServiceConstants.SentryPrincipalType.ROLE, roleName1, Sets.newHashSet(privilege_server), null);
+    sentryStore.alterSentryGrantPrivileges(ServiceConstants.SentryPrincipalType.ROLE, roleName1, Sets.newHashSet(privilege1_3), null);
 
     // Create notification events to drop the database
     NotificationEvent notificationEvent = new NotificationEvent(1, 0, EventType.DROP_DATABASE.toString(),

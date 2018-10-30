@@ -774,7 +774,7 @@ public interface SentryStoreInterface {
    * Alter a give sentry user/role to set owner privilege, as well as persist the corresponding
    * permission change to MSentryPermChange table in a single transaction.
    * Creates User, if it is not already there.
-   * Internally calls alterSentryGrantPrivilege.
+   * Internally calls alterSentryGrantPrivileges.
    * @param entityName Entity name to which permissions should be granted.
    * @param entityType Entity Type
    * @param privilege Privilege to be granted
