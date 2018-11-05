@@ -26,11 +26,10 @@ import java.util.List;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.sentry.hdfs.service.thrift.TPathChanges;
 import org.apache.sentry.hdfs.service.thrift.TPathsUpdate;
-import org.apache.commons.httpclient.util.URIUtil;
-import org.apache.commons.httpclient.URIException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.http.client.utils.URIBuilder;
 
 import org.apache.thrift.TException;
 
@@ -137,11 +136,10 @@ public class PathsUpdate implements Updateable.Update {
 
     URI uri;
     try {
-      uri = new URI(URIUtil.encodePath(path));
+      // Below converts unescaped path to escaped string and the constructs a URI from it.
+      uri = new URI(StringUtils.stripStart(new URIBuilder().setPath(path).toString(), "/"));
     } catch (URISyntaxException e) {
       throw new SentryMalformedPathException("Incomprehensible path [" + path + "]", e);
-    } catch (URIException e) {
-      throw new SentryMalformedPathException("Unable to create URI from path[" + path + "]", e);
     }
 
     String scheme = uri.getScheme();

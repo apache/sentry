@@ -29,6 +29,22 @@ limitations under the License.
   <name>Sentry Binding for Solr</name>
 
   <dependencies>
+    <!-- This jetty dependency must be added before the solr-core dependency to avoid conflicting
+         other jetty dependencies -->
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
+      <version>${jetty.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <!-- This jetty dependency must be added before the solr-core dependency to avoid conflicting
+         other jetty dependencies -->
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-webapp</artifactId>
+      <version>${jetty.version}</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.apache.solr</groupId>
       <artifactId>solr-core</artifactId>

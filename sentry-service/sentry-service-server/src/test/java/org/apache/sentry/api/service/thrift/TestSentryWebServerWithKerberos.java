@@ -88,7 +88,7 @@ public class TestSentryWebServerWithKerberos extends SentryServiceIntegrationBas
       new AuthenticatedURL(new KerberosAuthenticator()).openConnection(url, new AuthenticatedURL.Token());
       fail("Here should fail.");
     } catch (Exception e) {
-      boolean isExpectError = e.getMessage().contains("No valid credentials provided");
+      boolean isExpectError = exceptionContainsMessage(e,"No valid credentials provided");
       Assert.assertTrue("Here should fail by 'No valid credentials provided'," +
           " but the exception is:" + e, isExpectError);
     }
@@ -124,7 +124,7 @@ public class TestSentryWebServerWithKerberos extends SentryServiceIntegrationBas
           fail("Here should fail.");
         } catch (AuthenticationException e) {
           String expectedError = "status code: 403";
-          if (!e.getMessage().contains(expectedError)) {
+          if (!exceptionContainsMessage(e, expectedError)) {
             LOG.error("UnexpectedError: " + e.getMessage(), e);
             fail("UnexpectedError: " + e.getMessage());
           }
@@ -155,7 +155,7 @@ public class TestSentryWebServerWithKerberos extends SentryServiceIntegrationBas
           fail("Login with user1 should fail");
         } catch (AuthenticationException e) {
           String expectedError = "status code: 403";
-          if (!e.getMessage().contains(expectedError)) {
+          if (!exceptionContainsMessage(e, expectedError)) {
             LOG.error("UnexpectedError: " + e.getMessage(), e);
             fail("UnexpectedError: " + e.getMessage());
           }
@@ -171,5 +171,20 @@ public class TestSentryWebServerWithKerberos extends SentryServiceIntegrationBas
     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
     conn.setRequestMethod("TRACE");
     Assert.assertEquals(HttpURLConnection.HTTP_FORBIDDEN, conn.getResponseCode());
+  }
+
+  /*
+   * Check if the exception contains the specified message in any of the exception message
+   * or cause message.
+   *
+   * <p/>i.e. Hadoop 2.x has a 'no valid privileges' message in the e.getMessage() whereas
+   * Hadoop 3.x has the 'no valid privileges' message in the e.getCause().getMessage().
+   */
+  private boolean exceptionContainsMessage(Exception e, String message) {
+    if (e.getMessage().contains(message)) {
+      return true;
+    }
+
+    return e.getCause().getMessage().contains(message);
   }
 }
