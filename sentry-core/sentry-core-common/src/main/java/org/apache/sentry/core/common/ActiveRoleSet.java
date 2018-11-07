@@ -20,12 +20,14 @@ import java.util.HashSet;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
+import org.apache.hadoop.classification.InterfaceAudience.Public;
 
 /**
  * Some authorization schemes allow users to select a particular
  * set of roles they want active at any give time. For example,
  * SQL systems often all ALL, NONE, or a subset of roles.
  */
+@Public
 public class ActiveRoleSet {
   public static final ActiveRoleSet ALL = new ActiveRoleSet(true);
   private final boolean allRoles;

@@ -16,6 +16,9 @@
  */
 package org.apache.sentry.core.model.db;
 
+import org.apache.hadoop.classification.InterfaceAudience.Public;
+
+@Public
 public class Server implements DBModelAuthorizable {
 
   /**

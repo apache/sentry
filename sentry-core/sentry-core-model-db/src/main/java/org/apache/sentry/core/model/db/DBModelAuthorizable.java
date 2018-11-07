@@ -16,8 +16,10 @@
  */
 package org.apache.sentry.core.model.db;
 
+import org.apache.hadoop.classification.InterfaceAudience.Public;
 import org.apache.sentry.core.common.Authorizable;
 
+@Public
 public interface DBModelAuthorizable extends Authorizable {
 
   public enum AuthorizableType {

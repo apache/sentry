@@ -16,6 +16,9 @@
  */
 package org.apache.sentry.core.common;
 
+import org.apache.hadoop.classification.InterfaceAudience.Public;
+
+@Public
 public class Subject {
 
   private final String name;

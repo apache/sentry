@@ -21,6 +21,7 @@ import java.util.Set;
 
 import javax.annotation.concurrent.ThreadSafe;
 
+import org.apache.hadoop.classification.InterfaceAudience.Public;
 import org.apache.sentry.core.common.Action;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
@@ -33,6 +34,7 @@ import org.apache.sentry.policy.common.PolicyEngine;
  * Implementations of AuthorizationProvider must be threadsafe.
  */
 @ThreadSafe
+@Public
 public interface AuthorizationProvider {
 
   String SENTRY_PROVIDER = "sentry.provider";
