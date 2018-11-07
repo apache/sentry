@@ -430,7 +430,8 @@ public class SentryStore implements SentryStoreInterface {
    * @param <T> Class type
    * @return count of objects or -1 in case of error
      */
-  private <T> Long getCount(final Class<T> tClass) {
+  @VisibleForTesting
+  <T> Long getCount(final Class<T> tClass) {
     try {
       return tm.executeTransaction(
               pm -> {
@@ -3500,10 +3501,6 @@ public class SentryStore implements SentryStoreInterface {
 
     MAuthzPathsMapping mAuthzPathsMapping = getMAuthzPathsMappingCore(pm, currentSnapshotID, authzObj);
     if (mAuthzPathsMapping != null) {
-      for (MPath mPath : mAuthzPathsMapping.getPaths()) {
-        mAuthzPathsMapping.removePath(mPath);
-        pm.deletePersistent(mPath);
-      }
       pm.deletePersistent(mAuthzPathsMapping);
     } else {
       LOGGER.error("nonexistent authzObj: {} on current paths snapshot ID #{}",

@@ -274,7 +274,10 @@
          <column name="CREATE_TIME_MS" jdbc-type="BIGINT"/>
        </field>
        <field name = "paths">
-         <collection element-type="org.apache.sentry.provider.db.service.model.MPath"/>
+         <!-- Setting attribute dependent-element to true enables JDO cascading operations. in this case we need it to
+         cascade delete.
+         -->
+         <collection element-type="org.apache.sentry.provider.db.service.model.MPath" dependent-element="true"/>
            <element>
              <column name="AUTHZ_OBJ_ID"/>
            </element>

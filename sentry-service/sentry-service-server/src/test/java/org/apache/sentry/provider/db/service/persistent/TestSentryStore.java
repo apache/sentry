@@ -67,6 +67,7 @@ import org.apache.sentry.provider.db.service.model.MSentryPermChange;
 import org.apache.sentry.provider.db.service.model.MSentryPathChange;
 import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
+import org.apache.sentry.provider.db.service.model.MPath;
 import org.apache.sentry.api.service.thrift.TSentryActiveRoleSet;
 import org.apache.sentry.api.service.thrift.TSentryAuthorizable;
 import org.apache.sentry.api.service.thrift.TSentryGrantOption;
@@ -2646,6 +2647,7 @@ public class TestSentryStore extends org.junit.Assert {
     assertEquals(1, nodeMap.size());//Tree size
     assertEquals(0, pathImage.size());
     assertEquals(0, sentryStore.getMPaths().size());
+    assertEquals(0, sentryStore.getCount(MPath.class).intValue());
 
     // Query the persisted path change and ensure it equals to the original one
     lastChangeID = sentryStore.getLastProcessedPathChangeID();
@@ -2655,6 +2657,41 @@ public class TestSentryStore extends org.junit.Assert {
     lastNotificationId = sentryStore.getLastProcessedNotificationID();
     assertEquals(3, lastNotificationId.longValue());
 
+  }
+
+  @Test
+  public void testDeleteAuthzPathsMapping() throws Exception {
+
+    long notificationID = 0;
+
+    // Persist an empty image so that we can add paths to it.
+    sentryStore.persistFullPathsImage(new HashMap<String, Collection<String>>(), notificationID);
+
+    // Add a mapping to two paths
+    sentryStore.addAuthzPathsMapping("db1.table",
+            Sets.newHashSet("db1/tbl1", "db1/tbl2"), null);
+
+    // Verify the Path count
+    assertEquals(2, sentryStore.getCount(MPath.class).intValue());
+
+    // Add a mapping to three paths
+    sentryStore.addAuthzPathsMapping("db2.table",
+            Sets.newHashSet("db2/tbl1", "db2/tbl2", "db2/tbl3"), null);
+
+
+    // Verify the Path count
+    assertEquals(5, sentryStore.getCount(MPath.class).intValue());
+
+    // deleting the mapping and verifying the MPath count
+    sentryStore.deleteAllAuthzPathsMapping("db1.table", null);
+   // Verify the Path count
+    assertEquals(3, sentryStore.getCount(MPath.class).intValue());
+
+
+    // deleting the mapping and verifying the MPath count
+    sentryStore.deleteAllAuthzPathsMapping("db2.table", null);
+    // Verify the Path count
+    assertEquals(0, sentryStore.getCount(MPath.class).intValue());
   }
 
   @Test
