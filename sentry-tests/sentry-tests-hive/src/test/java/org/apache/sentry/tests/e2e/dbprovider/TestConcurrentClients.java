@@ -47,9 +47,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.lang.RandomStringUtils;
-
 /**
+ *
  * The test class implements concurrency tests to test:
  * Sentry client, HS2 jdbc client etc.
  */
@@ -99,18 +98,13 @@ public class TestConcurrentClients extends AbstractTestWithStaticConfiguration {
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
  }
 
-  static String randomString( int len ){
-    return RandomStringUtils.random(len, true, false).toLowerCase();
-  }
-
   private void execStmt(Statement stmt, String sql) throws Exception {
     LOGGER.info("Running [" + sql + "]");
     stmt.execute(sql);
   }
 
-  private void createDbTb(String user, String db, String tb) throws Exception{
-    Connection connection = context.createConnection(user);
-    Statement statement = context.createStatement(connection);
+  private void createDbTb(Connection conn, String db, String tb) throws Exception{
+    Statement statement = context.createStatement(conn);
     try {
       execStmt(statement, "DROP DATABASE IF EXISTS " + db + " CASCADE");
       execStmt(statement, "CREATE DATABASE " + db);
@@ -123,20 +117,18 @@ public class TestConcurrentClients extends AbstractTestWithStaticConfiguration {
       LOGGER.error("caught exception: " + ex);
     } finally {
       statement.close();
-      connection.close();
     }
   }
 
-  private void createPartition(String user, String db, String tb) throws Exception{
-    Connection connection = context.createConnection(user);
-    Statement statement = context.createStatement(connection);
+  private void createPartition(Connection conn, String db, String tb) throws Exception{
+    Statement statement = context.createStatement(conn);
     try {
       execStmt(statement, "USE " + db);
       for (int j = 0; j < NUM_OF_TABLES; j++) {
         String tbName = tb + "_" + Integer.toString(j);
         for (int i = 0; i < NUM_OF_PAR; i++) {
-          String randStr = randomString(4);
-          String sql = "ALTER TABLE " + tbName + " ADD IF NOT EXISTS PARTITION (b = '" + randStr + "') ";
+          String partName = db + "_" + tb + "_p" + i;
+          String sql = "ALTER TABLE " + tbName + " ADD IF NOT EXISTS PARTITION (b = '" + partName + "') ";
           LOGGER.info("[" + i + "] " + sql);
           execStmt(statement, sql);
         }
@@ -145,13 +137,11 @@ public class TestConcurrentClients extends AbstractTestWithStaticConfiguration {
       LOGGER.error("caught exception: " + ex);
     } finally {
       statement.close();
-      connection.close();
     }
   }
 
-  private void adminCreateRole(String roleName) throws Exception {
-    Connection connection = context.createConnection(ADMIN1);
-    Statement stmt = context.createStatement(connection);
+  private void adminCreateRole(Connection conn, String roleName) throws Exception {
+    Statement stmt = context.createStatement(conn);
     try {
       execStmt(stmt, "DROP ROLE " + roleName);
     } catch (Exception ex) {
@@ -163,14 +153,12 @@ public class TestConcurrentClients extends AbstractTestWithStaticConfiguration {
         LOGGER.error("caught exception when create new role: " + ex);
       } finally {
         stmt.close();
-        connection.close();
       }
     }
   }
 
-  private void adminCleanUp(String db, String roleName) throws Exception {
-    Connection connection = context.createConnection(ADMIN1);
-    Statement stmt = context.createStatement(connection);
+  private void adminCleanUp(Connection conn, String db, String roleName) throws Exception {
+    Statement stmt = context.createStatement(conn);
     try {
       execStmt(stmt, "DROP DATABASE IF EXISTS " + db + " CASCADE");
       execStmt(stmt, "DROP ROLE " + roleName);
@@ -178,13 +166,11 @@ public class TestConcurrentClients extends AbstractTestWithStaticConfiguration {
       LOGGER.warn("Failed to clean up ", ex);
     } finally {
       stmt.close();
-      connection.close();
     }
   }
 
-  private void adminShowRole(String roleName) throws Exception {
-    Connection connection = context.createConnection(ADMIN1);
-    Statement stmt = context.createStatement(connection);
+  private void adminShowRole(Connection conn, String roleName) throws Exception {
+    Statement stmt = context.createStatement(conn);
     boolean found = false;
     try {
       ResultSet rs = stmt.executeQuery("SHOW ROLES ");
@@ -198,15 +184,13 @@ public class TestConcurrentClients extends AbstractTestWithStaticConfiguration {
       LOGGER.error("caught exception when show roles: " + ex);
     } finally {
       stmt.close();
-      connection.close();
     }
     assertTrue("failed to detect " + roleName, found);
   }
 
-  private void adminGrant(String test_db, String test_tb,
+  private void adminGrant(Connection conn, String test_db, String test_tb,
                           String roleName, String group) throws Exception {
-    Connection connection = context.createConnection(ADMIN1);
-    Statement stmt = context.createStatement(connection);
+    Statement stmt = context.createStatement(conn);
     try {
       execStmt(stmt, "USE " + test_db);
       for (int i = 0; i < NUM_OF_TABLES; i++) {
@@ -218,7 +202,6 @@ public class TestConcurrentClients extends AbstractTestWithStaticConfiguration {
       LOGGER.error("caught exception when grant permission and role: " + ex);
     } finally {
       stmt.close();
-      connection.close();
     }
   }
 
@@ -258,6 +241,8 @@ public class TestConcurrentClients extends AbstractTestWithStaticConfiguration {
     final TestRuntimeState state = new TestRuntimeState();
 
     for (int i = 0; i < NUM_OF_TASKS; i ++) {
+      final String taskId = "task" + i;
+
       executor.execute(new Runnable() {
         @Override
         public void run() {
@@ -265,21 +250,22 @@ public class TestConcurrentClients extends AbstractTestWithStaticConfiguration {
           if (state.failed) {
             return;
           }
-          try {
+          try (Connection adminConn = context.createConnection(ADMIN1);
+               Connection user1Conn = context.createConnection(USER1_1);) {
             Long startTime = System.currentTimeMillis();
             Long elapsedTime = 0L;
             while (Long.compare(elapsedTime, HS2_CLIENT_TEST_DURATION_MS) <= 0) {
-              String randStr = randomString(5);
-              String test_role = "test_role_" + randStr;
-              String test_db = "test_db_" + randStr;
-              String test_tb = "test_tb_" + randStr;
+              String test_role = "test_role_" + taskId;
+              String test_db = "test_db_" + taskId;
+              String test_tb = "test_tb_" + taskId;
               LOGGER.info("Start to test sentry with hs2 client with role " + test_role);
-              adminCreateRole(test_role);
-              adminShowRole(test_role);
-              createDbTb(ADMIN1, test_db, test_tb);
-              adminGrant(test_db, test_tb, test_role, USERGROUP1);
-              createPartition(USER1_1, test_db, test_tb);
-              adminCleanUp(test_db, test_role);
+
+              adminCreateRole(adminConn, test_role);
+              adminShowRole(adminConn, test_role);
+              createDbTb(adminConn, test_db, test_tb);
+              adminGrant(adminConn, test_db, test_tb, test_role, USERGROUP1);
+              createPartition(user1Conn, test_db, test_tb);
+              adminCleanUp(adminConn, test_db, test_role);
               elapsedTime = System.currentTimeMillis() - startTime;
               LOGGER.info("elapsedTime = " + elapsedTime);
             }
@@ -318,6 +304,8 @@ public class TestConcurrentClients extends AbstractTestWithStaticConfiguration {
         scratchLikeDir : (fileSystem.getUri().toString() + scratchLikeDir);
     LOGGER.info("uriPrefix = " + uriPrefix);
     for (int i = 0; i < NUM_OF_TASKS; i ++) {
+      final String taskId = "task" + i;
+
       LOGGER.info("Start to test sentry client with task id [" + i + "]");
       executor.execute(new Runnable() {
         @Override
@@ -327,9 +315,8 @@ public class TestConcurrentClients extends AbstractTestWithStaticConfiguration {
             return;
           }
           try {
-            String randStr = randomString(5);
-            String test_role = "test_role_" + randStr;
-            String test_uri = uriPrefix + randStr;
+            String test_role = "test_role_" + taskId;
+            String test_uri = uriPrefix + taskId;
 
             LOGGER.info("Start to test role: " + test_role);
             Long startTime = System.currentTimeMillis();
