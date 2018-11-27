@@ -1,4 +1,4 @@
-What is Sentry?
+## What is Sentry?
 
 Apache Sentry is a highly modular system for providing fine grained role based authorization to both data and metadata stored on an Apache Hadoop cluster.
 
@@ -14,7 +14,7 @@ Wiki
 
 *  https://cwiki.apache.org/confluence/display/SENTRY/Home
 
-Building Sentry
+## Building Sentry
 
 Building Sentry requires the following tools:
 
