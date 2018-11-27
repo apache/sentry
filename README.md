@@ -23,14 +23,20 @@ Building Sentry requires the following tools:
 
 To compile Sentry, run:
 
+```
 mvn install -DskipTests
+```
 
 To run Sentry tests, run:
 
+```
 mvn test
+```
 
 To build a distribution, run:
 
+```
 mvn install
+```
 
 The final Sentry distribution artifacts will be in $project/sentry-dist/target/.
