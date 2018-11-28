@@ -134,7 +134,14 @@ public final class UpdatableCache implements TableCache, AutoCloseable {
 
   void startUpdateThread(boolean blockUntilFirstReload) throws Exception {
     if (blockUntilFirstReload) {
-      reloadData();
+      try {
+        reloadData();
+      } catch (Exception e) {
+        String logMessage = "Unable to load cache on first reload for component[" +
+            this.componentType + "] serviceName[" + this.serviceName + "]. "
+            + "Cache will load with thread in [" + TimeUnit.NANOSECONDS.toSeconds(this.cacheTtlNs) + "]sec";
+        LOGGER.warn(logMessage, e);
+      }
     }
 
     if (initialized) {
