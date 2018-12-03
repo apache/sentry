@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.misc.Signal;
@@ -64,6 +65,11 @@ public final class SigUtils {
     public void addListener(SigListener sigListener){
       listeners.add(sigListener);
     }
+
+    public void removeListener(SigListener sigListener){
+      listeners.remove(sigListener);
+    }
+
     @Override
     public void handle(Signal sig) {
       if (sig != null) {
@@ -96,11 +102,11 @@ public final class SigUtils {
    * @throws IllegalArgumentException if invalid signal name or a signal is already handled by OS or JVM
    */
   public static void registerSigListener(String sigName, SigListener sigListener) {
+    if (StringUtils.isEmpty(sigName)) {
+      throw new IllegalArgumentException("NULL signal name");
+    }
     if (sigListener == null) {
       throw new IllegalArgumentException("NULL signal listener");
-    }
-    if (sigName == null) {
-      throw new IllegalArgumentException("NULL signal name");
     }
     if (!sigHandlerMap.containsKey(sigName)){
       sigHandlerMap.put(sigName, new SigHandler());
@@ -109,5 +115,17 @@ public final class SigUtils {
     sigHandler.addListener(sigListener);
     Signal.handle(new Signal(sigName), sigHandler);
     LOGGER.info("Signal Listener registered for signal " + sigName);
+  }
+
+  public static void unregisterSigListener(String sigName, SigListener sigListener){
+    if (StringUtils.isEmpty(sigName)) {
+      throw new IllegalArgumentException("NULL signal name");
+    }
+    if (sigListener == null) {
+      throw new IllegalArgumentException("NULL signal listener");
+    }
+    if (!sigHandlerMap.containsKey(sigName)){
+      sigHandlerMap.get(sigName).removeListener(sigListener);
+    }
   }
 }
