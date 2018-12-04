@@ -25,9 +25,6 @@ import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.security.PrivilegedExceptionAction;
-import java.util.ArrayList;
-import java.util.EventListener;
-import java.util.List;
 import java.util.concurrent.*;
 
 import javax.security.auth.Subject;
@@ -52,10 +49,8 @@ import org.apache.sentry.core.common.utils.SigUtils;
 import org.apache.sentry.provider.db.service.persistent.HMSFollower;
 import org.apache.sentry.provider.db.service.persistent.LeaderStatusMonitor;
 import org.apache.sentry.provider.db.service.persistent.SentryStoreInterface;
-import org.apache.sentry.api.service.thrift.SentryHealthCheckServletContextListener;
 import org.apache.sentry.api.service.thrift.SentryMetrics;
-import org.apache.sentry.api.service.thrift.SentryMetricsServletContextListener;
-import org.apache.sentry.api.service.thrift.SentryWebServer;
+import org.apache.sentry.service.web.SentryWebServer;
 import org.apache.sentry.service.common.ServiceConstants;
 import org.apache.sentry.service.common.ServiceConstants.ConfUtilties;
 import org.apache.sentry.service.common.ServiceConstants.ServerConfig;
@@ -106,7 +101,6 @@ public class SentryService implements Callable, SigUtils.SigListener {
   private Future serviceStatus;
   private TServer thriftServer;
   private Status status;
-  private final int webServerPort;
   private SentryWebServer sentryWebServer;
   private final long maxMessageSize;
   /*
@@ -168,7 +162,6 @@ public class SentryService implements Callable, SigUtils.SigListener {
     this.sentryStore = getSentryStore(conf);
     sentryStore.setPersistUpdateDeltas(SentryServiceUtil.isHDFSSyncEnabled(conf));
     this.leaderMonitor = LeaderStatusMonitor.getLeaderStatusMonitor(conf);
-    webServerPort = conf.getInt(ServerConfig.SENTRY_WEB_PORT, ServerConfig.SENTRY_WEB_PORT_DEFAULT);
 
     status = Status.NOT_STARTED;
 
@@ -445,13 +438,9 @@ public class SentryService implements Callable, SigUtils.SigListener {
   }
 
   private void startSentryWebServer() throws Exception{
-    Boolean sentryReportingEnable = conf.getBoolean(ServerConfig.SENTRY_WEB_ENABLE,
-        ServerConfig.SENTRY_WEB_ENABLE_DEFAULT);
-    if(sentryReportingEnable) {
-      List<EventListener> listenerList = new ArrayList<>();
-      listenerList.add(new SentryHealthCheckServletContextListener());
-      listenerList.add(new SentryMetricsServletContextListener());
-      sentryWebServer = new SentryWebServer(listenerList, webServerPort, conf);
+    if(conf.getBoolean(ServerConfig.SENTRY_WEB_ENABLE,
+        ServerConfig.SENTRY_WEB_ENABLE_DEFAULT)) {
+      sentryWebServer = new SentryWebServer(conf);
       sentryWebServer.start();
     }
   }

@@ -22,6 +22,7 @@ import java.net.URL;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
+import org.apache.sentry.service.web.ConfServlet;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;

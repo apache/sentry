@@ -46,6 +46,7 @@
         <exclude>org.apache.derby:derby</exclude>
         <!-- SENTRY-2283 multiple versions of metrics cause failures on startup -->
         <exclude>io.dropwizard.metrics:*</exclude>
+        <exclude>org.mortbay.jetty:*</exclude>
         <!-- exclude the original jars, we'll add them in later with the shaded versions. -->
         <exclude>org.apache.sentry:sentry-service-server</exclude>
         <exclude>org.apache.sentry:sentry-hdfs-service</exclude>

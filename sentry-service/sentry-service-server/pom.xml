@@ -76,6 +76,11 @@ limitations under the License.
         </dependency>
         <dependency>
             <groupId>org.apache.sentry</groupId>
+            <artifactId>sentry-service-web</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.sentry</groupId>
             <artifactId>sentry-core-common</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -222,38 +227,11 @@ limitations under the License.
                     <include>package.jdo</include>
                 </includes>
             </resource>
-            <resource>
-                <directory>${basedir}/src/main</directory>
-                <includes>
-                    <include>webapp/*</include>
-                    <include>webapp/css/*</include>
-                </includes>
-            </resource>
+          <resource>
+            <directory>${basedir}/src/main/resources</directory>
+          </resource>
         </resources>
         <plugins>
-            <plugin>
-                <groupId>com.google.code.maven-replacer-plugin</groupId>
-                <artifactId>replacer</artifactId>
-                <version>1.5.2</version>
-                <executions>
-                    <execution>
-                        <id>replaceTokens</id>
-                        <phase>clean</phase>
-                        <goals>
-                            <goal>replace</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <file>${basedir}/src/main/webapp/SentryService.html</file>
-                    <replacements>
-                        <replacement>
-                            <token>%PROJECT_VERSION%</token>
-                            <value>${project.version}</value>
-                        </replacement>
-                    </replacements>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>org.datanucleus</groupId>
                 <artifactId>datanucleus-maven-plugin</artifactId>

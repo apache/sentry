@@ -1192,6 +1192,9 @@ limitations under the License.
                   <exclude>**/THIRD-PARTY.properties</exclude>
                   <exclude>**/THIRD-PARTY.ftl</exclude>
                   <exclude>**/resources/licences/*</exclude>
+                  <exclude>**/*.svg</exclude>
+                  <exclude>**/*.woff</exclude>
+                  <exclude>**/*.woff2</exclude>
                   <!-- Lombok Config File -->
                   <exclude>lombok.config</exclude>
                 </excludes>
