@@ -18,28 +18,31 @@
 
 package org.apache.sentry.binding.hive;
 
-import java.io.File;
+import java.io.BufferedWriter;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.sentry.core.common.exception.SentryConfigurationException;
 import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.common.utils.PolicyFileConstants;
 import org.apache.sentry.core.common.utils.PolicyFiles;
+import org.apache.sentry.service.common.ServiceConstants;
 import org.apache.shiro.config.Ini;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.io.Files;
 
 /**
  * SentryIniPolicyFileFormatter is to parse file and write data to file for sentry mapping data with
@@ -58,8 +61,8 @@ public class SentryIniPolicyFileFormatter implements SentryPolicyFileFormatter {
   /**
    * Write the sentry mapping data to ini file.
    *
-   * @param resourcePath
-   *        The path of the output file
+   * @param resourcePath The path of the output file
+   * @param conf sentry configuration
    * @param sentryMappingData
    *        The map for sentry mapping data, eg:
    *        for the following mapping data:
@@ -82,11 +85,19 @@ public class SentryIniPolicyFileFormatter implements SentryPolicyFileFormatter {
    *        }
    */
   @Override
-  public void write(String resourcePath, Map<String, Map<String, Set<String>>> sentryMappingData)
+  public void write(String resourcePath, Configuration conf, Map<String, Map<String, Set<String>>> sentryMappingData)
       throws Exception {
-    File destFile = new File(resourcePath);
-    if (destFile.exists() && !destFile.delete()) {
-      throw new IllegalStateException("Unable to delete " + destFile);
+    Path path = new Path(resourcePath);
+    if (Strings.isNullOrEmpty(path.toUri().getScheme())) {
+      // Path provided did not have any URI scheme. Update the scheme based on configuration.
+      String defaultFs = conf.get(ServiceConstants.ClientConfig.SENTRY_EXPORT_IMPORT_DEFAULT_FS,
+              ServiceConstants.ClientConfig.SENTRY_EXPORT_IMPORT_DEFAULT_FS_DEFAULT);
+       path = new Path(defaultFs + resourcePath);
+    }
+
+    FileSystem fileSystem = path.getFileSystem(conf);
+    if (fileSystem.exists(path)) {
+      fileSystem.delete(path,true);
     }
     String contents = Joiner
         .on(NL)
@@ -98,8 +109,19 @@ public class SentryIniPolicyFileFormatter implements SentryPolicyFileFormatter {
         generateSection(PolicyFileConstants.ROLES,
                 sentryMappingData.get(PolicyFileConstants.ROLES)),
             "");
-    LOGGER.info("Writing policy file to " + destFile + ":\n" + contents);
-    Files.write(contents, destFile, Charsets.UTF_8);
+    LOGGER.info("Writing policy information to file located at" + path);
+    OutputStream os = fileSystem.create(path);
+    BufferedWriter br = new BufferedWriter( new OutputStreamWriter( os, "UTF-8" ) );
+    try {
+      br.write(contents);
+    }
+    catch (Exception exception) {
+      LOGGER.error("Failed to export policy information to file, located at " + path);
+    }
+    finally {
+      br.close();
+      fileSystem.close();
+    }
   }
 
   /**
@@ -156,7 +178,7 @@ public class SentryIniPolicyFileFormatter implements SentryPolicyFileFormatter {
 
   // generate the ini section according to the mapping data.
   private String generateSection(String name, Map<String, Set<String>> mappingData) {
-    if (mappingData.isEmpty()) {
+    if (mappingData == null || mappingData.isEmpty()) {
       return "";
     }
     List<String> lines = Lists.newArrayList();

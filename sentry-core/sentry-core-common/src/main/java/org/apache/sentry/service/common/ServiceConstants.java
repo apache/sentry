@@ -266,6 +266,11 @@ public class ServiceConstants {
     public static final int SENTRY_DB_VALUE_GENERATION_ALLOCATION_SIZE_DEFAULT = 100;
   }
 
+  public static class ClientConfig {
+    public static final String SENTRY_EXPORT_IMPORT_DEFAULT_FS = "sentry.export.import.default.fs";
+    public static final String SENTRY_EXPORT_IMPORT_DEFAULT_FS_DEFAULT = "file:///";
+  }
+
   public static final String SENTRY_ZK_JAAS_NAME = "Sentry";
   public static final String CURRENT_INCARNATION_ID_KEY = "current.incarnation.key";
 

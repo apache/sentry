@@ -51,6 +51,9 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 
+/**
+ * This test verifies that the sentry store APIs for export/import are working as expected.
+ */
 public class TestSentryStoreImportExport {
 
   private static File dataDir;

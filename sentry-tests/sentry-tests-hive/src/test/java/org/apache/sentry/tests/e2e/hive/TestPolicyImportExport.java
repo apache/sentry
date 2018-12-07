@@ -26,11 +26,14 @@ import java.lang.reflect.UndeclaredThrowableException;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.hadoop.fs.Path;
 import org.apache.sentry.binding.hive.SentryPolicyFileFormatFactory;
 import org.apache.sentry.binding.hive.SentryPolicyFileFormatter;
 import org.apache.sentry.binding.hive.authz.SentryConfigTool;
 import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.common.utils.PolicyFileConstants;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -39,6 +42,9 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Resources;
 
+/**
+ * Performs e2e tests on export/import of sentry permissions.
+ */
 public class TestPolicyImportExport extends AbstractTestWithStaticConfiguration {
 
   // resources/testPolicyImport.ini is used for the import test and all the following
@@ -52,8 +58,13 @@ public class TestPolicyImportExport extends AbstractTestWithStaticConfiguration 
   public static String PRIVILIEGE6 = "server=server1->db=db1->table=tbl3->column=col1->action=*->grantoption=true";
   public static String PRIVILIEGE7 = "server=server1->db=db1->table=tbl4->column=col1->action=all->grantoption=true";
   public static String PRIVILIEGE8 = "server=server1->uri=hdfs://testserver:9999/path2->action=insert";
+  private static final String IMPORT_FILE = "testImportPolicy.ini";
+  private static final String EXPORT_FILE = "testExportPolicy.ini";
+
 
   private SentryConfigTool configTool;
+  private static Path root;
+  private static Path etc;
 
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception{
@@ -62,6 +73,17 @@ public class TestPolicyImportExport extends AbstractTestWithStaticConfiguration 
     String requestorUserName = System.getProperty("user.name", "");
     StaticUserGroup.getStaticMapping().put(requestorUserName, ADMINGROUP);
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
+    root = new Path(fileSystem.getUri().toString());
+    etc = new Path(root, "/etc");
+    fileSystem.mkdirs(etc);
+  }
+
+  @AfterClass
+  public static void teardown() throws Exception{
+    if(baseDir != null) {
+      FileUtils.deleteQuietly(baseDir);
+    }
+    tearDownTestStaticConfiguration();
   }
 
   @Before
@@ -134,6 +156,7 @@ public class TestPolicyImportExport extends AbstractTestWithStaticConfiguration 
     return policyFileMappingData;
   }
 
+
   @Test
   public void testImportExportPolicy() throws Exception {
     String importFileName = "testPolicyImport.ini";
@@ -161,9 +184,47 @@ public class TestPolicyImportExport extends AbstractTestWithStaticConfiguration 
     // test export with objectPath db=db1
     configTool.setObjectPath("db=db1");
     configTool.exportPolicy();
+
     policyFileMappingData = getExceptedDb1ExportData();
     exportMappingData = sentryPolicyFileFormatter.parse(
         exportFile.getAbsolutePath(), configTool.getAuthzConf());
+    validateSentryMappingData(exportMappingData, policyFileMappingData);
+  }
+
+  @Test
+  public void testImportExportFromHDFS() throws Exception {
+
+    Path importPath = new Path(etc, IMPORT_FILE);
+    Path exportPath = new Path(etc, EXPORT_FILE);
+
+    Map<String, Map<String, Set<String>>> policyFileMappingData =
+            getExceptedAllExportData();
+
+    //Populate sentry permissions using sentryPolicyFileFormatter
+    SentryPolicyFileFormatter sentryPolicyFileFormatter = SentryPolicyFileFormatFactory
+            .createFileFormatter(configTool.getAuthzConf());
+    sentryPolicyFileFormatter.write(importPath.toUri().toString(), configTool.getAuthzConf(), policyFileMappingData);
+
+    // Import the permission information from sentry server to a HDFS file
+    configTool.setImportPolicyFilePath(importPath.toUri().toString());
+    configTool.importPolicy();
+
+    // Export the permission information to a HDFS file
+    configTool.setExportPolicyFilePath(exportPath.toUri().toString());
+    configTool.exportPolicy();
+
+    // Verify the exported data matches with the data that was imported.
+    Map<String, Map<String, Set<String>>> exportMappingData = sentryPolicyFileFormatter.parse(
+            exportPath.toUri().toString(), configTool.getAuthzConf());
+    validateSentryMappingData(exportMappingData, policyFileMappingData);
+
+    // test export with objectPath db=db1
+    configTool.setObjectPath("db=db1");
+    configTool.exportPolicy();
+
+    policyFileMappingData = getExceptedDb1ExportData();
+    exportMappingData = sentryPolicyFileFormatter.parse(
+            exportPath.toUri().toString(), configTool.getAuthzConf());
     validateSentryMappingData(exportMappingData, policyFileMappingData);
   }
 

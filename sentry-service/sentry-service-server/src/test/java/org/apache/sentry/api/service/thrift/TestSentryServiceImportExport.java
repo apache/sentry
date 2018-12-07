@@ -35,6 +35,11 @@ import org.junit.Test;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+/**
+ * Test makes sure that sentry client is gathering all the permission information from sentry server
+ * while export and makes sure that sentry client is retrieving the permission information from sentry server
+ * as requested.
+ */
 public class TestSentryServiceImportExport extends SentryServiceIntegrationBase {
 
   // define the privileges

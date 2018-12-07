@@ -309,7 +309,7 @@ public class SentryConfigTool {
       SentryPolicyFileFormatter sentryPolicyFileFormatter = SentryPolicyFileFormatFactory
               .createFileFormatter(authzConf);
       // write the sentry mapping data to exportPolicyFilePath with the data in map structure
-      sentryPolicyFileFormatter.write(exportPolicyFilePath, policyFileMappingData);
+      sentryPolicyFileFormatter.write(exportPolicyFilePath, authzConf, policyFileMappingData);
     }
   }
 
