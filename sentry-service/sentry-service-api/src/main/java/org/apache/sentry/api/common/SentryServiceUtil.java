@@ -23,10 +23,8 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -45,6 +43,7 @@ import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.sentry.core.common.exception.SentryGrantDeniedException;
 import org.apache.sentry.core.common.exception.SentryInvalidInputException;
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.common.utils.KeyValue;
 import org.apache.sentry.core.common.utils.PolicyFileConstants;
@@ -56,9 +55,12 @@ import org.apache.sentry.api.service.thrift.TSentryPrivilege;
 import com.google.common.collect.Lists;
 import org.apache.sentry.service.common.ServiceConstants;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class SentryServiceUtil {
 
+  private static final Logger LOGGER = LoggerFactory
+          .getLogger(SentryServiceUtil.class);
   private static boolean firstCallHDFSSyncEnabled = true;
   private static boolean hdfsSyncEnabled = false;
 
@@ -92,28 +94,54 @@ public final class SentryServiceUtil {
     return tSentryPrivilege;
   }
 
-  /**
-   * Parse the object path from string to map.
-   * @param objectPath the string format as db=db1->table=tbl1
-   * @return Map
+    /**
+   * Parse the objects and returns a locations of thrift objects.
+   * @param objects the string format as db=db1->table=tbl1,db=db2->table=tbl2
+   * @return Collection of Authorizables
+   * @throws Exception if there was a error while parsing the inputs.
    */
-  public static Map<String, String> parseObjectPath(String objectPath) {
-    Map<String, String> objectMap = new HashMap<String, String>();
-    if (StringUtils.isEmpty(objectPath)) {
-      return objectMap;
+  public static Set<TSentryAuthorizable> parseAuthorizables(String objects) throws SentryUserException {
+    if (StringUtils.isEmpty(objects)) {
+      return Collections.emptySet();
     }
-    for (String kvStr : SentryConstants.AUTHORIZABLE_SPLITTER.split(objectPath)) {
-      KeyValue kv = new KeyValue(kvStr);
-      String key = kv.getKey();
-      String value = kv.getValue();
-
-      if (PolicyFileConstants.PRIVILEGE_DATABASE_NAME.equalsIgnoreCase(key)) {
-        objectMap.put(PolicyFileConstants.PRIVILEGE_DATABASE_NAME, value);
-      } else if (PolicyFileConstants.PRIVILEGE_TABLE_NAME.equalsIgnoreCase(key)) {
-        objectMap.put(PolicyFileConstants.PRIVILEGE_TABLE_NAME, value);
+    Set<TSentryAuthorizable> authorizables = new HashSet<>();
+    for (String object : objects.split(SentryConstants.COMMA_SEPARATOR)) {
+      Set<String> ketSet = new HashSet<>();
+      String objectTrimmed = object.trim();
+      if (objectTrimmed.isEmpty()) {
+        continue;
       }
+      TSentryAuthorizable authorizable = new TSentryAuthorizable("");
+      ketSet.clear();
+      for (String kvStr : SentryConstants.AUTHORIZABLE_SPLITTER.split(objectTrimmed)) {
+        KeyValue kv;
+        String key;
+        String value;
+        try {
+          kv = new KeyValue(kvStr);
+          key = kv.getKey();
+          value = kv.getValue();
+        } catch (Exception exception) {
+          throw new SentryUserException("Wrongly formatted authorizable " + objectTrimmed);
+        }
+        if(!ketSet.add(key)) {
+          // There should not be any duplicate keys
+          throw new SentryUserException("Wrongly formatted authorizable " + objectTrimmed);
+        }
+        if (PolicyFileConstants.PRIVILEGE_DATABASE_NAME.equalsIgnoreCase(key)) {
+          authorizable.setDb(value);
+        } else if (PolicyFileConstants.PRIVILEGE_TABLE_NAME.equalsIgnoreCase(key)) {
+          authorizable.setTable(value);
+        } else if (PolicyFileConstants.PRIVILEGE_URI_NAME.equalsIgnoreCase(key)) {
+          authorizable.setUri(value);
+        } else {
+          LOGGER.error("Wrongly formatted authorizable " + objectTrimmed );
+          throw new SentryUserException("Wrongly formatted authorizable " + objectTrimmed);
+        }
+      }
+      authorizables.add(authorizable);
     }
-    return objectMap;
+    return authorizables;
   }
 
   // for the different hierarchy for hive:

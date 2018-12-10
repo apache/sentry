@@ -22,6 +22,7 @@ import com.google.common.base.Splitter;
 public class SentryConstants {
 
   public static final String ROLE_SEPARATOR = ",";
+  public static final String COMMA_SEPARATOR = ",";
   public static final String AUTHORIZABLE_SEPARATOR = "->";
   public static final String KV_SEPARATOR = "=";
 

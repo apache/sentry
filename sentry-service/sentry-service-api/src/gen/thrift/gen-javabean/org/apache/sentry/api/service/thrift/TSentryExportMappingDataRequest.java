@@ -40,7 +40,7 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
 
   private static final org.apache.thrift.protocol.TField PROTOCOL_VERSION_FIELD_DESC = new org.apache.thrift.protocol.TField("protocol_version", org.apache.thrift.protocol.TType.I32, (short)1);
   private static final org.apache.thrift.protocol.TField REQUESTOR_USER_NAME_FIELD_DESC = new org.apache.thrift.protocol.TField("requestorUserName", org.apache.thrift.protocol.TType.STRING, (short)2);
-  private static final org.apache.thrift.protocol.TField OBJECT_PATH_FIELD_DESC = new org.apache.thrift.protocol.TField("objectPath", org.apache.thrift.protocol.TType.STRING, (short)3);
+  private static final org.apache.thrift.protocol.TField AUTHORIZABLES_FIELD_DESC = new org.apache.thrift.protocol.TField("authorizables", org.apache.thrift.protocol.TType.SET, (short)3);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -50,13 +50,13 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
 
   private int protocol_version; // required
   private String requestorUserName; // required
-  private String objectPath; // optional
+  private Set<TSentryAuthorizable> authorizables; // optional
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
     PROTOCOL_VERSION((short)1, "protocol_version"),
     REQUESTOR_USER_NAME((short)2, "requestorUserName"),
-    OBJECT_PATH((short)3, "objectPath");
+    AUTHORIZABLES((short)3, "authorizables");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -75,8 +75,8 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
           return PROTOCOL_VERSION;
         case 2: // REQUESTOR_USER_NAME
           return REQUESTOR_USER_NAME;
-        case 3: // OBJECT_PATH
-          return OBJECT_PATH;
+        case 3: // AUTHORIZABLES
+          return AUTHORIZABLES;
         default:
           return null;
       }
@@ -119,7 +119,7 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
   // isset id assignments
   private static final int __PROTOCOL_VERSION_ISSET_ID = 0;
   private byte __isset_bitfield = 0;
-  private static final _Fields optionals[] = {_Fields.OBJECT_PATH};
+  private static final _Fields optionals[] = {_Fields.AUTHORIZABLES};
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
@@ -127,8 +127,9 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
     tmpMap.put(_Fields.REQUESTOR_USER_NAME, new org.apache.thrift.meta_data.FieldMetaData("requestorUserName", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
-    tmpMap.put(_Fields.OBJECT_PATH, new org.apache.thrift.meta_data.FieldMetaData("objectPath", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
-        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
+    tmpMap.put(_Fields.AUTHORIZABLES, new org.apache.thrift.meta_data.FieldMetaData("authorizables", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
+        new org.apache.thrift.meta_data.SetMetaData(org.apache.thrift.protocol.TType.SET, 
+            new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TSentryAuthorizable.class))));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TSentryExportMappingDataRequest.class, metaDataMap);
   }
@@ -157,8 +158,12 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
     if (other.isSetRequestorUserName()) {
       this.requestorUserName = other.requestorUserName;
     }
-    if (other.isSetObjectPath()) {
-      this.objectPath = other.objectPath;
+    if (other.isSetAuthorizables()) {
+      Set<TSentryAuthorizable> __this__authorizables = new HashSet<TSentryAuthorizable>(other.authorizables.size());
+      for (TSentryAuthorizable other_element : other.authorizables) {
+        __this__authorizables.add(new TSentryAuthorizable(other_element));
+      }
+      this.authorizables = __this__authorizables;
     }
   }
 
@@ -171,7 +176,7 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
     this.protocol_version = 1;
 
     this.requestorUserName = null;
-    this.objectPath = null;
+    this.authorizables = null;
   }
 
   public int getProtocol_version() {
@@ -219,26 +224,41 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
     }
   }
 
-  public String getObjectPath() {
-    return this.objectPath;
+  public int getAuthorizablesSize() {
+    return (this.authorizables == null) ? 0 : this.authorizables.size();
   }
 
-  public void setObjectPath(String objectPath) {
-    this.objectPath = objectPath;
+  public java.util.Iterator<TSentryAuthorizable> getAuthorizablesIterator() {
+    return (this.authorizables == null) ? null : this.authorizables.iterator();
   }
 
-  public void unsetObjectPath() {
-    this.objectPath = null;
+  public void addToAuthorizables(TSentryAuthorizable elem) {
+    if (this.authorizables == null) {
+      this.authorizables = new HashSet<TSentryAuthorizable>();
+    }
+    this.authorizables.add(elem);
   }
 
-  /** Returns true if field objectPath is set (has been assigned a value) and false otherwise */
-  public boolean isSetObjectPath() {
-    return this.objectPath != null;
+  public Set<TSentryAuthorizable> getAuthorizables() {
+    return this.authorizables;
   }
 
-  public void setObjectPathIsSet(boolean value) {
+  public void setAuthorizables(Set<TSentryAuthorizable> authorizables) {
+    this.authorizables = authorizables;
+  }
+
+  public void unsetAuthorizables() {
+    this.authorizables = null;
+  }
+
+  /** Returns true if field authorizables is set (has been assigned a value) and false otherwise */
+  public boolean isSetAuthorizables() {
+    return this.authorizables != null;
+  }
+
+  public void setAuthorizablesIsSet(boolean value) {
     if (!value) {
-      this.objectPath = null;
+      this.authorizables = null;
     }
   }
 
@@ -260,11 +280,11 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
       }
       break;
 
-    case OBJECT_PATH:
+    case AUTHORIZABLES:
       if (value == null) {
-        unsetObjectPath();
+        unsetAuthorizables();
       } else {
-        setObjectPath((String)value);
+        setAuthorizables((Set<TSentryAuthorizable>)value);
       }
       break;
 
@@ -279,8 +299,8 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
     case REQUESTOR_USER_NAME:
       return getRequestorUserName();
 
-    case OBJECT_PATH:
-      return getObjectPath();
+    case AUTHORIZABLES:
+      return getAuthorizables();
 
     }
     throw new IllegalStateException();
@@ -297,8 +317,8 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
       return isSetProtocol_version();
     case REQUESTOR_USER_NAME:
       return isSetRequestorUserName();
-    case OBJECT_PATH:
-      return isSetObjectPath();
+    case AUTHORIZABLES:
+      return isSetAuthorizables();
     }
     throw new IllegalStateException();
   }
@@ -334,12 +354,12 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
         return false;
     }
 
-    boolean this_present_objectPath = true && this.isSetObjectPath();
-    boolean that_present_objectPath = true && that.isSetObjectPath();
-    if (this_present_objectPath || that_present_objectPath) {
-      if (!(this_present_objectPath && that_present_objectPath))
+    boolean this_present_authorizables = true && this.isSetAuthorizables();
+    boolean that_present_authorizables = true && that.isSetAuthorizables();
+    if (this_present_authorizables || that_present_authorizables) {
+      if (!(this_present_authorizables && that_present_authorizables))
         return false;
-      if (!this.objectPath.equals(that.objectPath))
+      if (!this.authorizables.equals(that.authorizables))
         return false;
     }
 
@@ -360,10 +380,10 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
     if (present_requestorUserName)
       list.add(requestorUserName);
 
-    boolean present_objectPath = true && (isSetObjectPath());
-    list.add(present_objectPath);
-    if (present_objectPath)
-      list.add(objectPath);
+    boolean present_authorizables = true && (isSetAuthorizables());
+    list.add(present_authorizables);
+    if (present_authorizables)
+      list.add(authorizables);
 
     return list.hashCode();
   }
@@ -396,12 +416,12 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
         return lastComparison;
       }
     }
-    lastComparison = Boolean.valueOf(isSetObjectPath()).compareTo(other.isSetObjectPath());
+    lastComparison = Boolean.valueOf(isSetAuthorizables()).compareTo(other.isSetAuthorizables());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetObjectPath()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.objectPath, other.objectPath);
+    if (isSetAuthorizables()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.authorizables, other.authorizables);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -437,13 +457,13 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
       sb.append(this.requestorUserName);
     }
     first = false;
-    if (isSetObjectPath()) {
+    if (isSetAuthorizables()) {
       if (!first) sb.append(", ");
-      sb.append("objectPath:");
-      if (this.objectPath == null) {
+      sb.append("authorizables:");
+      if (this.authorizables == null) {
         sb.append("null");
       } else {
-        sb.append(this.objectPath);
+        sb.append(this.authorizables);
       }
       first = false;
     }
@@ -516,10 +536,21 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 3: // OBJECT_PATH
-            if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
-              struct.objectPath = iprot.readString();
-              struct.setObjectPathIsSet(true);
+          case 3: // AUTHORIZABLES
+            if (schemeField.type == org.apache.thrift.protocol.TType.SET) {
+              {
+                org.apache.thrift.protocol.TSet _set228 = iprot.readSetBegin();
+                struct.authorizables = new HashSet<TSentryAuthorizable>(2*_set228.size);
+                TSentryAuthorizable _elem229;
+                for (int _i230 = 0; _i230 < _set228.size; ++_i230)
+                {
+                  _elem229 = new TSentryAuthorizable();
+                  _elem229.read(iprot);
+                  struct.authorizables.add(_elem229);
+                }
+                iprot.readSetEnd();
+              }
+              struct.setAuthorizablesIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
@@ -545,10 +576,17 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
         oprot.writeString(struct.requestorUserName);
         oprot.writeFieldEnd();
       }
-      if (struct.objectPath != null) {
-        if (struct.isSetObjectPath()) {
-          oprot.writeFieldBegin(OBJECT_PATH_FIELD_DESC);
-          oprot.writeString(struct.objectPath);
+      if (struct.authorizables != null) {
+        if (struct.isSetAuthorizables()) {
+          oprot.writeFieldBegin(AUTHORIZABLES_FIELD_DESC);
+          {
+            oprot.writeSetBegin(new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, struct.authorizables.size()));
+            for (TSentryAuthorizable _iter231 : struct.authorizables)
+            {
+              _iter231.write(oprot);
+            }
+            oprot.writeSetEnd();
+          }
           oprot.writeFieldEnd();
         }
       }
@@ -572,12 +610,18 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
       oprot.writeI32(struct.protocol_version);
       oprot.writeString(struct.requestorUserName);
       BitSet optionals = new BitSet();
-      if (struct.isSetObjectPath()) {
+      if (struct.isSetAuthorizables()) {
         optionals.set(0);
       }
       oprot.writeBitSet(optionals, 1);
-      if (struct.isSetObjectPath()) {
-        oprot.writeString(struct.objectPath);
+      if (struct.isSetAuthorizables()) {
+        {
+          oprot.writeI32(struct.authorizables.size());
+          for (TSentryAuthorizable _iter232 : struct.authorizables)
+          {
+            _iter232.write(oprot);
+          }
+        }
       }
     }
 
@@ -590,8 +634,18 @@ public class TSentryExportMappingDataRequest implements org.apache.thrift.TBase<
       struct.setRequestorUserNameIsSet(true);
       BitSet incoming = iprot.readBitSet(1);
       if (incoming.get(0)) {
-        struct.objectPath = iprot.readString();
-        struct.setObjectPathIsSet(true);
+        {
+          org.apache.thrift.protocol.TSet _set233 = new org.apache.thrift.protocol.TSet(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+          struct.authorizables = new HashSet<TSentryAuthorizable>(2*_set233.size);
+          TSentryAuthorizable _elem234;
+          for (int _i235 = 0; _i235 < _set233.size; ++_i235)
+          {
+            _elem234 = new TSentryAuthorizable();
+            _elem234.read(iprot);
+            struct.authorizables.add(_elem234);
+          }
+        }
+        struct.setAuthorizablesIsSet(true);
       }
     }
   }

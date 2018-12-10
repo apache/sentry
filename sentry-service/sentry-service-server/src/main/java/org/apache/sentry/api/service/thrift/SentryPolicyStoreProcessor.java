@@ -43,7 +43,6 @@ import org.apache.sentry.core.common.exception.SentrySiteConfigurationException;
 import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.common.GroupMappingService;
-import org.apache.sentry.core.common.utils.PolicyFileConstants;
 import org.apache.sentry.core.common.exception.SentryGroupNotFoundException;
 import org.apache.sentry.core.common.exception.SentryAccessDeniedException;
 import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
@@ -1320,21 +1319,26 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
 
   // get the sentry mapping data and return the data with map structure
   @Override
+  @SuppressWarnings("PMD.AvoidBranchingStatementAsLastInLoop")
   public TSentryExportMappingDataResponse export_sentry_mapping_data(
       TSentryExportMappingDataRequest request) throws TException {
     TSentryExportMappingDataResponse response = new TSentryExportMappingDataResponse();
     try {
       String requestor = request.getRequestorUserName();
       Set<String> memberGroups = getRequestorGroups(requestor);
-      String objectPath = request.getObjectPath();
       String databaseName = null;
       String tableName = null;
 
-      Map<String, String> objectMap =
-          SentryServiceUtil.parseObjectPath(objectPath);
-      databaseName = objectMap.get(PolicyFileConstants.PRIVILEGE_DATABASE_NAME);
-      tableName = objectMap.get(PolicyFileConstants.PRIVILEGE_TABLE_NAME);
-
+      if(request.getAuthorizables() != null && request.getAuthorizables().size() > 0) {
+        for (TSentryAuthorizable authorizable : request.getAuthorizables()) {
+          databaseName = authorizable.getDb();
+          tableName = authorizable.getTable();
+          // TODO This change is added to maintain the current functionality.
+          // This code will be updated sentry sentry client/server are enhanced to handle export og permissions for
+          // multiple authorizables.
+          break;
+        }
+      }
       if (!inAdminGroups(memberGroups)) {
         // disallow non-admin to import the metadata of sentry
         throw new SentryAccessDeniedException("Access denied to " + requestor

@@ -25,6 +25,7 @@ import static org.junit.Assert.fail;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.core.common.utils.PolicyFileConstants;
 import org.apache.sentry.service.thrift.SentryServiceIntegrationBase;
@@ -625,6 +626,10 @@ public class TestSentryServiceImportExport extends SentryServiceIntegrationBase 
         sentryMappingData = client.exportPolicy(ADMIN_USER, "db=db1->table=tbl1");
         validateSentryMappingData(sentryMappingData, expectedMappingData);
 
+        sentryMappingData = client.exportPolicy(ADMIN_USER, "db=db1->table=tbl1,db=db3->table=tbl2");
+        // Verify that client is able to take comma separated objects and still gets the results only for the first object
+        validateSentryMappingData(sentryMappingData, expectedMappingData);
+
         // verify the rolePrivilegesMap and groupRolesMap for db=db1->table=tbl2
         expectedMappingData = Maps.newHashMap();
         expectedGroupRoles = Maps.newHashMap();
@@ -661,7 +666,7 @@ public class TestSentryServiceImportExport extends SentryServiceIntegrationBase 
         try {
           client.exportPolicy(ADMIN_USER, "invalidString");
           fail("RuntimeException should be thrown.");
-        } catch (RuntimeException sue) {
+        } catch (SentryUserException userException) {
           // excepted exception
         }
       }

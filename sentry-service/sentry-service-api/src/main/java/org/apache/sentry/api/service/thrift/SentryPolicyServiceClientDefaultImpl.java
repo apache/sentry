@@ -1092,12 +1092,11 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
 
   // export the sentry mapping data with map structure
   @Override
-  public Map<String, Map<String, Set<String>>> exportPolicy(String
-                                                                           requestorUserName,
-                                                                         String objectPath) throws SentryUserException {
+  public Map<String, Map<String, Set<String>>> exportPolicy(String requestorUserName,
+      String objects) throws SentryUserException {
     TSentryExportMappingDataRequest request = new TSentryExportMappingDataRequest(
       ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT, requestorUserName);
-    request.setObjectPath(objectPath);
+    request.setAuthorizables(SentryServiceUtil.parseAuthorizables(objects));
     try {
       TSentryExportMappingDataResponse response = client.export_sentry_mapping_data(request);
       Status.throwIfNotOk(response.getStatus());

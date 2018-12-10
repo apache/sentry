@@ -295,7 +295,7 @@ struct TSentryMappingData {
 struct TSentryExportMappingDataRequest {
 1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V1,
 2: required string requestorUserName, # user on whose behalf the request is issued
-3: optional string objectPath # for specific auth object
+3: optional set<TSentryAuthorizable> authorizables # for which permission information needs to be exported.
 }
 
 struct TSentryExportMappingDataResponse {
