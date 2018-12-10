@@ -340,6 +340,51 @@ public class TestNotificationProcessor {
   }
 
   @Test
+  // Makes sure that appropriate sentry store methods are invoked when process events that rename
+  // tables without location information.
+  public void testRenameTableWithoutLocation() throws Exception {
+    String dbName = "db1";
+    String tableName = "table1";
+
+    String newDbName = "db1";
+    String newTableName = "table2";
+
+    Configuration authConf = new Configuration();
+    // enable HDFS sync, so perm and path changes will be saved into DB
+    authConf.set(ServiceConstants.ServerConfig.PROCESSOR_FACTORIES, "org.apache.sentry.hdfs.SentryHDFSServiceProcessorFactory");
+    authConf.set(ServiceConstants.ServerConfig.SENTRY_POLICY_STORE_PLUGINS, "org.apache.sentry.hdfs.SentryPlugin");
+
+    notificationProcessor = new NotificationProcessor(sentryStore,
+        hiveInstance, authConf);
+
+    // Create notification event
+    StorageDescriptor sd = new StorageDescriptor();
+    NotificationEvent notificationEvent = new NotificationEvent(1, 0,
+        EventMessage.EventType.ALTER_TABLE.toString(),
+        messageFactory.buildAlterTableMessage(
+            new Table(tableName, dbName, null, 0, 0, 0, sd, null, null, null, null, null),
+            new Table(newTableName, newDbName, null, 0, 0, 0, sd, null, null, null, null, null))
+            .toString());
+    notificationEvent.setDbName(newDbName);
+    notificationEvent.setTableName(newTableName);
+
+    notificationProcessor.processNotificationEvent(notificationEvent);
+
+    TSentryAuthorizable authorizable = new TSentryAuthorizable(hiveInstance);
+    authorizable.setServer(hiveInstance);
+    authorizable.setDb(dbName);
+    authorizable.setTable(tableName);
+
+    TSentryAuthorizable newAuthorizable = new TSentryAuthorizable(hiveInstance);
+    authorizable.setServer(hiveInstance);
+    newAuthorizable.setDb(newDbName);
+    newAuthorizable.setTable(newTableName);
+
+    verify(sentryStore, times(1)).renamePrivilege(authorizable, newAuthorizable,
+            NotificationProcessor.getPermUpdatableOnRename(authorizable, newAuthorizable));
+  }
+
+  @Test
   /*
     Makes sure that appropriate sentry store methods are invoked when alter tables event is
     processed.

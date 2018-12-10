@@ -378,34 +378,18 @@ final class NotificationProcessor {
     String oldTableName = alterTableMessage.getTable();
     String newDbName = event.getDbName();
     String newTableName = event.getTableName();
-    String oldLocation = alterTableMessage.getOldLocation();
-    String newLocation = alterTableMessage.getNewLocation();
 
-    if ((oldDbName == null)
-        || (oldTableName == null)
-        || (newDbName == null)
-        || (newTableName == null)
-        || (oldLocation == null)
-        || (newLocation == null)) {
+    if ((oldDbName == null) ||
+        (oldTableName == null) ||
+        (newDbName == null) ||
+        (newTableName == null)) {
       LOGGER.warn(String.format("Alter table notification ignored since event "
-              + "has incomplete information. oldDbName = %s, oldTableName = %s, oldLocation = %s, "
-              + "newDbName = %s, newTableName = %s, newLocation = %s",
+              + "has incomplete information. oldDbName = %s, oldTableName = %s, "
+              + "newDbName = %s, newTableName = %s",
           StringUtils.defaultIfBlank(oldDbName, "null"),
           StringUtils.defaultIfBlank(oldTableName, "null"),
-          StringUtils.defaultIfBlank(oldLocation, "null"),
           StringUtils.defaultIfBlank(newDbName, "null"),
-          StringUtils.defaultIfBlank(newTableName, "null"),
-          StringUtils.defaultIfBlank(newLocation, "null")));
-      return false;
-    }
-
-    if ((oldDbName.equals(newDbName))
-        && (oldTableName.equals(newTableName))
-        && (oldLocation.equals(newLocation))) {
-      LOGGER.debug(String.format("Alter table notification ignored as neither name nor "
-              + "location has changed: oldAuthzObj = %s, oldLocation = %s, newAuthzObj = %s, "
-              + "newLocation = %s", oldDbName + "." + oldTableName, oldLocation,
-          newDbName + "." + newTableName, newLocation));
+          StringUtils.defaultIfBlank(newTableName, "null")));
       return false;
     }
 
@@ -425,6 +409,27 @@ final class NotificationProcessor {
     if (!hdfsSyncEnabled) {
       return false;
     }
+
+    String oldLocation = alterTableMessage.getOldLocation();
+    String newLocation = alterTableMessage.getNewLocation();
+    if (oldLocation == null || newLocation == null) {
+      LOGGER.warn(String.format("HMS path update ignored since event has incomplete "
+              + "path information. oldLocation = %s, newLocation = %s",
+          StringUtils.defaultIfBlank(oldLocation, "null"),
+          StringUtils.defaultIfBlank(newLocation, "null")));
+      return false;
+    }
+
+    if ((oldDbName.equals(newDbName)) &&
+        (oldTableName.equals(newTableName)) &&
+        (oldLocation.equals(newLocation))) {
+      LOGGER.debug(String.format("Alter table notification ignored as neither name nor "
+              + "location has changed: oldAuthzObj = %s, oldLocation = %s, newAuthzObj = %s, "
+              + "newLocation = %s", oldDbName + "." + oldTableName, oldLocation,
+          newDbName + "." + newTableName, newLocation));
+      return false;
+    }
+
     String oldAuthzObj = oldDbName + "." + oldTableName;
     String newAuthzObj = newDbName + "." + newTableName;
     renameAuthzPath(oldAuthzObj, newAuthzObj, oldLocation, newLocation, event);
