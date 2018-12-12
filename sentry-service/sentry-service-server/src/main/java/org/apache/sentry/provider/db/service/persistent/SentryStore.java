@@ -463,6 +463,13 @@ public class SentryStore implements SentryStoreInterface {
   }
 
   /**
+   * @return Number of privileges
+   */
+  public Gauge<Long> getGenericModelPrivilegeCountGauge() {
+    return () -> getCount(MSentryGMPrivilege.class);
+  }
+
+  /**
    * @return number of groups
    */
   public Gauge<Long> getGroupCountGauge() {

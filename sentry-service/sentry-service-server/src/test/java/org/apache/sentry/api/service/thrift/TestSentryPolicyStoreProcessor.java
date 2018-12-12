@@ -104,6 +104,12 @@ public class TestSentryPolicyStoreProcessor {
         return 0L;
       }
     });
+    Mockito.when(sentryStore.getGenericModelPrivilegeCountGauge()).thenReturn(new Gauge< Long >() {
+      @Override
+      public Long getValue() {
+        return 0L;
+      }
+    });
     Mockito.when(sentryStore.getGroupCountGauge()).thenReturn(new Gauge< Long >() {
       @Override
       public Long getValue() {

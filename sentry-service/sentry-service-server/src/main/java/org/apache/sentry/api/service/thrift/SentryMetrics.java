@@ -167,6 +167,8 @@ public final class SentryMetrics {
       addGauge(SentryStore.class, "role_count", sentryStore.getRoleCountGauge());
       addGauge(SentryStore.class, "privilege_count",
               sentryStore.getPrivilegeCountGauge());
+      addGauge(SentryStore.class, "gm_privilege_count",
+          sentryStore.getGenericModelPrivilegeCountGauge());
       addGauge(SentryStore.class, "group_count", sentryStore.getGroupCountGauge());
       addGauge(SentryStore.class, "hms.waiters", sentryStore.getHMSWaitersCountGauge());
       addGauge(SentryStore.class, "hms.notification.id",

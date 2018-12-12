@@ -450,6 +450,11 @@ public interface SentryStoreInterface {
   Gauge<Long> getPrivilegeCountGauge();
 
   /**
+   * @return Number of privileges
+   */
+  Gauge<Long> getGenericModelPrivilegeCountGauge();
+
+  /**
    * @return current value of last processed notification ID
    */
   Gauge<Long> getLastNotificationIdGauge();
