@@ -605,7 +605,6 @@ public abstract class TestHDFSIntegrationBase {
       @Override
       public Void run() throws Exception {
         HiveConf hiveConf = hiveConfiguration;
-        hiveConf.set("sentry.metastore.plugins", "org.apache.sentry.hdfs.MetastorePlugin");
         hiveConf.set("sentry.service.client.server.rpc-addresses", "localhost");
         hiveConf.set("sentry.hdfs.service.client.server.rpc-addresses", "localhost");
         hiveConf.set("sentry.hdfs.service.client.server.rpc-port", String.valueOf(sentryPort));
