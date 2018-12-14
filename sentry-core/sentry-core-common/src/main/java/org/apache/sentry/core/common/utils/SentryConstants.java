@@ -73,4 +73,7 @@ public class SentryConstants {
   // Representation for empty HMS snapshots not found on MAuthzPathsSnapshotId
   public static final long EMPTY_PATHS_SNAPSHOT_ID = 0L;
 
+  // Representation for empty HMS Objects on MAuthzPathsMapping
+  public static final long EMPTY_PATHS_MAPPING_ID = 0L;
+
 }

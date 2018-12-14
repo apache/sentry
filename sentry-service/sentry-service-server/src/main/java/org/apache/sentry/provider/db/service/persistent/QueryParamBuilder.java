@@ -345,6 +345,25 @@ public class QueryParamBuilder {
   }
 
   /**
+   * Add common filter for set of paths. This is used to simplify creating filters for
+   * a collections of paths
+   * @param paramBuilder paramBuilder for parameters
+   * @param paths set paths
+   * @return paramBuilder supplied or a new one if the supplied one is null.
+   */
+  public static QueryParamBuilder addPathFilter(QueryParamBuilder paramBuilder,
+                                                 Iterable<String> paths) {
+    if (paramBuilder == null) {
+      paramBuilder = new QueryParamBuilder();
+    }
+    if (paths == null) {
+      return paramBuilder;
+    }
+    paramBuilder.newChild().addSet("this.path == ", paths, false);
+    return paramBuilder;
+  }
+
+  /**
    * Add multiple conditions for set of values.
    * <p>
    * Example:

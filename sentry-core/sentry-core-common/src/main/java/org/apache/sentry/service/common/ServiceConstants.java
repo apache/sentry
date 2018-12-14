@@ -264,6 +264,12 @@ public class ServiceConstants {
      */
     public static final String SENTRY_DB_VALUE_GENERATION_ALLOCATION_SIZE = "sentry.db.valuegeneration.allocation.size";
     public static final int SENTRY_DB_VALUE_GENERATION_ALLOCATION_SIZE_DEFAULT = 100;
+
+    /**
+     * This value sets the maximum number of statements that can be included in a batch by datanucleus
+     */
+    public static final String SENTRY_STATEMENT_BATCH_LIMIT = "sentry.statement.batch.limit";
+    public static final int SENTRY_STATEMENT_BATCH_LIMIT_DEFAULT = 100;
   }
 
   public static class ClientConfig {

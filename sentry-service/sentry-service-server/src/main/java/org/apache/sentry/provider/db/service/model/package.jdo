@@ -255,10 +255,10 @@
        </field>
     </class>
 
-    <class name="MAuthzPathsMapping" identity-type="datastore" table="AUTHZ_PATHS_MAPPING" detachable="true">
-       <datastore-identity strategy="increment">
-         <column name="AUTHZ_OBJ_ID"/>
-       </datastore-identity>
+    <class name="MAuthzPathsMapping" identity-type="application" table="AUTHZ_PATHS_MAPPING" detachable="true">
+       <field name="authzObjectId" primary-key="true">  
+         <column name="AUTHZ_OBJ_ID" jdbc-type="BIGINT" allows-null="false"/>  
+       </field>
        <index name="AUTHZ_SNAPSHOT_ID_INDEX" unique="false">
          <field name="authzSnapshotID"/>
        </index>
@@ -273,7 +273,7 @@
        <field name="createTimeMs">
          <column name="CREATE_TIME_MS" jdbc-type="BIGINT"/>
        </field>
-       <field name = "paths">
+       <field name = "pathsPersisted">
          <!-- Setting attribute dependent-element to true enables JDO cascading operations. in this case we need it to
          cascade delete.
          -->
@@ -283,7 +283,7 @@
            </element>
        </field>
        <fetch-group name="includingPaths">
-         <field name="paths"/>
+         <field name="pathsPersisted"/>
        </fetch-group>
        <field name="authzSnapshotID">
          <column name="AUTHZ_SNAPSHOT_ID" jdbc-type="BIGINT" allows-null="false"/>
@@ -298,6 +298,22 @@
         <column name="PATH_NAME" length="4000" jdbc-type="VARCHAR"/>
       </field>
     </class>
+
+    <!--
+    MPath has external foreign keys with MAuthzPathsMapping which limits it from persisting
+    in batches. MPathToPersist is replica of MPath with out the external foreign keys.
+    -->
+  <class name="MAuthzPathsMapping$MPathToPersist" identity-type="datastore" table="AUTHZ_PATH" detachable="true"> 
+    <datastore-identity strategy="increment"> 
+      <column name="PATH_ID"/> 
+    </datastore-identity> 
+    <field name="authzObjectId"> 
+      <column name="AUTHZ_OBJ_ID" jdbc-type="BIGINT" allows-null="false"/> 
+    </field> 
+    <field name="path"> 
+      <column name="PATH_NAME" length="4000" jdbc-type="VARCHAR"/> 
+    </field>
+   </class>
 
      <class name="MSentryPermChange" table="SENTRY_PERM_CHANGE" identity-type="application" detachable="true">
        <field name="changeID" primary-key="true">

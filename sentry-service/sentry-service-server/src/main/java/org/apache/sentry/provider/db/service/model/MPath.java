@@ -22,6 +22,14 @@ package org.apache.sentry.provider.db.service.model;
  *
  * New class is created for path in order to have 1 to many mapping
  * between path and Authorizable object.
+ *
+ * There are performance issues in persisting instances of MPath at bulk because of the FK mapping with
+ * MAuthzPathsMapping. This FK mapping limits datanucleus from inserting these entries in batches.
+ * MPathToPersist was introduced to solve this performance issue.
+ * Note: This class should not be used to insert paths, instead {@link MAuthzPathsMapping.MPathToPersist} should be used.
+ *  If MPath is used to persist paths, there will be duplicate entry exceptions as both JDO's MPath and
+ *  {@link MAuthzPathsMapping.MPathToPersist} maintain their own sequence for PATH_ID column.
+
  */
 public class MPath {
   private String path;
