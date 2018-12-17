@@ -153,8 +153,8 @@ public class TestNotificationProcessor {
     authorizable.setDb("db1");
 
     //noinspection unchecked
-    verify(sentryStore, times(1)).deleteAuthzPathsMapping(Mockito.anyString(),
-        Mockito.anyCollection(), Mockito.any(UniquePathsUpdate.class));
+    verify(sentryStore, times(1)).deleteAllAuthzPathsMapping(Mockito.anyString(),
+        Mockito.any(UniquePathsUpdate.class));
     verify(sentryStore, times(1)).dropPrivilege(authorizable,
         NotificationProcessor.getPermUpdatableOnDrop(authorizable));
     reset(sentryStore);
@@ -175,8 +175,7 @@ public class TestNotificationProcessor {
     authorizable.setDb(dbName);
 
     //noinspection unchecked
-    verify(sentryStore, times(1)).deleteAuthzPathsMapping(Mockito.anyString(),
-        Mockito.anyCollection(), Mockito.any(UniquePathsUpdate.class));
+    verify(sentryStore, times(1)).deleteAllAuthzPathsMapping(Mockito.anyString(), Mockito.any(UniquePathsUpdate.class));
     verify(sentryStore, times(0)).dropPrivilege(authorizable,
         NotificationProcessor.getPermUpdatableOnDrop(authorizable));
   }

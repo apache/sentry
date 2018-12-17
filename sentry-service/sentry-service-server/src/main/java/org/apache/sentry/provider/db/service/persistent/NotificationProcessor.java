@@ -279,7 +279,6 @@ final class NotificationProcessor {
     SentryJSONDropDatabaseMessage dropDatabaseMessage =
         deserializer.getDropDatabaseMessage(event.getMessage());
     String dbName = dropDatabaseMessage.getDB();
-    String location = dropDatabaseMessage.getLocation();
     if (dbName == null) {
       LOGGER.warn("Drop database event has incomplete information: dbName = null");
       return false;
@@ -289,8 +288,7 @@ final class NotificationProcessor {
     }
 
     if (hdfsSyncEnabled) {
-      List<String> locations = Collections.singletonList(location);
-      removePaths(dbName, locations, event);
+      removeAllPaths(dbName, event);
       return true;
     }
     return false;
