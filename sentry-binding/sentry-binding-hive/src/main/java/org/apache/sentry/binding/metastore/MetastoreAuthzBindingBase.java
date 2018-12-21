@@ -416,7 +416,7 @@ public abstract class MetastoreAuthzBindingBase extends MetaStorePreEventListene
     return !serviceUsers.contains(userName);
   }
 
-  private static Set<String> toTrimedLower(Set<String> s) {
+  public static Set<String> toTrimedLower(Set<String> s) {
     Set<String> result = Sets.newHashSet();
     for (String v : s) {
       result.add(v.trim().toLowerCase());

@@ -182,6 +182,13 @@ public class HiveAuthzConf extends Configuration {
         applySystemProperties();
         this.hiveAuthzSiteFile = hiveAuthzSiteURL.toString();
     }
+
+    public HiveAuthzConf() {
+        super();
+        applySystemProperties();
+        this.hiveAuthzSiteFile = null;
+    }
+
     /**
      * Apply system properties to this object if the property name is defined in ConfVars
      * and the value is non-null and not an empty string.

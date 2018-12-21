@@ -25,11 +25,10 @@ import org.apache.hadoop.hive.metastore.IMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.InvalidOperationException;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.UnknownDBException;
-import org.apache.hadoop.hive.ql.parse.SemanticException;
-import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.session.SessionState;
-import org.apache.sentry.binding.hive.authz.HiveAuthzBindingHookBase;
 import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
+import org.apache.sentry.binding.hive.authz.MetastoreAuthzObjectFilter;
+import org.apache.sentry.binding.hive.authz.MetastoreAuthzObjectFilter.ObjectExtractor;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.thrift.TException;
 
@@ -92,9 +91,21 @@ public class SentryHiveMetaStoreClient extends HiveMetaStoreClient implements
   private List<String> filterDatabases(List<String> dbList)
       throws MetaException {
     try {
-      return HiveAuthzBindingHookBase.filterShowDatabases(getHiveAuthzBinding(),
-          dbList, HiveOperation.SHOWDATABASES, getUserName());
-    } catch (SemanticException e) {
+      MetastoreAuthzObjectFilter<String> filter = new MetastoreAuthzObjectFilter<>(
+        getHiveAuthzBinding(), new ObjectExtractor<String>() {
+        @Override
+        public String getDatabaseName(String o) {
+          return o;
+        }
+
+        @Override
+        public String getTableName(String o) {
+          return null;
+        }
+      });
+
+      return filter.filterDatabases(getUserName(), dbList);
+    } catch (Exception e) {
       throw new MetaException("Error getting DB list " + e.getMessage());
     }
   }
@@ -110,9 +121,21 @@ public class SentryHiveMetaStoreClient extends HiveMetaStoreClient implements
   private List<String> filterTables(String dbName, List<String> tabList)
       throws MetaException {
     try {
-      return HiveAuthzBindingHookBase.filterShowTables(getHiveAuthzBinding(),
-          tabList, HiveOperation.SHOWTABLES, getUserName(), dbName);
-    } catch (SemanticException e) {
+      MetastoreAuthzObjectFilter<String> filter = new MetastoreAuthzObjectFilter<>(
+        getHiveAuthzBinding(), new ObjectExtractor<String>() {
+        @Override
+        public String getDatabaseName(String o) {
+          return dbName;
+        }
+
+        @Override
+        public String getTableName(String o) {
+          return o;
+        }
+      });
+
+      return filter.filterTables(getUserName(), tabList);
+    } catch (Exception e) {
       throw new MetaException("Error getting Table list " + e.getMessage());
     }
   }

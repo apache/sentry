@@ -56,7 +56,7 @@ import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 
-public class HiveAuthzBinding {
+public class HiveAuthzBinding implements AutoCloseable {
   private static final Logger LOG = LoggerFactory
       .getLogger(HiveAuthzBinding.class);
   private static final Splitter ROLE_SET_SPLITTER = Splitter.on(",").trimResults()

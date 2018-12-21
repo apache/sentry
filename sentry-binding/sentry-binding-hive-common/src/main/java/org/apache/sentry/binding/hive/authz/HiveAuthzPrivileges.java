@@ -20,6 +20,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 
+import java.util.Objects;
 import org.apache.sentry.core.model.db.DBModelAction;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
 
@@ -138,6 +139,47 @@ public class HiveAuthzPrivileges {
     this.grantOption = requireGrantOption;
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof HiveAuthzPrivileges)) {
+      return false;
+    }
+    HiveAuthzPrivileges that = (HiveAuthzPrivileges) o;
+    return grantOption == that.grantOption &&
+      Objects.equals(inputPrivileges, that.inputPrivileges) &&
+      Objects.equals(outputPrivileges, that.outputPrivileges) &&
+      operationType == that.operationType &&
+      operationScope == that.operationScope;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects
+      .hash(inputPrivileges, outputPrivileges, operationType, operationScope, grantOption);
+  }
+
+  /*
+  private boolean equals(Map<AuthorizableType,EnumSet<DBModelAction>> o1, Map<AuthorizableType,EnumSet<DBModelAction>> o2) {
+    if (o1.size() != o2.size()) {
+      return false;
+    }
+
+    for (Map.Entry e1 : o1.entrySet()) {
+      if (!o2.containsKey(e1.getKey())) {
+        return false;
+      }
+
+      if (!o2.get(e1.getKey()).equals(e1.getValue())) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+*/
   /**
    * @return the inputPrivileges
    */

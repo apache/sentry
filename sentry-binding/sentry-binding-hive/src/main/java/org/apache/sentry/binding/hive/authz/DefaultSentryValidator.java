@@ -22,8 +22,6 @@ import com.google.common.collect.Sets;
 import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -41,16 +39,14 @@ import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.sentry.binding.hive.SentryOnFailureHookContext;
 import org.apache.sentry.binding.hive.SentryOnFailureHookContextImpl;
 import org.apache.sentry.binding.hive.authz.HiveAuthzBinding.HiveHook;
-import org.apache.sentry.binding.hive.authz.HiveAuthzPrivileges.HiveOperationScope;
+import org.apache.sentry.binding.hive.authz.MetastoreAuthzObjectFilter.ObjectExtractor;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.util.SentryAuthorizerUtil;
 import org.apache.sentry.binding.util.SimpleSemanticAnalyzer;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.db.AccessURI;
 import org.apache.sentry.core.model.db.Column;
-import org.apache.sentry.core.model.db.DBModelAction;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
-import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
 import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.Table;
 import org.slf4j.Logger;
@@ -60,6 +56,22 @@ import org.slf4j.LoggerFactory;
  * This class used to do authorization. Check if current user has privileges to do the operation.
  */
 public class DefaultSentryValidator extends SentryHiveAuthorizationValidator {
+  private final MetastoreAuthzObjectFilter.ObjectExtractor<HivePrivilegeObject> OBJECT_EXTRACTOR =
+    new ObjectExtractor<HivePrivilegeObject>() {
+      @Override
+      public String getDatabaseName(HivePrivilegeObject o) {
+        return (o != null) ? o.getDbname() : null;
+      }
+
+      @Override
+      public String getTableName(HivePrivilegeObject o) {
+        return (o != null && isTable(o)) ? o.getObjectName() : null;
+      }
+
+      private boolean isTable(HivePrivilegeObject o) {
+        return o.getType() == HivePrivilegeObjectType.TABLE_OR_VIEW;
+      }
+    };
 
   public static final Logger LOG = LoggerFactory.getLogger(DefaultSentryValidator.class);
 
@@ -356,15 +368,20 @@ public class DefaultSentryValidator extends SentryHiveAuthorizationValidator {
     if (listObjs != null && listObjs.size() >= 1) {
       HivePrivilegeObjectType pType = listObjs.get(0).getType();
       HiveAuthzBinding hiveAuthzBinding = null;
+      MetastoreAuthzObjectFilter authzObjectFilter;
       try {
         switch (pType) {
           case DATABASE:
             hiveAuthzBinding = getAuthzBinding();
-            listObjs = filterShowDatabases(listObjs, authenticator.getUserName(), hiveAuthzBinding);
+            authzObjectFilter = new MetastoreAuthzObjectFilter<HivePrivilegeObject>(hiveAuthzBinding,
+              OBJECT_EXTRACTOR);
+            listObjs = authzObjectFilter.filterDatabases(authenticator.getUserName(), listObjs);
             break;
           case TABLE_OR_VIEW:
             hiveAuthzBinding = getAuthzBinding();
-            listObjs = filterShowTables(listObjs, authenticator.getUserName(), hiveAuthzBinding);
+            authzObjectFilter = new MetastoreAuthzObjectFilter<HivePrivilegeObject>(hiveAuthzBinding,
+              OBJECT_EXTRACTOR);
+            listObjs = authzObjectFilter.filterTables(authenticator.getUserName(), listObjs);
             break;
         }
       } catch (Exception e) {
@@ -392,101 +409,5 @@ public class DefaultSentryValidator extends SentryHiveAuthorizationValidator {
     // or column masking is applied. Sentry does not support such feature yet, so returning
     // false is enough to let Hive know that the query is not required to be transformed.
     return false;
-  }
-
-  private List<HivePrivilegeObject> filterShowTables(List<HivePrivilegeObject> listObjs,
-      String userName, HiveAuthzBinding hiveAuthzBinding) {
-    List<HivePrivilegeObject> filteredResult = new ArrayList<HivePrivilegeObject>();
-    Subject subject = new Subject(userName);
-    HiveAuthzPrivileges tableMetaDataPrivilege =
-        new HiveAuthzPrivileges.AuthzPrivilegeBuilder()
-            .addInputObjectPriviledge(AuthorizableType.Column,
-                EnumSet.of(DBModelAction.SELECT, DBModelAction.INSERT, DBModelAction.ALTER,
-                  DBModelAction.DROP, DBModelAction.INDEX, DBModelAction.LOCK))
-            .setOperationScope(HiveOperationScope.TABLE)
-            .setOperationType(
-                HiveAuthzPrivileges.HiveOperationType.INFO)
-            .build();
-
-    for (HivePrivilegeObject obj : listObjs) {
-      // if user has privileges on table, add to filtered list, else discard
-      Table table = new Table(obj.getObjectName());
-      Database database;
-      database = new Database(obj.getDbname());
-
-      Set<List<DBModelAuthorizable>> inputHierarchy = new HashSet<List<DBModelAuthorizable>>();
-      Set<List<DBModelAuthorizable>> outputHierarchy = new HashSet<List<DBModelAuthorizable>>();
-      List<DBModelAuthorizable> externalAuthorizableHierarchy =
-          new ArrayList<DBModelAuthorizable>();
-      externalAuthorizableHierarchy.add(hiveAuthzBinding.getAuthServer());
-      externalAuthorizableHierarchy.add(database);
-      externalAuthorizableHierarchy.add(table);
-      externalAuthorizableHierarchy.add(Column.ALL);
-      inputHierarchy.add(externalAuthorizableHierarchy);
-
-      try {
-        hiveAuthzBinding.authorize(HiveOperation.SHOWTABLES, tableMetaDataPrivilege, subject,
-            inputHierarchy, outputHierarchy);
-        filteredResult.add(obj);
-      } catch (AuthorizationException e) {
-        // squash the exception, user doesn't have privileges, so the table is
-        // not added to
-        // filtered list.
-      }
-    }
-    return filteredResult;
-  }
-
-  private List<HivePrivilegeObject> filterShowDatabases(List<HivePrivilegeObject> listObjs,
-      String userName, HiveAuthzBinding hiveAuthzBinding) {
-    List<HivePrivilegeObject> filteredResult = new ArrayList<HivePrivilegeObject>();
-    Subject subject = new Subject(userName);
-    HiveAuthzPrivileges anyPrivilege =
-        new HiveAuthzPrivileges.AuthzPrivilegeBuilder()
-            .addInputObjectPriviledge(
-                AuthorizableType.Column,
-                EnumSet.of(DBModelAction.SELECT, DBModelAction.INSERT, DBModelAction.ALTER,
-                    DBModelAction.CREATE, DBModelAction.DROP, DBModelAction.INDEX,
-                    DBModelAction.LOCK))
-            .setOperationScope(HiveOperationScope.CONNECT)
-            .setOperationType(
-                HiveAuthzPrivileges.HiveOperationType.QUERY)
-            .build();
-
-    for (HivePrivilegeObject obj : listObjs) {
-      // if user has privileges on database, add to filtered list, else discard
-      Database database = null;
-
-      // if default is not restricted, continue
-      if (DEFAULT_DATABASE_NAME.equalsIgnoreCase(obj.getObjectName())
-          && "false".equalsIgnoreCase(hiveAuthzBinding.getAuthzConf().get(
-              HiveAuthzConf.AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), "false"))) {
-        filteredResult.add(obj);
-        continue;
-      }
-
-      database = new Database(obj.getObjectName());
-
-      Set<List<DBModelAuthorizable>> inputHierarchy = new HashSet<List<DBModelAuthorizable>>();
-      Set<List<DBModelAuthorizable>> outputHierarchy = new HashSet<List<DBModelAuthorizable>>();
-      List<DBModelAuthorizable> externalAuthorizableHierarchy =
-          new ArrayList<DBModelAuthorizable>();
-      externalAuthorizableHierarchy.add(hiveAuthzBinding.getAuthServer());
-      externalAuthorizableHierarchy.add(database);
-      externalAuthorizableHierarchy.add(Table.ALL);
-      externalAuthorizableHierarchy.add(Column.ALL);
-      inputHierarchy.add(externalAuthorizableHierarchy);
-
-      try {
-        hiveAuthzBinding.authorize(HiveOperation.SHOWDATABASES, anyPrivilege, subject,
-            inputHierarchy, outputHierarchy);
-        filteredResult.add(obj);
-      } catch (AuthorizationException e) {
-        // squash the exception, user doesn't have privileges, so the table is
-        // not added to
-        // filtered list.
-      }
-    }
-    return filteredResult;
   }
 }
