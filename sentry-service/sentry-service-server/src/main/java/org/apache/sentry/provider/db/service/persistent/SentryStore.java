@@ -3931,6 +3931,70 @@ public class SentryStore implements SentryStoreInterface {
   }
 
   /**
+   * @return Privileges granted to Authoriable and it's children.
+   * If the authorizable is server, returns all the privileges granted on that server
+   * If the authorizable is database,returns all the privileges granted on that database and also the tables and
+   * the columns in it.
+   * If the authorizable is an URI, returns all the privileges granted on URI's with the given prefix.
+   */
+  public List<MSentryPrivilege> getPrivilegesForAuthorizables(List<TSentryAuthorizable> authHierarchyList) throws Exception {
+    return tm.executeTransaction(
+            pm -> getPrivilegesForAuthorizables(pm, authHierarchyList)
+    );
+  }
+
+  /**
+   * @return Privileges granted to Authoriables and it's children.
+   * If the authorizable is server, returns all the privileges granted on that server
+   * If the authorizable is database,returns all the privileges granted on that database and also the tables and
+   * the columns in it.
+   * If the authorizable is an URI, returns all the privileges granted on URI's with the given prefix.
+   * If the authHierarchyList is Null or Empty, all the privileges in the sentry store are returned.
+   */
+  private List<MSentryPrivilege> getPrivilegesForAuthorizables(PersistenceManager pm,
+      List<TSentryAuthorizable> authHierarchyList) throws Exception {
+    List<MSentryPrivilege> mSentryPrivileges = Lists.newArrayList();
+    pm.setDetachAllOnCommit(false); // No need to detach objects
+    Query query = pm.newQuery(MSentryPrivilege.class);
+    query.addExtension(LOAD_RESULTS_AT_COMMIT, "false");
+    FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchPrincipals");
+    grp.addMember("roles");
+    grp.addMember("users");
+    pm.getFetchPlan().addGroup("fetchPrincipals");
+
+    // When the list is empty or NULL return every thing.
+    if(authHierarchyList == null || authHierarchyList.isEmpty()) {
+      mSentryPrivileges.addAll((List<MSentryPrivilege>) query.execute());
+      return mSentryPrivileges;
+    }
+
+    for (TSentryAuthorizable authHierarchy : authHierarchyList) {
+      QueryParamBuilder authParamBuilder = QueryParamBuilder.newQueryParamBuilder(QueryParamBuilder.Op.AND);
+      if (authHierarchy.getServer() != null) {
+        authParamBuilder.add(SERVER_NAME, authHierarchy.getServer());
+        if (authHierarchy.getDb() != null) {
+          authParamBuilder.add(DB_NAME, authHierarchy.getDb()).addNull(URI);
+          if (authHierarchy.getTable() != null) {
+            authParamBuilder.add(TABLE_NAME, authHierarchy.getTable());
+            if (authHierarchy.getColumn() != null) {
+              authParamBuilder.add(COLUMN_NAME, authHierarchy.getColumn());
+            }
+          }
+        } else if (authHierarchy.getUri() != null) {
+          authParamBuilder.addNotNull(URI)
+                  .addNotNull(URI)
+                  .addNull(DB_NAME)
+                  .addCustomParam("(URI.startsWith(:authURI))", "authURI", authHierarchy.getUri());
+        }
+      }
+
+      query.setFilter(authParamBuilder.toString());
+      mSentryPrivileges.addAll((List<MSentryPrivilege>) query.executeWithMap(authParamBuilder.getArguments()));
+    }
+    return mSentryPrivileges;
+  }
+
+  /**
    * @return mapping data for [role,privilege] with the specific auth object
    */
   public Map<String, Set<TSentryPrivilege>> getRoleNameTPrivilegesMap(final String dbName,

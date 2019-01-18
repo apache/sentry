@@ -1829,6 +1829,150 @@ public class TestSentryStore extends org.junit.Assert {
             .size());
   }
 
+
+  @Test
+  public void testgetPrivilegesForAuthorizables() throws Exception {
+
+    String roleName1 = "list-privs-r1";
+    String userName1 = "user1";
+    String uri1 = "file:///var/folders/dt/9zm44z9s6bjfxbrm4v36lzdc0000gp/T/1401860678102-0/data/kv1.dat";
+
+    sentryStore.createSentryRole(roleName1);
+    sentryStore.createSentryUser(userName1);
+
+    TSentryPrivilege privilege_tbl1 = new TSentryPrivilege();
+    privilege_tbl1.setPrivilegeScope("TABLE");
+    privilege_tbl1.setServerName("server1");
+    privilege_tbl1.setDbName("db1");
+    privilege_tbl1.setTableName("tbl1");
+    privilege_tbl1.setCreateTime(System.currentTimeMillis());
+    privilege_tbl1.setAction("SELECT");
+    privilege_tbl1.setGrantOption(TSentryGrantOption.TRUE);
+
+    TSentryAuthorizable tSentryAuthorizable = new TSentryAuthorizable();
+    tSentryAuthorizable.setServer("server1");
+    tSentryAuthorizable.setDb("db1");
+    tSentryAuthorizable.setTable("tbl1");
+
+
+    TSentryPrivilege privilege_tbl2 = new TSentryPrivilege();
+    privilege_tbl2.setPrivilegeScope("TABLE");
+    privilege_tbl2.setServerName("server1");
+    privilege_tbl2.setDbName("db1");
+    privilege_tbl2.setTableName("tbl2");
+    privilege_tbl2.setCreateTime(System.currentTimeMillis());
+    privilege_tbl2.setAction("SELECT");
+    privilege_tbl2.setGrantOption(TSentryGrantOption.TRUE);
+
+    TSentryAuthorizable tSentryAuthorizable2 = new TSentryAuthorizable();
+    tSentryAuthorizable2.setServer("server1");
+    tSentryAuthorizable2.setDb("db1");
+    tSentryAuthorizable2.setTable("tbl2");
+
+    TSentryPrivilege privilege_col1 = new TSentryPrivilege(privilege_tbl2);
+    privilege_col1.setPrivilegeScope("TABLE");
+    privilege_col1.setServerName("server1");
+    privilege_col1.setDbName("db3");
+    privilege_col1.setTableName("tbl3");
+    privilege_col1.setCreateTime(System.currentTimeMillis());
+    privilege_col1.setAction("SELECT");
+    privilege_col1.setGrantOption(TSentryGrantOption.TRUE);
+    privilege_col1.setColumnName("Column1");
+
+    TSentryAuthorizable tSentryAuthorizable3 = new TSentryAuthorizable();
+    tSentryAuthorizable3.setServer("server1");
+    tSentryAuthorizable3.setDb("db3");
+    tSentryAuthorizable3.setTable("tbl3");
+    tSentryAuthorizable3.setColumn("Column1");
+
+    TSentryPrivilege tSentryUriPrivilege = new TSentryPrivilege("URI", "server1", "ALL");
+    tSentryUriPrivilege.setURI(uri1);
+
+    TSentryAuthorizable tSentryUriAuthorizable = new TSentryAuthorizable();
+    tSentryUriAuthorizable.setUri(uri1);
+    tSentryUriAuthorizable.setServer("server1");
+
+
+    sentryStore.alterSentryGrantPrivileges(SentryPrincipalType.ROLE, roleName1, Sets.newHashSet(privilege_tbl1,privilege_tbl2, privilege_col1, tSentryUriPrivilege), null);
+
+    // Verify the privilege count
+    List<MSentryPrivilege> privilege = sentryStore.getPrivilegesForAuthorizables(Lists.newArrayList(tSentryAuthorizable,tSentryAuthorizable2, tSentryUriAuthorizable, tSentryAuthorizable3));
+    assertEquals(4, privilege.size());
+
+   // Verify the behavior when the empty authorizable list provided.
+   privilege = sentryStore.getPrivilegesForAuthorizables(Collections.EMPTY_LIST);
+   assertNotNull(privilege);
+   assertEquals(4, privilege.size());
+
+    // Verify the behvaior when the authorizable list is null.
+    privilege = sentryStore.getPrivilegesForAuthorizables(null);
+    assertNotNull(privilege);
+    assertEquals(4, privilege.size());
+
+    // Verify the privilege granted to URI is returned
+    privilege = sentryStore.getPrivilegesForAuthorizables(Lists.newArrayList(tSentryAuthorizable2));
+    assertEquals(1, privilege.size());
+
+
+    TSentryAuthorizable tSentrDbAuthorizable = new TSentryAuthorizable();
+    tSentrDbAuthorizable.setServer("server1");
+    tSentrDbAuthorizable.setDb("db1");
+
+    // Verify that all the privileges granted to tables in database db1 are returned.
+    privilege = sentryStore.getPrivilegesForAuthorizables(Lists.newArrayList(tSentrDbAuthorizable));
+    assertEquals(2, privilege.size());
+
+
+    // Verify that all the privileges granted to server are returned.
+    privilege = sentryStore.getPrivilegesForAuthorizables(Lists.newArrayList(tSentryAuthorizable3));
+    assertEquals(1, privilege.size());
+
+    TSentryAuthorizable tSentrServerAuthorizable = new TSentryAuthorizable();
+    tSentrServerAuthorizable.setServer("server1");
+
+    // Verify that all the privileges granted to server are returned.
+    privilege = sentryStore.getPrivilegesForAuthorizables(Lists.newArrayList(tSentrServerAuthorizable));
+    assertEquals(4, privilege.size());
+
+    // Grant user1 same privileges granted to role1 and make sure that there are no duplicates in the privileges.
+    sentryStore.alterSentryGrantPrivileges(SentryPrincipalType.USER, userName1, Sets.newHashSet(privilege_tbl1,privilege_tbl2, tSentryUriPrivilege), null);
+
+    // Verify that all the privileges granted to server are returned.
+    privilege = sentryStore.getPrivilegesForAuthorizables(Lists.newArrayList(tSentrServerAuthorizable));
+    assertEquals(4, privilege.size());
+  }
+
+
+  @Test
+  public void testgetPrivilegesForURIs() throws Exception {
+
+    String roleName1 = "list-privs-r1";
+    String uriPrefix = "file:///var/folders/dt/9zm44z9s6bjfxbrm4v36lzdc0000gp/T/1401860678102-0/";
+    String uri1 = "file:///var/folders/dt/9zm44z9s6bjfxbrm4v36lzdc0000gp/T/1401860678102-0/data/kv1.dat";
+    String uri2 = "file:///var/folders/dt/9zm44z9s6bjfxbrm4v36lzdc0000gp/T/1401860678102-0/data/kv2.dat";
+
+
+    sentryStore.createSentryRole(roleName1);
+
+    TSentryPrivilege tSentryUriPrivilege1 = new TSentryPrivilege("URI", "server1", "ALL");
+    tSentryUriPrivilege1.setURI(uri1);
+
+    TSentryPrivilege tSentryUriPrivilege2 = new TSentryPrivilege("URI", "server1", "ALL");
+    tSentryUriPrivilege2.setURI(uri2);
+
+    TSentryAuthorizable tSentryUriAuthorizable = new TSentryAuthorizable();
+    tSentryUriAuthorizable.setUri(uriPrefix);
+    tSentryUriAuthorizable.setServer("server1");
+
+
+    // Grant user1 same privileges granted to role1 and make sure that there are no duplicates in the privileges.
+    sentryStore.alterSentryGrantPrivileges(SentryPrincipalType.ROLE, roleName1, Sets.newHashSet(tSentryUriPrivilege1, tSentryUriPrivilege2), null);
+
+    // Verify that all the privileges granted to all the URI;s under given prefix are returned.
+    List<MSentryPrivilege> privilege = sentryStore.getPrivilegesForAuthorizables(Lists.newArrayList(tSentryUriAuthorizable));
+    assertEquals(2, privilege.size());
+  }
+
   @Test
   public void testDropUserOnUpdateOwnerPrivilege() throws Exception {
     String userName1 = "user1", userName2 = "user2";
@@ -3088,6 +3232,19 @@ public class TestSentryStore extends org.junit.Assert {
     ;
     assertEquals("(e1 && e2 && (this.v3 == :v3 || this.v4 == :v4 || (e5 && e6)))",
             paramBuilder.toString());
+
+
+    paramBuilder = newQueryParamBuilder();
+    paramBuilder
+            .addString("e1")
+            .addString("e2")
+            .newChild()
+            .add("v3", "e3")
+            .add("v4", "e4")
+            .newChild()
+            .addString("e5")
+            .addString("e6")
+    ;
 
     params = paramBuilder.getArguments();
     assertEquals("e3", params.get("v3"));

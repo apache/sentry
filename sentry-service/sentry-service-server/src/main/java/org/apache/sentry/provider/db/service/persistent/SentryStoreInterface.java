@@ -148,6 +148,17 @@ public interface SentryStoreInterface {
   void dropSentryRole(final String roleName) throws Exception;
 
   /**
+   * Get all the privileges granted to Authoriables and it's children.
+   * @param authHierarchyList List of Authorizables
+   * @return Privileges granted to Authoriables and it's children.
+   * If the authorizable is server, returns all the privileges granted on that server
+   * If the authorizable is database,returns all the privileges granted on that database and also the tables and
+   * the columns in it.
+   * If the authorizable is an URI, returns all the privileges granted on URI's with the given prefix.
+   */
+   List<MSentryPrivilege> getPrivilegesForAuthorizables(List<TSentryAuthorizable> authHierarchyList) throws Exception;
+
+  /**
    * Get role names for groups.
    * @param groups the given group names
    * @return set of role names for the given groups.
