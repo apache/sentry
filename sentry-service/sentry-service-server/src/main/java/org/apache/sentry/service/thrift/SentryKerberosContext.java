@@ -21,7 +21,7 @@ package org.apache.sentry.service.thrift;
 import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.*;
 
 import javax.security.auth.Subject;
 import javax.security.auth.kerberos.KerberosPrincipal;
@@ -39,13 +39,13 @@ public class SentryKerberosContext implements Runnable {
 
   private static final String KERBEROS_RENEWER_THREAD_NAME = "kerberos-renewer-%d";
   private static final float TICKET_RENEW_WINDOW = 0.80f;
+  private static final long CHECK_REFRESH_INTERVAL = 30L;
   private static final Logger LOGGER = LoggerFactory
       .getLogger(SentryKerberosContext.class);
   private LoginContext loginContext;
   private Subject subject;
   private final javax.security.auth.login.Configuration kerberosConfig;
-  private Thread renewerThread;
-  private boolean shutDownRenewer = false;
+  private ScheduledExecutorService renewerService;
 
   public SentryKerberosContext(String principal, String keyTab, boolean server)
       throws LoginException {
@@ -89,7 +89,6 @@ public class SentryKerberosContext implements Runnable {
    * Get the Kerberos TGT
    * @return the user's TGT or null if none was found
    */
-  @Deprecated
   private KerberosTicket getTGT() {
     Set<KerberosTicket> tickets = subject.getPrivateCredentials(KerberosTicket.class);
     for(KerberosTicket ticket: tickets) {
@@ -116,47 +115,36 @@ public class SentryKerberosContext implements Runnable {
   @Override
   public void run() {
     try {
-      LOGGER.info("Sentry Ticket renewer thread started");
-      while (!shutDownRenewer) {
-        KerberosTicket tgt = getTGT();
-        if (tgt == null) {
-          LOGGER.warn("No ticket found in the cache");
-          return;
-        }
-        long nextRefresh = getRefreshTime(tgt);
-        while (System.currentTimeMillis() < nextRefresh) {
-          Thread.sleep(1000);
-          if (shutDownRenewer) {
-            return;
-          }
-        }
+      KerberosTicket tgt = getTGT();
+      if (tgt == null) {
+        LOGGER.warn("No ticket found in the cache");
+        return;
+      }
+      long nextRefresh = getRefreshTime(tgt);
+      if (System.currentTimeMillis() >= nextRefresh) {
         loginWithNewContext();
         LOGGER.debug("Renewed ticket");
       }
-    } catch (InterruptedException e1) {
-      LOGGER.warn("Sentry Ticket renewer thread interrupted", e1);
-      return;
     } catch (LoginException e) {
       LOGGER.warn("Failed to renew ticket", e);
-    } finally {
-      logoutSubject();
-      LOGGER.info("Sentry Ticket renewer thread finished");
     }
   }
 
   public void startRenewerThread() {
     ThreadFactory renewerThreadFactory = new ThreadFactoryBuilder()
-        .setNameFormat(KERBEROS_RENEWER_THREAD_NAME)
-        .build();
-    renewerThread = renewerThreadFactory.newThread(this);
-    renewerThread.start();
+            .setNameFormat(KERBEROS_RENEWER_THREAD_NAME)
+            .build();
+    renewerService = Executors.newSingleThreadScheduledExecutor(renewerThreadFactory);
+    renewerService.scheduleWithFixedDelay(
+            this, CHECK_REFRESH_INTERVAL, CHECK_REFRESH_INTERVAL, TimeUnit.SECONDS);
+    LOGGER.info("Sentry Ticket renewer thread started");
   }
 
   public void shutDown() throws LoginException {
-    if (renewerThread != null) {
-      shutDownRenewer = true;
-    } else {
-      logoutSubject();
+    if (renewerService != null) {
+      renewerService.shutdownNow();
+      LOGGER.info("Sentry Ticket renewer thread finished");
     }
+    logoutSubject();
   }
 }
