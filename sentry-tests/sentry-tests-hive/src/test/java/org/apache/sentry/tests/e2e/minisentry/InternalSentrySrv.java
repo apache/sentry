@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.api.common.ApiConstants.ClientConfig;
+import org.apache.sentry.service.common.ServiceConstants.ServerConfig;
 import org.apache.sentry.service.thrift.SentryService;
 import org.apache.sentry.service.thrift.SentryServiceFactory;
 import org.apache.thrift.protocol.TProtocol;
@@ -128,6 +129,27 @@ public class InternalSentrySrv implements SentrySrv {
     }
     for (int sentryServerNum = 0; sentryServerNum < sentryServers.size(); sentryServerNum++) {
       start(sentryServerNum);
+
+      /*
+       * In test, we don't create schema before running the test. Instead, we use dataNucleus to
+       * create sentry tables when they are accessed. This creates potential deadlock when running
+       * test. For example, the following shows the event sequence that causes deadlock
+       * 1) thread_1 gets shared lock of SYSTABLES in order to read table SENTRY_HMS_NOTIFICATION_ID
+       * 2) thread_2 gets shared lock of SYSTABLES in order to read table SENTRY_HMS_NOTIFICATION_ID
+       * 3) thread_1 tries to get execution lock to create table SENTRY_HMS_NOTIFICATION_ID,
+       *    and wait for execution lock because thread_2 got shared lock already.
+       * 4) thread_2 tries to get execution lock to create table SENTRY_HMS_NOTIFICATION_ID,
+       *    and wait for execution lock because thread_1 got shared lock already.
+       * The solution is to let the instances of sentry service start with delay after the first one.
+       * Specifically, let HMSfollower threads separates as far as possible by
+       * (the interval / sentryServers.size()).
+       *
+       * This deadlock does not exist in production because schema is created before starting servioces.
+       * Therefore, there is no table creation after service starts.
+       */
+      if (sentryServerNum > 0) {
+        Thread.sleep(ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS_DEFAULT / sentryServers.size());
+      }
     }
   }
 
