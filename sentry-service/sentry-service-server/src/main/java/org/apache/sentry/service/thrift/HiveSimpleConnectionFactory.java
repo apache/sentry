@@ -76,6 +76,7 @@ public final class HiveSimpleConnectionFactory implements HiveConnectionFactory 
       return;
     }
 
+    LOGGER.info("Using secured connection to HMS");
     int port = conf.getInt(ServerConfig.RPC_PORT, ServerConfig.RPC_PORT_DEFAULT);
     String rawPrincipal = Preconditions.checkNotNull(conf.get(ServerConfig.PRINCIPAL),
         "%s is required", ServerConfig.PRINCIPAL);
@@ -106,11 +107,14 @@ public final class HiveSimpleConnectionFactory implements HiveConnectionFactory 
    * @throws MetaException        if other errors happened
    */
   public HMSClient connect() throws IOException, InterruptedException, MetaException {
+    UserGroupInformation clientUGI;
+
     if (insecure) {
-      return new HMSClient(new HiveMetaStoreClient(hiveConf));
-    }
-    UserGroupInformation clientUGI =
+      clientUGI = UserGroupInformation.getCurrentUser();
+    } else {
+      clientUGI =
         UserGroupInformation.getUGIFromSubject(kerberosContext.getSubject());
+    }
     return new HMSClient(clientUGI.doAs(new PrivilegedExceptionAction<HiveMetaStoreClient>() {
       @Override
       public HiveMetaStoreClient run() throws MetaException {

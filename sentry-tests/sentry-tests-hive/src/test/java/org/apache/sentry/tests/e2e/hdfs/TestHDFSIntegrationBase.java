@@ -193,6 +193,7 @@ public abstract class TestHDFSIntegrationBase {
   protected static File policyFileLocation;
   protected static UserGroupInformation adminUgi;
   protected static UserGroupInformation hiveUgi;
+  protected static UserGroupInformation sentryUgi;
 
   // Variables which are used for cleanup after test
   // Please set these values in each test
@@ -520,6 +521,9 @@ public abstract class TestHDFSIntegrationBase {
     hiveUgi = UserGroupInformation.createUserForTesting(
         "hive", new String[] { "hive" });
 
+    sentryUgi = UserGroupInformation.createUserForTesting(
+        "sentry", new String[] { "sentry" });
+
     // Create SentryService and its internal objects.
     // Set Sentry port
     createSentry();
@@ -579,7 +583,8 @@ public abstract class TestHDFSIntegrationBase {
         // on the storage.
         hiveConf.set("hive.metastore.authorization.storage.checks", "true");
         hiveConf.set("hive.metastore.uris", "thrift://localhost:" + hmsPort);
-        hiveConf.set("sentry.metastore.service.users", "hive");// queries made by hive user (beeline) skip meta store check
+        // queries made by hive user (beeline) and sentry to HMS skip meta store check
+        hiveConf.set("sentry.metastore.service.users", "hive,sentry");
 
         File confDir = assertCreateDir(new File(baseDir, "etc"));
         File hiveSite = new File(confDir, "hive-site.xml");
@@ -662,7 +667,8 @@ public abstract class TestHDFSIntegrationBase {
         hiveConf.set("hive.metastore.event.message.factory", "org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageFactory");
         hiveConf.set("hive.security.authorization.task.factory", "org.apache.sentry.binding.hive.SentryHiveAuthorizationTaskFactoryImpl");
         hiveConf.set("hive.server2.session.hook", "org.apache.sentry.binding.hive.HiveAuthzBindingSessionHook");
-        hiveConf.set("sentry.metastore.service.users", "hive");// queries made by hive user (beeline) skip meta store check
+        // queries made by hive user (beeline) and sentry to HMS skip meta store check
+        hiveConf.set("sentry.metastore.service.users", "hive,sentry");
         // make sure metastore calls sentry post event listener
         hiveConf.set("hive.metastore.event.listeners", "org.apache.sentry.binding.metastore.SentrySyncHMSNotificationsPostEventListener");
 
@@ -852,7 +858,7 @@ public abstract class TestHDFSIntegrationBase {
     }
     SentryHDFSServiceClientFactory.factoryReset();
     try {
-      hiveUgi.doAs(new PrivilegedExceptionAction() {
+      sentryUgi.doAs(new PrivilegedExceptionAction() {
         @Override
         public Void run() throws Exception {
           sentryServer.startAll();
@@ -869,10 +875,11 @@ public abstract class TestHDFSIntegrationBase {
   private static void createSentry() throws Exception {
     try {
 
-      hiveUgi.doAs(new PrivilegedExceptionAction<Void>() {
+      sentryUgi.doAs(new PrivilegedExceptionAction<Void>() {
         @Override
         public Void run() throws Exception {
           sentryConf.set(SENTRY_HDFS_INTEGRATION_PATH_PREFIXES, MANAGED_PREFIXES);
+          sentryProperties.put(ServerConfig.PRINCIPAL, "sentry/_HOST@TEST.COM");
           sentryProperties.put(HiveServerFactory.AUTHZ_PROVIDER_BACKEND,
               SimpleDBProviderBackend.class.getName());
           sentryProperties.put(ConfVars.HIVE_AUTHORIZATION_TASK_FACTORY.varname,

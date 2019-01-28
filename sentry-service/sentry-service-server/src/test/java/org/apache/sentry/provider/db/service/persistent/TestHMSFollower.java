@@ -53,6 +53,7 @@ import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageFacto
 import org.apache.sentry.core.common.utils.PubSub;
 import org.apache.sentry.core.common.utils.SentryConstants;
 import org.apache.sentry.hdfs.UniquePathsUpdate;
+import org.apache.sentry.service.common.ServiceConstants.ServerConfig;
 import org.apache.sentry.service.thrift.SentryHMSClient;
 import org.apache.sentry.service.thrift.HiveConnectionFactory;
 import org.apache.sentry.service.thrift.HiveSimpleConnectionFactory;
@@ -85,6 +86,7 @@ public class TestHMSFollower {
 
   @BeforeClass
   public static void setup() throws IOException, LoginException {
+    configuration.set(ServerConfig.PRINCIPAL, "sentry/_HOST@TEST.COM");
     hiveConnectionFactory = new HiveSimpleConnectionFactory(configuration, new HiveConf());
     hiveConnectionFactory.init();
     configuration.set("sentry.hive.sync.create", "true");
