@@ -135,6 +135,8 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
   protected static boolean setMetastoreListener = true;
   protected static String testServerType = null;
   protected static boolean enableHiveConcurrency = false;
+  protected static boolean enableAuthorizingObjectStore = true;
+  protected static boolean enableAuthorizeReadMetaData = false;
   // indicate if the database need to be clear for every test case in one test class
   protected static boolean clearDbPerTest = true;
 
@@ -278,6 +280,19 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
       policyURI += "/" + HiveServerFactory.AUTHZ_PROVIDER_FILENAME;
     } else {
       policyURI = policyFileLocation.getPath();
+    }
+
+    if (enableAuthorizingObjectStore) {
+      properties.put(HiveConf.ConfVars.METASTORE_RAW_STORE_IMPL.varname,
+        "org.apache.sentry.binding.metastore.AuthorizingObjectStore");
+    }else {
+      properties.put(HiveConf.ConfVars.METASTORE_RAW_STORE_IMPL.varname, ConfVars.METASTORE_RAW_STORE_IMPL.defaultStrVal);
+    }
+
+    if (enableAuthorizeReadMetaData) {
+      properties.put("senry.metastore.read.authorization.enabled", "true");
+    } else {
+      properties.put("senry.metastore.read.authorization.enabled", "false");
     }
 
     if (enableHiveConcurrency) {
@@ -476,7 +491,6 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
   private static void setupSentryService() throws Exception {
 
     sentryConf = new Configuration(true);
-
     properties.put(HiveServerFactory.AUTHZ_PROVIDER_BACKEND,
         SimpleDBProviderBackend.class.getName());
     properties.put(ConfVars.HIVE_AUTHORIZATION_TASK_FACTORY.varname,

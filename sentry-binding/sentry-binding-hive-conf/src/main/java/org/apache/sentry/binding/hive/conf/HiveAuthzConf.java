@@ -109,6 +109,8 @@ public class HiveAuthzConf extends Configuration {
         AUTHZ_SYNC_ALTER_WITH_POLICY_STORE("sentry.hive.sync.alter", "true"),
         AUTHZ_SYNC_CREATE_WITH_POLICY_STORE("sentry.hive.sync.create", "false"),
         AUTHZ_SYNC_DROP_WITH_POLICY_STORE("sentry.hive.sync.drop", "true"),
+        // Specify authorizing on reading metadata is enabled or not at HMS server
+        AUTHZ_METASTORE_READ_AUTHORIZATION_ENABLED("senry.metastore.read.authorization.enabled", "false"),
 
         AUTHZ_PROVIDER_DEPRECATED("hive.sentry.provider",
                 "org.apache.sentry.provider.file.ResourceAuthorizationProvider"),

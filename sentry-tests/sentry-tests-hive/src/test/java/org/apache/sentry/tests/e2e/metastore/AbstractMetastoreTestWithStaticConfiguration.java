@@ -247,7 +247,6 @@ public abstract class AbstractMetastoreTestWithStaticConfiguration extends
     });
   }
 
-
   public void execHiveSQL(String sqlStmt, String userName) throws Exception {
     execHiveSQLwithOverlay(sqlStmt, userName, new HashMap<String, String>());
   }

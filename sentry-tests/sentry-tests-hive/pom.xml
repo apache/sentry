@@ -40,6 +40,10 @@ limitations under the License.
          API to remove the prefix instead of adding the ant dependency
     -->
     <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.apache.ant</groupId>
       <artifactId>ant</artifactId>
       <version>1.9.1</version>

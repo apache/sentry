@@ -18,6 +18,7 @@
 
 package org.apache.sentry.tests.e2e.metastore;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -27,6 +28,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 
+import org.apache.hadoop.hive.metastore.api.Database;
 import org.junit.Assert;
 
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
@@ -67,6 +69,8 @@ public class  TestMetastoreEndToEnd extends
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception {
     setMetastoreListener = false;
+    enableAuthorizingObjectStore = false;
+    enableAuthorizeReadMetaData = true;
     AbstractMetastoreTestWithStaticConfiguration.setupTestStaticConfiguration();
   }
 
@@ -636,6 +640,87 @@ public class  TestMetastoreEndToEnd extends
     Partition newPartition = client.getPartition(dbName, tabName,
         Lists.newArrayList(partVal));
     Assert.assertNotNull(newPartition);
+    client.close();
+  }
+
+  @Test
+  public void testReadDatabase() throws Exception {
+    Database db;
+    HiveMetaStoreClient client;
+
+    // Create a database and verify the admin can read its metadata
+    client = context.getMetaStoreClient(ADMIN1);
+    dropMetastoreDBIfExists(client, dbName);
+    createMetastoreDB(client, dbName);
+    dropMetastoreDBIfExists(client, "db2");
+    createMetastoreDB(client, "db2");
+    db = client.getDatabase(dbName);
+    assertThat(db).isNotNull();
+    assertThat(db.getName()).isEqualTo(dbName);
+    db = client.getDatabase("db2");
+    assertThat(db).isNotNull();
+    assertThat(db.getName()).isEqualTo("db2");
+    client.close();
+
+    // Verify a user with ALL privileges can read the database metadata
+    client = context.getMetaStoreClient(USER1_1);
+    db = client.getDatabase(dbName);
+    assertThat(db).isNotNull();
+    assertThat(db.getName()).isEqualTo(dbName);
+    client.close();
+
+    // Verify a user without privileges cannot read the database metadata
+    client = context.getMetaStoreClient(USER1_1);
+    try {
+      client.getDatabase("db2");
+      fail("MetaException exepected because USER1_1 does not have privileges on 'db2'");
+    } catch (Exception e) {
+      assertThat(e).isInstanceOf(MetaException.class)
+        .hasMessageContaining("does not have privileges for DESCDATABASE");
+    }
+    client.close();
+  }
+
+  @Test
+  public void testReadTable() throws Exception {
+    Table tbl;
+    HiveMetaStoreClient client;
+
+    // Create a database and verify the admin can read its metadata
+    client = context.getMetaStoreClient(ADMIN1);
+    dropMetastoreDBIfExists(client, dbName);
+    createMetastoreDB(client, dbName);
+    createMetastoreTable(client, dbName, tabName1,
+      Lists.newArrayList(new FieldSchema("col1", "int", "")));
+    createMetastoreTable(client, dbName, "tbl1",
+      Lists.newArrayList(new FieldSchema("col1", "int", "")));
+    tbl = client.getTable(dbName, tabName1);
+    assertThat(tbl).isNotNull();
+    assertThat(tbl.getDbName()).isEqualTo(dbName);
+    assertThat(tbl.getTableName()).isEqualTo(tabName1);
+    tbl = client.getTable(dbName, "tbl1");
+    assertThat(tbl).isNotNull();
+    assertThat(tbl.getDbName()).isEqualTo(dbName);
+    assertThat(tbl.getTableName()).isEqualTo("tbl1");
+    client.close();
+
+    // Verify a user with ALL privileges can read the table metadata
+    client = context.getMetaStoreClient(USER3_1);
+    tbl = client.getTable(dbName, tabName1);
+    assertThat(tbl).isNotNull();
+    assertThat(tbl.getDbName()).isEqualTo(dbName);
+    assertThat(tbl.getTableName()).isEqualTo(tabName1);
+    client.close();
+
+    // Verify a user without privileges cannot read the table metadata
+    client = context.getMetaStoreClient(USER3_1);
+    try {
+      client.getTable(dbName, "tbl1");
+      fail("MetaException exepected because USER3_1 does not have privileges on 'tbl1'");
+    } catch (Exception e) {
+      assertThat(e).isInstanceOf(MetaException.class)
+        .hasMessageContaining("does not have privileges for DESCTABLE");
+    }
     client.close();
   }
 }

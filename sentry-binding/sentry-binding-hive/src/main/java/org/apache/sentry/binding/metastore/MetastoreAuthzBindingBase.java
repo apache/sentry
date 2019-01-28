@@ -19,6 +19,7 @@ package org.apache.sentry.binding.metastore;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import org.apache.commons.lang.StringUtils;
@@ -38,6 +39,8 @@ import org.apache.hadoop.hive.metastore.events.PreDropDatabaseEvent;
 import org.apache.hadoop.hive.metastore.events.PreDropPartitionEvent;
 import org.apache.hadoop.hive.metastore.events.PreDropTableEvent;
 import org.apache.hadoop.hive.metastore.events.PreEventContext;
+import org.apache.hadoop.hive.metastore.events.PreReadDatabaseEvent;
+import org.apache.hadoop.hive.metastore.events.PreReadTableEvent;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.shims.Utils;
 import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
@@ -63,10 +66,10 @@ import java.util.Set;
 /**
  * Sentry binding for Hive Metastore. The binding is integrated into Metastore
  * via the pre-event listener which are fired prior to executing the metadata
- * action. This point we are only authorizing metadata writes since the listners
- * are not fired from read events. Each action builds a input and output
- * hierarchy as per the objects used in the given operations. This is then
- * passed down to the hive binding which handles the authorization. This ensures
+ * action. This point we always authorize metadata writes. Authorizing metadata reads can be
+ * enabled or disabled to maintain backwards compatibility.
+ * Each action builds a input and output hierarchy as per the objects used in the given operations.
+ * This is then passed down to the hive binding which handles the authorization. This ensures
  * that we follow the same privilege model and policies.
  */
 public abstract class MetastoreAuthzBindingBase extends MetaStorePreEventListener {
@@ -75,6 +78,7 @@ public abstract class MetastoreAuthzBindingBase extends MetaStorePreEventListene
    * Build the set of object hierarchies ie fully qualified db model objects
    */
   protected static class HierarcyBuilder {
+    public static final Set EMPTY_HIERARCHY = Collections.emptySet();
     private Set<List<DBModelAuthorizable>> authHierarchy;
 
     public HierarcyBuilder() {
@@ -135,6 +139,7 @@ public abstract class MetastoreAuthzBindingBase extends MetaStorePreEventListene
   private HiveAuthzBinding hiveAuthzBinding;
   private final String warehouseDir;
   protected static boolean sentryCacheOutOfSync = false;
+  protected final boolean readAuthorizationEnabled;
 
   public MetastoreAuthzBindingBase(Configuration config) throws Exception {
     super(config);
@@ -155,9 +160,11 @@ public abstract class MetastoreAuthzBindingBase extends MetaStorePreEventListene
     hiveConf = new HiveConf(config, this.getClass());
     this.authServer = new Server(authzConf.get(AuthzConfVars.AUTHZ_SERVER_NAME
         .getVar()));
-    serviceUsers = ImmutableSet.copyOf(toTrimedLower(Sets.newHashSet(authzConf
+    serviceUsers = ImmutableSet.copyOf(Sets.newHashSet(authzConf
         .getStrings(AuthzConfVars.AUTHZ_METASTORE_SERVICE_USERS.getVar(),
-            new String[] { "" }))));
+            new String[] { "" })));
+    readAuthorizationEnabled = authzConf.getBoolean(
+        AuthzConfVars.AUTHZ_METASTORE_READ_AUTHORIZATION_ENABLED.getVar(), false);
     warehouseDir = hiveConf.getVar(HiveConf.ConfVars.METASTOREWAREHOUSE);
 
   }
@@ -199,6 +206,16 @@ public abstract class MetastoreAuthzBindingBase extends MetaStorePreEventListene
       break;
     case LOAD_PARTITION_DONE:
       // noop for now
+      break;
+    case READ_DATABASE:
+      if (readAuthorizationEnabled) {
+        authorizeReadDatabase((PreReadDatabaseEvent) context);
+      }
+      break;
+    case READ_TABLE:
+      if (readAuthorizationEnabled) {
+        authorizeReadTable((PreReadTableEvent) context);
+      }
       break;
     default:
       break;
@@ -387,6 +404,25 @@ public abstract class MetastoreAuthzBindingBase extends MetaStorePreEventListene
     authorizeMetastoreAccess(
         HiveOperation.ALTERPARTITION_LOCATION,
         inputBuilder.build(), outputBuilder.build());
+  }
+
+  private void authorizeReadDatabase(PreReadDatabaseEvent context)
+    throws InvalidOperationException {
+    String dbName = context.getDatabase().getName();
+
+    authorizeMetastoreAccess(HiveOperation.DESCDATABASE,
+      new HierarcyBuilder().addDbToOutput(getAuthServer(), dbName).build(),
+      HierarcyBuilder.EMPTY_HIERARCHY);
+  }
+
+  private void authorizeReadTable(PreReadTableEvent context)
+    throws InvalidOperationException {
+    String dbName = context.getTable().getDbName();
+    String tableName = context.getTable().getTableName();
+
+    authorizeMetastoreAccess(HiveOperation.DESCTABLE,
+      new HierarcyBuilder().addTableToOutput(getAuthServer(), dbName, tableName).build(),
+      HierarcyBuilder.EMPTY_HIERARCHY);
   }
 
   protected InvalidOperationException invalidOperationException(Exception e) {

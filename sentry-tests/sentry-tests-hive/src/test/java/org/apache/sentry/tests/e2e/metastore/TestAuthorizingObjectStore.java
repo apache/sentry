@@ -57,6 +57,7 @@ public class TestAuthorizingObjectStore extends
 
   @BeforeClass
   public static void setupTestStaticConfiguration () throws Exception {
+    enableAuthorizeReadMetaData = true;
     AbstractMetastoreTestWithStaticConfiguration.setupTestStaticConfiguration();
   }
 
@@ -441,7 +442,17 @@ public class TestAuthorizingObjectStore extends
   @Test
   public void testPrivilegesForPartialAccess() throws Exception {
     HiveMetaStoreClient client = context.getMetaStoreClient(USER2_1);
-    assertThat(client.getDatabase(dbName1), notNullValue());
+
+    try {
+      // user only has select on dbName1.tabName1
+      client.getDatabase(dbName1);
+      fail("NoSuchObjectException should have been thrown");
+    } catch (NoSuchObjectException noe) {
+      // ignore, just make sure the authorization is failed.
+    } catch (MetaException ex) {
+      // ignore, just make sure the authorization is failed.
+    }
+
     try {
       client.getDatabase(dbName2);
       fail("NoSuchObjectException should have been thrown");
@@ -458,17 +469,25 @@ public class TestAuthorizingObjectStore extends
       fail("NoSuchObjectException should have been thrown");
     } catch (NoSuchObjectException noe) {
       // ignore, just make sure the authorization is failed.
+    } catch (MetaException ex) {
+      // ignore, just make sure the authorization is failed.
     }
+
     try {
       client.getTable(dbName2, tabName3);
       fail("NoSuchObjectException should have been thrown");
     } catch (NoSuchObjectException noe) {
       // ignore, just make sure the authorization is failed.
+    } catch (MetaException ex) {
+      // ignore, just make sure the authorization is failed.
     }
+
     try {
       client.getTable(dbName2, tabName4);
       fail("NoSuchObjectException should have been thrown");
     } catch (NoSuchObjectException noe) {
+      // ignore, just make sure the authorization is failed.
+    } catch (MetaException ex) {
       // ignore, just make sure the authorization is failed.
     }
 
@@ -478,17 +497,25 @@ public class TestAuthorizingObjectStore extends
       fail("MetaException should have been thrown");
     } catch (NoSuchObjectException noe) {
       // ignore, just make sure the authorization is failed.
+    } catch (MetaException ex) {
+      // ignore, just make sure the authorization is failed.
     }
+
     try {
       client.listPartitions(dbName2, tabName3, (short) 1);
       fail("MetaException should have been thrown");
     } catch (NoSuchObjectException noe) {
       // ignore, just make sure the authorization is failed.
+    } catch (MetaException ex) {
+      // ignore, just make sure the authorization is failed.
     }
+
     try {
       client.listPartitions(dbName2, tabName4, (short) 1);
       fail("MetaException should have been thrown");
     } catch (NoSuchObjectException noe) {
+      // ignore, just make sure the authorization is failed.
+    } catch (MetaException ex) {
       // ignore, just make sure the authorization is failed.
     }
 
@@ -501,19 +528,27 @@ public class TestAuthorizingObjectStore extends
       fail("MetaException should have been thrown");
     } catch (NoSuchObjectException noe) {
       // ignore, just make sure the authorization is failed.
+    } catch (MetaException ex) {
+      // ignore, just make sure the authorization is failed.
     }
+
     try {
       client.listPartitions(dbName2, tabName3, new ArrayList<String>(Arrays.asList(partitionVal)),
           (short) 1);
       fail("MetaException should have been thrown");
     } catch (NoSuchObjectException noe) {
       // ignore, just make sure the authorization is failed.
+    } catch (MetaException ex) {
+      // ignore, just make sure the authorization is failed.
     }
+
     try {
       client.listPartitions(dbName2, tabName4, new ArrayList<String>(Arrays.asList(partitionVal)),
           (short) 1);
       fail("MetaException should have been thrown");
     } catch (NoSuchObjectException noe) {
+      // ignore, just make sure the authorization is failed.
+    } catch (MetaException ex) {
       // ignore, just make sure the authorization is failed.
     }
 
@@ -525,17 +560,25 @@ public class TestAuthorizingObjectStore extends
       fail("NoSuchObjectException should have been thrown");
     } catch (NoSuchObjectException noe) {
       // ignore, just make sure the authorization is failed.
+    } catch (MetaException ex) {
+      // ignore, just make sure the authorization is failed.
     }
+
     try {
       client.getPartition(dbName2, tabName3, new ArrayList<String>(Arrays.asList(partitionVal)));
       fail("NoSuchObjectException should have been thrown");
     } catch (NoSuchObjectException noe) {
       // ignore, just make sure the authorization is failed.
+    } catch (MetaException ex) {
+      // ignore, just make sure the authorization is failed.
     }
+
     try {
       client.getPartition(dbName2, tabName4, new ArrayList<String>(Arrays.asList(partitionVal)));
       fail("NoSuchObjectException should have been thrown");
     } catch (NoSuchObjectException noe) {
+      // ignore, just make sure the authorization is failed.
+    } catch (MetaException ex) {
       // ignore, just make sure the authorization is failed.
     }
 

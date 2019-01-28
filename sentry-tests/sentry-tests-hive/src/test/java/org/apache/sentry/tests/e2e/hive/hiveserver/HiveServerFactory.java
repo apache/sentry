@@ -163,8 +163,6 @@ public class HiveServerFactory {
       hadoopPath.toFile().setExecutable(true);
     }
 
-    properties.put(METASTORE_RAW_STORE_IMPL,
-        "org.apache.sentry.binding.metastore.AuthorizingObjectStore");
     if (HiveServer2Type.InternalMetastore.equals(type)) {
       // The configuration sentry.metastore.service.users is for the user who
       // has all access to get the metadata.
