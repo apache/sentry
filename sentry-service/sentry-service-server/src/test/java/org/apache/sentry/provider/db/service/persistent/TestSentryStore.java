@@ -2571,6 +2571,55 @@ public class TestSentryStore extends org.junit.Assert {
 
   }
 
+  @Test
+  public void testRetrieveFullPermssionsImageWithMultiplePrivielgesPerRolePerObject() throws Exception {
+
+    // Create roles
+    String roleName1 = "privs-r1";
+    String groupName1 = "privs-g1";
+    String grantor = "g1";
+    sentryStore.createSentryRole(roleName1);
+
+    // Grant roles to the groups
+    Set<TSentryGroup> groups = Sets.newHashSet();
+    TSentryGroup group = new TSentryGroup();
+    group.setGroupName(groupName1);
+    groups.add(group);
+    sentryStore.alterSentryRoleAddGroups(grantor, roleName1, groups);
+
+    // Grant multiple privileges to a role on one object
+    TSentryPrivilege privilege1 = new TSentryPrivilege();
+    privilege1.setPrivilegeScope("TABLE");
+    privilege1.setServerName("server1");
+    privilege1.setDbName("db1");
+    privilege1.setTableName("tbl1");
+    privilege1.setAction("SELECT");
+    privilege1.setCreateTime(System.currentTimeMillis());
+    TSentryPrivilege privilege2 = new TSentryPrivilege();
+    privilege2.setPrivilegeScope("TABLE");
+    privilege2.setServerName("server1");
+    privilege2.setDbName("db1");
+    privilege2.setTableName("tbl1");
+    privilege2.setAction("INSERT");
+    privilege2.setCreateTime(System.currentTimeMillis());
+    TSentryPrivilege privilege3 = new TSentryPrivilege();
+    privilege3.setPrivilegeScope("TABLE");
+    privilege3.setServerName("server1");
+    privilege3.setDbName("db1");
+    privilege3.setTableName("tbl1");
+    privilege3.setAction("REFRESH");
+    privilege3.setCreateTime(System.currentTimeMillis());
+    sentryStore.alterSentryGrantPrivileges(SentryPrincipalType.ROLE, roleName1, Sets.newHashSet(privilege1), null);
+    sentryStore.alterSentryGrantPrivileges(SentryPrincipalType.ROLE, roleName1, Sets.newHashSet(privilege2), null);
+    sentryStore.alterSentryGrantPrivileges(SentryPrincipalType.ROLE, roleName1, Sets.newHashSet(privilege3), null);
+
+    PermissionsImage permImage = sentryStore.retrieveFullPermssionsImage();
+    Map<String, Map<TPrivilegePrincipal, String>> privs = permImage.getPrivilegeImage();
+    assertEquals(1, privs.get("db1.tbl1").size());
+    assertEquals("REFRESH,INSERT,SELECT", privs.get("db1.tbl1").get(new TPrivilegePrincipal(TPrivilegePrincipalType.ROLE, roleName1)));
+
+  }
+
   /**
    * Verifies complete snapshot of HMS Paths can be persisted and retrieved properly.
    */

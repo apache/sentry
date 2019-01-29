@@ -3147,22 +3147,19 @@ public class SentryStore implements SentryStoreInterface {
 
   private static Map<TPrivilegePrincipal, String> addPrivilegeEntry(MSentryPrivilege mPriv, TPrivilegePrincipalType tEntityType,
     String principal, Map<TPrivilegePrincipal, String> update) {
-    String action;
-    String newAction;
-    String existingPriv = update.get(principal);
-    action = mPriv.getAction().toUpperCase();
-    newAction = mPriv.getAction().toUpperCase();
+    TPrivilegePrincipal tPrivilegePrincipal = new TPrivilegePrincipal(tEntityType, principal);
+    String existingPriv = update.get(tPrivilegePrincipal);
+    String action = mPriv.getAction().toUpperCase();
+    String newAction = mPriv.getAction().toUpperCase();
     if(action.equals(AccessConstants.OWNER)) {
       // Translate owner privilege to actual privilege.
       newAction = AccessConstants.ACTION_ALL;
     }
 
     if (existingPriv == null) {
-      update.put(new TPrivilegePrincipal(tEntityType, principal),
-              newAction);
+      update.put(tPrivilegePrincipal, newAction);
     } else {
-      update.put(new TPrivilegePrincipal(tEntityType, principal), existingPriv + "," +
-              newAction);
+      update.put(tPrivilegePrincipal, existingPriv + "," + newAction);
     }
     return update;
   }
