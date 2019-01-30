@@ -16,6 +16,7 @@
  */
 package org.apache.sentry.provider.cache;
 
+import java.util.Collections;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.utils.SentryConstants;
@@ -110,7 +111,7 @@ public class SimplePrivilegeCache implements PrivilegeCache {
   @Override
   public void close() {
     if (cachedPrivileges != null) {
-      cachedPrivileges.clear();
+      cachedPrivileges = Collections.emptySet();
     }
   }
 

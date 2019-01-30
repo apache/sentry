@@ -16,7 +16,6 @@ package org.apache.sentry.binding.hive.authz;
 
 import static org.apache.hadoop.hive.metastore.MetaStoreUtils.DEFAULT_DATABASE_NAME;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import java.security.CodeSource;
@@ -174,7 +173,7 @@ public class DefaultSentryValidator extends SentryHiveAuthorizationValidator {
 
     HiveAuthzBinding hiveAuthzBinding = null;
     try {
-      hiveAuthzBinding = getAuthzBinding();
+      hiveAuthzBinding = getAuthzBindingWithPrivilegeCache(authenticator.getUserName());
       if (stmtAuthPrivileges == null) {
         // We don't handle authorizing this statement
         return;
@@ -245,9 +244,24 @@ public class DefaultSentryValidator extends SentryHiveAuthorizationValidator {
     }
   }
 
-  @VisibleForTesting
-  public HiveAuthzBinding getAuthzBinding() throws Exception {
-    return new HiveAuthzBinding(hiveHook, conf, authzConf);
+  /**
+   * Create a binding object with a cache of privileges that will last the session
+   * At the time of doing the authorization check we will only check against the cache
+   * as opposed to fetching from the database each time
+   * @param userName
+   * @return
+   * @throws Exception
+   */
+  public HiveAuthzBinding getAuthzBindingWithPrivilegeCache(String userName) throws Exception {
+    HiveAuthzBinding hiveAuthzBinding = new HiveAuthzBinding(hiveHook, conf, authzConf);
+    try {
+      HiveAuthzBinding hiveAuthzBindingWithCache = HiveAuthzBindingHookBase
+          .getHiveBindingWithPrivilegeCache(hiveAuthzBinding, userName);
+      return hiveAuthzBindingWithCache;
+    } catch (Exception e) {
+      LOG.error("Unable to build bindings with cache. Use bindings without cache", e);
+      return  hiveAuthzBinding;
+    }
   }
 
   private void addExtendHierarchy(HiveOperation hiveOp, HiveAuthzPrivileges stmtAuthPrivileges,
@@ -372,13 +386,13 @@ public class DefaultSentryValidator extends SentryHiveAuthorizationValidator {
       try {
         switch (pType) {
           case DATABASE:
-            hiveAuthzBinding = getAuthzBinding();
+            hiveAuthzBinding = getAuthzBindingWithPrivilegeCache(authenticator.getUserName());
             authzObjectFilter = new MetastoreAuthzObjectFilter<HivePrivilegeObject>(hiveAuthzBinding,
               OBJECT_EXTRACTOR);
             listObjs = authzObjectFilter.filterDatabases(authenticator.getUserName(), listObjs);
             break;
           case TABLE_OR_VIEW:
-            hiveAuthzBinding = getAuthzBinding();
+            hiveAuthzBinding = getAuthzBindingWithPrivilegeCache(authenticator.getUserName());
             authzObjectFilter = new MetastoreAuthzObjectFilter<HivePrivilegeObject>(hiveAuthzBinding,
               OBJECT_EXTRACTOR);
             listObjs = authzObjectFilter.filterTables(authenticator.getUserName(), listObjs);

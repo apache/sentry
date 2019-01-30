@@ -828,7 +828,7 @@ public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerH
   }
 
   // create hiveBinding with PrivilegeCache
-  private static HiveAuthzBinding getHiveBindingWithPrivilegeCache(HiveAuthzBinding hiveAuthzBinding,
+  static HiveAuthzBinding getHiveBindingWithPrivilegeCache(HiveAuthzBinding hiveAuthzBinding,
       String userName) throws SemanticException {
     // get the original HiveAuthzBinding, and get the user's privileges by AuthorizationProvider
     AuthorizationProvider authProvider = hiveAuthzBinding.getCurrentAuthProvider();
