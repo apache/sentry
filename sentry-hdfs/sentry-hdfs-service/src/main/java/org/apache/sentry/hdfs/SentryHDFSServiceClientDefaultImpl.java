@@ -101,6 +101,8 @@ public class SentryHDFSServiceClientDefaultImpl
   public SentryAuthzUpdate getAllUpdatesFrom(long permSeqNum, long pathSeqNum, long pathImgNum)
           throws SentryHdfsServiceException {
     try {
+      LOGGER.debug("Requesting updates: Perm sequence num:{}, Path sequence num: {}, Path Image Number: {})",
+              permSeqNum, pathSeqNum, pathImgNum);
       TAuthzUpdateRequest updateRequest = new TAuthzUpdateRequest(permSeqNum, pathSeqNum, pathImgNum);
       TAuthzUpdateResponse sentryUpdates = client.get_authz_updates(updateRequest);
 
@@ -121,8 +123,8 @@ public class SentryHDFSServiceClientDefaultImpl
       }
 
       if (LOGGER.isDebugEnabled() && !(permsUpdates.isEmpty() && pathsUpdates.isEmpty()) ) {
-        LOGGER.debug("getAllUpdatesFrom({},{},{}): permsUpdates[{}], pathsUpdates[{}]",
-          new Object[] { permSeqNum, pathSeqNum, pathImgNum, permsUpdates.size(), pathsUpdates.size() });
+        LOGGER.debug("Requesting updates: Perm sequence num:{}, Path sequence num: {}, Path Image Number: {})",
+                permSeqNum, pathSeqNum, pathImgNum);
         if (LOGGER.isTraceEnabled()) {
           if (!permsUpdates.isEmpty()) {
             LOGGER.trace("permsUpdates{}", permsUpdates);

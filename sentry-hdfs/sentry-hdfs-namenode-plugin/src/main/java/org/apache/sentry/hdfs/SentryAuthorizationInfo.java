@@ -137,6 +137,9 @@ public class SentryAuthorizationInfo implements Runnable {
         return true; // no updates is a norm, it's still success
       }
 
+      LOG.info("Received updates from Sentry Server. Size of PathUpdates {} PermUpdates {}",
+          updates.getPathUpdates().size(), updates.getPermUpdates().size());
+      LOG.debug("Processing updates " + updates.dumpContent());
       UpdateableAuthzPaths newAuthzPaths = processUpdates(
           updates.getPathUpdates(), authzPaths);
       UpdateableAuthzPermissions newAuthzPerms = processUpdates(
@@ -148,9 +151,6 @@ public class SentryAuthorizationInfo implements Runnable {
       if (newAuthzPaths != authzPaths || newAuthzPerms != authzPermissions) {
         lock.writeLock().lock();
         try {
-          if (LOG.isDebugEnabled()) {
-            LOG.debug(updates.dumpContent());
-          }
           if (newAuthzPaths != authzPaths) {
             LOG.info(String.format("FULL Updated paths seq Num [old=%d], [new=%d]",
               authzPaths.getLastUpdatedSeqNum(), newAuthzPaths.getLastUpdatedSeqNum()));
@@ -185,6 +185,8 @@ public class SentryAuthorizationInfo implements Runnable {
         }
       }
       return true;
+    } else {
+      LOG.error("Received NULL updates from Sentry");
     }
     return false;
   }
@@ -196,27 +198,19 @@ public class SentryAuthorizationInfo implements Runnable {
     V newUpdateable = updateable;
     if (!updates.isEmpty()) {
       if (updates.get(0).hasFullImage()) {
-        String logMessage = String.format("Process Update : FULL IMAGE [%s][%d][%d]",
-            newUpdateable.getClass().getSimpleName(),
-            updates.get(0).getSeqNum(),
-            updates.get(0).getImgNum());
+        String logMessage = String.format("Processing Update : FULL IMAGE") + newUpdateable.getSequenceInfo();
         LOG.info(logMessage);
         System.out.println(SentryServiceUtil.getCurrentTimeStampWithMessage(logMessage));
         newUpdateable = (V)newUpdateable.updateFull(updates.remove(0));
+        LOG.info(String.format("Processing Update : Finished processing FULL IMAGE update.."));
       }
       // Any more elements ?
       if (!updates.isEmpty()) {
-        LOG.debug(String.format("Process Update : More updates.. [%s][%d][%d][%d]",
-            newUpdateable.getClass().getSimpleName(),
-            newUpdateable.getLastUpdatedSeqNum(),
-            newUpdateable.getLastUpdatedImgNum(),
-            updates.size()));
+        LOG.debug(String.format("Processing Update : Delta updates.. [%s] Count:[%d]",
+                newUpdateable.getSequenceInfo(), updates.size()));
         newUpdateable.updatePartial(updates, lock);
       }
-      LOG.debug(String.format("Process Update : Finished updates.. [%s][%d][%d]",
-          newUpdateable.getClass().getSimpleName(),
-          newUpdateable.getLastUpdatedSeqNum(),
-          newUpdateable.getLastUpdatedImgNum()));
+      LOG.debug(String.format("Processing Update : Finished updates.."));
     }
     return newUpdateable;
   }
@@ -237,6 +231,10 @@ public class SentryAuthorizationInfo implements Runnable {
       success = false;
       LOG.warn("Failed to update, will retry in [{}]ms, error: ", 
           new Object[]{ retryWaitMillisec, ex.getMessage(), ex});
+    } catch (Throwable t) {
+      LOG.error("Received a throwable while refreshing the cache" + t);
+      System.out.println("Received a throwable  while refreshing the cache " + t);
+      throw t;
     }
     if (success) {
       // we reset lastUpdate only on successful pulling

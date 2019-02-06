@@ -114,6 +114,7 @@ public class UpdateableAuthzPaths implements AuthzPaths, Updateable<PathsUpdate>
       }
       if (newPathInfo != null && oldPathInfo != null &&
               !newPathInfo.getAuthzObj().equalsIgnoreCase(oldPathInfo.getAuthzObj())) {
+        LOG.info("Renaming Object:{} to {}",  oldPathInfo.getAuthzObj(), newPathInfo.getAuthzObj());
         paths.renameAuthzObject(
             oldPathInfo.getAuthzObj(), oldPathInfo.getDelPaths(),
             newPathInfo.getAuthzObj(), newPathInfo.getAddPaths());
@@ -137,13 +138,18 @@ public class UpdateableAuthzPaths implements AuthzPaths, Updateable<PathsUpdate>
       if (delPaths.size() == 1 && delPaths.get(0).size() == 1
               && delPaths.get(0).get(0).equals(PathsUpdate.ALL_PATHS)) {
         // Remove all paths.. eg. drop table
+        LOG.info("Applying Path update. Deleting all paths for authz obj {}", pathChanges.getAuthzObj());
         paths.deleteAuthzObject(pathChanges.getAuthzObj());
       } else {
+        LOG.info("Applying Path update. Deleting path for authz object: {} authz path: {}",
+            pathChanges.getAuthzObj(), pathChanges.getDelPaths());
         paths.deletePathsFromAuthzObject(pathChanges.getAuthzObj(), pathChanges
                 .getDelPaths());
       }
     }
     for (TPathChanges pathChanges : addPathChanges) {
+      LOG.info("Applying Path update. Adding path for authz object {} authz path {}",
+          pathChanges.getAuthzObj(), pathChanges.getAddPaths());
       applyAddChanges(pathChanges.getAuthzObj(), pathChanges.getAddPaths());
     }
   }
@@ -195,6 +201,11 @@ public class UpdateableAuthzPaths implements AuthzPaths, Updateable<PathsUpdate>
   @Override
   public String toString() {
     return String.format("%s(%s, %s, %s)", getClass().getSimpleName(), seqNum, imgNum, paths);
+  }
+
+  @Override
+  public String getSequenceInfo() {
+    return String.format("%s(Path: Sequence Number %s, Image Number: %s)", getClass().getSimpleName(), seqNum, imgNum);
   }
 
   public String dumpContent() {

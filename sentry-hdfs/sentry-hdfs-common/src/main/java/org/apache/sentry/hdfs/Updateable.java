@@ -98,4 +98,8 @@ public interface Updateable<K extends Updateable.Update> {
 
   String getUpdateableTypeName();
 
+  /**
+  Get the string with the sequence and image number.
+  */
+  String getSequenceInfo();
 }

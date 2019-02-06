@@ -94,6 +94,9 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
 
   private void applyRoleUpdates(PermissionsUpdate update) {
     for (TRoleChanges rUpdate : update.getRoleUpdates()) {
+      LOG.debug("Applying privilege update on role:{} add group {}, role delete group {}", rUpdate.getRole(),
+              rUpdate.getAddGroups(), rUpdate.getDelGroups());
+
       if (rUpdate.getRole().equals(PermissionsUpdate.ALL_ROLES)) {
         // Request to remove group from all roles
         String groupToRemove = rUpdate.getDelGroups().iterator().next();
@@ -102,6 +105,7 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
         }
       }
       RoleInfo rInfo = perms.getRoleInfo(rUpdate.getRole());
+      LOG.debug("RoleInfo Before: " + ((rInfo != null)  ? rInfo.toString() : "null"));
       for (String group : rUpdate.getAddGroups()) {
         if (rInfo == null) {
           rInfo = new RoleInfo(rUpdate.getRole());
@@ -120,12 +124,16 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
           rInfo.delGroup(group);
         }
       }
+      LOG.debug("RoleInfo After: " + ((rInfo != null)  ? rInfo.toString() : "null"));
     }
   }
 
   private void applyPrivilegeUpdates(PermissionsUpdate update) {
     TPrivilegePrincipal addPrivEntity, delPrivEntity;
     for (TPrivilegeChanges pUpdate : update.getPrivilegeUpdates()) {
+      LOG.debug("Applying privilege update on object:{} add privileges {}, delete privileges {}", pUpdate.getAuthzObj(),
+      pUpdate.getAddPrivileges(), pUpdate.getDelPrivileges());
+
       if (pUpdate.getAuthzObj().equals(PermissionsUpdate.RENAME_PRIVS)) {
         addPrivEntity = pUpdate.getAddPrivileges().keySet().iterator().next();
         delPrivEntity = pUpdate.getDelPrivileges().keySet().iterator().next();
@@ -138,12 +146,14 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
         }
         String newAuthzObj = addPrivEntity.getValue();
         String oldAuthzObj = delPrivEntity.getValue();
+        LOG.debug("Performing Rename from {} to {}", oldAuthzObj, newAuthzObj);
         PrivilegeInfo privilegeInfo = perms.getPrivilegeInfo(oldAuthzObj);
         // The privilegeInfo object can be null if no explicit Privileges
         // have been granted on the object. For eg. If grants have been applied on
         // Db, but no explicit grants on Table.. then the authzObject associated
         // with the table will never exist.
         if (privilegeInfo != null) {
+          LOG.debug("Permission info before rename " + privilegeInfo.toString());
           Map<TPrivilegePrincipal, FsAction> allPermissions = privilegeInfo.getAllPermissions();
           perms.delPrivilegeInfo(oldAuthzObj);
           perms.removeParentChildMappings(oldAuthzObj);
@@ -153,6 +163,7 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
           }
           perms.addPrivilegeInfo(newPrivilegeInfo);
           perms.addParentChildMappings(newAuthzObj);
+          LOG.debug("Permission info before rename " + newPrivilegeInfo.toString());
         }
         return;
       }
@@ -160,9 +171,11 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
         // Request to remove role from all Privileges
         delPrivEntity = pUpdate.getDelPrivileges().keySet().iterator().next();
         for (PrivilegeInfo pInfo : perms.getAllPrivileges()) {
+          LOG.debug("Role {} is revoked permission on {}", delPrivEntity.getValue(), pInfo.getAuthzObj());
           pInfo.removePermission(delPrivEntity);
         }
       }
+      logPermissionInfo("BEFORE-UPDATE",  pUpdate.getAuthzObj());
       PrivilegeInfo pInfo = perms.getPrivilegeInfo(pUpdate.getAuthzObj());
       for (Map.Entry<TPrivilegePrincipal, String> aMap : pUpdate.getAddPrivileges().entrySet()) {
         if (pInfo == null) {
@@ -205,6 +218,23 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
                 pInfo2.setPermission(dMap.getKey(), fsAction);
               }
             }
+          }
+        }
+      }
+      logPermissionInfo("AFTER-UPDATE",  pUpdate.getAuthzObj());
+    }
+  }
+
+  private void logPermissionInfo(String message, String objName) {
+    PrivilegeInfo pInfo = perms.getPrivilegeInfo(objName);
+    if(pInfo != null) {
+      LOG.debug("{} Permission info for {} is {}", message, objName, pInfo.toString());
+      Set<String> children = perms.getChildren(pInfo.getAuthzObj());
+      if (children != null) {
+        for (String child : children) {
+          PrivilegeInfo childInfo = perms.getPrivilegeInfo(child);
+          if(childInfo != null && !objName.equals(child)) {
+            LOG.debug("{} Permission info for {} is {}", message, childInfo.getAuthzObj(), childInfo.toString());
           }
         }
       }
@@ -265,6 +295,11 @@ public class UpdateableAuthzPermissions implements AuthzPermissions, Updateable<
   @Override
   public String toString() {
     return String.format("%s(%s, %s)", getClass().getSimpleName(), seqNum, perms);
+  }
+
+  @Override
+  public String getSequenceInfo() {
+    return String.format("%s (Perm: Sequence Number %s)", getClass().getSimpleName(), seqNum);
   }
 
   public String dumpContent() {

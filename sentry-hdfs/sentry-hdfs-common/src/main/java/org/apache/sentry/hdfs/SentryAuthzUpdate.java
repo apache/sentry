@@ -41,10 +41,10 @@ public class SentryAuthzUpdate {
   public String dumpContent() {
     StringBuffer sb = new StringBuffer(getClass().getSimpleName());
     if (permUpdates != null && !permUpdates.isEmpty()) {
-      sb.append(", perms[").append(permUpdates.size()).append(']').append(permUpdates);
+      sb.append(", Permission Updates[").append(permUpdates.size()).append(']').append(permUpdates);
     }
     if (pathUpdates != null && !pathUpdates.isEmpty()) {
-      sb.append(", paths[").append(pathUpdates.size()).append(']').append(pathUpdates);
+      sb.append(", Path Updates[").append(pathUpdates.size()).append(']').append(pathUpdates);
     }
     return sb.toString();
   }
