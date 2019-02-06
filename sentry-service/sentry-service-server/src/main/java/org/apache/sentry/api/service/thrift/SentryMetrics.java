@@ -38,6 +38,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.provider.db.service.persistent.SentryStore;
 import org.apache.sentry.provider.db.service.persistent.SentryStoreInterface;
+import org.apache.sentry.service.thrift.FullUpdateInitializer;
 import org.apache.sentry.service.thrift.SentryService;
 import org.apache.sentry.api.common.SentryServiceUtil;
 import org.slf4j.Logger;
@@ -121,6 +122,21 @@ public final class SentryMetrics {
     name(SentryPolicyStoreProcessor.class, "list-users-privileges"));
   final Timer notificationProcessTimer = METRIC_REGISTRY.timer(
           name(SentryPolicyStoreProcessor.class, "process-hsm-notification"));
+
+  public final Timer getFullHMSSnapshotTimer = METRIC_REGISTRY.timer(
+      name(FullUpdateInitializer.class, "fetch-full-snapshot"));
+
+  /** Total number of database objects */
+  public final Counter databaseCount = METRIC_REGISTRY.counter(
+      name(FullUpdateInitializer.class, "total", "db"));
+
+  /** Total number of table objects */
+  public final Counter tableCount = METRIC_REGISTRY.counter(
+      name(FullUpdateInitializer.class, "total", "tables"));
+
+  /** Total number of partition objects */
+  public final Counter partitionCount = METRIC_REGISTRY.counter(
+      name(FullUpdateInitializer.class, "total", "partitions"));
 
   /**
    * Return a Timer with name.

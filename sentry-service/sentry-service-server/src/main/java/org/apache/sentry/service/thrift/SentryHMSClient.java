@@ -19,7 +19,6 @@
 package org.apache.sentry.service.thrift;
 
 import com.codahale.metrics.Counter;
-import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -60,11 +59,7 @@ public class SentryHMSClient implements AutoCloseable {
   private HiveMetaStoreClient client = null;
   private HiveConnectionFactory hiveConnectionFactory;
 
-  private static final String SNAPSHOT = "snapshot";
-  /** Measures time to get full snapshot. */
-  private final Timer updateTimer = SentryMetrics.getInstance()
-      .getTimer(name(FullUpdateInitializer.class, SNAPSHOT));
-  /** Number of times update failed. */
+    /** Number of times update failed. */
   private final Counter failedSnapshotsCount = SentryMetrics.getInstance()
       .getCounter(name(FullUpdateInitializer.class, "failed"));
 
@@ -249,7 +244,7 @@ public class SentryHMSClient implements AutoCloseable {
 
     try (FullUpdateInitializer updateInitializer =
              new FullUpdateInitializer(hiveConnectionFactory, conf);
-         Context context = updateTimer.time()) {
+         Context context = SentryMetrics.getInstance().getFullHMSSnapshotTimer.time()) {
       SentryStateBank.enableState(FullUpdateInitializerState.COMPONENT,FullUpdateInitializerState.FULL_SNAPSHOT_INPROGRESS);
       Map<String, Collection<String>> pathsUpdate = updateInitializer.getFullHMSSnapshot();
       logMessage = "Obtained full HMS snapshot";

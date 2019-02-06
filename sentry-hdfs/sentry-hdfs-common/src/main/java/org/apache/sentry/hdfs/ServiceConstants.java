@@ -39,6 +39,9 @@ public class ServiceConstants {
     public static final String SENTRY_HDFS_SYNC_METASTORE_CACHE_RETRY_WAIT_DURAION_IN_MILLIS = "sentry.hdfs.sync.metastore.cache.retry.wait.duration.millis";
     public static final int SENTRY_HDFS_SYNC_METASTORE_CACHE_RETRY_WAIT_DURAION_IN_MILLIS_DEFAULT = 1000;
 
+    public static final String SENTRY_HDFS_SYNC_METASTORE_CACHE_PRINT_SNAPSHOT_FETCH_INTERVAL_IN_MILLIS = "sentry.hdfs.sync.metastore.cache.print-snapshot-fetch-interval.millis";
+    public static final int SENTRY_HDFS_SYNC_METASTORE_CACHE_PRINT_SNAPSHOT_FETCH_INTERVAL_IN_MILLIS_DEFAULT = 300000;
+
     public static final String SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_PART_PER_RPC = "sentry.hdfs.sync.metastore.cache.max-partitions-per-rpc";
     public static final int SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_PART_PER_RPC_DEFAULT = 100;
     public static final String SENTRY_HDFS_SYNC_METASTORE_CACHE_MAX_TABLES_PER_RPC = "sentry.hdfs.sync.metastore.cache.max-tables-per-rpc";
