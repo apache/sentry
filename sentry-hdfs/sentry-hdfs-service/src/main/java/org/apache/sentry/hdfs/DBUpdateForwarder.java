@@ -117,7 +117,7 @@ class DBUpdateForwarder<K extends Updateable.Update> {
     long curSeqNum = deltaRetriever.getLatestDeltaID();
     LOGGER.debug("({}) Current sequence number is {}", retrieverType, curSeqNum);
 
-    if (seqNum > curSeqNum) {
+    if (seqNum == curSeqNum + 1) {
       // No new notifications were processed.
       LOGGER.debug("{}, No new updates", retrieverType);
       return Collections.emptyList();

@@ -92,6 +92,15 @@ public class TestDBUpdateForwarder {
   }
 
   @Test
+  public void testEmptyListReturnedWhenImageSeqIsEqualToLatest() throws Exception {
+    Mockito.when(imageRetriever.getLatestImageID()).thenReturn(1L);
+    Mockito.when(deltaRetriever.getLatestDeltaID()).thenReturn(10L);
+
+    List<PathsUpdate> updates = updater.getAllUpdatesFrom(11, 1);
+    assertTrue(updates.isEmpty());
+  }
+
+  @Test
   public void testFirstImageSyncIsReturnedWhenImageNumIsZero() throws Exception {
     Mockito.when(imageRetriever.getLatestImageID()).thenReturn(1L);
     Mockito.when(imageRetriever.retrieveFullImage())
@@ -139,6 +148,21 @@ public class TestDBUpdateForwarder {
     assertEquals(1, updates.size());
     assertEquals(1, updates.get(0).getSeqNum());
     assertEquals(2, updates.get(0).getImgNum());
+    assertTrue(updates.get(0).hasFullImage());
+  }
+
+  @Test
+  public void testNewImageUpdateIsReturnedWhenImageSeqIsGreaterThanLatestSeqByOne() throws Exception {
+    Mockito.when(imageRetriever.getLatestImageID()).thenReturn(1L);
+    Mockito.when(deltaRetriever.getLatestDeltaID()).thenReturn(10L);
+    Mockito.when(deltaRetriever.isDeltaAvailable(15)).thenReturn(false);
+    Mockito.when(imageRetriever.retrieveFullImage())
+        .thenReturn(new PathsUpdate(10, 1, true));
+
+    List<PathsUpdate> updates = updater.getAllUpdatesFrom(15, 1);
+    assertEquals(1, updates.size());
+    assertEquals(10, updates.get(0).getSeqNum());
+    assertEquals(1, updates.get(0).getImgNum());
     assertTrue(updates.get(0).hasFullImage());
   }
 
