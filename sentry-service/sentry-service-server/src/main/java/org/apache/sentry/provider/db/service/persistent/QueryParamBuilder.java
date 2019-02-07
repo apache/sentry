@@ -31,6 +31,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -352,11 +353,11 @@ public class QueryParamBuilder {
    * @return paramBuilder supplied or a new one if the supplied one is null.
    */
   public static QueryParamBuilder addPathFilter(QueryParamBuilder paramBuilder,
-                                                 Iterable<String> paths) {
+                                                 Collection<String> paths) {
     if (paramBuilder == null) {
       paramBuilder = new QueryParamBuilder();
     }
-    if (paths == null) {
+    if (paths == null || paths.isEmpty()) {
       return paramBuilder;
     }
     paramBuilder.newChild().addSet("this.path == ", paths, false);

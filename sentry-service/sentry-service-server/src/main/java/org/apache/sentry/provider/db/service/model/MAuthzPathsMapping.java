@@ -58,9 +58,11 @@ public class MAuthzPathsMapping {
     this.authzObjectId = authzObjectId;
     this.authzObjName = MSentryUtil.safeIntern(authzObjName);
     this.pathsPersisted = Collections.EMPTY_SET;
-    this.pathsToPersist = new HashSet<>(paths.size());
-    for(String path : paths) {
-      this.pathsToPersist.add(path);
+    if(paths != null && !paths.isEmpty()) {
+      this.pathsToPersist = new HashSet<>(paths.size());
+      for (String path : paths) {
+        this.pathsToPersist.add(path);
+      }
     }
     this.createTimeMs = System.currentTimeMillis();
   }
@@ -90,7 +92,7 @@ public class MAuthzPathsMapping {
   }
 
   public void addPathToPersist(Collection<String> paths) {
-    if(paths == null || paths.size() == 0) {
+    if(paths == null || paths.isEmpty()) {
       return;
     }
     if(pathsToPersist == null) {
@@ -176,6 +178,9 @@ public class MAuthzPathsMapping {
    */
   public void makePersistent(PersistenceManager pm) {
     pm.makePersistent(this);
+    if(pathsToPersist == null || pathsToPersist.isEmpty()) {
+      return;
+    }
     for (String path : pathsToPersist) {
       pm.makePersistent(new MPathToPersist(authzObjectId, path));
     }
@@ -187,7 +192,7 @@ public class MAuthzPathsMapping {
    * @param pm Persistence manager instance
    * @param paths paths to be removed.
    */
-  public void deletePersistent(PersistenceManager pm, Iterable<String> paths) {
+  public void deletePersistent(PersistenceManager pm, Collection<String> paths) {
     Query query = pm.newQuery(MPathToPersist.class);
     QueryParamBuilder paramBuilder = QueryParamBuilder.addPathFilter(null, paths).addObject("authzObjectId",
         authzObjectId);

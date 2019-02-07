@@ -624,6 +624,7 @@ public class SentryStore implements SentryStoreInterface {
    * Removes all the information related to HMS Objects from sentry store.
    */
   public void clearHmsPathInformation() throws Exception {
+    LOGGER.info("Clearing all the Path information");
     tm.executeTransactionWithRetry(
             pm -> {
               // Data in MAuthzPathsSnapshotId.class is not cleared intentionally.
@@ -3448,7 +3449,7 @@ public class SentryStore implements SentryStoreInterface {
    * @param paths a set of paths need to be deleted from the authzObj -> [Paths] mapping
    * @param update the corresponding path delta update
    */
-  public void deleteAuthzPathsMapping(final String authzObj, final Iterable<String> paths,
+  public void deleteAuthzPathsMapping(final String authzObj, final Collection<String> paths,
       final UniquePathsUpdate update) throws Exception {
     execute(update, pm -> {
       pm.setDetachAllOnCommit(false); // No need to detach objects
@@ -3466,7 +3467,7 @@ public class SentryStore implements SentryStoreInterface {
    * @throws SentryNoSuchObjectException if cannot find the existing authzObj or path.
    */
   private void deleteAuthzPathsMappingCore(PersistenceManager pm, String authzObj,
-                                           Iterable<String> paths) {
+                                           Collection<String> paths) {
     long currentSnapshotID = getCurrentAuthzPathsSnapshotID(pm);
     if (currentSnapshotID <= EMPTY_PATHS_SNAPSHOT_ID) {
       LOGGER.error("No paths snapshot ID is found. Cannot delete authzoObj: {}", authzObj);

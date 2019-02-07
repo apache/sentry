@@ -723,7 +723,7 @@ public interface SentryStoreInterface {
    * @param update the corresponding path delta update
    */
   void deleteAuthzPathsMapping(final String authzObj,
-                               final Iterable<String> paths,
+                               final Collection<String> paths,
                                final UniquePathsUpdate update) throws Exception;
 
   /**

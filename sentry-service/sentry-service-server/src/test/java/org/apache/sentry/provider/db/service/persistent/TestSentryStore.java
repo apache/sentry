@@ -2703,6 +2703,34 @@ public class TestSentryStore extends org.junit.Assert {
     assertEquals(paths.size(), 4);
     assertTrue(paths.stream().anyMatch(x -> x.getPath().equalsIgnoreCase("/hive/db1/tb1/par2")));
     assertTrue(paths.stream().anyMatch(x -> x.getPath().equalsIgnoreCase("/hive/db1/tb1/par3")));
+
+    //Add null paths to an existing mapping and verify that there are no exceptions
+    try {
+      sentryStore.addAuthzPathsMapping("db1.tb1", null, null);
+    } catch (Exception e) {
+      fail("Exception occurred while adding mapping with null paths");
+    }
+
+    //Add new mapping with null paths and verify that there are no exceptions
+    try {
+      sentryStore.addAuthzPathsMapping("db1.tb5", null, null);
+    } catch (Exception e) {
+      fail("Exception occurred while adding mapping with null paths");
+    }
+
+    //Add empty paths collection to existing mapping verify that there are no exceptions
+    try {
+      sentryStore.addAuthzPathsMapping("db1.tb6", Collections.EMPTY_SET, null);
+    } catch (Exception e) {
+      fail("Exception occurred while adding mapping with empty path collection");
+    }
+
+    //Add new mapping with empty paths collection and verify that there are no exceptions
+    try {
+      sentryStore.addAuthzPathsMapping("db1.tb1", Collections.EMPTY_SET, null);
+    } catch (Exception e) {
+      fail("Exception occurred while adding mapping with empty path collection");
+    }
   }
 
   @Test
@@ -2920,6 +2948,24 @@ public class TestSentryStore extends org.junit.Assert {
     sentryStore.deleteAllAuthzPathsMapping("db2.table", null);
     // Verify the Path count
     assertEquals(0, sentryStore.getCount(MPath.class).intValue());
+
+    // Add a mapping to two paths
+    sentryStore.addAuthzPathsMapping("db1.table",
+            Sets.newHashSet("db1/tbl1", "db1/tbl2"), null);
+    // deleting the mapping with paths as null and verifying that all the paths are deleted.
+    sentryStore.deleteAuthzPathsMapping("db1.table", null, null);
+    // Verify the Path count
+    assertEquals(0, sentryStore.getCount(MPath.class).intValue());
+
+    // Add a mapping to two paths
+    sentryStore.addAuthzPathsMapping("db1.table",
+            Sets.newHashSet("db1/tbl1", "db1/tbl2"), null);
+    // deleting the mapping with paths as empty set and verifying that all the paths are deleted.
+    sentryStore.deleteAuthzPathsMapping("db1.table", Collections.EMPTY_SET, null);
+    // Verify the Path count
+    assertEquals(0, sentryStore.getCount(MPath.class).intValue());
+
+
   }
 
   @Test
