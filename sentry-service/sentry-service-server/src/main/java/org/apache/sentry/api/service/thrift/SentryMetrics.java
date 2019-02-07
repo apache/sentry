@@ -86,6 +86,9 @@ public final class SentryMetrics {
   private boolean gaugesAdded = false;
   private boolean sentryServiceGaugesAdded = false;
 
+  final Timer isSentryAdminTimer = METRIC_REGISTRY.timer(
+    name(SentryPolicyStoreProcessor.class, "is-sentry-admin"));
+
   final Timer createRoleTimer = METRIC_REGISTRY.timer(
       name(SentryPolicyStoreProcessor.class, "create-role"));
   final Timer dropRoleTimer = METRIC_REGISTRY.timer(

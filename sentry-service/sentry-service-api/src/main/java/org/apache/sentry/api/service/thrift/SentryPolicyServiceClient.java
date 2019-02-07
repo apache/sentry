@@ -27,6 +27,7 @@ import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 
 public interface SentryPolicyServiceClient extends AutoCloseable {
+  boolean isAdmin(String userName) throws SentryUserException;
 
   void createRole(String requestorUserName, String roleName) throws SentryUserException;
 

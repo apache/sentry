@@ -209,6 +209,34 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
   }
 
   @Override
+  public TIsSentryAdminResponse is_sentry_admin(TIsSentryAdminRequest request)
+      throws TException {
+    final Timer.Context timerContext = sentryMetrics.isSentryAdminTimer.time();
+    TIsSentryAdminResponse response = new TIsSentryAdminResponse();
+    String user = request.getUserName();
+
+    try {
+      validateClientVersion(request.getProtocol_version());
+      Set<String> groups = getRequestorGroups(user);
+      response.setIsAdmin(inAdminGroups(groups));
+      response.setStatus(Status.OK());
+    } catch (SentryThriftAPIMismatchException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.THRIFT_VERSION_MISMATCH(e.getMessage(), e));
+    } catch (SentryUserException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (Exception e) {
+      String msg = "Unknown error for request: " + request + ", message: " + e.getMessage();
+      LOGGER.error(msg, e);
+      response.setStatus(Status.RuntimeError(msg, e));
+    } finally {
+      timerContext.stop();
+    }
+    return response;
+  }
+
+  @Override
   public TCreateSentryRoleResponse create_sentry_role(
     TCreateSentryRoleRequest request) throws TException {
     final Timer.Context timerContext = sentryMetrics.createRoleTimer.time();

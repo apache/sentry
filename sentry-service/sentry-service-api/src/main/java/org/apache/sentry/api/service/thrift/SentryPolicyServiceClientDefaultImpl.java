@@ -106,6 +106,21 @@ public class SentryPolicyServiceClientDefaultImpl implements SentryPolicyService
   }
 
   @Override
+  public boolean isAdmin(String userName)
+    throws SentryUserException {
+    TIsSentryAdminRequest request = new TIsSentryAdminRequest();
+    request.setProtocol_version(ThriftConstants.TSENTRY_SERVICE_VERSION_CURRENT);
+    request.setUserName(userName);
+    try {
+      TIsSentryAdminResponse response = client.is_sentry_admin(request);
+      Status.throwIfNotOk(response.getStatus());
+      return response.isIsAdmin();
+    } catch (TException e) {
+      throw new SentryUserException(THRIFT_EXCEPTION_MESSAGE, e);
+    }
+  }
+
+  @Override
   public void createRole(String requestorUserName, String roleName)
     throws SentryUserException {
     TCreateSentryRoleRequest request = new TCreateSentryRoleRequest();

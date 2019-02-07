@@ -73,6 +73,26 @@ public class TestSentryServiceIntegration extends SentryServiceIntegrationBase {
   }
 
   @Test
+  public void testIsAdmin() throws Exception {
+    runTestAsSubject(new TestOperation() {
+      @Override
+      public void runTestAsSubject() throws Exception {
+        String requestorUserName = ADMIN_USER;
+        Set<String> requestorUserGroupNames = Sets.newHashSet(ADMIN_GROUP);
+        setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+        requestorUserName = "non_admin";
+        requestorUserGroupNames = Sets.newHashSet("non_admin_group");
+        setLocalGroupMapping(requestorUserName, requestorUserGroupNames);
+        writePolicyFile();
+
+        boolean admin = client.isAdmin(ADMIN_USER);
+        assertTrue(admin);
+        admin = client.isAdmin("non_admin");
+        assertTrue(!admin);
+      }});
+  }
+
+  @Test
   public void testGranRevokePrivilegeOnTableForRole() throws Exception {
     runTestAsSubject(new TestOperation(){
       @Override

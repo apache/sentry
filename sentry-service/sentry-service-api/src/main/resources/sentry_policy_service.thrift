@@ -62,6 +62,15 @@ struct TSentryGroup {
 1: required string groupName
 }
 
+struct TIsSentryAdminRequest {
+1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V2,
+2: required string userName,
+}
+struct TIsSentryAdminResponse {
+1: required sentry_common_service.TSentryResponseStatus status,
+2: required bool isAdmin,
+}
+
 # CREATE ROLE r1
 struct TCreateSentryRoleRequest {
 1: required i32 protocol_version = sentry_common_service.TSENTRY_SERVICE_V2,
@@ -392,6 +401,9 @@ struct TSentryPrivilegesResponse {
 
 service SentryPolicyService
 {
+  # Check if the given user is in the Sentry admin group.
+  TIsSentryAdminResponse is_sentry_admin(1:TIsSentryAdminRequest request)
+
   TCreateSentryRoleResponse create_sentry_role(1:TCreateSentryRoleRequest request)
   TDropSentryRoleResponse drop_sentry_role(1:TDropSentryRoleRequest request)
 
