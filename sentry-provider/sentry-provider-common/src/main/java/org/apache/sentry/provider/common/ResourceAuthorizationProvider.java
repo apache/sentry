@@ -24,7 +24,6 @@ import static org.apache.sentry.core.common.utils.SentryConstants.PRIVILEGE_NAME
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -125,29 +124,33 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
       LOGGER.debug("Groups not found for " + subject);
     }
     Set<String> users = Sets.newHashSet(subject.getName());
-    Set<String> hierarchy = new HashSet<String>();
-    for (Authorizable authorizable : authorizables) {
-      hierarchy.add(KV_JOINER.join(authorizable.getTypeName(), authorizable.getName()));
-    }
     List<String> requestPrivileges = buildPermissions(authorizables, actions, requireGrantOption);
+    LOGGER.debug("requestPrivileges={}", requestPrivileges);
+    LOGGER.debug("PolicyEngine={}, PrivilegeFactory={}", policy.getClass().getName(), policy.getPrivilegeFactory().getClass().getName());
+    LOGGER.debug("Get privileges for groups={}, users={}, roleSet={}", groups, users, roleSet);
+
     Iterable<Privilege> privileges = getPrivileges(groups, users, roleSet,
         authorizables.toArray(new Authorizable[0]));
     lastFailedPrivileges.get().clear();
 
     for (String requestPrivilege : requestPrivileges) {
-      Privilege priv = privilegeFactory.createPrivilege(requestPrivilege);
-      for (Privilege permission : privileges) {
-        /*
-         * Does the permission granted in the policy file imply the requested action?
-         */
-        boolean result = permission.implies(priv, model);
-        if (LOGGER.isDebugEnabled()) {
+      try {
+        Privilege priv = privilegeFactory.createPrivilege(requestPrivilege);
+        for (Privilege permission : privileges) {
+          /*
+           * Does the permission granted in the policy file imply the requested action?
+           */
+          boolean result = permission.implies(priv, model);
           LOGGER.debug("ProviderPrivilege {}, RequestPrivilege {}, RoleSet {}, Result {}",
               new Object[]{ permission, requestPrivilege, roleSet, result});
+          if (result) {
+            return true;
+          }
+
         }
-        if (result) {
-          return true;
-        }
+      } catch(Exception e) {
+        LOGGER.error("doHasAccess: Exception", e);
+        throw e;
       }
     }
 

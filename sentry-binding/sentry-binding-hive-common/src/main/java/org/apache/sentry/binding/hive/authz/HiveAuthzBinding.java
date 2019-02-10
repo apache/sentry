@@ -323,16 +323,9 @@ public class HiveAuthzBinding implements AutoCloseable {
     // Check read entities
     Map<AuthorizableType, EnumSet<DBModelAction>> requiredInputPrivileges =
         stmtAuthPrivileges.getInputPrivileges();
-    if(isDebug) {
-      LOG.debug("requiredInputPrivileges = " + requiredInputPrivileges);
-      LOG.debug("inputHierarchyList = " + inputHierarchyList);
-    }
-    Map<AuthorizableType, EnumSet<DBModelAction>> requiredOutputPrivileges =
-        stmtAuthPrivileges.getOutputPrivileges();
-    if(isDebug) {
-      LOG.debug("requiredOuputPrivileges = " + requiredOutputPrivileges);
-      LOG.debug("outputHierarchyList = " + outputHierarchyList);
-    }
+    LOG.debug("requiredInputPrivileges = " + requiredInputPrivileges);
+    LOG.debug("inputHierarchyList = " + inputHierarchyList);
+
 
     boolean found = false;
     for (Map.Entry<AuthorizableType, EnumSet<DBModelAction>> entry : requiredInputPrivileges.entrySet()) {
@@ -359,6 +352,11 @@ public class HiveAuthzBinding implements AutoCloseable {
       }
       found = false;
     }
+
+    Map<AuthorizableType, EnumSet<DBModelAction>> requiredOutputPrivileges =
+        stmtAuthPrivileges.getOutputPrivileges();
+    LOG.debug("requiredOuputPrivileges = " + requiredOutputPrivileges);
+    LOG.debug("outputHierarchyList = " + outputHierarchyList);
 
     for (Map.Entry<AuthorizableType, EnumSet<DBModelAction>> entry : requiredOutputPrivileges.entrySet()) {
       AuthorizableType key = entry.getKey();

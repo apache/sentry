@@ -345,7 +345,6 @@ public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerH
     Set<List<DBModelAuthorizable>> outputHierarchy = new HashSet<List<DBModelAuthorizable>>();
 
     if(LOG.isDebugEnabled()) {
-      LOG.debug("stmtAuthObject.getOperationScope() = " + stmtAuthObject.getOperationScope());
       LOG.debug("context.getInputs() = " + context.getInputs());
       LOG.debug("context.getOutputs() = " + context.getOutputs());
     }
@@ -927,5 +926,18 @@ public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerH
     }
 
     return true;
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder strb = new StringBuilder();
+    strb.append("currDB=").append(currDB).append(", currTab=").append(currTab)
+        .append(", udfURIs=").append(udfURIs).append(", serdeURI=").append(serdeURI)
+        .append(", partitionURI=").append(partitionURI).append(", indexURI=").append(indexURI)
+        .append(", currOutDB=").append(currOutDB).append(", currOutTab=").append(currOutTab)
+        .append(", serdeWhiteList=").append(serdeWhiteList).append(", serdeURIPrivilegesEnabled=").append(serdeURIPrivilegesEnabled)
+        .append(", isDescTableBasic=").append(isDescTableBasic);
+
+    return strb.toString();
   }
 }

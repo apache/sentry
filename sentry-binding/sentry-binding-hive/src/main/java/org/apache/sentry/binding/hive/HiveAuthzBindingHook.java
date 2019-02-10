@@ -299,6 +299,9 @@ public class HiveAuthzBindingHook extends HiveAuthzBindingHookBase {
         currDB = getCanonicalDb();
         break;
     }
+
+    LOG.debug("preAnalyze: For Operation={}; " + this, ast.getToken().getType());
+
     return ast;
   }
 
@@ -321,6 +324,8 @@ public class HiveAuthzBindingHook extends HiveAuthzBindingHookBase {
     stmtAuthObject = HiveAuthzPrivilegesMap.getHiveAuthzPrivileges(stmtOperation);
 
     Subject subject = getCurrentSubject(context);
+
+    LOG.debug("postAnalyze: HiveOperation={}, HiveAuthzPrivileges={}, subject={}", stmtOperation, stmtAuthObject, subject);
 
     try {
       if (stmtAuthObject == null) {

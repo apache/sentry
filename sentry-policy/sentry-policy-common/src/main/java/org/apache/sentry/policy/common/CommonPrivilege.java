@@ -30,18 +30,24 @@ import org.apache.sentry.core.common.utils.SentryConstants;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // The class is used to compare the privilege
 public class CommonPrivilege implements Privilege {
 
   private ImmutableList<KeyValue> parts;
   private boolean grantOption = false;
+  private static final Logger LOGGER = LoggerFactory.getLogger(CommonPrivilege.class);
 
   public CommonPrivilege(String privilegeStr) {
     privilegeStr = Strings.nullToEmpty(privilegeStr).trim();
     if (privilegeStr.isEmpty()) {
       throw new IllegalArgumentException("Privilege string cannot be null or empty.");
     }
+
+    LOGGER.debug("Create Privilege instance for privilegeStr={}", privilegeStr);
+
     List<KeyValue> parts = Lists.newArrayList();
     for (String authorizable : SentryConstants.AUTHORIZABLE_SPLITTER.trimResults().split(
             privilegeStr)) {

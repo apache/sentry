@@ -34,9 +34,9 @@ public class KeyValue {
     key = kvList.get(0);
     value = kvList.get(1);
     if (key.isEmpty()) {
-      throw new IllegalArgumentException("Key cannot be empty");
+      throw new IllegalArgumentException("kvList=[" + kvList + "] for keyValue[" + keyValue + "], Key cannot be empty");
     } else if (value.isEmpty()) {
-      throw new IllegalArgumentException("Value cannot be empty");
+      throw new IllegalArgumentException("kvList=[" + kvList + "] for keyValue[" + keyValue + "], Value cannot be empty");
     }
   }
 
