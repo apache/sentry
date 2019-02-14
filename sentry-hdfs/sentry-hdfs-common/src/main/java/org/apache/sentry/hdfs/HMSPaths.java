@@ -798,8 +798,8 @@ public class HMSPaths implements AuthzPaths {
   void deletePathsFromAuthzObject(String authzObj,
       List<List<String>> authzObjPathElements) {
     Set<Entry> entries = authzObjToEntries.get(authzObj);
-    LOG.debug("[deletePathsFromAuthzObject] Paths for {} before delete are {}", authzObj, entries.toString());
     if (entries != null) {
+      LOG.debug("[deletePathsFromAuthzObject] Paths for {} before delete are {}", authzObj, entries.toString());
       Set<Entry> toDelEntries = new HashSet<Entry>(authzObjPathElements.size());
       for (List<String> pathElements : authzObjPathElements) {
         Entry entry = root.find(
