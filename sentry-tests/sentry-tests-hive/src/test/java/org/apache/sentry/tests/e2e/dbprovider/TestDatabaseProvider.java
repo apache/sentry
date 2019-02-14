@@ -2274,4 +2274,94 @@ public class TestDatabaseProvider extends AbstractTestWithStaticConfiguration {
     validateReturnedResult(expectedResult, returnedResult);
     connection.close();
   }
+
+  /**
+   * When two roles r1, r2 had ALL grant on an entity like a database,
+   * another ALL grant to the same database to one of the roles r1
+   * caused it to get deleted on role r1
+   * @throws Exception
+   */
+  @Test
+  public void testGrantConsecutiveALL() throws Exception {
+
+    // setup db objects needed by the test
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
+    statement.execute("CREATE DATABASE db1");
+    statement.execute("CREATE ROLE role1");
+    statement.execute("CREATE ROLE role2");
+    statement.execute("GRANT ALL ON DATABASE db1 TO ROLE role1");
+    statement.execute("GRANT ALL ON DATABASE db1 TO ROLE role2");
+    ResultSet resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 1);
+    assertThat(resultSet.getString(1), equalToIgnoringCase("db1"));//the value should be db1
+    assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
+    assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
+    assertThat(resultSet.getString(7), equalToIgnoringCase("*"));
+
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role2");
+    assertResultSize(resultSet, 1);
+    assertThat(resultSet.getString(1), equalToIgnoringCase("db1"));//the value should be db1
+    assertThat(resultSet.getString(5), equalToIgnoringCase("role2"));//principalName
+    assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
+    assertThat(resultSet.getString(7), equalToIgnoringCase("*"));
+
+    statement.execute("GRANT ALL ON DATABASE db1 TO ROLE role1");
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 1);
+    assertThat(resultSet.getString(1), equalToIgnoringCase("db1"));//the value should be db1
+    assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
+    assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
+    assertThat(resultSet.getString(7), equalToIgnoringCase("*"));
+
+    connection.close();
+  }
+
+  @Test
+  public void testGrantConsecutiveALLWithMulitpleInitialGrants() throws Exception {
+
+    // setup db objects needed by the test
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("DROP DATABASE IF EXISTS db1 CASCADE");
+    statement.execute("CREATE DATABASE db1");
+    statement.execute("CREATE ROLE role1");
+    statement.execute("CREATE ROLE role2");
+    statement.execute("GRANT SELECT ON DATABASE db1 TO ROLE role1");
+    statement.execute("GRANT INSERT ON DATABASE db1 TO ROLE role1");
+    statement.execute("GRANT ALL ON DATABASE db1 TO ROLE role2");
+    ResultSet resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 2);
+    int i = 1;
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    while(resultSet.next()) {
+      assertThat(resultSet.getString(1), equalToIgnoringCase("db1"));//the value should be db1
+      assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
+      assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
+      if (i%2 != 0) {
+        assertThat(resultSet.getString(7), equalToIgnoringCase("INSERT"));
+      } else{
+        assertThat(resultSet.getString(7), equalToIgnoringCase("SELECT"));
+      }
+      i++;
+    }
+
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role2");
+    assertResultSize(resultSet, 1);
+    assertThat(resultSet.getString(1), equalToIgnoringCase("db1"));//the value should be db1
+    assertThat(resultSet.getString(5), equalToIgnoringCase("role2"));//principalName
+    assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
+    assertThat(resultSet.getString(7), equalToIgnoringCase("*"));
+
+    statement.execute("GRANT ALL ON DATABASE db1 TO ROLE role1");
+    resultSet = statement.executeQuery("SHOW GRANT ROLE role1");
+    assertResultSize(resultSet, 1);
+    assertThat(resultSet.getString(1), equalToIgnoringCase("db1"));//the value should be db1
+    assertThat(resultSet.getString(5), equalToIgnoringCase("role1"));//principalName
+    assertThat(resultSet.getString(6), equalToIgnoringCase("role"));//principalType
+    assertThat(resultSet.getString(7), equalToIgnoringCase("*"));
+
+    connection.close();
+  }
 }

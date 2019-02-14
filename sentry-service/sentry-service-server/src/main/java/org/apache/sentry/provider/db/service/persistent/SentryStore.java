@@ -881,9 +881,13 @@ public class SentryStore implements SentryStoreInterface {
     mPrivilege = getMSentryPrivilege(privilege, pm);
     if (mPrivilege == null) {
       mPrivilege = convertToMSentryPrivilege(privilege);
+      mPrivilege.appendPrincipal(mEntity);
+      pm.makePersistent(mPrivilege);
+    } else {
+      mEntity.appendPrivilege(mPrivilege);
+      pm.makePersistent(mEntity);
     }
-    mPrivilege.appendPrincipal(mEntity);
-    pm.makePersistent(mPrivilege);
+
     return mPrivilege;
   }
 
