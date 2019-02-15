@@ -101,6 +101,19 @@ public abstract class AbstractSolrSentryTestCase extends SolrCloudTestCase {
     }
   }
 
+  protected void deleteCollection (String userName, String collectionName) throws SolrServerException, IOException {
+    String tmp = getAuthenticatedUser();
+    try {
+      setAuthenticationUser(userName);
+      // Create collection.
+      CollectionAdminRequest.Delete deleteCmd =
+          CollectionAdminRequest.deleteCollection(collectionName);
+      assertEquals(0, deleteCmd.process(cluster.getSolrClient()).getStatus());
+    } finally {
+      setAuthenticationUser(tmp);
+    }
+  }
+
   /**
    * Function to clean Solr collections
    * @param userName Name of the user performing this operation

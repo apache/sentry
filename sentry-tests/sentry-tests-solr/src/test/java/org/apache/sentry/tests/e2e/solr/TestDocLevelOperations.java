@@ -361,15 +361,18 @@ public class TestDocLevelOperations extends SolrSentryServiceTestBase {
 
     createDocsAndQuerySimple(collectionName, true);
 
-    // test deleteByQuery "*:*"
+    // test deleteByQuery "*:*" - we expect this to delete all docs, and it does.
     deleteByQueryTest(collectionName, "junit", "*:*", "doclevel", 0);
 
-    // test deleteByQuery non-*:*
+    // test deleteByQuery non-*:* - this proves that the junit can delete documents (sentry_auth:doclevel_role) that he can't see.
+    //                              We verify this with querying as doclevel (who can see all, and he now sees zero of these docs)
     deleteByQueryTest(collectionName, "junit", "sentry_auth:doclevel_role", "doclevel", 0);
 
-    // test deleting all documents by Id
+    // test deleting all documents by Id - in this case the junit user can delete all docs
     deleteByIdTest(collectionName);
 
+    // This is testing the expected behaviour that if we have been granted the ALL role then we can
+    // update docs that we can't see, even to the point that we make them visible.
     updateDocsTest(collectionName);
 
   }

@@ -1,0 +1,88 @@
+<?xml version="1.0" ?>
+
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<!-- Minimal solrconfig.xml with /select, /admin and /update only -->
+
+<config>
+
+  <dataDir>${solr.data.dir:}</dataDir>
+
+  <directoryFactory name="DirectoryFactory"
+                    class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
+
+  <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
+
+  <updateHandler class="solr.DirectUpdateHandler2">
+    <commitWithin>
+      <softCommit>${solr.commitwithin.softcommit:true}</softCommit>
+    </commitWithin>
+    <updateLog></updateLog>
+  </updateHandler>
+
+   <requestDispatcher handleSelect="false" >
+     <requestParsers enableRemoteStreaming="true"
+                     multipartUploadLimitInKB="2048000"
+                     formdataUploadLimitInKB="2048"
+                     addHttpRequestToContext="true"/>
+
+    <httpCaching never304="true" />
+  </requestDispatcher>
+
+  <requestHandler name="/select" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="echoParams">explicit</str>
+      <str name="indent">true</str>
+      <str name="df">text</str>
+    </lst>
+    <arr name="first-components">
+      <str>queryDocAuthorization</str>
+    </arr>
+  </requestHandler>
+
+  <requestHandler name="/get" class="solr.RealTimeGetHandler">
+     <lst name="defaults">
+       <str name="omitHeader">true</str>
+       <str name="wt">json</str>
+       <str name="indent">true</str>
+     </lst>
+     <arr name="first-components">
+       <str>queryDocAuthorization</str>
+     </arr>
+  </requestHandler>
+
+  <queryParser name="subset" class="org.apache.solr.handler.component.SubsetQueryPlugin"/>
+
+  <searchComponent name="queryDocAuthorization" class="org.apache.solr.handler.component.QueryDocAuthorizationComponent" >
+    <str name="matchMode">CONJUNCTIVE</str>
+    <!-- Set to true to enabled document-level authorization -->
+    <bool name="enabled">true</bool>
+
+    <!-- Field where the auth tokens are stored in the document -->
+    <str name="sentryAuthField">sentry_auth</str>
+
+    <!-- Auth token defined to allow any role to access the document.
+         Uncomment to enable. -->
+    <str name="allRolesToken">OR</str>
+    <!-- Configure to permit access to documents that do not have a value for the sentryAuthField -->
+    <str name="allow_missing_val">false</str>
+    <str name="tokenCountField">sentry_auth_count</str>
+  </searchComponent>
+
+</config>
