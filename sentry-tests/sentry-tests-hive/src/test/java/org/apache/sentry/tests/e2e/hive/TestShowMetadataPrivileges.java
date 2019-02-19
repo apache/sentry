@@ -49,7 +49,7 @@ public class TestShowMetadataPrivileges extends AbstractTestWithStaticConfigurat
     return Arrays.asList(new Object[][] {
       { null,                  NOT_ALLOWED }, // Means no privileges
       { DBModelAction.ALL,     ALLOWED },
-      { DBModelAction.CREATE,  NOT_ALLOWED },
+      { DBModelAction.CREATE,  ALLOWED },
       { DBModelAction.SELECT,  ALLOWED },
       { DBModelAction.INSERT,  ALLOWED },
       { DBModelAction.ALTER,   ALLOWED },

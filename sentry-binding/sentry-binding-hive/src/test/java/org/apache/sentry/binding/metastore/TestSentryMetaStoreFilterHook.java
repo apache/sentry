@@ -54,28 +54,26 @@ public class TestSentryMetaStoreFilterHook {
   // Mock the HiveAuthzBinding to avoid making real connections to a Sentry server
   private HiveAuthzBinding mockBinding = Mockito.mock(HiveAuthzBinding.class);
   private final HiveAuthzPrivileges LIST_DATABASES_PRIVILEGES = new HiveAuthzPrivileges.AuthzPrivilegeBuilder()
-    .addInputObjectPriviledge(
-      AuthorizableType.Column,
-      EnumSet.of(
-        DBModelAction.SELECT, DBModelAction.INSERT, DBModelAction.ALTER,
-        DBModelAction.CREATE, DBModelAction.DROP, DBModelAction.INDEX,
-        DBModelAction.LOCK))
-    .addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.SELECT))
-    .setOperationScope(HiveOperationScope.CONNECT)
-    .setOperationType(HiveOperationType.QUERY)
-    .build();
-
+      .addInputObjectPriviledge(
+          AuthorizableType.Column,
+          EnumSet.of(
+              DBModelAction.SELECT, DBModelAction.INSERT, DBModelAction.ALTER,
+              DBModelAction.CREATE, DBModelAction.DROP, DBModelAction.INDEX,
+              DBModelAction.LOCK))
+      .addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.SELECT))
+      .setOperationScope(HiveOperationScope.CONNECT)
+      .setOperationType(HiveOperationType.QUERY)
+      .build();
   private final HiveAuthzPrivileges LIST_TABLES_PRIVILEGES = new HiveAuthzPrivileges.AuthzPrivilegeBuilder()
-    .addInputObjectPriviledge(
-      AuthorizableType.Column,
-      EnumSet.of(
-        DBModelAction.SELECT, DBModelAction.INSERT, DBModelAction.ALTER,
-        DBModelAction.DROP, DBModelAction.INDEX, DBModelAction.LOCK))
-    .setOperationScope(HiveOperationScope.TABLE)
-    .setOperationType(
-      HiveAuthzPrivileges.HiveOperationType.INFO)
-    .build();
-
+      .addInputObjectPriviledge(
+          AuthorizableType.Column,
+          EnumSet.of(
+              DBModelAction.SELECT, DBModelAction.INSERT, DBModelAction.ALTER,
+              DBModelAction.CREATE, DBModelAction.DROP, DBModelAction.INDEX, DBModelAction.LOCK))
+      .setOperationScope(HiveOperationScope.TABLE)
+      .setOperationType(
+          HiveAuthzPrivileges.HiveOperationType.INFO)
+      .build();
   private HiveAuthzConf authzConf = new HiveAuthzConf();
   private final Server SERVER1 = new Server("server1");
 
@@ -187,7 +185,7 @@ public class TestSentryMetaStoreFilterHook {
     SentryMetaStoreFilterHook filterHook = new SentryMetaStoreFilterHook(null, authzConf,
       getMockBinding(USER1));
 
-    // Verify that only db2 is returned by the filter
+    // Verify that only t2 is returned by the filter
     restrictTablesNamesOnBinding(USER1, DB1, Arrays.asList("t1", "t3"));
     assertThat(filterHook.filterTableNames(DB1, Arrays.asList("t1", "t2", "t3"))).containsExactly("t2");
     assertThat(filterHook.filterTables(Arrays.asList(

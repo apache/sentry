@@ -78,28 +78,28 @@ public class TestMetastoreAuthzObjectFilter {
       }
     };
 
-  private final HiveAuthzPrivileges LIST_DATABASES_PRIVILEGES = new HiveAuthzPrivileges.AuthzPrivilegeBuilder()
-    .addInputObjectPriviledge(
-      AuthorizableType.Column,
-      EnumSet.of(
-        DBModelAction.SELECT, DBModelAction.INSERT, DBModelAction.ALTER,
-        DBModelAction.CREATE, DBModelAction.DROP, DBModelAction.INDEX,
-        DBModelAction.LOCK))
-    .addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.SELECT))
-    .setOperationScope(HiveOperationScope.CONNECT)
-    .setOperationType(HiveOperationType.QUERY)
-    .build();
+  public static final HiveAuthzPrivileges LIST_DATABASES_PRIVILEGES = new HiveAuthzPrivileges.AuthzPrivilegeBuilder()
+      .addInputObjectPriviledge(
+          AuthorizableType.Column,
+          EnumSet.of(
+              DBModelAction.SELECT, DBModelAction.INSERT, DBModelAction.ALTER,
+              DBModelAction.CREATE, DBModelAction.DROP, DBModelAction.INDEX,
+              DBModelAction.LOCK))
+      .addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.SELECT))
+      .setOperationScope(HiveOperationScope.CONNECT)
+      .setOperationType(HiveOperationType.QUERY)
+      .build();
 
-  private final HiveAuthzPrivileges LIST_TABLES_PRIVILEGES = new HiveAuthzPrivileges.AuthzPrivilegeBuilder()
-    .addInputObjectPriviledge(
-      AuthorizableType.Column,
-      EnumSet.of(
-        DBModelAction.SELECT, DBModelAction.INSERT, DBModelAction.ALTER,
-        DBModelAction.DROP, DBModelAction.INDEX, DBModelAction.LOCK))
-    .setOperationScope(HiveOperationScope.TABLE)
-    .setOperationType(
-      HiveAuthzPrivileges.HiveOperationType.INFO)
-    .build();
+  public static final HiveAuthzPrivileges LIST_TABLES_PRIVILEGES = new HiveAuthzPrivileges.AuthzPrivilegeBuilder()
+      .addInputObjectPriviledge(
+          AuthorizableType.Column,
+          EnumSet.of(
+              DBModelAction.SELECT, DBModelAction.INSERT, DBModelAction.ALTER,
+              DBModelAction.CREATE, DBModelAction.DROP, DBModelAction.INDEX, DBModelAction.LOCK))
+      .setOperationScope(HiveOperationScope.TABLE)
+      .setOperationType(
+          HiveAuthzPrivileges.HiveOperationType.INFO)
+      .build();
 
   /**
    * Internal class used by AssertJ extract() method to extract the object name of

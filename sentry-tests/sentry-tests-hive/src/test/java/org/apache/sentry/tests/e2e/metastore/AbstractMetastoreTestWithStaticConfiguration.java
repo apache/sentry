@@ -221,6 +221,18 @@ public abstract class AbstractMetastoreTestWithStaticConfiguration extends
     client.dropDatabase(dbName, true, true, true);
   }
 
+  public void dropAllMetastoreDBIfExists(HiveMetaStoreClient client, boolean dropDefault) throws Exception {
+    List<String> dbNames = client.getAllDatabases();
+
+    for (String dbName : dbNames) {
+      if (!dropDefault && dbName.equalsIgnoreCase("default")) {
+        continue;
+      }
+
+      client.dropDatabase(dbName, true, true, true);
+    }
+  }
+
   public void execHiveSQLwithOverlay(final String sqlStmt,
       final String userName, Map<String, String> overLay) throws Exception {
     final HiveConf hiveConf = new HiveConf();

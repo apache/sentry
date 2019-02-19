@@ -108,10 +108,12 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
       USER2_1 = StaticUserGroup.USER2_1,
       USER3_1 = StaticUserGroup.USER3_1,
       USER4_1 = StaticUserGroup.USER4_1,
+      USER5_1 = StaticUserGroup.USER5_1,
       USERGROUP1 = StaticUserGroup.USERGROUP1,
       USERGROUP2 = StaticUserGroup.USERGROUP2,
       USERGROUP3 = StaticUserGroup.USERGROUP3,
       USERGROUP4 = StaticUserGroup.USERGROUP4,
+      USERGROUP5 = StaticUserGroup.USERGROUP5,
       GROUP1_ROLE = "group1_role",
       DB1 = "db_1",
       DB2 = "db_2",
@@ -137,6 +139,7 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
   protected static boolean enableHiveConcurrency = false;
   protected static boolean enableAuthorizingObjectStore = true;
   protected static boolean enableAuthorizeReadMetaData = false;
+  protected static boolean enableFilter = false;
   // indicate if the database need to be clear for every test case in one test class
   protected static boolean clearDbPerTest = true;
 
@@ -287,6 +290,12 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
         "org.apache.sentry.binding.metastore.AuthorizingObjectStore");
     }else {
       properties.put(HiveConf.ConfVars.METASTORE_RAW_STORE_IMPL.varname, ConfVars.METASTORE_RAW_STORE_IMPL.defaultStrVal);
+    }
+
+    if (enableFilter) {
+      properties.put(ConfVars.METASTORE_FILTER_HOOK.varname, "org.apache.sentry.binding.metastore.SentryMetaStoreFilterHook");
+    } else {
+      properties.put(ConfVars.METASTORE_FILTER_HOOK.varname, ConfVars.METASTORE_FILTER_HOOK.defaultStrVal);
     }
 
     if (enableAuthorizeReadMetaData) {

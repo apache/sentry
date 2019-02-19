@@ -27,11 +27,13 @@ public class StaticUserGroup {
       USER2_1 = "user2_1",
       USER3_1 = "user3_1",
       USER4_1 = "user4_1",
+      USER5_1 = "user5_1",
       HIVE = "hive",
       USERGROUP1 = "user_group1",
       USERGROUP2 = "user_group2",
       USERGROUP3 = "user_group3",
-      USERGROUP4 = "user_group4";
+      USERGROUP4 = "user_group4",
+      USERGROUP5 = "user_group5";
   private static final Map<String, String> staticMapping;
 
   static {
@@ -46,6 +48,7 @@ public class StaticUserGroup {
     staticMapping.put(USER2_1, USERGROUP2);
     staticMapping.put(USER3_1, USERGROUP3);
     staticMapping.put(USER4_1, USERGROUP4);
+    staticMapping.put(USER5_1, USERGROUP5);
   }
 
   public static Map<String, String> getStaticMapping(){

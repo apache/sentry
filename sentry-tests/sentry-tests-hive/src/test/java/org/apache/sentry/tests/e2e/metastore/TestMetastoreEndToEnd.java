@@ -25,10 +25,15 @@ import static org.junit.Assert.fail;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.hadoop.hive.metastore.api.Database;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.junit.Assert;
 
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
@@ -56,12 +61,15 @@ public class  TestMetastoreEndToEnd extends
   private PolicyFile policyFile;
   private File dataFile;
   private static final String dbName = "db_1";
+  private static final String dbName2 = "db_2";
   private static final String db_all_role = "all_db1";
   private static final String uri_role = "uri_role";
   private static final String tab1_all_role = "tab1_all_role";
   private static final String tab1_read_role = "tab1_read_role";
   private static final String tab2_all_role = "tab2_all_role";
   private static final String tab2_read_role = "tab2_read_role";
+  private static final String server_create_role = "server_create_role";
+  private static final String db2_all_role = "db2_all_role";
   private static final String tabName1 = "tab1";
   private static final String tabName2 = "tab2";
   private static final String tabName3 = "tab3";
@@ -71,6 +79,7 @@ public class  TestMetastoreEndToEnd extends
     setMetastoreListener = false;
     enableAuthorizingObjectStore = false;
     enableAuthorizeReadMetaData = true;
+    enableFilter = true;
     AbstractMetastoreTestWithStaticConfiguration.setupTestStaticConfiguration();
   }
 
@@ -99,6 +108,9 @@ public class  TestMetastoreEndToEnd extends
             .addRolesToGroup(USERGROUP2, tab2_all_role)
             .addRolesToGroup(USERGROUP3, tab1_read_role)
             .addRolesToGroup(USERGROUP3, tab2_read_role)
+            .addRolesToGroup(USERGROUP4, tab1_all_role)
+            .addRolesToGroup(USERGROUP4, db2_all_role)
+            .addRolesToGroup(USERGROUP5, server_create_role)
             .addPermissionsToRole(db_all_role, "server=server1->db=" + dbName)
             .addPermissionsToRole("read_db_role",
                     "server=server1->db=" + dbName + "->action=SELECT")
@@ -110,6 +122,9 @@ public class  TestMetastoreEndToEnd extends
                     "server=server1->db=" + dbName + "->table=" + tabName1 + "->action=SELECT")
             .addPermissionsToRole(tab2_read_role,
                     "server=server1->db=" + dbName + "->table=" + tabName2 + "->action=SELECT")
+            .addPermissionsToRole(db2_all_role,
+                    "server=server1->db=" + dbName2 + "->action=ALL")
+            .addPermissionsToRole(server_create_role, "server=server1" + "->action=CREATE")
             .setUserGroupMapping(StaticUserGroup.getStaticMapping());
     writePolicyFile(policyFile);
   }
@@ -681,6 +696,122 @@ public class  TestMetastoreEndToEnd extends
     client.close();
   }
 
+  private void verifyReturnedList(HashSet<String> expectedSet, List<String> actualList) {
+    assertThat(expectedSet.size()).isEqualTo(actualList.size());
+
+    for (String actualItem : actualList) {
+      assertThat(expectedSet).contains(actualItem);
+    }
+  }
+
+  private void verifyReturnedList(HashSet<String> expectedSet, List<String> actualList, boolean strict) {
+
+    // expectedSet and actualList contain same items, but may differ in order
+    if (strict ) {
+      verifyReturnedList(expectedSet, actualList);
+      return;
+    }
+
+    // check all items in expectedSet are in actualList, but actualList may contain extra items
+    for (String actualItem : actualList) {
+      if (expectedSet.contains(actualItem)) {
+        expectedSet.remove(actualItem);
+      }
+    }
+
+    assertThat(expectedSet.size()).isEqualTo(0);
+  }
+
+  @Test
+  public void testListDatabases() throws Exception {
+    List<String> dbNames;
+    HashSet<String> allDatabaseNames = new HashSet<>(Arrays.asList("default", dbName, dbName2));
+
+    // Create databases and verify the admin can list the database names
+    final HiveMetaStoreClient client = context.getMetaStoreClient(ADMIN1);
+    dropAllMetastoreDBIfExists(client, false);
+    createMetastoreDB(client, dbName);
+    createMetastoreDB(client, dbName2);
+    UserGroupInformation clientUgi = UserGroupInformation.createRemoteUser(ADMIN1);
+    dbNames = clientUgi.doAs(new PrivilegedExceptionAction<List<String>>() {
+      @Override
+      public List<String> run() throws Exception {
+        return client.getAllDatabases();
+      }
+    });
+    assertThat(dbNames).isNotNull();
+    verifyReturnedList(allDatabaseNames, dbNames, true);
+    client.close();
+
+    // Verify a user with ALL privileges on a database can get its name
+    // and cannot get database name that has no privilege on
+    // USER1_1 has ALL at dbName
+    final HiveMetaStoreClient  client_USER1_1 = context.getMetaStoreClient(USER1_1);
+    UserGroupInformation clientUgi_USER1_1 = UserGroupInformation.createRemoteUser(USER1_1);
+    dbNames = clientUgi_USER1_1.doAs(new PrivilegedExceptionAction<List<String>>() {
+      @Override
+      public List<String> run() throws Exception {
+        return client_USER1_1.getAllDatabases();
+      }
+    });
+    assertThat(dbNames).isNotNull();
+    verifyReturnedList(new HashSet<>(Arrays.asList("default", dbName)), dbNames, true);
+    client_USER1_1.close();
+
+    // USER2_1 has SELECT at dbName
+    final HiveMetaStoreClient  client_USER2_1 = context.getMetaStoreClient(USER2_1);
+    UserGroupInformation clientUgi_USER2_1 = UserGroupInformation.createRemoteUser(USER2_1);
+    dbNames = clientUgi_USER2_1.doAs(new PrivilegedExceptionAction<List<String>>() {
+      @Override
+      public List<String> run() throws Exception {
+        return client_USER2_1.getAllDatabases();
+      }
+    });
+    assertThat(dbNames).isNotNull();
+    verifyReturnedList(new HashSet<>(Arrays.asList("default", dbName)), dbNames, true);
+    //assertThat(dbNames.get(0)).isEqualToIgnoringCase(dbName);
+    client.close();
+
+    // USER3_1 has SELECT at dbName.tabName1 and dbName.tabName2
+    final HiveMetaStoreClient  client_USER3_1 = context.getMetaStoreClient(USER3_1);
+    UserGroupInformation clientUgi_USER3_1 = UserGroupInformation.createRemoteUser(USER3_1);
+    dbNames = clientUgi_USER3_1.doAs(new PrivilegedExceptionAction<List<String>>() {
+      @Override
+      public List<String> run() throws Exception {
+        return client_USER3_1.getAllDatabases();
+      }
+    });
+    assertThat(dbNames).isNotNull();
+    verifyReturnedList(new HashSet<>(Arrays.asList("default", dbName)), dbNames,true);
+    client.close();
+
+    // USER4_1 has ALL at dbName.tabName1 and dbName2
+    final HiveMetaStoreClient  client_USER4_1 = context.getMetaStoreClient(USER4_1);
+    UserGroupInformation clientUgi_USER4_1 = UserGroupInformation.createRemoteUser(USER4_1);
+    dbNames = clientUgi_USER4_1.doAs(new PrivilegedExceptionAction<List<String>>() {
+      @Override
+      public List<String> run() throws Exception {
+        return client_USER4_1.getAllDatabases();
+      }
+    });
+    assertThat(dbNames).isNotNull();
+    verifyReturnedList(allDatabaseNames, dbNames, true);
+    client.close();
+
+    // USER5_1 has CREATE at server
+    final HiveMetaStoreClient  client_USER5_1 = context.getMetaStoreClient(USER5_1);
+    UserGroupInformation clientUgi_USER5_1 = UserGroupInformation.createRemoteUser(USER5_1);
+    dbNames = clientUgi_USER5_1.doAs(new PrivilegedExceptionAction<List<String>>() {
+      @Override
+      public List<String> run() throws Exception {
+        return client_USER5_1.getAllDatabases();
+      }
+    });
+    assertThat(dbNames).isNotNull();
+    verifyReturnedList(allDatabaseNames, dbNames, true);
+    client.close();
+  }
+
   @Test
   public void testReadTable() throws Exception {
     Table tbl;
@@ -721,6 +852,156 @@ public class  TestMetastoreEndToEnd extends
       assertThat(e).isInstanceOf(MetaException.class)
         .hasMessageContaining("does not have privileges for DESCTABLE");
     }
+    client.close();
+  }
+
+  @Test
+  public void testListTables() throws Exception {
+    List<String> tableNames;
+    HashSet<String> expectedTableNames = new HashSet<>(Arrays.asList(tabName1, tabName2));
+
+    // Create databases and verify the admin can list the database names
+    final HiveMetaStoreClient client = context.getMetaStoreClient(ADMIN1);
+    dropMetastoreDBIfExists(client, dbName);
+    createMetastoreDB(client, dbName);
+    createMetastoreTable(client, dbName, tabName1,
+        Lists.newArrayList(new FieldSchema("col1", "int", "")));
+    createMetastoreTable(client, dbName, tabName2,
+        Lists.newArrayList(new FieldSchema("col1", "int", "")));
+    createMetastoreTable(client, dbName, tabName3,
+        Lists.newArrayList(new FieldSchema("col1", "int", "")));
+    UserGroupInformation clientUgi = UserGroupInformation.createRemoteUser(ADMIN1);
+    tableNames = clientUgi.doAs(new PrivilegedExceptionAction<List<String>>() {
+      @Override
+      public List<String> run() throws Exception {
+        return client.getAllTables(dbName);
+      }
+    });
+    assertThat(tableNames).isNotNull();
+    assertThat(tableNames.size()).isEqualTo(3);
+
+    dropMetastoreDBIfExists(client, dbName2);
+    createMetastoreDB(client, dbName2);
+    createMetastoreTable(client, dbName2, tabName1,
+        Lists.newArrayList(new FieldSchema("col1", "int", "")));
+    createMetastoreTable(client, dbName2, tabName2,
+        Lists.newArrayList(new FieldSchema("col1", "int", "")));
+    tableNames = clientUgi.doAs(new PrivilegedExceptionAction<List<String>>() {
+      @Override
+      public List<String> run() throws Exception {
+        return client.getAllTables(dbName2);
+      }
+    });
+    assertThat(tableNames).isNotNull();
+    assertThat(tableNames.size()).isEqualTo(2);
+    client.close();
+
+    // Verify a user with ALL privileges on a database can get its name
+    // and cannot get database name that has no privilege on
+    // USER1_1 has ALL on dbName
+    final HiveMetaStoreClient  client_USER1_1 = context.getMetaStoreClient(USER1_1);
+    UserGroupInformation clientUgi_USER1_1 = UserGroupInformation.createRemoteUser(USER1_1);
+    tableNames = clientUgi_USER1_1.doAs(new PrivilegedExceptionAction<List<String>>() {
+      @Override
+      public List<String> run() throws Exception {
+        return client_USER1_1.getAllTables(dbName);
+      }
+    });
+    assertThat(tableNames).isNotNull();
+    assertThat(tableNames.size()).isEqualTo(3);
+    tableNames = clientUgi_USER1_1.doAs(new PrivilegedExceptionAction<List<String>>() {
+      @Override
+      public List<String> run() throws Exception {
+        return client_USER1_1.getAllTables(dbName2);
+      }
+    });
+    assertThat(tableNames).isNotNull();
+    assertThat(tableNames.size()).isEqualTo(0);
+
+    // USER2_1 has SELECT on dbName
+    final HiveMetaStoreClient  client_USER2_1 = context.getMetaStoreClient(USER2_1);
+    UserGroupInformation clientUgi_USER2_1 = UserGroupInformation.createRemoteUser(USER2_1);
+    tableNames = clientUgi_USER2_1.doAs(new PrivilegedExceptionAction<List<String>>() {
+      @Override
+      public List<String> run() throws Exception {
+        return client_USER2_1.getAllTables(dbName);
+      }
+    });
+    assertThat(tableNames).isNotNull();
+    assertThat(tableNames.size()).isEqualTo(3);
+    tableNames = clientUgi_USER2_1.doAs(new PrivilegedExceptionAction<List<String>>() {
+      @Override
+      public List<String> run() throws Exception {
+        return client_USER2_1.getAllTables(dbName2);
+      }
+    });
+    assertThat(tableNames).isNotNull();
+    assertThat(tableNames.size()).isEqualTo(0);
+
+    // USER3_1 has SELECT on dbName.tabName1 and dbName.tabName2
+    final HiveMetaStoreClient  client_USER3_1 = context.getMetaStoreClient(USER3_1);
+    UserGroupInformation clientUgi_USER3_1 = UserGroupInformation.createRemoteUser(USER3_1);
+    tableNames = clientUgi_USER3_1.doAs(new PrivilegedExceptionAction<List<String>>() {
+      @Override
+      public List<String> run() throws Exception {
+        return client_USER3_1.getAllTables(dbName);
+      }
+    });
+    assertThat(tableNames).isNotNull();
+    assertThat(tableNames.size()).isEqualTo(2);
+    assertThat(expectedTableNames).contains(tableNames.get(0));
+    assertThat(expectedTableNames).contains(tableNames.get(1));
+    tableNames = clientUgi_USER3_1.doAs(new PrivilegedExceptionAction<List<String>>() {
+      @Override
+      public List<String> run() throws Exception {
+        return client_USER3_1.getAllTables(dbName2);
+      }
+    });
+    assertThat(tableNames).isNotNull();
+    assertThat(tableNames.size()).isEqualTo(0);
+    client.close();
+
+    // USER4_1 ALL on dbName.tabName1 and dbName2
+    final HiveMetaStoreClient  client_USER4_1 = context.getMetaStoreClient(USER4_1);
+    UserGroupInformation clientUgi_USER4_1 = UserGroupInformation.createRemoteUser(USER4_1);
+    tableNames = clientUgi_USER4_1.doAs(new PrivilegedExceptionAction<List<String>>() {
+      @Override
+      public List<String> run() throws Exception {
+        return client_USER4_1.getAllTables(dbName);
+      }
+    });
+    assertThat(tableNames).isNotNull();
+    assertThat(tableNames.size()).isEqualTo(1); // only has access to tabName1 and tabName2
+    assertThat(tableNames.get(0)).isEqualToIgnoringCase(tabName1);
+    tableNames = clientUgi_USER4_1.doAs(new PrivilegedExceptionAction<List<String>>() {
+      @Override
+      public List<String> run() throws Exception {
+        return client_USER4_1.getAllTables(dbName2);
+      }
+    });
+    assertThat(tableNames).isNotNull();
+    assertThat(tableNames.size()).isEqualTo(2);
+    client.close();
+
+    // USER5_1 CREATE on server
+    final HiveMetaStoreClient  client_USER5_1 = context.getMetaStoreClient(USER5_1);
+    UserGroupInformation clientUgi_USER5_1 = UserGroupInformation.createRemoteUser(USER5_1);
+    tableNames = clientUgi_USER5_1.doAs(new PrivilegedExceptionAction<List<String>>() {
+      @Override
+      public List<String> run() throws Exception {
+        return client_USER5_1.getAllTables(dbName);
+      }
+    });
+    assertThat(tableNames).isNotNull();
+    assertThat(tableNames.size()).isEqualTo(3);
+    tableNames = clientUgi_USER5_1.doAs(new PrivilegedExceptionAction<List<String>>() {
+      @Override
+      public List<String> run() throws Exception {
+        return client_USER5_1.getAllTables(dbName2);
+      }
+    });
+    assertThat(tableNames).isNotNull();
+    assertThat(tableNames.size()).isEqualTo(2);
     client.close();
   }
 }

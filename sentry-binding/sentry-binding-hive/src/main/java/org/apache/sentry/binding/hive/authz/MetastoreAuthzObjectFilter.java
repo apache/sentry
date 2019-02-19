@@ -55,7 +55,7 @@ public class MetastoreAuthzObjectFilter<T> {
 
   }
 
-  private final HiveAuthzPrivileges LIST_DATABASES_PRIVILEGES = new HiveAuthzPrivileges.AuthzPrivilegeBuilder()
+  private static final HiveAuthzPrivileges LIST_DATABASES_PRIVILEGES = new HiveAuthzPrivileges.AuthzPrivilegeBuilder()
     .addInputObjectPriviledge(
       AuthorizableType.Column,
       EnumSet.of(
@@ -67,12 +67,12 @@ public class MetastoreAuthzObjectFilter<T> {
     .setOperationType(HiveOperationType.QUERY)
     .build();
 
-  private final HiveAuthzPrivileges LIST_TABLES_PRIVILEGES = new HiveAuthzPrivileges.AuthzPrivilegeBuilder()
+  private static final HiveAuthzPrivileges LIST_TABLES_PRIVILEGES = new HiveAuthzPrivileges.AuthzPrivilegeBuilder()
     .addInputObjectPriviledge(
       AuthorizableType.Column,
       EnumSet.of(
         DBModelAction.SELECT, DBModelAction.INSERT, DBModelAction.ALTER,
-        DBModelAction.DROP, DBModelAction.INDEX, DBModelAction.LOCK))
+        DBModelAction.CREATE, DBModelAction.DROP, DBModelAction.INDEX, DBModelAction.LOCK))
     .setOperationScope(HiveOperationScope.TABLE)
     .setOperationType(
       HiveAuthzPrivileges.HiveOperationType.INFO)
@@ -89,6 +89,22 @@ public class MetastoreAuthzObjectFilter<T> {
     this.AUTH_SERVER = authzBinding.getAuthServer();
     this.DEFAULT_DATABASE_RESTRICTED = authzBinding.getAuthzConf()
       .getBoolean(HiveAuthzConf.AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), false);
+  }
+
+  /**
+   * Return the required privileges for listing databases on a server
+   * @return the required privileges for authorizing listing databases on a server
+   */
+  public static HiveAuthzPrivileges getListDatabasesPrivileges() {
+    return LIST_DATABASES_PRIVILEGES;
+  }
+
+  /**
+   * Return the required privileges for listing tables in a database
+   * @return the required privileges for authorizing listing tables in a database
+   */
+  public static HiveAuthzPrivileges getListTablePrivileges() {
+    return LIST_TABLES_PRIVILEGES;
   }
 
   /**
