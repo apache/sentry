@@ -41,11 +41,13 @@ import org.apache.hadoop.hive.metastore.events.PreDropTableEvent;
 import org.apache.hadoop.hive.metastore.events.PreEventContext;
 import org.apache.hadoop.hive.metastore.events.PreReadDatabaseEvent;
 import org.apache.hadoop.hive.metastore.events.PreReadTableEvent;
+import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.shims.Utils;
 import org.apache.sentry.binding.hive.authz.HiveAuthzBinding;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
+import org.apache.sentry.core.common.exception.SentryGroupNotFoundException;
 import org.apache.sentry.core.common.utils.PathUtils;
 import org.apache.sentry.core.model.db.AccessURI;
 import org.apache.sentry.core.model.db.DBModelAuthorizable;
@@ -62,6 +64,11 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import org.apache.sentry.provider.cache.PrivilegeCache;
+import org.apache.sentry.provider.cache.SimplePrivilegeCache;
+import org.apache.sentry.provider.common.AuthorizationProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Sentry binding for Hive Metastore. The binding is integrated into Metastore
@@ -132,6 +139,8 @@ public abstract class MetastoreAuthzBindingBase extends MetaStorePreEventListene
     }
   }
 
+  private static final Logger LOG = LoggerFactory
+      .getLogger(MetastoreAuthzBindingBase.class);
   private HiveAuthzConf authzConf;
   private final Server authServer;
   private final HiveConf hiveConf;
@@ -465,6 +474,40 @@ public abstract class MetastoreAuthzBindingBase extends MetaStorePreEventListene
       hiveAuthzBinding = new HiveAuthzBinding(HiveAuthzBinding.HiveHook.HiveMetaStore, hiveConf, authzConf);
     }
     return hiveAuthzBinding;
+  }
+
+  // create HiveAuthzBinding with PrivilegeCache
+  public static HiveAuthzBinding getHiveBindingWithPrivilegeCache(HiveAuthzBinding hiveAuthzBinding,
+      String userName) throws SemanticException {
+    // get the original HiveAuthzBinding, and get the user's privileges by AuthorizationProvider
+    AuthorizationProvider authProvider = hiveAuthzBinding.getCurrentAuthProvider();
+
+    if (authProvider == null) {
+      LOG.warn("authProvider is null. Can not create HiveAuthzBinding with privilege cache for Metastore.");
+      return hiveAuthzBinding;
+    }
+
+    try {
+      Set<String> groups;
+      try {
+        groups = authProvider.getGroupMapping().getGroups(userName);
+      } catch (SentryGroupNotFoundException e) {
+        groups = Collections.emptySet();
+        LOG.debug("Could not find groups for user: " + userName);
+      }
+      Set<String> userPrivileges =
+          authProvider.getPolicyEngine().getPrivileges(groups, Sets.newHashSet(userName),
+              hiveAuthzBinding.getActiveRoleSet(), hiveAuthzBinding.getAuthServer());
+
+      // create PrivilegeCache using user's privileges
+      PrivilegeCache privilegeCache = new SimplePrivilegeCache(userPrivileges);
+      // create new instance of HiveAuthzBinding whose backend provider should be SimpleCacheProviderBackend
+      return new HiveAuthzBinding(HiveAuthzBinding.HiveHook.HiveMetaStore, hiveAuthzBinding.getHiveConf(),
+          hiveAuthzBinding.getAuthzConf(), privilegeCache);
+    } catch (Exception e) {
+      LOG.error("Can not create HiveAuthzBinding with privilege cache for Metastore.");
+      throw new SemanticException(e);
+    }
   }
 
   protected String getUserName() throws MetaException {
