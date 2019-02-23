@@ -607,5 +607,59 @@ TODO:SENTRY-819
     conn.close();
   }
 
+  /*
+  Added to verify the SENTRY-2502
+  */
+  @Test
+  public void testTableRename() throws Throwable {
+    String dbName = "testdb";
+    dbNames = new String[]{dbName};
+    roles = new String[]{"admin_role"};
+    admin = StaticUserGroup.ADMIN1;
 
+    Connection conn;
+    Statement stmt;
+
+    conn = hiveServer2.createConnection("hive", "hive");
+    stmt = conn.createStatement();
+    stmt.execute("create role admin_role");
+    stmt.execute("grant all on server server1 to role admin_role");
+    stmt.execute("grant all on database " + dbName + " to role admin_role");
+    stmt.execute("grant role admin_role to group " + StaticUserGroup.USERGROUP1);
+    stmt.execute("grant role admin_role to group " + StaticUserGroup.ADMINGROUP);
+
+
+    conn = hiveServer2.createConnection(StaticUserGroup.USER1_1, StaticUserGroup.USERGROUP1);
+    stmt = conn.createStatement();
+    stmt.execute("create database " + dbName);
+    stmt.execute("use "+ dbName);
+    stmt.execute("create table testable (s string) partitioned by (month int)");
+
+    stmt.execute("alter table testable add partition (month=1)");
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/testable", FsAction.ALL, StaticUserGroup.USERGROUP1, true);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/testable/month=1", FsAction.ALL, StaticUserGroup.USERGROUP1, true);
+
+    stmt.execute("alter table testable rename to testable1");
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/testable1", FsAction.ALL, StaticUserGroup.USERGROUP1, true);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/testable1/month=1", FsAction.ALL, StaticUserGroup.USERGROUP1, true);
+
+
+    stmt.execute("alter table testable1 drop partition (month=1)");
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/testable1", FsAction.ALL, StaticUserGroup.USERGROUP1, true);
+
+    stmt.execute("alter table testable1 add partition (month=1)");
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/testable1/month=1", FsAction.ALL, StaticUserGroup.USERGROUP1, true);
+
+    stmt.execute("alter table testable1 rename to testable2");
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/testable2", FsAction.ALL, StaticUserGroup.USERGROUP1, true);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/testable2/month=1", FsAction.ALL, StaticUserGroup.USERGROUP1, true);
+
+    stmt.execute("create table  table3(s string) partitioned by (month int)");
+    stmt.execute("alter table table3 add partition (month=1)");
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/table3", FsAction.ALL, StaticUserGroup.USERGROUP1, true);
+    verifyGroupPermOnAllSubDirs("/user/hive/warehouse/" + dbName + ".db/table3/month=1", FsAction.ALL, StaticUserGroup.USERGROUP1, true);
+
+    stmt.close();
+    conn.close();
+  }
 }

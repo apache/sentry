@@ -232,7 +232,7 @@ public class SentryAuthorizationInfo implements Runnable {
       LOG.warn("Failed to update, will retry in [{}]ms, error: ", 
           new Object[]{ retryWaitMillisec, ex.getMessage(), ex});
     } catch (Throwable t) {
-      LOG.error("Received a throwable while refreshing the cache" + t);
+      LOG.error("Received a throwable while refreshing the cache", t);
       System.out.println("Received a throwable  while refreshing the cache " + t);
       throw t;
     }
