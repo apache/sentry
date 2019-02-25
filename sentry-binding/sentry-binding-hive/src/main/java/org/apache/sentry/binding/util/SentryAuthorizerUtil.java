@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.common.JavaUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
@@ -280,11 +281,9 @@ public class SentryAuthorizerUtil {
 
   public static boolean isLocalUri(String uriString) throws URISyntaxException {
     URI uri = new URI(uriString);
-    if (uri.getScheme().equalsIgnoreCase("file")) {
-      return true;
-    }
-
-    return false;
+    Path uriPath = new Path(uri);
+    return ((uri.getScheme() != null && uri.getScheme().equalsIgnoreCase("file")) ||
+            (uri.getScheme() == null && uriPath.isAbsolute()));
   }
 
   /**
