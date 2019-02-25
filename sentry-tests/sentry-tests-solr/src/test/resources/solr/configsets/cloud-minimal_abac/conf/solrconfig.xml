@@ -1,0 +1,112 @@
+<?xml version="1.0" ?>
+
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<!-- Minimal solrconfig.xml with /select, /admin and /update only -->
+
+<config>
+
+  <dataDir>${solr.data.dir:}</dataDir>
+
+  <directoryFactory name="DirectoryFactory"
+                    class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
+
+  <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
+
+  <updateHandler class="solr.DirectUpdateHandler2">
+    <commitWithin>
+      <softCommit>${solr.commitwithin.softcommit:true}</softCommit>
+    </commitWithin>
+    <updateLog></updateLog>
+  </updateHandler>
+
+   <requestDispatcher handleSelect="false" >
+     <requestParsers enableRemoteStreaming="true"
+                     multipartUploadLimitInKB="2048000"
+                     formdataUploadLimitInKB="2048"
+                     addHttpRequestToContext="true"/>
+
+    <httpCaching never304="true" />
+  </requestDispatcher>
+
+  <requestHandler name="/select" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="echoParams">explicit</str>
+      <str name="indent">true</str>
+      <str name="df">text</str>
+    </lst>
+    <arr name="first-components">
+      <str>queryDocAuthorization</str>
+    </arr>
+  </requestHandler>
+
+  <requestHandler name="/get" class="solr.RealTimeGetHandler">
+     <lst name="defaults">
+       <str name="omitHeader">true</str>
+       <str name="wt">json</str>
+       <str name="indent">true</str>
+     </lst>
+     <arr name="first-components">
+       <str>queryDocAuthorization</str>
+     </arr>
+  </requestHandler>
+
+  <queryParser name="subset" class="org.apache.solr.handler.component.SubsetQueryPlugin"/>
+
+  <searchComponent name="queryDocAuthorization" class="org.apache.solr.handler.component.SolrAttrBasedFilter">
+    <bool name="enabled">true</bool>
+    <!-- caching parameters -->
+    <bool name="cache_enabled">true</bool>
+    <long name="cache_ttl_seconds">20</long>
+    <long name="cache_max_size">10</long>
+    <!-- LDAP parameters -->
+    <str name="ldapProviderUrl">ldap://localhost:10389</str>
+    <str name="ldapAuthType">simple</str>
+    <str name="ldapAdminUser">cn=admin,ou=Users,dc=example,dc=com</str>
+    <str name="ldapAdminPassword"><![CDATA[abcdefg]]></str>
+    <str name="ldapBaseDN">dc=example,dc=com</str>
+    <str name="ldapUserSearchFilter"><![CDATA[(uid={0})]]></str>
+    <bool name="ldapNestedGroupsEnabled">true</bool>
+
+    <str name="andQParser">subset</str>
+    <!-- field mappings -->
+    <lst name="field_attr_mappings">
+      <lst name="orGroups">
+        <str name="attr_names">orGroupsAttr,memberOf</str>
+        <str name="filter_type">OR</str>
+        <str name="value_filter_regex">(^[A-Za-z0-9]+$)|(cn=([A-Za-z0-9\-\_]+),)</str>
+      </lst>
+      <lst name="andGroups">
+        <str name="attr_names">andGroupsAttr</str>
+        <str name="filter_type">AND</str>
+        <str name="extra_opts">count_field=andGroupsCount</str>
+      </lst>
+      <lst name="grade1">
+        <str name="attr_names">lteAttr</str>
+        <str name="filter_type">LTE</str>
+      </lst>
+      <lst name="grade2">
+        <str name="attr_names">gteAttr</str>
+        <str name="filter_type">GTE</str>
+      </lst>
+    </lst>
+  </searchComponent>
+
+
+</config>

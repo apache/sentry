@@ -1,0 +1,342 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+dn: dc=example,dc=com
+objectClass: domain
+objectClass: top
+dc: example
+
+dn: ou=Users,dc=example,dc=com
+objectClass: organizationalUnit
+objectClass: top
+ou: Users
+
+dn: ou=Groups,dc=example,dc=com
+objectClass: organizationalUnit
+objectClass: top
+ou: Groups
+
+dn: cn=admin,ou=Users,dc=example,dc=com
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: admin
+sn: admin
+uid: admin
+userPassword: abcdefg
+
+dn: cn=testGroup1,ou=Groups,dc=example,dc=com
+objectClass: groupOfNames
+objectClass: top
+member: cn=admin,ou=Users,dc=example,dc=com
+cn: testGroup1
+
+dn: cn=testGroup2,ou=Groups,dc=example,dc=com
+objectClass: groupOfNames
+objectClass: top
+cn: testGroup2
+
+dn: cn=testGroup3,ou=Groups,dc=example,dc=com
+objectClass: groupOfNames
+objectClass: top
+cn: testGroup3
+
+dn: cn=testNestedGroup1,ou=Groups,dc=example,dc=com
+objectClass: groupOfNames
+objectClass: top
+cn: testNestedGroup1
+
+dn: cn=testNestedGroup2,ou=Groups,dc=example,dc=com
+objectClass: groupOfNames
+objectClass: top
+memberOf: cn=testNestedGroup1,ou=Groups,dc=example,dc=com
+cn: testNestedGroup2
+
+dn: cn=testNestedGroup3,ou=Groups,dc=example,dc=com
+objectClass: groupOfNames
+objectClass: top
+memberOf: cn=testNestedGroup2,ou=Groups,dc=example,dc=com
+cn: testNestedGroup3
+
+dn: cn=abacuser1,ou=Users,dc=example,dc=com
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: abacuser1
+sn: one
+uid: abacuser1
+orGroupsAttr: group1
+orGroupsAttr: group2
+andGroupsAttr: group11
+andGroupsAttr: group12
+lteAttr: THREE
+gteAttr: THIRTY
+memberOf: cn=testGroup1,ou=Groups,dc=example,dc=com
+userPassword: abcdefg
+
+dn: cn=lteuser1,ou=Users,dc=example,dc=com
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: lteuser1
+sn: lteuser1
+uid: lteuser1
+orGroupsAttr: group1
+andGroupsAttr: group11
+lteAttr: ONE
+gteAttr: THIRTY
+memberOf: cn=testGroup1,ou=Groups,dc=example,dc=com
+userPassword: abcdefg
+
+dn: cn=lteuser2,ou=Users,dc=example,dc=com
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: lteuser2
+sn: lteuser2
+uid: lteuser2
+orGroupsAttr: group1
+andGroupsAttr: group11
+lteAttr: THREE
+gteAttr: THIRTY
+memberOf: cn=testGroup1,ou=Groups,dc=example,dc=com
+userPassword: abcdefg
+
+dn: cn=lteuser3,ou=Users,dc=example,dc=com
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: lteuser3
+sn: lteuser3
+uid: lteuser3
+orGroupsAttr: group1
+andGroupsAttr: group11
+lteAttr: FIVE
+gteAttr: THIRTY
+memberOf: cn=testGroup1,ou=Groups,dc=example,dc=com
+userPassword: abcdefg
+
+dn: cn=gteuser1,ou=Users,dc=example,dc=com
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: gteuser1
+sn: gteuser1
+uid: gteuser1
+orGroupsAttr: group1
+andGroupsAttr: group11
+lteAttr: THREE
+gteAttr: TEHN
+memberOf: cn=testGroup1,ou=Groups,dc=example,dc=com
+userPassword: abcdefg
+
+dn: cn=gteuser2,ou=Users,dc=example,dc=com
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: gteuser2
+sn: gteuser2
+uid: gteuser2
+orGroupsAttr: group1
+andGroupsAttr: group11
+lteAttr: THREE
+gteAttr: THIRTY
+memberOf: cn=testGroup1,ou=Groups,dc=example,dc=com
+userPassword: abcdefg
+
+dn: cn=gteuser3,ou=Users,dc=example,dc=com
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: gteuser3
+sn: gteuser3
+uid: gteuser3
+orGroupsAttr: group1
+andGroupsAttr: group11
+lteAttr: THREE
+gteAttr: FIFTY
+memberOf: cn=testGroup1,ou=Groups,dc=example,dc=com
+userPassword: abcdefg
+
+dn: cn=oruser1,ou=Users,dc=example,dc=com
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: oruser1
+sn: oruser1
+uid: oruser1
+orGroupsAttr: group1
+andGroupsAttr: group11
+lteAttr: THREE
+gteAttr: THIRTY
+memberOf: cn=testGroup1,ou=Groups,dc=example,dc=com
+userPassword: abcdefg
+
+dn: cn=oruser2,ou=Users,dc=example,dc=com
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: oruser2
+sn: oruser2
+uid: oruser2
+orGroupsAttr: group1
+orGroupsAttr: group2
+andGroupsAttr: group11
+lteAttr: THREE
+gteAttr: THIRTY
+memberOf: cn=testGroup1,ou=Groups,dc=example,dc=com
+userPassword: abcdefg
+
+dn: cn=oruser3,ou=Users,dc=example,dc=com
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: oruser3
+sn: oruser3
+uid: oruser3
+orGroupsAttr: group1
+orGroupsAttr: group2
+orGroupsAttr: group3
+andGroupsAttr: group11
+lteAttr: THREE
+gteAttr: THIRTY
+memberOf: cn=testGroup1,ou=Groups,dc=example,dc=com
+userPassword: abcdefg
+
+dn: cn=anduser1,ou=Users,dc=example,dc=com
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: anduser1
+sn: anduser1
+uid: anduser1
+orGroupsAttr: group1
+andGroupsAttr: group11
+lteAttr: THREE
+gteAttr: THIRTY
+memberOf: cn=testGroup1,ou=Groups,dc=example,dc=com
+userPassword: abcdefg
+
+dn: cn=anduser2,ou=Users,dc=example,dc=com
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: anduser2
+sn: anduser2
+uid: anduser2
+orGroupsAttr: group1
+andGroupsAttr: group11
+andGroupsAttr: group12
+lteAttr: THREE
+gteAttr: THIRTY
+memberOf: cn=testGroup1,ou=Groups,dc=example,dc=com
+userPassword: abcdefg
+
+dn: cn=anduser3,ou=Users,dc=example,dc=com
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: anduser3
+sn: anduser3
+uid: anduser3
+orGroupsAttr: group1
+andGroupsAttr: group11
+andGroupsAttr: group12
+andGroupsAttr: group13
+lteAttr: THREE
+gteAttr: THIRTY
+memberOf: cn=testGroup1,ou=Groups,dc=example,dc=com
+userPassword: abcdefg
+
+dn: cn=nestedgroup3,ou=Groups,dc=example,dc=com
+objectClass: groupOfNames
+objectClass: top
+cn: nestedgroup3
+
+dn: cn=nestedgroup2,ou=Groups,dc=example,dc=com
+objectClass: groupOfNames
+objectClass: top
+memberOf: cn=nestedgroup3,ou=Groups,dc=example,dc=com
+cn: nestedgroup2
+
+dn: cn=nestedgroup1,ou=Groups,dc=example,dc=com
+objectClass: groupOfNames
+objectClass: top
+memberOf: cn=nestedgroup2,ou=Groups,dc=example,dc=com
+cn: nestedgroup1
+
+
+dn: cn=nesteduser1,ou=Users,dc=example,dc=com
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: nesteduser1
+sn: nesteduser1
+uid: nesteduser1
+orGroupsAttr: group1
+andGroupsAttr: group11
+lteAttr: THREE
+gteAttr: THIRTY
+memberOf: cn=nestedgroup1,ou=Groups,dc=example,dc=com
+userPassword: abcdefg
+
+dn: cn=nestedgroup6,ou=Groups,dc=example,dc=com
+objectClass: groupOfNames
+objectClass: top
+memberOf: cn=nestedgroup4,ou=Groups,dc=example,dc=com
+cn: nestedgroup6
+
+dn: cn=nestedgroup5,ou=Groups,dc=example,dc=com
+objectClass: groupOfNames
+objectClass: top
+memberOf: cn=nestedgroup6,ou=Groups,dc=example,dc=com
+cn: nestedgroup5
+
+dn: cn=nestedgroup4,ou=Groups,dc=example,dc=com
+objectClass: groupOfNames
+objectClass: top
+memberOf: cn=nestedgroup5,ou=Groups,dc=example,dc=com
+cn: nestedgroup4
+
+
+dn: cn=nesteduser2,ou=Users,dc=example,dc=com
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: nesteduser2
+sn: nesteduser2
+uid: nesteduser2
+orGroupsAttr: group1
+andGroupsAttr: group11
+lteAttr: THREE
+gteAttr: THIRTY
+memberOf: cn=nestedgroup5,ou=Groups,dc=example,dc=com
+userPassword: abcdefg

@@ -95,6 +95,8 @@ public class SolrSentryServiceTestBase extends AbstractSolrSentryTestCase {
                      .resolve("cloud-minimal_subset_match").resolve("conf"))
         .addConfig("cloud-minimal_subset_match_missing_false", TEST_PATH().resolve("configsets")
               .resolve("cloud-minimal_subset_match_missing_false").resolve("conf"))
+        .addConfig("cloud-minimal_abac", TEST_PATH().resolve("configsets")
+              .resolve("cloud-minimal_abac").resolve("conf"))
         .configure();
       log.info("Successfully started Solr service");
 
@@ -221,6 +223,31 @@ public class SolrSentryServiceTestBase extends AbstractSolrSentryTestCase {
     result.put("subset_user_23", Sets.newHashSet("subset_group2", "subset_group3", "subset_nogroup"));
     result.put("subset_user_0123", Sets.newHashSet("subset_group0", "subset_group1", "subset_group2", "subset_group3", "subset_nogroup", "subset_delete"));
     result.put("subset_user_no", Sets.newHashSet("subset_nogroup"));
+
+    result.put("abacuser1", Sets.newHashSet("abac_group"));
+    result.put("abacuser2", Sets.newHashSet("abac_group"));
+    result.put("abacuser3", Sets.newHashSet("abac_group"));
+    result.put("abacuser4", Sets.newHashSet("abac_group"));
+    result.put("abacuser5", Sets.newHashSet("abac_group"));
+
+    result.put("lteuser1", Sets.newHashSet("abac_group"));
+    result.put("lteuser2", Sets.newHashSet("abac_group"));
+    result.put("lteuser3", Sets.newHashSet("abac_group"));
+
+    result.put("gteuser1", Sets.newHashSet("abac_group"));
+    result.put("gteuser2", Sets.newHashSet("abac_group"));
+    result.put("gteuser3", Sets.newHashSet("abac_group"));
+
+    result.put("oruser1", Sets.newHashSet("abac_group"));
+    result.put("oruser2", Sets.newHashSet("abac_group"));
+    result.put("oruser3", Sets.newHashSet("abac_group"));
+
+    result.put("anduser1", Sets.newHashSet("abac_group"));
+    result.put("anduser2", Sets.newHashSet("abac_group"));
+    result.put("anduser3", Sets.newHashSet("abac_group"));
+
+    result.put("nesteduser1", Sets.newHashSet("abac_group"));
+    result.put("nesteduser2", Sets.newHashSet("abac_group"));
 
     return Collections.unmodifiableMap(result);
   }
