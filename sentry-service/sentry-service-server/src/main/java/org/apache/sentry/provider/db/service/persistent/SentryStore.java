@@ -1107,24 +1107,34 @@ public class SentryStore implements SentryStoreInterface {
       throw new SentryInvalidInputException("cannot revoke URI privileges from Null or EMPTY location");
     }
 
+    // make sure to drop all equivalent privileges
+    LOGGER.debug("tPrivilege to drop: {}", tPrivilege.toString());
     MSentryPrivilege mPrivilege = getMSentryPrivilege(tPrivilege, pm);
     if (mPrivilege == null) {
+      LOGGER.debug("mPrivilege is null");
       mPrivilege = convertToMSentryPrivilege(tPrivilege);
     } else {
+      LOGGER.debug("mPrivilege is found: {}", mPrivilege.toString());
       mPrivilege = pm.detachCopy(mPrivilege);
     }
 
     Set<MSentryPrivilege> privilegeGraph = new HashSet<>();
-    if (mPrivilege.getGrantOption() != null) {
-      privilegeGraph.add(mPrivilege);
-    } else {
-      MSentryPrivilege mTure = new MSentryPrivilege(mPrivilege);
-      mTure.setGrantOption(true);
-      privilegeGraph.add(mTure);
-      MSentryPrivilege mFalse = new MSentryPrivilege(mPrivilege);
-      mFalse.setGrantOption(false);
-      privilegeGraph.add(mFalse);
+    Set<String> allEquivalentActions = getAllEquivalentActions(mPrivilege.getAction());
+    for (String equivalentAction : allEquivalentActions) {
+      MSentryPrivilege newActionPrivilege = new MSentryPrivilege(mPrivilege);
+      newActionPrivilege.setAction(equivalentAction);
+      if (newActionPrivilege.getGrantOption() != null) {
+        privilegeGraph.add(newActionPrivilege);
+      } else {
+        MSentryPrivilege mTure = new MSentryPrivilege(newActionPrivilege);
+        mTure.setGrantOption(true);
+        privilegeGraph.add(mTure);
+        MSentryPrivilege mFalse = new MSentryPrivilege(newActionPrivilege);
+        mFalse.setGrantOption(false);
+        privilegeGraph.add(mFalse);
+      }
     }
+
     // Get the privilege graph
     populateChildren(pm, type, Sets.newHashSet(entityName), mPrivilege, privilegeGraph);
     for (MSentryPrivilege childPriv : privilegeGraph) {
@@ -1508,13 +1518,25 @@ public class SentryStore implements SentryStoreInterface {
             .add(TABLE_NAME, tPriv.getTableName())
             .add(COLUMN_NAME, tPriv.getColumnName())
             .add(URI, tPriv.getURI(), true)
-            .addObject(GRANT_OPTION, grantOption)
-            .add(ACTION, tPriv.getAction());
+            .add(ACTION, tPriv.getAction())
+            .addObject(GRANT_OPTION, grantOption);
+
+    LOGGER.debug("getMSentryPrivilege query filter: {}", paramBuilder.toString());
 
     Query query = pm.newQuery(MSentryPrivilege.class);
     query.setUnique(true);
     query.setFilter(paramBuilder.toString());
     return (MSentryPrivilege)query.executeWithMap(paramBuilder.getArguments());
+  }
+
+  private Set<String> getAllEquivalentActions(String inputAction) {
+    if (AccessConstants.ALL.equalsIgnoreCase(inputAction) ||
+        AccessConstants.ACTION_ALL.equalsIgnoreCase(inputAction)) {
+      return Sets.newHashSet(AccessConstants.ALL, AccessConstants.ACTION_ALL,
+          AccessConstants.ACTION_ALL.toLowerCase());
+    }
+
+    return Sets.newHashSet(inputAction);
   }
 
   /**

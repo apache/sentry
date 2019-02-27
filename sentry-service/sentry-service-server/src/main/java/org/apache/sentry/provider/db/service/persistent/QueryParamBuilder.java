@@ -365,6 +365,25 @@ public class QueryParamBuilder {
   }
 
   /**
+   * Add common filter for set of actions. This is used to simplify creating filters for
+   * a collections of actions
+   * @param paramBuilder paramBuilder for parameters
+   * @param actions set actions
+   * @return paramBuilder supplied or a new one if the supplied one is null.
+   */
+  public static QueryParamBuilder addActionFilter(QueryParamBuilder paramBuilder,
+      Collection<String> actions) {
+    if (paramBuilder == null) {
+      paramBuilder = new QueryParamBuilder();
+    }
+    if (actions == null || actions.isEmpty()) {
+      return paramBuilder;
+    }
+    paramBuilder.newChild().addSet("this.action == ", actions, false);
+    return paramBuilder;
+  }
+
+  /**
    * Add multiple conditions for set of values.
    * <p>
    * Example:

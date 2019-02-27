@@ -4465,6 +4465,187 @@ public class TestSentryStore extends org.junit.Assert {
     assertEquals(notificationID, savedNotificationID);
   }
 
+  @Test
+  public void testRevokeHiveAllPrivilegeFromImpalaUnset() throws Exception {
+
+    String roleName1 = "impala-r1";
+    String serverName = "server1";
+    String dbName = "db1";
+    String tableName = "tbl1";
+    String hiveAll = "*";
+    sentryStore.createSentryRole(roleName1);
+
+    TSentryPrivilege hive_privilege_tbl1 = new TSentryPrivilege();
+    hive_privilege_tbl1.setPrivilegeScope("TABLE");
+    hive_privilege_tbl1.setServerName(serverName);
+    hive_privilege_tbl1.setDbName(dbName);
+    hive_privilege_tbl1.setTableName(tableName);
+    hive_privilege_tbl1.setCreateTime(System.currentTimeMillis());
+    hive_privilege_tbl1.setAction(hiveAll);
+    hive_privilege_tbl1.setGrantOption(TSentryGrantOption.FALSE);
+
+    TSentryPrivilege impala_privilege_tbl1_unset = new TSentryPrivilege();
+    impala_privilege_tbl1_unset.setPrivilegeScope("TABLE");
+    impala_privilege_tbl1_unset.setServerName(serverName);
+    impala_privilege_tbl1_unset.setDbName(dbName);
+    impala_privilege_tbl1_unset.setTableName(tableName);
+    impala_privilege_tbl1_unset.setCreateTime(System.currentTimeMillis());
+    impala_privilege_tbl1_unset.setAction("ALL");
+    impala_privilege_tbl1_unset.setGrantOption(TSentryGrantOption.UNSET);
+
+    TSentryAuthorizable tSentryAuthorizable = new TSentryAuthorizable();
+    tSentryAuthorizable.setServer(serverName);
+    tSentryAuthorizable.setDb(dbName);
+    tSentryAuthorizable.setTable(tableName);
+
+    // grant hive ALL privilege to role roleName1
+    sentryStore.alterSentryGrantPrivileges(SentryPrincipalType.ROLE, roleName1, Sets.newHashSet(hive_privilege_tbl1), null);
+
+    // revoke impala ALL privilege to role roleName1
+    sentryStore.alterSentryRoleRevokePrivileges(roleName1, Sets.newHashSet(impala_privilege_tbl1_unset));
+    Map<String, Set<TSentryPrivilege>> rolePrivilegesMap = sentryStore.getRoleNameTPrivilegesMap(dbName, tableName);
+    assertNotNull(rolePrivilegesMap);
+    Set<TSentryPrivilege> rolePrivileges = rolePrivilegesMap.get(roleName1);
+    boolean privilegeRevoked = (rolePrivileges == null) || (rolePrivileges.size() == 0);
+    assertTrue(privilegeRevoked);
+  }
+
+  @Test
+  public void testRevokeHiveAllPrivilegeGrantOptionFromImpalaUnset() throws Exception {
+
+    String roleName1 = "impala-r1";
+    String serverName = "server1";
+    String dbName = "db1";
+    String tableName = "tbl1";
+    String hiveAll = "*";
+    sentryStore.createSentryRole(roleName1);
+
+    TSentryPrivilege hive_privilege_tbl1 = new TSentryPrivilege();
+    hive_privilege_tbl1.setPrivilegeScope("TABLE");
+    hive_privilege_tbl1.setServerName(serverName);
+    hive_privilege_tbl1.setDbName(dbName);
+    hive_privilege_tbl1.setTableName(tableName);
+    hive_privilege_tbl1.setCreateTime(System.currentTimeMillis());
+    hive_privilege_tbl1.setAction(hiveAll);
+    hive_privilege_tbl1.setGrantOption(TSentryGrantOption.FALSE);
+
+    TSentryPrivilege impala_privilege_tbl1_unset = new TSentryPrivilege();
+    impala_privilege_tbl1_unset.setPrivilegeScope("TABLE");
+    impala_privilege_tbl1_unset.setServerName(serverName);
+    impala_privilege_tbl1_unset.setDbName(dbName);
+    impala_privilege_tbl1_unset.setTableName(tableName);
+    impala_privilege_tbl1_unset.setCreateTime(System.currentTimeMillis());
+    impala_privilege_tbl1_unset.setAction("ALL");
+    impala_privilege_tbl1_unset.setGrantOption(TSentryGrantOption.UNSET);
+
+    TSentryAuthorizable tSentryAuthorizable = new TSentryAuthorizable();
+    tSentryAuthorizable.setServer(serverName);
+    tSentryAuthorizable.setDb(dbName);
+    tSentryAuthorizable.setTable(tableName);
+
+    // grant hive ALL privilege to role roleName1
+    hive_privilege_tbl1.setGrantOption(TSentryGrantOption.FALSE);
+    sentryStore.alterSentryGrantPrivileges(SentryPrincipalType.ROLE, roleName1, Sets.newHashSet(hive_privilege_tbl1), null);
+    hive_privilege_tbl1.setGrantOption(TSentryGrantOption.TRUE);
+    sentryStore.alterSentryGrantPrivileges(SentryPrincipalType.ROLE, roleName1, Sets.newHashSet(hive_privilege_tbl1), null);
+
+    // revoke impala ALL privilege to role roleName1
+    sentryStore.alterSentryRoleRevokePrivileges(roleName1, Sets.newHashSet(impala_privilege_tbl1_unset));
+    Map<String, Set<TSentryPrivilege>> rolePrivilegesMap = sentryStore.getRoleNameTPrivilegesMap(dbName, tableName);
+    assertNotNull(rolePrivilegesMap);
+    Set<TSentryPrivilege> rolePrivileges = rolePrivilegesMap.get(roleName1);
+    boolean privilegeRevoked = (rolePrivileges == null) || (rolePrivileges.size() == 0);
+    assertTrue(privilegeRevoked);
+  }
+
+  @Test
+  public void testRevokeHiveAllPrivilegeFromImpala() throws Exception {
+
+    String roleName1 = "impala-r1";
+    String serverName = "server1";
+    String dbName = "db1";
+    String tableName = "tbl1";
+    sentryStore.createSentryRole(roleName1);
+
+    TSentryPrivilege hive_privilege_tbl1 = new TSentryPrivilege();
+    hive_privilege_tbl1.setPrivilegeScope("TABLE");
+    hive_privilege_tbl1.setServerName(serverName);
+    hive_privilege_tbl1.setDbName(dbName);
+    hive_privilege_tbl1.setTableName(tableName);
+    hive_privilege_tbl1.setCreateTime(System.currentTimeMillis());
+    hive_privilege_tbl1.setAction("*");
+    hive_privilege_tbl1.setGrantOption(TSentryGrantOption.FALSE);
+
+    TSentryPrivilege impala_privilege_tbl1 = new TSentryPrivilege();
+    impala_privilege_tbl1.setPrivilegeScope("TABLE");
+    impala_privilege_tbl1.setServerName(serverName);
+    impala_privilege_tbl1.setDbName(dbName);
+    impala_privilege_tbl1.setTableName(tableName);
+    impala_privilege_tbl1.setCreateTime(System.currentTimeMillis());
+    impala_privilege_tbl1.setAction("ALL");
+    impala_privilege_tbl1.setGrantOption(TSentryGrantOption.FALSE);
+
+    TSentryAuthorizable tSentryAuthorizable = new TSentryAuthorizable();
+    tSentryAuthorizable.setServer(serverName);
+    tSentryAuthorizable.setDb(dbName);
+    tSentryAuthorizable.setTable(tableName);
+
+    // grant hive ALL privilege to role roleName1
+    sentryStore.alterSentryGrantPrivileges(SentryPrincipalType.ROLE, roleName1, Sets.newHashSet(hive_privilege_tbl1), null);
+
+    // revoke impala ALL privilege to role roleName1
+    sentryStore.alterSentryRoleRevokePrivileges(roleName1, Sets.newHashSet(impala_privilege_tbl1));
+    Map<String, Set<TSentryPrivilege>> rolePrivilegesMap = sentryStore.getRoleNameTPrivilegesMap(dbName, tableName);
+    assertNotNull(rolePrivilegesMap);
+    Set<TSentryPrivilege> rolePrivileges = rolePrivilegesMap.get(roleName1);
+    boolean privilegeRevoked = (rolePrivileges == null) || (rolePrivileges.size() == 0);
+    assertTrue(privilegeRevoked);
+  }
+
+  @Test
+  public void testRevokeImpalaAllPrivilegeFromHive() throws Exception {
+
+    String roleName1 = "impala-r1";
+    String serverName = "server1";
+    String dbName = "db1";
+    String tableName = "tbl1";
+    sentryStore.createSentryRole(roleName1);
+
+    TSentryPrivilege hive_privilege_tbl1 = new TSentryPrivilege();
+    hive_privilege_tbl1.setPrivilegeScope("TABLE");
+    hive_privilege_tbl1.setServerName(serverName);
+    hive_privilege_tbl1.setDbName(dbName);
+    hive_privilege_tbl1.setTableName(tableName);
+    hive_privilege_tbl1.setCreateTime(System.currentTimeMillis());
+    hive_privilege_tbl1.setAction("*");
+    hive_privilege_tbl1.setGrantOption(TSentryGrantOption.FALSE);
+
+    TSentryPrivilege impala_privilege_tbl1 = new TSentryPrivilege();
+    impala_privilege_tbl1.setPrivilegeScope("TABLE");
+    impala_privilege_tbl1.setServerName(serverName);
+    impala_privilege_tbl1.setDbName(dbName);
+    impala_privilege_tbl1.setTableName(tableName);
+    impala_privilege_tbl1.setCreateTime(System.currentTimeMillis());
+    impala_privilege_tbl1.setAction("ALL");
+    impala_privilege_tbl1.setGrantOption(TSentryGrantOption.FALSE);
+
+    TSentryAuthorizable tSentryAuthorizable = new TSentryAuthorizable();
+    tSentryAuthorizable.setServer(serverName);
+    tSentryAuthorizable.setDb(dbName);
+    tSentryAuthorizable.setTable(tableName);
+
+    // grant impala ALL privilege to role roleName1
+    sentryStore.alterSentryGrantPrivileges(SentryPrincipalType.ROLE, roleName1, Sets.newHashSet(impala_privilege_tbl1), null);
+
+    // revoke hive ALL privilege to role roleName1
+    sentryStore.alterSentryRoleRevokePrivileges(roleName1, Sets.newHashSet(hive_privilege_tbl1));
+    Map<String, Set<TSentryPrivilege>> rolePrivilegesMap = sentryStore.getRoleNameTPrivilegesMap(dbName, tableName);
+    assertNotNull(rolePrivilegesMap);
+    Set<TSentryPrivilege> rolePrivileges = rolePrivilegesMap.get(roleName1);
+    boolean privilegeRevoked = (rolePrivileges == null) || (rolePrivileges.size() == 0);
+    assertTrue(privilegeRevoked);
+  }
+
   private TSentryPrivilege toTSentryPrivilege(String action, String scope, String server,
     String dbName, String tableName) {
     TSentryPrivilege privilege = new TSentryPrivilege();
