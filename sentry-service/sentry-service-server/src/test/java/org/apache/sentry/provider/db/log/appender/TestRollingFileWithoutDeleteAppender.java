@@ -86,13 +86,15 @@ public class TestRollingFileWithoutDeleteAppender {
         new PatternLayout("%m%n"), dataDir.getPath() + "/auditLog.log");
     appender.setMaximumFileSize(10);
     sentryLogger.addAppender(appender);
-    sentryLogger.debug("1234567890");
-    sentryLogger.debug("1234567890");
-    sentryLogger.debug("12345678");
+    sentryLogger.debug("1111111111");
+    Thread.sleep(500);
+    sentryLogger.debug("2222222222");
+    Thread.sleep(500);
+    sentryLogger.debug("33333333");
     File[] files = dataDir.listFiles();
     assertNotNull(files);
     assertEquals(3, files.length);
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < files.length; i++) {
       assertTrue(files[i].getName().matches("auditLog\\.log\\.\\d+"));
     }
   }
