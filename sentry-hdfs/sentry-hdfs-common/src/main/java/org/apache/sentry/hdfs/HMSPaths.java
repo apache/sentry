@@ -105,7 +105,7 @@ public class HMSPaths implements AuthzPaths {
     public byte getByte() {
       return (byte)toString().charAt(0);
     }
-    
+
     public static EntryType fromByte(byte b) {
       switch (b) {
       case ((byte)'D'):
@@ -199,12 +199,16 @@ public class HMSPaths implements AuthzPaths {
         // memory waste due to empty and underpopulated maps.
         children = new HashMap<>(2);
       }
-      LOG.debug("[putChild]Adding {} as child to {}", entry.toString(), this.toString());
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("[putChild]Adding {} as child to {}", entry.toString(), this.toString());
+      }
       children.put(pathElement.intern(), entry);
     }
 
     Entry removeChild(String pathElement) {
-      LOG.debug("[removeChild]Removing {} from children", pathElement);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("[removeChild]Removing {} from children", pathElement);
+      }
       return children.remove(pathElement);
     }
 
@@ -217,12 +221,16 @@ public class HMSPaths implements AuthzPaths {
     }
 
     void clearAuthzObjs() {
-      LOG.debug("Clearing authzObjs from {}", this.toString());
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Clearing authzObjs from {}", this.toString());
+      }
       authzObjs = null;
     }
 
     void removeAuthzObj(String authzObj) {
-      LOG.debug("Removing {} from {}", authzObj, authzObjs);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Removing {} from {}", authzObj, authzObjs);
+      }
       if (authzObjs != null) {
         if (authzObjs instanceof Set) {
           Set<String> authzObjsSet = (Set<String>) authzObjs;
@@ -237,7 +245,9 @@ public class HMSPaths implements AuthzPaths {
     }
 
     void addAuthzObj(String authzObj) {
-      LOG.debug("Adding {} to {}", authzObj, this.toString());
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Adding {} to {}", authzObj, this.toString());
+      }
       if (authzObj != null) {
         if (authzObjs == null) {
           authzObjs = authzObj;
@@ -255,11 +265,15 @@ public class HMSPaths implements AuthzPaths {
           authzObjsSet.add(authzObj.intern());
         }
       }
-      LOG.debug("Added {} to {}", authzObj, this.toString());
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Added {} to {}", authzObj, this.toString());
+      }
     }
 
     void addAuthzObjs(Collection<String> authzObjs) {
-      LOG.debug("Adding {} to {}", authzObjs, this.toString());
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Adding {} to {}", authzObjs, this.toString());
+      }
       if (authzObjs != null) {
         for (String authzObj : authzObjs) {
           addAuthzObj(authzObj.intern());
@@ -363,7 +377,9 @@ public class HMSPaths implements AuthzPaths {
      */
     private Entry createParent(List<String> pathElements) {
       Entry parent = this;
-      LOG.debug("[createParent]Trying to create entires for {} ", pathElements);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("[createParent]Trying to create entires for {} ", pathElements);
+      }
       // The loop is resilient to 0 or 1 element list.
       for (int i = 0; i < pathElements.size() - 1; i++) {
         String elem = pathElements.get(i);
@@ -372,7 +388,9 @@ public class HMSPaths implements AuthzPaths {
         if (child == null) {
           child = new Entry(parent, elem, EntryType.DIR, (String) null);
           parent.putChild(elem, child);
-          LOG.debug("[createParent] Entry {} created", child.toString());
+          if (LOG.isDebugEnabled()) {
+            LOG.debug("[createParent] Entry {} created", child.toString());
+          }
         }
 
         parent = child;
@@ -391,7 +409,9 @@ public class HMSPaths implements AuthzPaths {
      */
     private Entry createChild(List<String> pathElements, EntryType type,
         String authzObj) {
-      LOG.debug("[createChild] Creating child for {} with path {}", authzObj, pathElements);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("[createChild] Creating child for {} with path {}", authzObj, pathElements);
+      }
       // Create all the parent entries on the path if they do not exist.
       Entry entryParent = createParent(pathElements);
 
@@ -405,24 +425,32 @@ public class HMSPaths implements AuthzPaths {
       if (child == null) {
         child = new Entry(entryParent, lastPathElement, type, authzObj);
         entryParent.putChild(lastPathElement, child);
-        LOG.debug("Created child entry {}", child);
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("Created child entry {}", child);
+        }
       } else if (type == EntryType.AUTHZ_OBJECT &&
           (child.getType() == EntryType.PREFIX || child.getType() == EntryType.AUTHZ_OBJECT)) {
         child.addAuthzObj(authzObj);
-        LOG.debug("[createChild] Found Child {}, updated authzObj", child.toString());
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("[createChild] Found Child {}, updated authzObj", child.toString());
+        }
       } else if (type == EntryType.AUTHZ_OBJECT &&
           child.getType() == EntryType.DIR) {
         child.addAuthzObj(authzObj);
         child.setType(EntryType.AUTHZ_OBJECT);
-        LOG.debug("[createChild] Found Child {}, updated authzObj", child.toString());
-        LOG.debug("[createChild] Updating type to", child.getType().toString());
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("[createChild] Found Child {}, updated authzObj", child.toString());
+          LOG.debug("[createChild] Updating type to", child.getType().toString());
+        }
       }
 
       return child;
     }
 
     public static Entry createRoot(boolean asPrefix) {
-      LOG.debug("Creating entry for root");
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Creating entry for root");
+      }
       return new Entry(null, "/", asPrefix
                                    ? EntryType.PREFIX : EntryType.DIR, (String) null);
     }
@@ -436,11 +464,13 @@ public class HMSPaths implements AuthzPaths {
     }
 
     public Entry createPrefix(List<String> pathElements) {
-      LOG.debug("Creating entries for prefix paths", pathElements.toString());
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Creating entries for prefix paths", pathElements.toString());
+      }
       Entry prefix = findPrefixEntry(pathElements);
       if (prefix != null) {
         throw new IllegalArgumentException(String.format(
-            "%s: createPrefix(%s): cannot add prefix under an existing prefix '%s'", 
+            "%s: createPrefix(%s): cannot add prefix under an existing prefix '%s'",
             this, pathElements, prefix.getFullPath()));
       }
       return createChild(pathElements, EntryType.PREFIX, null);
@@ -448,7 +478,9 @@ public class HMSPaths implements AuthzPaths {
 
     public Entry createAuthzObjPath(List<String> pathElements, String authzObj) {
       Entry entry = null;
-      LOG.debug("createAuthzObjPath authzObj:{} paths: {}", authzObj, pathElements);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("createAuthzObjPath authzObj:{} paths: {}", authzObj, pathElements);
+      }
       Entry prefix = findPrefixEntry(pathElements);
       if (prefix != null) {
         // we only create the entry if is under a prefix, else we ignore it
@@ -466,9 +498,13 @@ public class HMSPaths implements AuthzPaths {
      * Delete this entry from its parent.
      */
     private void deleteFromParent() {
-      LOG.debug("[deleteFromParent] Attempting to remove path: {}", this.getFullPath());
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("[deleteFromParent] Attempting to remove path: {}", this.getFullPath());
+      }
       if (getParent() != null) {
-        LOG.debug("Child in Parent Entry with path: {} is removed", getParent().getFullPath());
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("Child in Parent Entry with path: {} is removed", getParent().getFullPath());
+        }
         getParent().removeChild(getPathElement());
         getParent().deleteIfDangling();
         parent = null;
@@ -478,7 +514,10 @@ public class HMSPaths implements AuthzPaths {
     }
 
     public void deleteAuthzObject(String authzObj) {
-      LOG.debug("[deleteAuthzObject] Removing authObj:{} from path {}", authzObj, this.toString());
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("[deleteAuthzObject] Removing authObj:{} from path {}", authzObj,
+            this.toString());
+      }
       if(!getAuthzObjs().contains(authzObj)) {
         return;
       }
@@ -492,7 +531,9 @@ public class HMSPaths implements AuthzPaths {
             removeAuthzObj(authzObj);
           }
           if (authzObjs == null) {
-            LOG.debug("Deleting path {}", this.toString());
+            if (LOG.isDebugEnabled()) {
+              LOG.debug("Deleting path {}", this.toString());
+            }
             deleteFromParent();
           }
         } else {
@@ -505,7 +546,9 @@ public class HMSPaths implements AuthzPaths {
               removeAuthzObj(authzObj);
             }
             if(getAuthzObjsSize() == 0) {
-              LOG.debug("Entry with path: {} is changed to DIR", this.getFullPath());
+              if (LOG.isDebugEnabled()) {
+                LOG.debug("Entry with path: {} is changed to DIR", this.getFullPath());
+              }
               setType(EntryType.DIR);
             }
           }
@@ -521,7 +564,9 @@ public class HMSPaths implements AuthzPaths {
      * @return true if success. Returns false if the target with the same name already exists.
      */
     private void moveTo(Entry newParent, String pathElem) {
-      LOG.debug("Moving {} as a child to {}", this.toString(), newParent.toString());
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Moving {} as a child to {}", this.toString(), newParent.toString());
+      }
       Preconditions.checkNotNull(newParent);
       Preconditions.checkArgument(!pathElem.isEmpty());
       if (newParent.getChild(pathElem) != null) {
@@ -546,7 +591,9 @@ public class HMSPaths implements AuthzPaths {
           if (getType() == EntryType.AUTHZ_OBJECT) {
             setType(EntryType.DIR);
             clearAuthzObjs();
-            LOG.debug("Entry with path: {} is changed to DIR", this.getFullPath());
+            if (LOG.isDebugEnabled()) {
+              LOG.debug("Entry with path: {} is changed to DIR", this.getFullPath());
+            }
 
           }
         }
@@ -555,7 +602,9 @@ public class HMSPaths implements AuthzPaths {
 
     private void deleteIfDangling() {
       if (!hasChildren() && getType().isRemoveIfDangling()) {
-        LOG.debug("Deleting {} as it is dangling", this.toString());
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("Deleting {} as it is dangling", this.toString());
+        }
         delete();
       }
     }
@@ -724,9 +773,11 @@ public class HMSPaths implements AuthzPaths {
   }
 
   void addAuthzObject(String authzObj, List<List<String>> authzObjPathElements) {
-    LOG.debug("Number of Objects: {}", authzObjToEntries.size());
-    LOG.debug(String.format("%s addAuthzObject(%s, %s)",
-              this, authzObj, assemblePaths(authzObjPathElements)));
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Number of Objects: {}", authzObjToEntries.size());
+      LOG.debug(String.format("%s addAuthzObject(%s, %s)",
+          this, authzObj, assemblePaths(authzObjPathElements)));
+    }
     Set<Entry> previousEntries = authzObjToEntries.get(authzObj);
     Set<Entry> newEntries = new HashSet<Entry>(authzObjPathElements.size());
     for (List<String> pathElements : authzObjPathElements) {
@@ -740,12 +791,13 @@ public class HMSPaths implements AuthzPaths {
       }
     }
     authzObjToEntries.put(authzObj, newEntries);
-    LOG.debug("Path entries for {} are {}", authzObj, newEntries.toString());
     if (previousEntries != null) {
       previousEntries.removeAll(newEntries);
       if (!previousEntries.isEmpty()) {
         for (Entry entry : previousEntries) {
-          LOG.debug("Removing stale path {}", entry.toString());
+          if (LOG.isDebugEnabled()) {
+            LOG.debug("Removing stale path {}", entry.toString());
+          }
           entry.deleteAuthzObject(authzObj);
         }
       }
@@ -768,16 +820,20 @@ public class HMSPaths implements AuthzPaths {
         } else {
           if (LOG.isDebugEnabled()) {
             LOG.debug(String.format("%s addPathsToAuthzObject(%s, %s, %b):" +
-              " Cannot create authz obj for path %s because it is outside of prefix", 
+              " Cannot create authz obj for path %s because it is outside of prefix",
               this, authzObj, assemblePaths(authzObjPathElements), createNew, pathElements));
           }
         }
       }
       entries.addAll(newEntries);
-      LOG.debug("[addPathsToAuthzObject]Updated path entries for {} are {}", authzObj, entries.toString());
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("[addPathsToAuthzObject]Updated path entries for {}", authzObj);
+      }
     } else {
       if (createNew) {
-        LOG.debug("No paths found for Object:{}, Adding new", authzObj);
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("No paths found for Object:{}, Adding new", authzObj);
+        }
         addAuthzObject(authzObj, authzObjPathElements);
       } else {
         LOG.warn(String.format("%s addPathsToAuthzObject(%s, %s, %b):" +
@@ -804,7 +860,9 @@ public class HMSPaths implements AuthzPaths {
       List<List<String>> authzObjPathElements) {
     Set<Entry> entries = authzObjToEntries.get(authzObj);
     if (entries != null) {
-      LOG.debug("[deletePathsFromAuthzObject] Paths for {} before delete are {}", authzObj, entries.toString());
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("[deletePathsFromAuthzObject] For {}", authzObj);
+      }
       for (List<String> pathElements : authzObjPathElements) {
         Entry entry = root.find(
             pathElements.toArray(new String[pathElements.size()]), false);
@@ -818,10 +876,13 @@ public class HMSPaths implements AuthzPaths {
             this, authzObj, assemblePaths(authzObjPathElements), pathElements));
         }
       }
-      LOG.debug("[deletePathsFromAuthzObject] Paths for {} after are {}", authzObj, entries.toString());
       if(entries.size() == 0) {
         authzObjToEntries.remove(authzObj);
-        LOG.debug("[deletePathsFromAuthzObject] Removing the mapping for {} as the entries are stale", authzObj);
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(
+              "[deletePathsFromAuthzObject] Removing the mapping for {} as the entries are stale",
+              authzObj);
+        }
       }
     } else {
       LOG.warn(String.format("%s deletePathsFromAuthzObject(%s, %s):" +
@@ -831,8 +892,10 @@ public class HMSPaths implements AuthzPaths {
   }
 
     void deleteAuthzObject(String authzObj) {
-      LOG.debug(String.format("%s deleteAuthzObject(%s)", this, authzObj));
-      LOG.debug("Number of Objects: {}", authzObjToEntries.size());
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(String.format("%s deleteAuthzObject(%s)", this, authzObj));
+        LOG.debug("Number of Objects: {}", authzObjToEntries.size());
+      }
     Set<Entry> entries = authzObjToEntries.remove(authzObj);
     if (entries != null) {
       for (Entry entry : entries) {
@@ -978,7 +1041,7 @@ public class HMSPaths implements AuthzPaths {
    * Non-recursive traversal.
    */
   public Collection<Entry> getAllEntries() {
-    Collection<Entry> entries = new ArrayList<>(); 
+    Collection<Entry> entries = new ArrayList<>();
     Stack<Entry> stack = new Stack<>();
     stack.push(root);
     while (!stack.isEmpty()) {
