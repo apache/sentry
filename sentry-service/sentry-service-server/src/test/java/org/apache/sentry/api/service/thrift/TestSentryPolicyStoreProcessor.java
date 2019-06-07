@@ -25,9 +25,11 @@ import static org.junit.Assert.assertTrue;
 
 import com.codahale.metrics.Gauge;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import java.util.Collections;
-import java.util.Set;
+
+import java.util.*;
+
 import org.apache.hadoop.hive.metastore.messaging.EventMessage;
 import org.apache.hadoop.hive.metastore.messaging.EventMessage.EventType;
 import org.apache.sentry.api.common.ApiConstants;
@@ -340,6 +342,127 @@ public class TestSentryPolicyStoreProcessor {
     Assert.assertEquals(Status.OK(),  returnedResp.getStatus());
     assertTrue("User should have ALL privileges in db1.t1",
       returnedResp.getPrivileges().contains(newSentryPrivilege("database", "db1", "t1", "*")));
+  }
+
+  @Test
+  public void testListPrivilegesByAuthorizableAndUser() throws Exception {
+    MockGroupMappingService.addUserGroupMapping("admin", Sets.newHashSet("admin"));
+    String user1 = "user1";
+    String g1 = "g1";
+    MockGroupMappingService.addUserGroupMapping(user1, Sets.newHashSet(g1));
+
+    Configuration conf = new Configuration();
+    conf.set(ServerConfig.SENTRY_STORE_GROUP_MAPPING,
+        "org.apache.sentry.api.service.thrift.MockGroupMappingService");
+    conf.set(ServerConfig.ADMIN_GROUPS, "admin");
+
+    SentryPolicyStoreProcessor policyStoreProcessor = new SentryPolicyStoreProcessor(
+        ApiConstants.SentryPolicyServiceConstants.SENTRY_POLICY_SERVICE_NAME,
+        conf, sentryStore);
+    TListSentryPrivilegesByAuthUserResponse returnedResp;
+    TListSentryPrivilegesByAuthUserResponse expectedResp;
+
+    // Request privileges when user is null must throw an exception that
+    // user must not be null.
+    returnedResp = policyStoreProcessor.list_sentry_privileges_by_authorizable_and_user(
+        newAuthRequest("admin", null, null));
+    expectedResp = new TListSentryPrivilegesByAuthUserResponse();
+    expectedResp.setStatus(Status.InvalidInput("user parameter must not be null",
+        new SentryInvalidInputException("user parameter must not be null")));
+    Assert.assertEquals(expectedResp.getStatus().getValue(),
+        returnedResp.getStatus().getValue());
+
+    // Prepare request for getting privileges for user1 based on the given authorizables
+    TSentryAuthorizable requestedAuthorizable = new TSentryAuthorizable();
+    requestedAuthorizable.setServer("server1");
+    requestedAuthorizable.setDb("db1");
+    Set<TSentryAuthorizable> requestedAuthorizables = new HashSet<>();
+    requestedAuthorizables.add(requestedAuthorizable);
+
+    Set<String> users = new HashSet<>();
+    users.add(user1);
+    Set<String> groups = new HashSet<>();
+    groups.add(g1);
+
+    Set<TSentryPrivilege> user1Privileges = Sets.newHashSet(
+        newSentryPrivilege("database", "db1", "t1", "*"),
+        newSentryPrivilege("database", "db1", "t2", "*"));
+    Map<String, Set<TSentryPrivilege>> user1PrivilegesMap = Maps.newTreeMap();
+    user1PrivilegesMap.put(user1, user1Privileges);
+
+    Mockito.when(sentryStore.listSentryPrivilegesByAuthorizableForUser(
+        users, requestedAuthorizable, false)).thenReturn(
+            new TSentryPrivilegeMap(user1PrivilegesMap));
+
+    Mockito.when(sentryStore.listSentryPrivilegesByAuthorizable(
+        groups, null, requestedAuthorizable, false)).thenReturn(
+            new TSentryPrivilegeMap());
+
+    // Request privileges of a user as admin
+    returnedResp = policyStoreProcessor.list_sentry_privileges_by_authorizable_and_user(
+        newAuthRequest("admin", requestedAuthorizables, user1));
+    Assert.assertEquals(1, returnedResp.getPrivilegesMapByAuthSize());
+    Assert.assertEquals(2, returnedResp.getPrivilegesMapByAuth().get(requestedAuthorizable).size());
+    Assert.assertEquals(Status.OK(),  returnedResp.getStatus());
+    assertTrue("User1 should have ALL privileges in db1.t1",
+        returnedResp.getPrivilegesMapByAuth().get(requestedAuthorizable).contains(
+            newSentryPrivilege("database", "db1", "t1", "*")));
+    assertTrue("User1 should have ALL privileges in db1.t2",
+        returnedResp.getPrivilegesMapByAuth().get(requestedAuthorizable).contains(
+            newSentryPrivilege("database", "db1", "t2", "*")));
+
+    // Request privileges of a user as the same user
+    returnedResp = policyStoreProcessor.list_sentry_privileges_by_authorizable_and_user(
+        newAuthRequest(user1, requestedAuthorizables, user1));
+    Assert.assertEquals(1, returnedResp.getPrivilegesMapByAuthSize());
+    Assert.assertEquals(2, returnedResp.getPrivilegesMapByAuth().get(requestedAuthorizable).size());
+    Assert.assertEquals(Status.OK(),  returnedResp.getStatus());
+    assertTrue("User1 should have ALL privileges in db1.t1",
+        returnedResp.getPrivilegesMapByAuth().get(requestedAuthorizable).contains(
+            newSentryPrivilege("database", "db1", "t1", "*")));
+    assertTrue("User1 should have ALL privileges in db1.t2",
+        returnedResp.getPrivilegesMapByAuth().get(requestedAuthorizable).contains(
+            newSentryPrivilege("database", "db1", "t2", "*")));
+
+    // Request privileges of a user as an unauthorized user
+    returnedResp = policyStoreProcessor.list_sentry_privileges_by_authorizable_and_user(
+        newAuthRequest("bad_user", requestedAuthorizables, user1));
+    Assert.assertEquals(Status.ACCESS_DENIED.getCode(), returnedResp.getStatus().getValue());
+    assertNull(returnedResp.getPrivilegesMapByAuth());
+
+    // Assign new privileges for g1 based on the given authorizables
+    Set<TSentryPrivilege> g1Privileges = Sets.newHashSet(
+        newSentryPrivilege("database", "db1", "t3", "*"));
+    Map<String, Set<TSentryPrivilege>> g1PrivilegesMap = Maps.newTreeMap();
+    g1PrivilegesMap.put(g1, g1Privileges);
+
+    Mockito.when(sentryStore.listSentryPrivilegesByAuthorizable(
+        groups, null, requestedAuthorizable, false)).thenReturn(
+            new TSentryPrivilegeMap(g1PrivilegesMap));
+    returnedResp = policyStoreProcessor.list_sentry_privileges_by_authorizable_and_user(
+            newAuthRequest(user1, requestedAuthorizables, user1));
+    Assert.assertEquals(1, returnedResp.getPrivilegesMapByAuthSize());
+    Assert.assertEquals(3, returnedResp.getPrivilegesMapByAuth().get(requestedAuthorizable).size());
+    Assert.assertEquals(Status.OK(),  returnedResp.getStatus());
+    assertTrue("User1 should have ALL privileges in db1.t1",
+        returnedResp.getPrivilegesMapByAuth().get(requestedAuthorizable).contains(
+            newSentryPrivilege("database", "db1", "t1", "*")));
+    assertTrue("User1 should have ALL privileges in db1.t2",
+        returnedResp.getPrivilegesMapByAuth().get(requestedAuthorizable).contains(
+            newSentryPrivilege("database", "db1", "t2", "*")));
+    assertTrue("User1 should have ALL privileges in db1.t3",
+        returnedResp.getPrivilegesMapByAuth().get(requestedAuthorizable).contains(
+            newSentryPrivilege("database", "db1", "t3", "*")));
+  }
+
+  private TListSentryPrivilegesByAuthUserRequest newAuthRequest(
+      String requestorUser, Set<TSentryAuthorizable> authorizables, String user) {
+    TListSentryPrivilegesByAuthUserRequest request =
+        new TListSentryPrivilegesByAuthUserRequest();
+    request.setRequestorUserName(requestorUser);
+    request.setAuthorizableSet(authorizables);
+    request.setUser(user);
+    return request;
   }
 
   private TListSentryPrivilegesRequest newPrivilegesRequest(String requestorUser, String principalName, TSentryAuthorizable authorizable) {

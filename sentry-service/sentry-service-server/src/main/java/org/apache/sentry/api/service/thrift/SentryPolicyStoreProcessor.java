@@ -1295,6 +1295,100 @@ public class SentryPolicyStoreProcessor implements SentryPolicyService.Iface {
     return response;
   }
 
+  @Override
+  public TListSentryPrivilegesByAuthUserResponse list_sentry_privileges_by_authorizable_and_user(
+      TListSentryPrivilegesByAuthUserRequest request) throws TException {
+    final Timer.Context timerContext =
+        sentryMetrics.listPrivilegesByAuthorizableAndUserTimer.time();
+    TListSentryPrivilegesByAuthUserResponse response =
+        new TListSentryPrivilegesByAuthUserResponse();
+
+    // Sanity validation of the required fields.
+    String requestor = request.getRequestorUserName();
+    String principalName = request.getUser();
+    TSentryResponseStatus status =
+        checkRequiredParameter(requestor, "requestor parameter must not be null");
+    status = status != null ?
+        status : checkRequiredParameter(principalName, "user parameter must not be null");
+    if (status != null) {
+      response.setStatus(status);
+      return response;
+    }
+    principalName = principalName.trim();
+    Map<TSentryAuthorizable, Set<TSentryPrivilege>> authMap = Maps.newHashMap();
+
+    try {
+      validateClientVersion(request.getProtocol_version());
+
+      // To allow listing the privileges, the requestor user must be part of
+      // the admins group, or the requestor user must be the same user requesting
+      // privileges for.
+      Set<String> requestorGroups = getRequestorGroups(requestor);
+      Boolean admin = inAdminGroups(requestorGroups);
+      if(!admin && !principalName.equalsIgnoreCase(requestor)) {
+        throw new SentryAccessDeniedException("Access denied to " + requestor);
+      }
+
+      // Get the groups the user is associated with.
+      Set<String> principalGroups;
+      if (principalName.equals(requestor)) {
+        principalGroups = requestorGroups;
+      } else {
+        principalGroups = getRequestorGroups(principalName);
+      }
+      Set<String> principalUsers = new HashSet<>();
+      principalUsers.add(principalName);
+
+      // Return the privileges found that granted to the given user and the groups the
+      // user associated with per authorizable object.
+      for (TSentryAuthorizable authorizable : request.getAuthorizableSet()) {
+        Set<TSentryPrivilege> privileges = new HashSet();
+
+        // Search for privileges granted to the groups the user associated with.
+        TSentryPrivilegeMap groupMap = sentryStore.listSentryPrivilegesByAuthorizable(
+            principalGroups, null, authorizable, false);
+        if (groupMap.getPrivilegeMap() != null) {
+          for (Set<TSentryPrivilege> groupPrivilege : groupMap.getPrivilegeMap().values()) {
+            privileges.addAll(groupPrivilege);
+          }
+        }
+
+        // Search for privileges granted to the user.
+        TSentryPrivilegeMap userMap = sentryStore.listSentryPrivilegesByAuthorizableForUser(
+            principalUsers, authorizable, false);
+        if (userMap.getPrivilegeMap() != null) {
+          for (Set<TSentryPrivilege> userPrivilege : userMap.getPrivilegeMap().values()) {
+            privileges.addAll(userPrivilege);
+          }
+        }
+
+        authMap.put(authorizable, privileges);
+      }
+      response.setPrivilegesMapByAuth(authMap);
+      response.setStatus(Status.OK());
+    } catch (SentryAccessDeniedException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (SentryGroupNotFoundException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.AccessDenied(e.getMessage(), e));
+    } catch (SentryThriftAPIMismatchException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.THRIFT_VERSION_MISMATCH(e.getMessage(), e));
+    } catch (SentryInvalidInputException e) {
+      LOGGER.error(e.getMessage(), e);
+      response.setStatus(Status.InvalidInput(e.getMessage(), e));
+    } catch (Exception e) {
+      String msg = "Unknown error for request: " + request + ", message: "
+          + e.getMessage();
+      LOGGER.error(msg, e);
+      response.setStatus(Status.RuntimeError(msg, e));
+    } finally {
+      timerContext.stop();
+    }
+    return response;
+  }
+
   /**
    * Respond to a request for a config value in the sentry server.  The client
    * can request any config value that starts with "sentry." and doesn't contain
