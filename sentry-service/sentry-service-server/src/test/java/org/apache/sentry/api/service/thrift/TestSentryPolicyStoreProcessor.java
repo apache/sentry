@@ -36,6 +36,7 @@ import org.apache.sentry.api.common.ApiConstants;
 import org.apache.sentry.api.common.Status;
 import org.apache.sentry.api.common.ThriftConstants;
 import org.apache.sentry.core.common.exception.SentryInvalidInputException;
+import org.apache.sentry.core.common.exception.SentryAccessDeniedException;
 import org.apache.sentry.core.model.db.AccessConstants;
 import org.apache.sentry.provider.common.GroupMappingService;
 import org.apache.sentry.provider.db.service.persistent.CounterWait;
@@ -372,7 +373,6 @@ public class TestSentryPolicyStoreProcessor {
     Assert.assertEquals(expectedResp.getStatus().getValue(),
         returnedResp.getStatus().getValue());
 
-    // Prepare request for getting privileges for user1 based on the given authorizables
     TSentryAuthorizable requestedAuthorizable = new TSentryAuthorizable();
     requestedAuthorizable.setServer("server1");
     requestedAuthorizable.setDb("db1");
@@ -384,6 +384,16 @@ public class TestSentryPolicyStoreProcessor {
     Set<String> groups = new HashSet<>();
     groups.add(g1);
 
+    // Request privileges when user is unknown throw an access denied exception.
+    returnedResp = policyStoreProcessor.list_sentry_privileges_by_authorizable_and_user(
+        newAuthRequest("unknown_user", requestedAuthorizables, user1));
+    expectedResp = new TListSentryPrivilegesByAuthUserResponse();
+    expectedResp.setStatus(Status.AccessDenied("Access denied to unknown_user",
+        new SentryAccessDeniedException("Access denied to unknown_user")));
+    Assert.assertEquals(expectedResp.getStatus().getValue(),
+        returnedResp.getStatus().getValue());
+
+    // Prepare request for getting privileges for user1 based on the given authorizables.
     Set<TSentryPrivilege> user1Privileges = Sets.newHashSet(
         newSentryPrivilege("database", "db1", "t1", "*"),
         newSentryPrivilege("database", "db1", "t2", "*"));

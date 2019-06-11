@@ -293,7 +293,7 @@ struct TListSentryPrivilegesByAuthUserRequest {
 struct TListSentryPrivilegesByAuthUserResponse {
 1: required sentry_common_service.TSentryResponseStatus status,
 # Authorizable to set of privileges map
-2: required map<TSentryAuthorizable, set<TSentryPrivilege>> privilegesMapByAuth,
+2: optional map<TSentryAuthorizable, set<TSentryPrivilege>> privilegesMapByAuth,
 }
 
 # Obtain a config value from the Sentry service
