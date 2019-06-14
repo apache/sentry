@@ -226,9 +226,15 @@ public class HiveAuthzPrivilegesMap {
         .setOperationScope(HiveOperationScope.DATABASE).setOperationType(HiveOperationType.DML)
         .build();
 
-    HiveAuthzPrivileges functionPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
+    HiveAuthzPrivileges createFunctionPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
         addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.ALL)).
         addOutputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.ALL)).
+        setOperationScope(HiveOperationScope.FUNCTION).
+        setOperationType(HiveOperationType.DATA_LOAD).
+        build();
+
+    HiveAuthzPrivileges dropFunctionPrivilege = new HiveAuthzPrivileges.AuthzPrivilegeBuilder().
+        addInputObjectPriviledge(AuthorizableType.Db, EnumSet.of(DBModelAction.DROP)).
         setOperationScope(HiveOperationScope.FUNCTION).
         setOperationType(HiveOperationType.DATA_LOAD).
         build();
@@ -316,8 +322,8 @@ public class HiveAuthzPrivilegesMap {
 
     // CREATEFUNCTION
     // DROPFUNCTION
-    hiveAuthzStmtPrivMap.put(HiveOperation.CREATEFUNCTION, functionPrivilege);
-    hiveAuthzStmtPrivMap.put(HiveOperation.DROPFUNCTION, functionPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.CREATEFUNCTION, createFunctionPrivilege);
+    hiveAuthzStmtPrivMap.put(HiveOperation.DROPFUNCTION, dropFunctionPrivilege);
 
     // SHOWCOLUMNS
     hiveAuthzStmtPrivMap.put(HiveOperation.SHOWCOLUMNS, columnMetaDataPrivilege);

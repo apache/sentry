@@ -100,10 +100,12 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     context.close();
 
     policyFile
-        .addRolesToGroup(USERGROUP1, "db1_all", "UDF2_JAR", "UDF1_JAR", "UDF_JAR", "data_read")
+        .addRolesToGroup(USERGROUP1, "db1_all", "db2_all", "UDF2_JAR", "UDF1_JAR", "UDF_JAR", "data_read")
         .addRolesToGroup(USERGROUP2, "db1_tab1", "UDF_JAR")
         .addRolesToGroup(USERGROUP3, "db1_tab1")
+        .addRolesToGroup(USERGROUP4, "db1_all","db2_all")
         .addPermissionsToRole("db1_all", "server=server1->db=" + DB1)
+        .addPermissionsToRole("db2_all", "server=server1->db=" + DB2)
         .addPermissionsToRole("db1_tab1", "server=server1->db=" + DB1 + "->table=" + tableName1)
         .addPermissionsToRole("UDF_JAR", "server=server1->uri=file://" + udfLocation)
         .addPermissionsToRole("UDF1_JAR", "server=server1->uri=file://" + udf1Location)
@@ -117,23 +119,43 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
    * @throws Exception
    */
   @Test
+  @SlowE2ETest
   public void testCreateDropPermUdf() throws Exception {
     setUpContext();
     // user1 has URI privilege for the Jar and should be able create the perm function.
     Connection connection = context.createConnection(USER1_1);
     Statement statement = context.createStatement(connection);
 
-    statement.execute("CREATE FUNCTION db_2.test_1 AS 'org.apache.sentry.tests.e2e.hive.TestUDF'");
+    try {
+      statement.execute("CREATE FUNCTION db_2.test_1 AS 'org.apache.sentry.tests.e2e.hive.TestUDF'");
+    } catch (Exception e) {
+      fail("CREATE TEMPORARY FUNCTION should not fail for user1");
+    }
     statement.close();
     connection.close();
 
     connection = context.createConnection(USER3_1);
     statement = context.createStatement(connection);
 
-    // user3 does not have URI privilege but still should be able drop the perm function.
-    statement.execute("DROP FUNCTION IF EXISTS db_2.test_1");
+    try {
+      statement.execute("DROP FUNCTION IF EXISTS db_2.test_1");
+      fail("DROP TEMPORARY FUNCTION should fail for user3");
+    } catch(SQLException e) {
+      context.verifyAuthzException(e);
+    }
+
     statement.close();
     connection.close();
+
+    //user4 has privileges to drop function
+    connection = context.createConnection(USER4_1);
+    statement = context.createStatement(connection);
+    try {
+      statement.execute("DROP FUNCTION IF EXISTS db_2.test_1");
+    } catch(SQLException e) {
+      fail("DROP TEMPORARY FUNCTION should not fail for user4");
+    }
+    context.close();
   }
 
   /**
@@ -141,6 +163,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
    * @throws Exception
    */
   @Test
+  @SlowE2ETest
   public void testCreateDropTempUdf() throws Exception {
     setUpContext();
     // user1 should be able create/drop temp functions
@@ -168,11 +191,31 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     connection = context.createConnection(USER3_1);
     statement = context.createStatement(connection);
 
-    // user3 does not have URI privilege but still should be able drop the temp function.
-    statement.execute("DROP FUNCTION IF EXISTS test_2");
+    // user3 does not have URI privilege and should not be allowed drop the temp function.
+    try {
+      statement.execute("DROP FUNCTION IF EXISTS db_1.test_2");
+      fail("DROP FUNCTION should fail for user3");
+    } catch (SQLException e) {
+      context.verifyAuthzException(e);
+    }
+
+    statement.close();
+    connection.close();
+
+    //user4 has privileges to drop function
+    connection = context.createConnection(USER4_1);
+    statement = context.createStatement(connection);
+    try {
+      statement.execute("DROP FUNCTION IF EXISTS db_1.test_2");
+    } catch(SQLException e) {
+      fail("DROP TEMPORARY FUNCTION should not fail for user4");
+    }
+
+    context.close();
   }
 
   @Test
+  @SlowE2ETest
   public void testAndVerifyFuncPrivilegesPart1() throws Exception {
     setUpContext();
     // user1 should be able create/drop temp functions
@@ -195,7 +238,11 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
-    statement.execute("DROP TEMPORARY FUNCTION IF EXISTS printf_test");
+    try {
+      statement.execute("DROP TEMPORARY FUNCTION IF EXISTS printf_test");
+    } catch (SQLException e) {
+      fail("user1 has privileges to drop db1 functions");
+    }
 
     LOGGER.info("Testing select from perm func printf_test_perm");
     try {
@@ -213,7 +260,11 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     connection = context.createConnection(USER1_1);
     statement = context.createStatement(connection);
     statement.execute("USE " + DB1);
-    statement.execute("DROP FUNCTION IF EXISTS printf_test_perm");
+    try {
+      statement.execute("DROP FUNCTION IF EXISTS printf_test_perm");
+    } catch (SQLException e) {
+      fail("user1 does have permissions to drop db1 functions");
+    }
 
     // test perm UDF with 'using file' syntax
     LOGGER.info("Testing select from perm func printf_test_perm_use_file");
@@ -231,6 +282,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
   }
 
   @Test
+  @SlowE2ETest
   public void testAndVerifyFuncPrivilegesPart2() throws Exception {
     setUpContext();
     // user2 has select privilege on one of the tables in db1, should be able create/drop temp functions
@@ -245,8 +297,6 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     } catch (Exception ex) {
       LOGGER.error("test perm func printf_test_2 failed with reason: ", ex);
       fail("Fail to test temp func printf_test_2");
-    } finally {
-      statement.execute("DROP TEMPORARY FUNCTION IF EXISTS printf_test_2");
     }
 
     try {
@@ -256,8 +306,6 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     } catch (Exception ex) {
       LOGGER.error("test perm func printf_test_2_perm failed with reason: ", ex);
       fail("Fail to test temp func printf_test_2_perm");
-    } finally {
-      statement.execute("DROP FUNCTION IF EXISTS printf_test_2_perm");
     }
 
     // USER2 doesn't have URI perm on dataFile
@@ -271,10 +319,18 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
     } catch (SQLException e) {
       context.verifyAuthzException(e);
     }
+
+    connection = context.createConnection(ADMIN1);
+    statement = context.createStatement(connection);
+    statement.execute("USE " + DB1);
+    statement.execute("DROP TEMPORARY FUNCTION IF EXISTS printf_test_2");
+    statement.execute("DROP FUNCTION IF EXISTS printf_test_2_perm");
+
     context.close();
   }
 
   @Test
+  @SlowE2ETest
   public void testAndVerifyFuncPrivilegesPart3() throws Exception {
     setUpContext();
     // user3 shouldn't be able to create/drop temp functions since it doesn't have permission for jar
@@ -316,6 +372,7 @@ public class TestPrivilegesAtFunctionScope extends AbstractTestWithStaticConfigu
    * @throws Exception
    */
   @Test
+  @SlowE2ETest
   public void testAndVerifyFuncPrivilegesPart4() throws Exception {
     setUpContext();
     Connection connection = context.createConnection(USER1_1);
