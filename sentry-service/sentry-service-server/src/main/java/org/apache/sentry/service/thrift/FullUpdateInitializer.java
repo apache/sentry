@@ -545,9 +545,9 @@ public final class FullUpdateInitializer implements AutoCloseable {
         long totalNumberOfDatabases = SentryMetrics.getInstance().databaseCount.getCount();
         long totalNumberOfTables = SentryMetrics.getInstance().tableCount.getCount();
         long totalNumberOfPartitions = SentryMetrics.getInstance().partitionCount.getCount();
-        long percentageDatabasesFetched = totalNumberOfDatabases > 0? totalNumberOfDatabasesFetched%totalNumberOfDatabases:0;
-        long percentageTablesFetched = totalNumberOfTables > 0? totalNumberOfTablesFetched%totalNumberOfTables:0;
-        long percentagePartitionsFetched = totalNumberOfPartitions > 0? totalNumberOfPartitionsFetched%totalNumberOfPartitions:0;
+        double percentageDatabasesFetched = totalNumberOfDatabases > 0? ((double)totalNumberOfDatabasesFetched/totalNumberOfDatabases)*100:0;
+        double percentageTablesFetched = totalNumberOfTables > 0? ((double)totalNumberOfTablesFetched/totalNumberOfTables)*100:0;
+        double percentagePartitionsFetched = totalNumberOfPartitions > 0? ((double)totalNumberOfPartitionsFetched/totalNumberOfPartitions)*100:0;
 
         String snapshotFetchStatusString = String.format("Fetching full hms snapshot: databases fetched=%d (%.2f%%); "
             + "tables fetched=%d (%.2f%%); partitions fetched=%d (%.2f%%); total number of databases=%d; "
