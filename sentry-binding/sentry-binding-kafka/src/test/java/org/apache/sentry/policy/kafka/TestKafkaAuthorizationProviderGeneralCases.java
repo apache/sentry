@@ -38,6 +38,7 @@ import org.apache.sentry.core.model.kafka.KafkaActionFactory.KafkaAction;
 import org.apache.sentry.core.model.kafka.Host;
 import org.apache.sentry.core.model.kafka.KafkaPrivilegeModel;
 import org.apache.sentry.core.model.kafka.Topic;
+import org.apache.sentry.core.model.kafka.TransactionalId;        ;
 import org.apache.sentry.provider.common.HadoopGroupResourceAuthorizationProvider;
 import org.apache.sentry.provider.common.ResourceAuthorizationProvider;
 import org.apache.sentry.core.common.utils.PolicyFiles;
@@ -60,6 +61,8 @@ public class TestKafkaAuthorizationProviderGeneralCases {
   private static final Topic topic2 = new Topic("t2");
   private static final ConsumerGroup cgroup1 = new ConsumerGroup("cg1");
   private static final ConsumerGroup cgroup2 = new ConsumerGroup("cg2");
+  private static final TransactionalId transactionalId1 = new TransactionalId("ti1");
+  private static final TransactionalId transactionalId2 = new TransactionalId("ti2");
 
   private static final KafkaAction ALL = new KafkaAction(KafkaActionConstant.ALL);
   private static final KafkaAction READ = new KafkaAction(KafkaActionConstant.READ);
@@ -68,10 +71,13 @@ public class TestKafkaAuthorizationProviderGeneralCases {
   private static final KafkaAction DELETE = new KafkaAction(KafkaActionConstant.DELETE);
   private static final KafkaAction ALTER = new KafkaAction(KafkaActionConstant.ALTER);
   private static final KafkaAction DESCRIBE = new KafkaAction(KafkaActionConstant.DESCRIBE);
-  private static final KafkaAction CLUSTER_ACTION = new KafkaAction(
-      KafkaActionConstant.CLUSTER_ACTION);
+  private static final KafkaAction CLUSTER_ACTION = new KafkaAction(KafkaActionConstant.CLUSTER_ACTION);
+  private static final KafkaAction ALTER_CONFIGS = new KafkaAction(KafkaActionConstant.ALTER_CONFIGS);
+  private static final KafkaAction DESCRIBE_CONFIGS = new KafkaAction(KafkaActionConstant.DESCRIBE_CONFIGS);
+  private static final KafkaAction IDEMPOTENT_WRITE = new KafkaAction(KafkaActionConstant.IDEMPOTENT_WRITE);
 
-  private static final Set<KafkaAction> allActions = Sets.newHashSet(ALL, READ, WRITE, CREATE, DELETE, ALTER, DESCRIBE, CLUSTER_ACTION);
+  private static final Set<KafkaAction> allActions = Sets.newHashSet(ALL, READ, WRITE, CREATE, DELETE, ALTER, DESCRIBE,
+    CLUSTER_ACTION, ALTER_CONFIGS, DESCRIBE_CONFIGS, IDEMPOTENT_WRITE);
 
   private static final Subject ADMIN = new Subject("admin1");
   private static final Subject SUB_ADMIN = new Subject("subadmin1");
@@ -81,16 +87,27 @@ public class TestKafkaAuthorizationProviderGeneralCases {
   private static final Subject PRODUCER0 = new Subject("producer0");
   private static final Subject PRODUCER1 = new Subject("producer1");
   private static final Subject PRODUCER2 = new Subject("producer2");
+  private static final Subject PRODUCER3 = new Subject("producer3");
+  private static final Subject PRODUCER4 = new Subject("producer4");
+  private static final Subject PRODUCER5 = new Subject("producer5");
+  private static final Subject CONFIG_ADMIN1 = new Subject("config_admin1");
+  private static final Subject CONFIG_ADMIN2 = new Subject("config_admin2");
   private static final Subject CONSUMER_PRODUCER0 = new Subject("consumer_producer0");
 
   private static final String ADMIN_GROUP  = "admin_group";
-  private static final String SUBADMIN_GROUP  = "subadmin_group";
+  private static final String SUBADMIN_GROUP  = "subadmin_group1";
   private static final String CONSUMER_GROUP0 = "consumer_group0";
   private static final String CONSUMER_GROUP1 = "consumer_group1";
   private static final String CONSUMER_GROUP2 = "consumer_group2";
   private static final String PRODUCER_GROUP0 = "producer_group0";
   private static final String PRODUCER_GROUP1 = "producer_group1";
   private static final String PRODUCER_GROUP2 = "producer_group2";
+  private static final String PRODUCER_GROUP3 = "producer_group3";
+  private static final String PRODUCER_GROUP4 = "producer_group4";
+  private static final String PRODUCER_GROUP5 = "producer_group5";
+  private static final String CONFIG_ADMIN_GROUP1 = "config_admin_group1";
+  private static final String CONFIG_ADMIN_GROUP2 = "config_admin_group2";
+
   private static final String CONSUMER_PRODUCER_GROUP0 = "consumer_producer_group0";
 
   static {
@@ -102,6 +119,11 @@ public class TestKafkaAuthorizationProviderGeneralCases {
     USER_TO_GROUP_MAP.putAll(PRODUCER0.getName(),  Arrays.asList(PRODUCER_GROUP0));
     USER_TO_GROUP_MAP.putAll(PRODUCER1.getName(),  Arrays.asList(PRODUCER_GROUP1));
     USER_TO_GROUP_MAP.putAll(PRODUCER2.getName(),  Arrays.asList(PRODUCER_GROUP2));
+    USER_TO_GROUP_MAP.putAll(PRODUCER3.getName(),  Arrays.asList(PRODUCER_GROUP3));
+    USER_TO_GROUP_MAP.putAll(PRODUCER4.getName(),  Arrays.asList(PRODUCER_GROUP4));
+    USER_TO_GROUP_MAP.putAll(PRODUCER5.getName(),  Arrays.asList(PRODUCER_GROUP5));
+    USER_TO_GROUP_MAP.putAll(CONFIG_ADMIN1.getName(),  Arrays.asList(CONFIG_ADMIN_GROUP1));
+    USER_TO_GROUP_MAP.putAll(CONFIG_ADMIN2.getName(),  Arrays.asList(CONFIG_ADMIN_GROUP2));
     USER_TO_GROUP_MAP.putAll(CONSUMER_PRODUCER0.getName(),  Arrays.asList(CONSUMER_PRODUCER_GROUP0));
   }
 
@@ -171,12 +193,14 @@ public class TestKafkaAuthorizationProviderGeneralCases {
             Sets.newHashSet(action), READ.equals(action));
       }
     }
+
     for (KafkaAction action : allActions) {
       for (Host host : Sets.newHashSet(HOST_1, HOST_2)) {
         doTestResourceAuthorizationProvider(CONSUMER1, Arrays.asList(host, topic1),
             Sets.newHashSet(action), HOST_1.equals(host) && READ.equals(action));
       }
     }
+
     for (KafkaAction action : allActions) {
       for (Host host : Sets.newHashSet(HOST_1, HOST_2)) {
         doTestResourceAuthorizationProvider(CONSUMER2, Arrays.asList(host, topic2),
@@ -193,16 +217,56 @@ public class TestKafkaAuthorizationProviderGeneralCases {
             Sets.newHashSet(action), WRITE.equals(action));
       }
     }
+
     for (KafkaAction action : allActions) {
       for (Host host : Sets.newHashSet(HOST_1, HOST_2)) {
         doTestResourceAuthorizationProvider(PRODUCER1, Arrays.asList(host, topic1),
             Sets.newHashSet(action), HOST_1.equals(host) && WRITE.equals(action));
       }
     }
+
     for (KafkaAction action : allActions) {
       for (Host host : Sets.newHashSet(HOST_1, HOST_2)) {
         doTestResourceAuthorizationProvider(PRODUCER2, Arrays.asList(host, topic2),
             Sets.newHashSet(action), HOST_2.equals(host) && WRITE.equals(action));
+      }
+    }
+
+    for (KafkaAction action : allActions) {
+      for (Host host : Sets.newHashSet(HOST_1, HOST_2)) {
+        doTestResourceAuthorizationProvider(PRODUCER3, Arrays.asList(host, transactionalId1),
+                Sets.newHashSet(action), HOST_1.equals(host) && WRITE.equals(action));
+      }
+    }
+
+    for (KafkaAction action : allActions) {
+      for (Host host : Sets.newHashSet(HOST_1, HOST_2)) {
+        doTestResourceAuthorizationProvider(PRODUCER4, Arrays.asList(host, transactionalId2),
+                Sets.newHashSet(action), HOST_2.equals(host) && WRITE.equals(action));
+      }
+    }
+
+    for (KafkaAction action : allActions) {
+      for (Host host : Sets.newHashSet(HOST_1, HOST_2)) {
+        doTestResourceAuthorizationProvider(PRODUCER5, Arrays.asList(host, cluster1),
+                Sets.newHashSet(action), HOST_1.equals(host) && IDEMPOTENT_WRITE.equals(action));
+      }
+    }
+  }
+
+  @Test
+  public void testConfigAdmin() throws Exception {
+    for (KafkaAction action : allActions) {
+      for (Host host : Sets.newHashSet(HOST_1, HOST_2)) {
+        doTestResourceAuthorizationProvider(CONFIG_ADMIN1, Arrays.asList(host, cluster1),
+                Sets.newHashSet(action), HOST_1.equals(host) && DESCRIBE_CONFIGS.equals(action));
+      }
+    }
+
+    for (KafkaAction action : allActions) {
+      for (Host host : Sets.newHashSet(HOST_1, HOST_2)) {
+        doTestResourceAuthorizationProvider(CONFIG_ADMIN2, Arrays.asList(host, topic1),
+                Sets.newHashSet(action), HOST_2.equals(host) && ALTER_CONFIGS.equals(action));
       }
     }
   }

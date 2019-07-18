@@ -28,7 +28,7 @@
   </property>
   <property>
     <name>sentry.kafka.provider.resource</name>
-    <value>classpath:test-authz-provider.ini</value>
+    <value>classpath:kafka-policy-test-authz-provider.ini</value>
   </property>
   <property>
     <name>sentry.kafka.policy.engine</name>

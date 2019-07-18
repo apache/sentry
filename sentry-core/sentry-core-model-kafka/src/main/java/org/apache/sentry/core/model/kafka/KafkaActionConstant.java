@@ -29,6 +29,9 @@ public class KafkaActionConstant {
   public static final String ALTER = "alter";
   public static final String DESCRIBE = "describe";
   public static final String CLUSTER_ACTION = "clusteraction";
+  public static final String ALTER_CONFIGS = "alterconfigs";
+  public static final String DESCRIBE_CONFIGS = "describeconfigs";
+  public static final String IDEMPOTENT_WRITE = "idempotentwrite";
 
   public static final String actionName = "action";
 }

@@ -30,101 +30,84 @@ public class TestKafkaAction {
   private KafkaActionFactory factory = KafkaActionFactory.getInstance();
 
   @Test
-  public void testImpliesAction() {
-    KafkaAction readAction = (KafkaAction) factory.getActionByName(KafkaActionConstant.READ);
-    KafkaAction writeAction = (KafkaAction) factory.getActionByName(KafkaActionConstant.WRITE);
-    KafkaAction createAction = (KafkaAction) factory.getActionByName(KafkaActionConstant.CREATE);
-    KafkaAction deleteAction = (KafkaAction) factory.getActionByName(KafkaActionConstant.DELETE);
-    KafkaAction alterAction = (KafkaAction) factory.getActionByName(KafkaActionConstant.ALTER);
-    KafkaAction describeAction =
-        (KafkaAction) factory.getActionByName(KafkaActionConstant.DESCRIBE);
-    KafkaAction adminAction = (KafkaAction) factory.getActionByName(KafkaActionConstant.CLUSTER_ACTION);
-    KafkaAction allAction = (KafkaAction) factory.getActionByName(KafkaActionConstant.ALL);
+  public void testAllActionImpliesAll() {
+    KafkaAction allAction = factory.getActionByName(KafkaActionConstant.ALL);
 
-    assertTrue(allAction.implies(readAction));
-    assertTrue(allAction.implies(writeAction));
-    assertTrue(allAction.implies(createAction));
-    assertTrue(allAction.implies(deleteAction));
-    assertTrue(allAction.implies(alterAction));
-    assertTrue(allAction.implies(describeAction));
-    assertTrue(allAction.implies(adminAction));
-    assertTrue(allAction.implies(allAction));
+    assertTrue(allAction.implies(factory.getActionByName(KafkaActionConstant.READ)));
+    assertTrue(allAction.implies(factory.getActionByName(KafkaActionConstant.WRITE)));
+    assertTrue(allAction.implies(factory.getActionByName(KafkaActionConstant.CREATE)));
+    assertTrue(allAction.implies(factory.getActionByName(KafkaActionConstant.DELETE)));
+    assertTrue(allAction.implies(factory.getActionByName(KafkaActionConstant.ALTER)));
+    assertTrue(allAction.implies(factory.getActionByName(KafkaActionConstant.DESCRIBE)));
+    assertTrue(allAction.implies(factory.getActionByName(KafkaActionConstant.CLUSTER_ACTION)));
+    assertTrue(allAction.implies(factory.getActionByName(KafkaActionConstant.ALTER_CONFIGS)));
+    assertTrue(allAction.implies(factory.getActionByName(KafkaActionConstant.DESCRIBE_CONFIGS)));
+    assertTrue(allAction.implies(factory.getActionByName(KafkaActionConstant.IDEMPOTENT_WRITE)));
+    assertTrue(allAction.implies(factory.getActionByName(KafkaActionConstant.ALL)));
+  }
 
-    assertTrue(readAction.implies(readAction));
-    assertFalse(readAction.implies(writeAction));
-    assertFalse(readAction.implies(createAction));
-    assertFalse(readAction.implies(deleteAction));
-    assertFalse(readAction.implies(alterAction));
-    assertFalse(readAction.implies(describeAction));
-    assertFalse(readAction.implies(adminAction));
-    assertFalse(readAction.implies(allAction));
+  @Test
+  public void testActionImpliesSelf() {
+    KafkaAction[] actions = new KafkaAction[]{
+      factory.getActionByName(KafkaActionConstant.READ),
+      factory.getActionByName(KafkaActionConstant.WRITE),
+      factory.getActionByName(KafkaActionConstant.CREATE),
+      factory.getActionByName(KafkaActionConstant.DELETE),
+      factory.getActionByName(KafkaActionConstant.ALTER),
+      factory.getActionByName(KafkaActionConstant.DESCRIBE),
+      factory.getActionByName(KafkaActionConstant.CLUSTER_ACTION),
+      factory.getActionByName(KafkaActionConstant.ALTER_CONFIGS),
+      factory.getActionByName(KafkaActionConstant.DESCRIBE_CONFIGS),
+      factory.getActionByName(KafkaActionConstant.IDEMPOTENT_WRITE),
+      factory.getActionByName(KafkaActionConstant.ALL)
+    };
 
-    assertFalse(writeAction.implies(readAction));
-    assertTrue(writeAction.implies(writeAction));
-    assertFalse(writeAction.implies(createAction));
-    assertFalse(writeAction.implies(deleteAction));
-    assertFalse(writeAction.implies(alterAction));
-    assertFalse(writeAction.implies(describeAction));
-    assertFalse(writeAction.implies(adminAction));
-    assertFalse(writeAction.implies(allAction));
+    for(KafkaAction action : actions){
+      assertTrue(action.implies(action));
+    }
+  }
 
-    assertFalse(createAction.implies(readAction));
-    assertFalse(createAction.implies(writeAction));
-    assertTrue(createAction.implies(createAction));
-    assertFalse(createAction.implies(deleteAction));
-    assertFalse(createAction.implies(alterAction));
-    assertFalse(createAction.implies(describeAction));
-    assertFalse(createAction.implies(adminAction));
-    assertFalse(createAction.implies(allAction));
+  @Test
+  public void testNonAllActionDoesNotImplyOthers() {
+    KafkaAction allAction =  factory.getActionByName(KafkaActionConstant.ALL);
 
-    assertFalse(deleteAction.implies(readAction));
-    assertFalse(deleteAction.implies(writeAction));
-    assertFalse(deleteAction.implies(createAction));
-    assertTrue(deleteAction.implies(deleteAction));
-    assertFalse(deleteAction.implies(alterAction));
-    assertFalse(deleteAction.implies(describeAction));
-    assertFalse(deleteAction.implies(adminAction));
-    assertFalse(deleteAction.implies(allAction));
+    KafkaAction[] actions = new KafkaAction[]{
+      factory.getActionByName(KafkaActionConstant.READ),
+      factory.getActionByName(KafkaActionConstant.WRITE),
+      factory.getActionByName(KafkaActionConstant.CREATE),
+      factory.getActionByName(KafkaActionConstant.DELETE),
+      factory.getActionByName(KafkaActionConstant.ALTER),
+      factory.getActionByName(KafkaActionConstant.DESCRIBE),
+      factory.getActionByName(KafkaActionConstant.CLUSTER_ACTION),
+      factory.getActionByName(KafkaActionConstant.ALTER_CONFIGS),
+      factory.getActionByName(KafkaActionConstant.DESCRIBE_CONFIGS),
+      factory.getActionByName(KafkaActionConstant.IDEMPOTENT_WRITE)
+    };
 
-    assertFalse(alterAction.implies(readAction));
-    assertFalse(alterAction.implies(writeAction));
-    assertFalse(alterAction.implies(createAction));
-    assertFalse(alterAction.implies(deleteAction));
-    assertTrue(alterAction.implies(alterAction));
-    assertFalse(alterAction.implies(describeAction));
-    assertFalse(alterAction.implies(adminAction));
-    assertFalse(alterAction.implies(allAction));
+    for(KafkaAction action : actions) {
+      for(KafkaAction action2 : actions) {
+        if (action != action2) {
+          assertFalse(action.implies(action2));
+        }
+      }
 
-    assertFalse(describeAction.implies(readAction));
-    assertFalse(describeAction.implies(writeAction));
-    assertFalse(describeAction.implies(createAction));
-    assertFalse(describeAction.implies(deleteAction));
-    assertFalse(describeAction.implies(alterAction));
-    assertTrue(describeAction.implies(describeAction));
-    assertFalse(describeAction.implies(adminAction));
-    assertFalse(describeAction.implies(allAction));
-
-    assertFalse(adminAction.implies(readAction));
-    assertFalse(adminAction.implies(writeAction));
-    assertFalse(adminAction.implies(createAction));
-    assertFalse(adminAction.implies(deleteAction));
-    assertFalse(adminAction.implies(alterAction));
-    assertFalse(adminAction.implies(describeAction));
-    assertTrue(adminAction.implies(adminAction));
-    assertFalse(adminAction.implies(allAction));
+      assertFalse(action.implies(allAction));
+    }
   }
 
   @Test
   public void testGetActionByName() throws Exception {
-    KafkaAction readAction = (KafkaAction) factory.getActionByName(KafkaActionConstant.READ);
-    KafkaAction writeAction = (KafkaAction) factory.getActionByName(KafkaActionConstant.WRITE);
-    KafkaAction createAction = (KafkaAction) factory.getActionByName(KafkaActionConstant.CREATE);
-    KafkaAction deleteAction = (KafkaAction) factory.getActionByName(KafkaActionConstant.DELETE);
-    KafkaAction alterAction = (KafkaAction) factory.getActionByName(KafkaActionConstant.ALTER);
-    KafkaAction describeAction =
-        (KafkaAction) factory.getActionByName(KafkaActionConstant.DESCRIBE);
-    KafkaAction adminAction = (KafkaAction) factory.getActionByName(KafkaActionConstant.CLUSTER_ACTION);
-    KafkaAction allAction = (KafkaAction) factory.getActionByName(KafkaActionConstant.ALL);
+    KafkaAction readAction = factory.getActionByName(KafkaActionConstant.READ);
+    KafkaAction writeAction = factory.getActionByName(KafkaActionConstant.WRITE);
+    KafkaAction createAction = factory.getActionByName(KafkaActionConstant.CREATE);
+    KafkaAction deleteAction = factory.getActionByName(KafkaActionConstant.DELETE);
+    KafkaAction alterAction = factory.getActionByName(KafkaActionConstant.ALTER);
+    KafkaAction describeAction = factory.getActionByName(KafkaActionConstant.DESCRIBE);
+    KafkaAction adminAction = factory.getActionByName(KafkaActionConstant.CLUSTER_ACTION);
+    KafkaAction alterConfigsAction = factory.getActionByName(KafkaActionConstant.ALTER_CONFIGS);
+    KafkaAction describeConfigsAction = factory.getActionByName(KafkaActionConstant.DESCRIBE_CONFIGS);
+    KafkaAction idempotentWriteAction = factory.getActionByName(KafkaActionConstant.IDEMPOTENT_WRITE);
+    KafkaAction allAction = factory.getActionByName(KafkaActionConstant.ALL);
 
     assertTrue(readAction.equals(new KafkaAction(KafkaActionConstant.READ)));
     assertTrue(writeAction.equals(new KafkaAction(KafkaActionConstant.WRITE)));
@@ -133,20 +116,25 @@ public class TestKafkaAction {
     assertTrue(alterAction.equals(new KafkaAction(KafkaActionConstant.ALTER)));
     assertTrue(describeAction.equals(new KafkaAction(KafkaActionConstant.DESCRIBE)));
     assertTrue(adminAction.equals(new KafkaAction(KafkaActionConstant.CLUSTER_ACTION)));
+    assertTrue(alterConfigsAction.equals(new KafkaAction(KafkaActionConstant.ALTER_CONFIGS)));
+    assertTrue(describeConfigsAction.equals(new KafkaAction(KafkaActionConstant.DESCRIBE_CONFIGS)));
+    assertTrue(idempotentWriteAction.equals(new KafkaAction(KafkaActionConstant.IDEMPOTENT_WRITE)));
     assertTrue(allAction.equals(new KafkaAction(KafkaActionConstant.ALL)));
   }
 
   @Test
   public void testGetActionsByCode() throws Exception {
-    KafkaAction readAction = new KafkaAction(KafkaActionConstant.READ);
-    KafkaAction writeAction = new KafkaAction(KafkaActionConstant.WRITE);
-    KafkaAction createAction = (KafkaAction) factory.getActionByName(KafkaActionConstant.CREATE);
-    KafkaAction deleteAction = (KafkaAction) factory.getActionByName(KafkaActionConstant.DELETE);
-    KafkaAction alterAction = (KafkaAction) factory.getActionByName(KafkaActionConstant.ALTER);
-    KafkaAction describeAction =
-        (KafkaAction) factory.getActionByName(KafkaActionConstant.DESCRIBE);
-    KafkaAction adminAction = (KafkaAction) factory.getActionByName(KafkaActionConstant.CLUSTER_ACTION);
-    KafkaAction allAction = new KafkaAction(KafkaActionConstant.ALL);
+    KafkaAction readAction = factory.getActionByName(KafkaActionConstant.READ);
+    KafkaAction writeAction = factory.getActionByName(KafkaActionConstant.WRITE);
+    KafkaAction createAction = factory.getActionByName(KafkaActionConstant.CREATE);
+    KafkaAction deleteAction = factory.getActionByName(KafkaActionConstant.DELETE);
+    KafkaAction alterAction = factory.getActionByName(KafkaActionConstant.ALTER);
+    KafkaAction describeAction = factory.getActionByName(KafkaActionConstant.DESCRIBE);
+    KafkaAction adminAction = factory.getActionByName(KafkaActionConstant.CLUSTER_ACTION);
+    KafkaAction alterConfigsAction = factory.getActionByName(KafkaActionConstant.ALTER_CONFIGS);
+    KafkaAction describeConfigsAction = factory.getActionByName(KafkaActionConstant.DESCRIBE_CONFIGS);
+    KafkaAction idempotentWriteAction = factory.getActionByName(KafkaActionConstant.IDEMPOTENT_WRITE);
+    KafkaAction allAction = factory.getActionByName(KafkaActionConstant.ALL);
 
     assertEquals(Lists.newArrayList(readAction),
         factory.getActionsByCode(readAction.getActionCode()));
@@ -162,8 +150,15 @@ public class TestKafkaAction {
         factory.getActionsByCode(describeAction.getActionCode()));
     assertEquals(Lists.newArrayList(adminAction),
         factory.getActionsByCode(adminAction.getActionCode()));
+    assertEquals(Lists.newArrayList(alterConfigsAction),
+        factory.getActionsByCode(alterConfigsAction.getActionCode()));
+    assertEquals(Lists.newArrayList(describeConfigsAction),
+            factory.getActionsByCode(describeConfigsAction.getActionCode()));
+    assertEquals(Lists.newArrayList(idempotentWriteAction),
+            factory.getActionsByCode(idempotentWriteAction.getActionCode()));
     assertEquals(Lists.newArrayList(readAction, writeAction, createAction, deleteAction,
-        alterAction, describeAction, adminAction), factory.getActionsByCode(allAction
+        alterAction, describeAction, adminAction,
+        alterConfigsAction, describeConfigsAction, idempotentWriteAction), factory.getActionsByCode(allAction
         .getActionCode()));
   }
 

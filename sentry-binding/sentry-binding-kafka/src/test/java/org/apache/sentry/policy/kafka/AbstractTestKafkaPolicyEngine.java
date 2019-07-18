@@ -43,6 +43,11 @@ public abstract class AbstractTestKafkaPolicyEngine {
   private static final String PRODUCER_T1_ALL = "host=*->topic=t1->action=write";
   private static final String PRODUCER_T1_HOST1 = "host=host1->topic=t1->action=write";
   private static final String PRODUCER_T2_HOST2 = "host=host2->topic=t2->action=write";
+  private static final String PRODUCER_TI1_HOST1 = "host=host1->transactionalid=ti1->action=write";
+  private static final String PRODUCER_TI2_HOST2 = "host=host2->transactionalid=ti2->action=write";
+  private static final String PRODUCER_IDEMPOTENTWRITE = "host=host1->cluster=kafka-cluster->action=idempotentwrite";
+  private static final String CONFIG_ADMIN_HOST1 = "host=host1->cluster=kafka-cluster->action=describeconfigs";
+  private static final String CONFIG_ADMIN_T1_HOST2 = "host=host2->topic=t1->action=alterconfigs";
   private static final String CONSUMER_PRODUCER_T1 = "host=host1->topic=t1->action=all";
 
   private PolicyEngine policy;
@@ -133,6 +138,46 @@ public abstract class AbstractTestKafkaPolicyEngine {
   }
 
   @Test
+  public void testProducer3() throws Exception {
+    Set<String> expected = Sets.newTreeSet(Sets.newHashSet(PRODUCER_TI1_HOST1));
+    Assert.assertEquals(expected.toString(),
+            new TreeSet<String>(policy.getPrivileges(set("producer_group3"), ActiveRoleSet.ALL))
+                    .toString());
+  }
+
+  @Test
+  public void testProducer4() throws Exception {
+    Set<String> expected = Sets.newTreeSet(Sets.newHashSet(PRODUCER_TI2_HOST2));
+    Assert.assertEquals(expected.toString(),
+            new TreeSet<String>(policy.getPrivileges(set("producer_group4"), ActiveRoleSet.ALL))
+                    .toString());
+  }
+
+  @Test
+  public void testProducer5() throws Exception {
+    Set<String> expected = Sets.newTreeSet(Sets.newHashSet(PRODUCER_IDEMPOTENTWRITE));
+    Assert.assertEquals(expected.toString(),
+            new TreeSet<String>(policy.getPrivileges(set("producer_group5"), ActiveRoleSet.ALL))
+                    .toString());
+  }
+
+  @Test
+  public void testConfigAdmin1() throws Exception {
+    Set<String> expected = Sets.newTreeSet(Sets.newHashSet(CONFIG_ADMIN_HOST1));
+    Assert.assertEquals(expected.toString(),
+            new TreeSet<String>(policy.getPrivileges(set("config_admin_group1"), ActiveRoleSet.ALL))
+                    .toString());
+  }
+
+  @Test
+  public void testConfigAdmin2() throws Exception {
+    Set<String> expected = Sets.newTreeSet(Sets.newHashSet(CONFIG_ADMIN_T1_HOST2));
+    Assert.assertEquals(expected.toString(),
+            new TreeSet<String>(policy.getPrivileges(set("config_admin_group2"), ActiveRoleSet.ALL))
+                    .toString());
+  }
+
+  @Test
   public void testConsumerProducer0() throws Exception {
     Set<String> expected = Sets.newTreeSet(Sets.newHashSet(CONSUMER_PRODUCER_T1));
     Assert.assertEquals(expected.toString(),
@@ -144,7 +189,7 @@ public abstract class AbstractTestKafkaPolicyEngine {
   public void testSubAdmin() throws Exception {
     Set<String> expected = Sets.newTreeSet(Sets.newHashSet(ADMIN_HOST1));
     Assert.assertEquals(expected.toString(),
-        new TreeSet<String>(policy.getPrivileges(set("subadmin_group"), ActiveRoleSet.ALL))
+        new TreeSet<String>(policy.getPrivileges(set("subadmin_group1"), ActiveRoleSet.ALL))
             .toString());
   }
 

@@ -39,6 +39,9 @@ import org.apache.sentry.core.common.Authorizable;
  * CONSUMERGROUP -> Kafka ConsumerGroup resource, users are required to have access to this resource
  *                  in order to perform ConsumerGroup level actions like joining a consumer group,
  *                  querying offset for a partition for a particular consumer group.
+ *
+ *  TRANSACTIONALID -> This resource represents actions related to transactions, such as committing.
+ *
  */
 public interface KafkaAuthorizable extends Authorizable {
   /**
@@ -48,7 +51,8 @@ public interface KafkaAuthorizable extends Authorizable {
     CLUSTER,
     HOST,
     TOPIC,
-    CONSUMERGROUP
+    CONSUMERGROUP,
+    TRANSACTIONALID
   };
 
   /**

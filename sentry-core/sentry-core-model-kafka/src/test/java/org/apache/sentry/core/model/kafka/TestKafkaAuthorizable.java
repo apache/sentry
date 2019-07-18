@@ -41,6 +41,9 @@ public class TestKafkaAuthorizable {
 
     ConsumerGroup consumerGroup = new ConsumerGroup(name);
     Assert.assertEquals(consumerGroup.getName(), name);
+
+    TransactionalId transactionalId = new TransactionalId(name);
+    Assert.assertEquals(transactionalId.getName(), name);
   }
 
   @Test
@@ -56,5 +59,8 @@ public class TestKafkaAuthorizable {
 
     ConsumerGroup consumerGroup = new ConsumerGroup("consumerGroup1");
     Assert.assertEquals(consumerGroup.getAuthzType(), AuthorizableType.CONSUMERGROUP);
+
+    TransactionalId transactionalId = new TransactionalId("transactionalId1");
+    Assert.assertEquals(transactionalId.getAuthzType(), AuthorizableType.TRANSACTIONALID);
   }
 }

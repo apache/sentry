@@ -71,6 +71,11 @@ public class TestKafkaPrivilegeValidator {
     } catch (ConfigurationException ex) {
       Assert.fail("Not expected ConfigurationException");
     }
+    try {
+      kafkaPrivilegeValidator.validate(new PrivilegeValidatorContext("host=host1->transactionalid=t1->action=write"));
+    } catch (ConfigurationException ex) {
+      Assert.fail("Not expected ConfigurationException");
+    }
   }
 
   @Test
@@ -98,6 +103,16 @@ public class TestKafkaPrivilegeValidator {
     KafkaPrivilegeValidator kafkaPrivilegeValidator = new KafkaPrivilegeValidator();
     try {
       kafkaPrivilegeValidator.validate(new PrivilegeValidatorContext("host=host1->ttopic=t1->action=read"));
+      Assert.fail("Expected ConfigurationException");
+    } catch (ConfigurationException ex) {
+    }
+  }
+
+  @Test
+  public void testInvalidTransactionalIdResource() throws Exception {
+    KafkaPrivilegeValidator kafkaPrivilegeValidator = new KafkaPrivilegeValidator();
+    try {
+      kafkaPrivilegeValidator.validate(new PrivilegeValidatorContext("host=host1->transationalid=t1->action=write"));
       Assert.fail("Expected ConfigurationException");
     } catch (ConfigurationException ex) {
     }
@@ -140,6 +155,12 @@ public class TestKafkaPrivilegeValidator {
     KafkaPrivilegeValidator kafkaPrivilegeValidator = new KafkaPrivilegeValidator();
     try {
       kafkaPrivilegeValidator.validate(new PrivilegeValidatorContext("host=host1->topic=t1->consumergroup=cg1->action=read"));
+      Assert.fail("Kafka privilege can have one Host authorizable, at most one non Host authorizable and one action.");
+    } catch (ConfigurationException ex) {
+      Assert.assertEquals(KafkaPrivilegeValidator.KafkaPrivilegeHelpMsg, ex.getMessage());
+    }
+    try {
+      kafkaPrivilegeValidator.validate(new PrivilegeValidatorContext("host=host1->topic=t1->transactionalid=t1->action=read"));
       Assert.fail("Kafka privilege can have one Host authorizable, at most one non Host authorizable and one action.");
     } catch (ConfigurationException ex) {
       Assert.assertEquals(KafkaPrivilegeValidator.KafkaPrivilegeHelpMsg, ex.getMessage());

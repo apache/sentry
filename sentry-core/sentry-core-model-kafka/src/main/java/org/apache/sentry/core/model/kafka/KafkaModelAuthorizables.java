@@ -50,6 +50,8 @@ public class KafkaModelAuthorizables {
         return new Topic(name);
       case CONSUMERGROUP:
         return new ConsumerGroup(name);
+      case TRANSACTIONALID:
+        return new TransactionalId(name);
       default:
         return null;
     }

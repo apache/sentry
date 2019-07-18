@@ -27,6 +27,7 @@ import org.apache.sentry.core.model.kafka.ConsumerGroup;
 import org.apache.sentry.core.model.kafka.Host;
 import org.apache.sentry.core.model.kafka.KafkaModelAuthorizables;
 import org.apache.sentry.core.model.kafka.Topic;
+import org.apache.sentry.core.model.kafka.TransactionalId;
 import org.apache.shiro.config.ConfigurationException;
 import org.junit.Test;
 
@@ -71,6 +72,9 @@ public class TestKafkaModelAuthorizables {
 
     ConsumerGroup consumergroup1 = (ConsumerGroup)KafkaModelAuthorizables.from("ConsumerGroup=CG1");
     assertEquals("CG1", consumergroup1.getName());
+
+    TransactionalId transactionalId1 = (TransactionalId) KafkaModelAuthorizables.from("TransactionalId=tRaNs1");
+    assertEquals("tRaNs1", transactionalId1.getName());
   }
 
   @Test

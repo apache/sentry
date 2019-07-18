@@ -40,6 +40,7 @@ public class SentryKafkaAuthorizerTest {
   private String resourceName;
   private Resource clusterResource;
   private Resource topic1Resource;
+  private Resource transactionalIdResource;
   private KafkaConfig config;
 
   public SentryKafkaAuthorizerTest() throws UnknownHostException {
@@ -49,6 +50,7 @@ public class SentryKafkaAuthorizerTest {
     resourceName = Resource$.MODULE$.ClusterResourceName();
     clusterResource = new Resource(ResourceType$.MODULE$.fromString("cluster"), resourceName);
     topic1Resource = new Resource(ResourceType$.MODULE$.fromString("topic"), "t1");
+    transactionalIdResource = new Resource(ResourceType$.MODULE$.fromString("transactionalId"), "tid1");
   }
 
   @Before
@@ -66,7 +68,7 @@ public class SentryKafkaAuthorizerTest {
   @Test
   public void testAdmin() {
 
-    KafkaPrincipal admin = new KafkaPrincipal(KafkaPrincipal.USER_TYPE, "admin");
+    KafkaPrincipal admin = new KafkaPrincipal(KafkaPrincipal.USER_TYPE, "admin_group");
     RequestChannel.Session host1Session = new RequestChannel.Session(admin, testHostName1);
     RequestChannel.Session host2Session = new RequestChannel.Session(admin, testHostName2);
 
@@ -79,7 +81,12 @@ public class SentryKafkaAuthorizerTest {
     Assert.assertTrue("Test failed.", authorizer.authorize(host1Session, Operation$.MODULE$.fromString("Delete"), topic1Resource));
     Assert.assertTrue("Test failed.", authorizer.authorize(host1Session, Operation$.MODULE$.fromString("Alter"), topic1Resource));
     Assert.assertTrue("Test failed.", authorizer.authorize(host1Session, Operation$.MODULE$.fromString("Describe"), topic1Resource));
-    Assert.assertTrue("Test failed.", authorizer.authorize(host1Session, Operation$.MODULE$.fromString("ClusterAction"),topic1Resource));
+    Assert.assertTrue("Test failed.", authorizer.authorize(host1Session, Operation$.MODULE$.fromString("ClusterAction"), topic1Resource));
+    Assert.assertTrue("Test failed.", authorizer.authorize(host1Session, Operation$.MODULE$.fromString("IdempotentWrite"), clusterResource));
+    Assert.assertTrue("Test failed.", authorizer.authorize(host1Session, Operation$.MODULE$.fromString("AlterConfigs"), topic1Resource));
+    Assert.assertTrue("Test failed.", authorizer.authorize(host1Session, Operation$.MODULE$.fromString("DescribeConfigs"), clusterResource));
+    Assert.assertTrue("Test failed.", authorizer.authorize(host1Session, Operation$.MODULE$.fromString("Write"), transactionalIdResource));
+
 
     Assert.assertTrue("Test failed.", authorizer.authorize(host2Session, Operation$.MODULE$.fromString("Create"), clusterResource));
     Assert.assertTrue("Test failed.", authorizer.authorize(host2Session, Operation$.MODULE$.fromString("Describe"), clusterResource));
@@ -91,11 +98,15 @@ public class SentryKafkaAuthorizerTest {
     Assert.assertTrue("Test failed.", authorizer.authorize(host2Session, Operation$.MODULE$.fromString("Alter"), topic1Resource));
     Assert.assertTrue("Test failed.", authorizer.authorize(host2Session, Operation$.MODULE$.fromString("Describe"), topic1Resource));
     Assert.assertTrue("Test failed.", authorizer.authorize(host2Session, Operation$.MODULE$.fromString("ClusterAction"), topic1Resource));
+    Assert.assertTrue("Test failed.", authorizer.authorize(host2Session, Operation$.MODULE$.fromString("IdempotentWrite"), clusterResource));
+    Assert.assertTrue("Test failed.", authorizer.authorize(host2Session, Operation$.MODULE$.fromString("AlterConfigs"), topic1Resource));
+    Assert.assertTrue("Test failed.", authorizer.authorize(host2Session, Operation$.MODULE$.fromString("DescribeConfigs"), clusterResource));
+    Assert.assertTrue("Test failed.", authorizer.authorize(host2Session, Operation$.MODULE$.fromString("Write"), transactionalIdResource));
   }
 
   @Test
   public void testSubAdmin() {
-    KafkaPrincipal admin = new KafkaPrincipal(KafkaPrincipal.USER_TYPE, "subadmin");
+    KafkaPrincipal admin = new KafkaPrincipal(KafkaPrincipal.USER_TYPE, "subadmin_group2");
     RequestChannel.Session host1Session = new RequestChannel.Session(admin, testHostName1);
     RequestChannel.Session host2Session = new RequestChannel.Session(admin, testHostName2);
 
@@ -108,7 +119,11 @@ public class SentryKafkaAuthorizerTest {
     Assert.assertTrue("Test failed.", authorizer.authorize(host1Session, Operation$.MODULE$.fromString("Delete"), topic1Resource));
     Assert.assertTrue("Test failed.", authorizer.authorize(host1Session, Operation$.MODULE$.fromString("Alter"), topic1Resource));
     Assert.assertTrue("Test failed.", authorizer.authorize(host1Session, Operation$.MODULE$.fromString("Describe"), topic1Resource));
-    Assert.assertTrue("Test failed.", authorizer.authorize(host1Session, Operation$.MODULE$.fromString("ClusterAction"),topic1Resource));
+    Assert.assertTrue("Test failed.", authorizer.authorize(host1Session, Operation$.MODULE$.fromString("ClusterAction"), topic1Resource));
+    Assert.assertTrue("Test failed.", authorizer.authorize(host1Session, Operation$.MODULE$.fromString("IdempotentWrite"), clusterResource));
+    Assert.assertTrue("Test failed.", authorizer.authorize(host1Session, Operation$.MODULE$.fromString("AlterConfigs"), topic1Resource));
+    Assert.assertTrue("Test failed.", authorizer.authorize(host1Session, Operation$.MODULE$.fromString("DescribeConfigs"), clusterResource));
+    Assert.assertTrue("Test failed.", authorizer.authorize(host1Session, Operation$.MODULE$.fromString("Write"), transactionalIdResource));
 
     Assert.assertFalse("Test failed.", authorizer.authorize(host2Session, Operation$.MODULE$.fromString("Create"), clusterResource));
     Assert.assertFalse("Test failed.", authorizer.authorize(host2Session, Operation$.MODULE$.fromString("Describe"), clusterResource));
@@ -120,6 +135,9 @@ public class SentryKafkaAuthorizerTest {
     Assert.assertFalse("Test failed.", authorizer.authorize(host2Session, Operation$.MODULE$.fromString("Alter"), topic1Resource));
     Assert.assertFalse("Test failed.", authorizer.authorize(host2Session, Operation$.MODULE$.fromString("Describe"), topic1Resource));
     Assert.assertFalse("Test failed.", authorizer.authorize(host2Session, Operation$.MODULE$.fromString("ClusterAction"), topic1Resource));
-
+    Assert.assertFalse("Test failed.", authorizer.authorize(host2Session, Operation$.MODULE$.fromString("IdempotentWrite"), clusterResource));
+    Assert.assertFalse("Test failed.", authorizer.authorize(host2Session, Operation$.MODULE$.fromString("AlterConfigs"), topic1Resource));
+    Assert.assertFalse("Test failed.", authorizer.authorize(host2Session, Operation$.MODULE$.fromString("DescribeConfigs"), clusterResource));
+    Assert.assertFalse("Test failed.", authorizer.authorize(host2Session, Operation$.MODULE$.fromString("Write"), transactionalIdResource));
   }
 }

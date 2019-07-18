@@ -82,4 +82,22 @@ public class ConvertUtilTest {
     }
     Assert.assertEquals(authorizables.size(), 2);
   }
+
+  @Test
+  public void testTransactionalId() {
+    String hostname = "localhost";
+    String transactionalId = "t1";
+    Resource transactionalIdResource = new Resource(ResourceType$.MODULE$.fromString("transactionalId"), transactionalId);
+    List<Authorizable> authorizables = ConvertUtil.convertResourceToAuthorizable(hostname, transactionalIdResource);
+    for (Authorizable auth : authorizables) {
+      if (auth.getTypeName().equalsIgnoreCase(KafkaAuthorizable.AuthorizableType.TRANSACTIONALID.name())) {
+        Assert.assertEquals(auth.getName(), transactionalId);
+      } else if (auth.getTypeName().equalsIgnoreCase(KafkaAuthorizable.AuthorizableType.HOST.name())) {
+        Assert.assertEquals(auth.getName(), hostname);
+      } else {
+        Assert.fail("Unexpected type found: " + auth.getTypeName());
+      }
+    }
+    Assert.assertEquals(authorizables.size(), 2);
+  }
 }
