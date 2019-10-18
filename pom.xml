@@ -76,7 +76,7 @@ limitations under the License.
     <jackson-databind.version>2.9.6</jackson-databind.version>
     <jackson-mapper-asl.version>1.9.13</jackson-mapper-asl.version>
     <jdo-api.version>3.0.1</jdo-api.version>
-    <jetty.version>9.3.21.v20170918</jetty.version>
+    <jetty.version>9.4.21.v20190926</jetty.version>
     <joda-time.version>2.5</joda-time.version>
     <junit.version>4.10</junit.version>
     <kafka.version>1.0.0</kafka.version>
