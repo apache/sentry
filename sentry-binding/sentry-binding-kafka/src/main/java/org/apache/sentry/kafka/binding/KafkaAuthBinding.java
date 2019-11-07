@@ -24,17 +24,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.google.common.collect.Sets;
 import kafka.security.auth.Acl;
 import kafka.security.auth.Allow;
 import kafka.security.auth.Allow$;
 import kafka.security.auth.Operation$;
-import kafka.security.auth.ResourceType$;
-import org.apache.hadoop.conf.Configuration;
-
-import com.google.common.collect.Sets;
 import kafka.network.RequestChannel;
 import kafka.security.auth.Operation;
 import kafka.security.auth.Resource;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.kafka.common.KafkaException;
@@ -478,7 +476,8 @@ public class KafkaAuthBinding {
           if (tAuthorizable.getType().equals(KafkaAuthorizable.AuthorizableType.HOST.name())) {
             host = tAuthorizable.getName();
           } else {
-            Resource resource = new Resource(ResourceType$.MODULE$.fromString(tAuthorizable.getType()), tAuthorizable.getName());
+            Resource resource = ConvertUtil.convertAuthorizableToResource(tAuthorizable);
+
             if (operation.equals("*")) {
               operation = "All";
             }

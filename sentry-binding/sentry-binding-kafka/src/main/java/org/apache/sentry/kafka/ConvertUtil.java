@@ -18,13 +18,13 @@ package org.apache.sentry.kafka;
 
 import java.util.List;
 
-import kafka.security.auth.Resource;
-
-import org.apache.sentry.core.common.Authorizable;
-import org.apache.sentry.core.model.kafka.Host;
-
 import com.google.common.collect.Lists;
+import kafka.security.auth.Resource;
+import kafka.security.auth.ResourceType$;
+import org.apache.sentry.api.generic.thrift.TAuthorizable;
+import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.model.kafka.KafkaAuthorizable;
+import org.apache.sentry.core.model.kafka.Host;
 
 public class ConvertUtil {
 
@@ -52,4 +52,11 @@ public class ConvertUtil {
     return authorizables;
   }
 
+  public static Resource convertAuthorizableToResource(TAuthorizable tAuthorizable) {
+    // Kafka's GROUP resource is referred as CONSUMERGROUP within Sentry.
+    String authorizableType = tAuthorizable.getType().equalsIgnoreCase("consumergroup") ? "group" : tAuthorizable.getType();
+    Resource resource = new Resource(ResourceType$.MODULE$.fromString(authorizableType), tAuthorizable.getName());
+
+    return resource;
+  }
 }

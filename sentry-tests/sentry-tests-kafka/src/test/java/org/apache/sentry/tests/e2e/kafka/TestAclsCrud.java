@@ -327,4 +327,50 @@ public class TestAclsCrud extends AbstractKafkaSentryTestBase {
     Assert.assertTrue("Obtained acl does not match expected acl for resource.", obtainedAcls.get(resource).get().contains(acl01));
     Assert.assertTrue("Obtained acl does not match expected acl for resource2.", obtainedAcls.get(resource2).get().contains(acl2));
   }
+
+  @Test
+  public void testGetAcls() {
+    sentryKafkaAuthorizer = new SentryKafkaAuthorizer();
+    java.util.Map<String, String> configs = new HashMap<>();
+    configs.put(KafkaAuthConf.SENTRY_KAFKA_SITE_URL, "file://" + sentrySitePath.getAbsolutePath());
+    sentryKafkaAuthorizer.configure(configs);
+
+    final String role1 = "role1";
+    final Resource topicResource = new Resource(ResourceType$.MODULE$.fromString("TOPIC"), "test-topic");
+    final Resource consumerGroupResource = new Resource(ResourceType$.MODULE$.fromString("GROUP"), "test-consumergroup");
+    final Resource transactionalIdResource = new Resource(ResourceType$.MODULE$.fromString("TRANSACTIONALID"), "test-transactionalId");
+    final Resource clusterResource = new Resource(ResourceType$.MODULE$.fromString("CLUSTER"), "test-cluster");
+
+    // Add role
+    try {
+      sentryKafkaAuthorizer.addRole(role1);
+    } catch (Exception ex) {
+      Assert.fail("Failed to create role.");
+    }
+
+    // Add acl for topic
+    Set<Acl> acls = new HashSet<>();
+    final KafkaPrincipal principal1 = new KafkaPrincipal("role", role1);
+    final Acl acl = new Acl(principal1,
+        Allow$.MODULE$,
+        "127.0.0.1",
+        Operation$.MODULE$.fromString("READ"));
+    acls.add(acl);
+    scala.collection.immutable.Set<Acl> aclsScala = scala.collection.JavaConversions.asScalaSet(acls).toSet();
+
+    try {
+      sentryKafkaAuthorizer.addAcls(aclsScala, topicResource);
+      sentryKafkaAuthorizer.addAcls(aclsScala, consumerGroupResource);
+      sentryKafkaAuthorizer.addAcls(aclsScala, transactionalIdResource);
+      sentryKafkaAuthorizer.addAcls(aclsScala, clusterResource);
+    } catch (Exception ex) {
+      Assert.fail("Failed to add acls.");
+    }
+
+    final Map<Resource, scala.collection.immutable.Set<Acl>> obtainedAcls = sentryKafkaAuthorizer.getAcls(principal1);
+    Assert.assertTrue("Obtained acls must contain acl for topic resource.", obtainedAcls.keySet().contains(topicResource));
+    Assert.assertTrue("Obtained acls must contain acl for consumer group resource.", obtainedAcls.keySet().contains(consumerGroupResource));
+    Assert.assertTrue("Obtained acls must contain acl for cluster resource.", obtainedAcls.keySet().contains(clusterResource));
+    Assert.assertTrue("Obtained acls must contain acl for transactionalid resource.", obtainedAcls.keySet().contains(transactionalIdResource));
+  }
 }

@@ -20,8 +20,9 @@ import junit.framework.Assert;
 import kafka.security.auth.Resource;
 import kafka.security.auth.Resource$;
 import kafka.security.auth.ResourceType$;
+import org.apache.sentry.api.generic.thrift.TAuthorizable;
 import org.apache.sentry.core.common.Authorizable;
-import org.apache.sentry.core.model.kafka.KafkaAuthorizable;
+import org.apache.sentry.core.model.kafka.*;
 import org.apache.sentry.kafka.ConvertUtil;
 import org.junit.Test;
 
@@ -99,5 +100,53 @@ public class ConvertUtilTest {
       }
     }
     Assert.assertEquals(authorizables.size(), 2);
+  }
+
+  @Test
+  public void testConvertClusterAuthorizableToResource() {
+    Cluster cluster = new Cluster();
+
+    TAuthorizable authorizable = new TAuthorizable(cluster.getTypeName(), cluster.getName());
+
+    Resource actualResource = ConvertUtil.convertAuthorizableToResource(authorizable);
+
+    Assert.assertEquals(ResourceType$.MODULE$.fromString("cluster"), actualResource.resourceType());
+    Assert.assertEquals(Resource.ClusterResourceName(), actualResource.name());
+  }
+
+  @Test
+  public void testConvertTopicAuthorizableToResource() {
+    Topic topic = new Topic("testTopic");
+
+    TAuthorizable authorizable = new TAuthorizable(topic.getTypeName(), topic.getName());
+
+    Resource actualResource = ConvertUtil.convertAuthorizableToResource(authorizable);
+
+    Assert.assertEquals(ResourceType$.MODULE$.fromString("topic"), actualResource.resourceType());
+    Assert.assertEquals("testTopic", actualResource.name());
+  }
+
+  @Test
+  public void testConvertTransactionalIdAuthorizableToResource() {
+    TransactionalId transactionalId = new TransactionalId("testTransactionalId");
+
+    TAuthorizable authorizable = new TAuthorizable(transactionalId.getTypeName(), transactionalId.getName());
+
+    Resource actualResource = ConvertUtil.convertAuthorizableToResource(authorizable);
+
+    Assert.assertEquals(ResourceType$.MODULE$.fromString("transactionalId"), actualResource.resourceType());
+    Assert.assertEquals("testTransactionalId", actualResource.name());
+  }
+
+  @Test
+  public void testConvertConsumerGroupAuthorizableToResource() {
+    ConsumerGroup comsumerGroup = new ConsumerGroup("testConsumerGroup");
+
+    TAuthorizable authorizable = new TAuthorizable(comsumerGroup.getTypeName(), comsumerGroup.getName());
+
+    Resource actualResource = ConvertUtil.convertAuthorizableToResource(authorizable);
+
+    Assert.assertEquals(ResourceType$.MODULE$.fromString("group"), actualResource.resourceType());
+    Assert.assertEquals("testConsumerGroup", actualResource.name());
   }
 }
