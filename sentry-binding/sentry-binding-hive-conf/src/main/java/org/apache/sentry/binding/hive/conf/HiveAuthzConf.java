@@ -78,14 +78,14 @@ public class HiveAuthzConf extends Configuration {
                     "histogram_numeric,percentile_approx,collect_set,collect_list,ngrams," +
                     "context_ngrams,ewah_bitmap,compute_stats,percentile," +
                     "array,assert_true,map,struct,named_struct,create_union,case,when,hash,coalesce," +
-                    "index,in_file,instr,locate,elt,concat_ws,sort_array," +
+                    "index,instr,locate,elt,concat_ws,sort_array," +
                     "array_contains,sentences,map_keys,map_values,format_number,printf,greatest,least," +
                     "from_utc_timestamp,to_utc_timestamp,unix_timestamp,to_unix_timestamp,explode," +
                     "inline,json_tuple,parse_url_tuple,posexplode,stack,lead,lag,row_number,rank," +
                     "dense_rank,percent_rank,cume_dist,ntile,first_value,last_value,noop,noopwithmap," +
                     "noopstreaming,noopwithmapstreaming,windowingtablefunction,matchpath";
 
-    public static final String HIVE_UDF_BLACK_LIST = "reflect,reflect2,java_method";
+    public static final String HIVE_UDF_BLACK_LIST = "reflect,reflect2,java_method,in_file";
     public static final String SENTRY_HIVE_SERVER_DEFAULT = "";
 
     /**
