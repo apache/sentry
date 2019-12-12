@@ -165,6 +165,7 @@ public final class UpdatableCache implements TableCache, AutoCloseable {
               try {
                 LOGGER.debug("Loading all data.");
                 reloadData();
+                consecutiveUpdateFailuresCount = 0;
               } catch (Exception e) {
                 LOGGER.warn("Exception while updating data from DB", e);
                 revokeAllPrivilegesIfRequired();
@@ -178,12 +179,12 @@ public final class UpdatableCache implements TableCache, AutoCloseable {
 
   private void revokeAllPrivilegesIfRequired() {
     if (++consecutiveUpdateFailuresCount > allowedUpdateFailuresCount) {
+      LOGGER.error("Failed to update roles and privileges cache for " + consecutiveUpdateFailuresCount + " times." +
+          " Revoking all privileges from cache, which will cause all authorization requests to fail.");
       consecutiveUpdateFailuresCount = 0;
       // Clear cache to revoke all privileges.
       // Update table cache to point to an empty table to avoid thread-unsafe characteristics of HashBasedTable.
       this.table = HashBasedTable.create();
-      LOGGER.error("Failed to update roles and privileges cache for " + consecutiveUpdateFailuresCount + " times." +
-          " Revoking all privileges from cache, which will cause all authorization requests to fail.");
     }
   }
 
