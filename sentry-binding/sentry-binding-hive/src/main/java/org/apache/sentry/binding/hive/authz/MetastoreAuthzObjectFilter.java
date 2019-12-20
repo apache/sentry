@@ -30,6 +30,7 @@ import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivileges.HiveOperationScope;
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivileges.HiveOperationType;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
+import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.model.db.Column;
 import org.apache.sentry.core.model.db.DBModelAction;
@@ -67,6 +68,15 @@ public class MetastoreAuthzObjectFilter<T> {
     .setOperationType(HiveOperationType.QUERY)
     .build();
 
+  private static final HiveAuthzPrivileges LIST_DATABASES_PRIVILEGES_ON_SELECT = new HiveAuthzPrivileges.AuthzPrivilegeBuilder()
+      .addInputObjectPriviledge(
+          AuthorizableType.Column,
+          EnumSet.of(DBModelAction.SELECT))
+      .addInputObjectPriviledge(AuthorizableType.URI, EnumSet.of(DBModelAction.SELECT))
+      .setOperationScope(HiveOperationScope.CONNECT)
+      .setOperationType(HiveOperationType.QUERY)
+      .build();
+
   private static final HiveAuthzPrivileges LIST_TABLES_PRIVILEGES = new HiveAuthzPrivileges.AuthzPrivilegeBuilder()
     .addInputObjectPriviledge(
       AuthorizableType.Column,
@@ -78,7 +88,18 @@ public class MetastoreAuthzObjectFilter<T> {
       HiveAuthzPrivileges.HiveOperationType.INFO)
     .build();
 
+  private static final HiveAuthzPrivileges LIST_TABLES_PRIVILEGES_ON_SELECT = new HiveAuthzPrivileges.AuthzPrivilegeBuilder()
+      .addInputObjectPriviledge(
+          AuthorizableType.Column,
+          EnumSet.of(DBModelAction.SELECT))
+      .setOperationScope(HiveOperationScope.TABLE)
+      .setOperationType(
+          HiveAuthzPrivileges.HiveOperationType.INFO)
+      .build();
+
   private final boolean DEFAULT_DATABASE_RESTRICTED;
+  private final boolean SHOWDATABASES_ON_SELECT_ONLY;
+  private final boolean SHOWTABLES_ON_SELECT_ONLY;
   private final DBModelAuthorizable AUTH_SERVER;
   private HiveAuthzBinding authzBinding;
   private ObjectExtractor extractor;
@@ -89,6 +110,12 @@ public class MetastoreAuthzObjectFilter<T> {
     this.AUTH_SERVER = authzBinding.getAuthServer();
     this.DEFAULT_DATABASE_RESTRICTED = authzBinding.getAuthzConf()
       .getBoolean(HiveAuthzConf.AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), false);
+
+    this.SHOWDATABASES_ON_SELECT_ONLY = authzBinding.getAuthzConf()
+        .getBoolean(HiveAuthzConf.AuthzConfVars.SHOWDATABASES_ON_SELECT_ONLY.getVar(), false);
+
+    this.SHOWTABLES_ON_SELECT_ONLY = authzBinding.getAuthzConf()
+        .getBoolean(AuthzConfVars.SHOWTABLES_ON_SELECT_ONLY.getVar(), false);
   }
 
   /**
@@ -103,7 +130,11 @@ public class MetastoreAuthzObjectFilter<T> {
    * Return the required privileges for listing tables in a database
    * @return the required privileges for authorizing listing tables in a database
    */
-  public static HiveAuthzPrivileges getListTablePrivileges() {
+  public HiveAuthzPrivileges getListTablePrivileges() {
+    if (SHOWTABLES_ON_SELECT_ONLY) {
+      return LIST_TABLES_PRIVILEGES_ON_SELECT;
+    }
+
     return LIST_TABLES_PRIVILEGES;
   }
 
@@ -170,7 +201,14 @@ public class MetastoreAuthzObjectFilter<T> {
       AUTH_SERVER, database, Table.ALL, Column.ALL
     );
 
-    return authorize(HiveOperation.SHOWDATABASES, LIST_DATABASES_PRIVILEGES, username, authorizable);
+    if (SHOWDATABASES_ON_SELECT_ONLY) {
+      return authorize(HiveOperation.SHOWDATABASES, LIST_DATABASES_PRIVILEGES_ON_SELECT, username,
+          authorizable);
+
+    } else {
+      return authorize(HiveOperation.SHOWDATABASES, LIST_DATABASES_PRIVILEGES, username,
+          authorizable);
+    }
   }
 
   /**
@@ -185,7 +223,11 @@ public class MetastoreAuthzObjectFilter<T> {
       AUTH_SERVER, database, table, Column.ALL
     );
 
-    return authorize(HiveOperation.SHOWTABLES, LIST_TABLES_PRIVILEGES, username, authorizable);
+    if (SHOWTABLES_ON_SELECT_ONLY) {
+      return authorize(HiveOperation.SHOWTABLES, LIST_TABLES_PRIVILEGES_ON_SELECT, username, authorizable);
+    } else {
+      return authorize(HiveOperation.SHOWTABLES, LIST_TABLES_PRIVILEGES, username, authorizable);
+    }
   }
 
   /**

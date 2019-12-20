@@ -35,6 +35,7 @@ import java.util.HashSet;
 
 import com.google.common.collect.Sets;
 import org.apache.hive.hcatalog.listener.DbNotificationListener;
+import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageFactory;
 import org.apache.sentry.api.common.ApiConstants.ClientConfig;
 import org.apache.sentry.tests.e2e.hive.fs.TestFSContants;
@@ -142,6 +143,9 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
   protected static boolean enableFilter = false;
   // indicate if the database need to be clear for every test case in one test class
   protected static boolean clearDbPerTest = true;
+  protected static boolean showDbOnSelectOnly = false;
+  protected static boolean showTableOnSelectOnly = false;
+  protected static boolean restrictDefaultDatabase = false;
 
   protected static File baseDir;
   protected static File logDir;
@@ -311,6 +315,11 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
       properties.put(HiveConf.ConfVars.HIVE_LOCK_MANAGER.varname,
           "org.apache.hadoop.hive.ql.lockmgr.EmbeddedLockManager");
     }
+
+    properties.put(AuthzConfVars.SHOWDATABASES_ON_SELECT_ONLY.getVar(), String.valueOf(showDbOnSelectOnly));
+    properties.put(AuthzConfVars.SHOWTABLES_ON_SELECT_ONLY.getVar(), String.valueOf(showTableOnSelectOnly));
+    properties.put(AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), String.valueOf(restrictDefaultDatabase));
+
     if (useSentryService && (!startSentry)) {
       configureHiveAndMetastoreForSentry();
       setupSentryService();
