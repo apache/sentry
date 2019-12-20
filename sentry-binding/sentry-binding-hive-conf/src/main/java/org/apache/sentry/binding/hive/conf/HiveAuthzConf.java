@@ -103,6 +103,8 @@ public class HiveAuthzConf extends Configuration {
                 "org.apache.sentry.binding.hive.SentryIniPolicyFileFormatter"),
         AUTHZ_SERVER_NAME("sentry.hive.server", SENTRY_HIVE_SERVER_DEFAULT),
         AUTHZ_RESTRICT_DEFAULT_DB("sentry.hive.restrict.defaultDB", "false"),
+        SHOWDATABASES_ON_SELECT_ONLY("sentry.showdatabases.select.only", "false"),
+        SHOWTABLES_ON_SELECT_ONLY("sentry.showtables.select.only", "false"),
         SENTRY_TESTING_MODE("sentry.hive.testing.mode", "false"),
         AUTHZ_ALLOW_HIVE_IMPERSONATION("sentry.hive.allow.hive.impersonation", "false"),
         AUTHZ_ONFAILURE_HOOKS("sentry.hive.failure.hooks", ""),

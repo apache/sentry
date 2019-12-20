@@ -34,15 +34,15 @@ import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
 public class TestShowMetadataPrivileges extends AbstractTestWithStaticConfiguration {
-  private static final boolean ALLOWED = true;
-  private static final boolean NOT_ALLOWED = false;
-  private static final String SERVER1 = "server1";
+  protected static final boolean ALLOWED = true;
+  protected static final boolean NOT_ALLOWED = false;
+  protected static final String SERVER1 = "server1";
 
-  private static Connection adminCon, user1Con;
-  private static Statement adminStmt, user1Stmt;
+  protected static Connection adminCon, user1Con;
+  protected static Statement adminStmt, user1Stmt;
 
-  private DBModelAction action;
-  private boolean allowed;
+  protected DBModelAction action;
+  protected boolean allowed;
 
   @Parameterized.Parameters
   public static Collection describePrivileges() {
@@ -62,6 +62,7 @@ public class TestShowMetadataPrivileges extends AbstractTestWithStaticConfigurat
   @BeforeClass
   public static void setupTestStaticConfiguration() throws Exception{
     useSentryService = true;
+    restrictDefaultDatabase = true;
     AbstractTestWithStaticConfiguration.setupTestStaticConfiguration();
     setupAdmin();
 
@@ -149,6 +150,42 @@ public class TestShowMetadataPrivileges extends AbstractTestWithStaticConfigurat
       assertTrue(
         "SHOW TABLES should display tables with " + action + " privileges on the server.",
         user1Stmt.getResultSet().next());
+    }
+  }
+
+  @Test
+  public void testShowDatabasesWithGrantOnDatabase() throws Exception {
+    if (action != null) {
+      adminStmt.execute("GRANT " + action + " ON DATABASE " + DB1 + " TO ROLE role1");
+    }
+
+    user1Stmt.execute("SHOW DATABASES");
+    if (!allowed) {
+      assertFalse(
+          "SHOW DATABASES should NOT display databases with " + action + " privileges on the database.",
+          user1Stmt.getResultSet().next());
+    } else {
+      assertTrue(
+          "SHOW DATABASES should display databases with " + action + " privileges on the database.",
+          user1Stmt.getResultSet().next());
+    }
+  }
+
+  @Test
+  public void testShowDatabasesWithGrantOnServer() throws Exception {
+    if (action != null) {
+      adminStmt.execute("GRANT " + action + " ON SERVER " + SERVER1 + " TO ROLE role1");
+    }
+
+    user1Stmt.execute("SHOW DATABASES");
+    if (!allowed) {
+      assertFalse(
+          "SHOW DATABASES should NOT display databases with " + action + " privileges on the server.",
+          user1Stmt.getResultSet().next());
+    } else {
+      assertTrue(
+          "SHOW DATABASES should display databases with " + action + " privileges on the server.",
+          user1Stmt.getResultSet().next());
     }
   }
 }
