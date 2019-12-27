@@ -21,6 +21,7 @@ import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.exception.SentryConfigurationException;
 import org.apache.sentry.policy.common.PolicyEngine;
+import org.apache.sentry.policy.common.Privilege;
 import org.apache.sentry.policy.common.PrivilegeFactory;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.slf4j.Logger;
@@ -86,6 +87,20 @@ public class CommonPolicyEngine implements PolicyEngine {
       LOGGER.debug("Getting permissions for groups: {}, users: {}", groups, users);
     }
     ImmutableSet<String> result = providerBackend.getPrivileges(groups, users, roleSet, authorizableHierarchy);
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("result = " + result);
+    }
+    return result;
+  }
+
+  @Override
+  public ImmutableSet<Privilege> getPrivilegeObjects(Set<String> groups, Set<String> users,
+      ActiveRoleSet roleSet, Authorizable... authorizableHierarchy)
+      throws SentryConfigurationException {
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("Getting permissions for groups: {}, users: {}", groups, users);
+    }
+    ImmutableSet<Privilege> result = providerBackend.getPrivilegeObjects(groups, users, roleSet, authorizableHierarchy);
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("result = " + result);
     }

@@ -27,23 +27,33 @@ public class KeyValue {
   private final String value;
 
   public KeyValue(String keyValue) {
-    List<String> kvList = Lists.newArrayList(SentryConstants.KV_SPLITTER.trimResults().limit(2).split(keyValue));
-    if (kvList.size() != 2) {
-      throw new IllegalArgumentException("Invalid key value: " + keyValue + " " + kvList);
+    int splitterIndex = keyValue.indexOf(SentryConstants.KV_SEPARATOR);
+    int splitterIndexEnd = keyValue.lastIndexOf(SentryConstants.KV_SEPARATOR);
+
+    if ((splitterIndex > 0) && (splitterIndex == splitterIndexEnd)) {
+      // optimize for simple case
+      key = keyValue.substring(0, splitterIndex).trim().intern();
+      value = keyValue.substring(splitterIndex + 1).trim().intern();
+    } else {
+      List<String> kvList = Lists.newArrayList(SentryConstants.KV_SPLITTER.trimResults().limit(2).split(keyValue));
+      if (kvList.size() != 2) {
+        throw new IllegalArgumentException("Invalid key value: " + keyValue + " " + kvList);
+      }
+      key = kvList.get(0);
+      value = kvList.get(1);
     }
-    key = kvList.get(0);
-    value = kvList.get(1);
+
     if (key.isEmpty()) {
-      throw new IllegalArgumentException("kvList=[" + kvList + "] for keyValue[" + keyValue + "], Key cannot be empty");
+      throw new IllegalArgumentException("For keyValue: " + keyValue + ", Key cannot be empty");
     } else if (value.isEmpty()) {
-      throw new IllegalArgumentException("kvList=[" + kvList + "] for keyValue[" + keyValue + "], Value cannot be empty");
+      throw new IllegalArgumentException("For keyValue: " + keyValue + ", Value cannot be empty");
     }
   }
 
   public KeyValue(String key, String value) {
     super();
-    this.key = key;
-    this.value = value;
+    this.key = key.intern();
+    this.value = value.intern();
   }
 
   public String getKey() {

@@ -22,6 +22,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.exception.SentryConfigurationException;
+import org.apache.sentry.policy.common.CommonPrivilege;
+import org.apache.sentry.policy.common.Privilege;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.apache.sentry.api.common.ApiConstants;
@@ -106,6 +108,22 @@ public class SimpleDBProviderBackend implements ProviderBackend {
    * {@inheritDoc}
    */
   @Override
+  public ImmutableSet<Privilege> getPrivilegeObjects(Set<String> groups, Set<String> users,
+      ActiveRoleSet roleSet, Authorizable... authorizableHierarchy) {
+    ImmutableSet<String> privilegeStrings = getPrivileges(groups, users, roleSet, authorizableHierarchy);
+
+    ImmutableSet.Builder<Privilege> resultBuilder = ImmutableSet.builder();
+    for (String privilegeString : privilegeStrings) {
+      resultBuilder.add(getPrivilegeObject(privilegeString));
+    }
+
+    return resultBuilder.build();
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
   public ImmutableSet<String> getRoles(Set<String> groups, ActiveRoleSet roleSet) {
     throw new UnsupportedOperationException("Not yet implemented.");
   }
@@ -121,6 +139,10 @@ public class SimpleDBProviderBackend implements ProviderBackend {
   @Override
   public void validatePolicy(boolean strictValidation) throws SentryConfigurationException {
   //Noop
+  }
+
+  private Privilege getPrivilegeObject(String priString) {
+    return new CommonPrivilege(priString);
   }
 }
 

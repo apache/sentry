@@ -43,6 +43,7 @@ import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
 import org.apache.sentry.core.model.db.HivePrivilegeModel;
 import org.apache.sentry.core.model.db.Server;
 import org.apache.sentry.policy.common.PolicyEngine;
+import org.apache.sentry.policy.common.PrivilegeFactory;
 import org.apache.sentry.provider.cache.PrivilegeCache;
 import org.apache.sentry.provider.cache.SimpleCacheProviderBackend;
 import org.apache.sentry.provider.common.AuthorizationProvider;
@@ -248,6 +249,10 @@ public class HiveAuthzBinding implements AutoCloseable {
             HivePrivilegeModel.getInstance()});
   }
 
+  public PrivilegeFactory getPrivilegeFactory() {
+    return authProvider.getPolicyEngine().getPrivilegeFactory();
+  }
+
   // Instantiate the authz provider using PrivilegeCache, this method is used for metadata filter function.
   public static AuthorizationProvider getAuthProviderWithPrivilegeCache(HiveAuthzConf authzConf,
       String serverName, PrivilegeCache privilegeCache) throws Exception {
@@ -289,9 +294,6 @@ public class HiveAuthzBinding implements AutoCloseable {
 
   /**
    * Validate the privilege for the given operation for the given subject
-   * @param currDB
-   * @param inputEntities
-   * @param outputEntities
    * @param hiveOp
    * @param stmtAuthPrivileges
    * @param subject

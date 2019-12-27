@@ -17,15 +17,19 @@
 
 package org.apache.sentry.provider.cache;
 
+import com.google.common.collect.ImmutableSet;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Set;
 
+import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
+import org.apache.sentry.policy.common.Privilege;
+import org.apache.sentry.policy.common.PrivilegeFactory;
 import org.apache.sentry.provider.common.ProviderBackendContext;
 import org.apache.sentry.core.common.utils.PolicyFiles;
 import org.apache.sentry.provider.file.SimpleFileProviderBackend;
@@ -35,11 +39,12 @@ import com.google.common.io.Files;
 /**
  * Test cache provider that is a wrapper on top of File based provider
  */
-public class PrivilegeCacheTestImpl implements PrivilegeCache {
+public class PrivilegeCacheTestImpl implements FilteredPrivilegeCache {
   private static final String resourcePath = "test-authz-provider-local-group-mapping.ini";
 
   private SimpleFileProviderBackend backend;
   private File baseDir;
+  private PrivilegeFactory privilegeFactory;
 
   public PrivilegeCacheTestImpl() throws FileNotFoundException, IOException {
     baseDir = Files.createTempDir();
@@ -71,5 +76,20 @@ public class PrivilegeCacheTestImpl implements PrivilegeCache {
   public Set<String> listPrivileges(Set<String> groups, Set<String> users, ActiveRoleSet roleSet,
       Authorizable... authorizationhierarchy) {
     return backend.getPrivileges(groups, users, roleSet, authorizationhierarchy);
+  }
+
+  @Override
+  public Set<Privilege> listPrivilegeObjects(Set<String> groups, Set<String> users, ActiveRoleSet roleSet,
+      Authorizable... authorizationHierarchy) {
+    if (privilegeFactory == null) {
+      return ImmutableSet.of();
+    }
+
+    Set<String> privilegeStrings = listPrivileges(groups, users, roleSet, authorizationHierarchy);
+
+    return privilegeStrings.stream()
+        .filter(priString -> priString != null)
+        .map(priString -> privilegeFactory.createPrivilege(priString))
+        .collect(Collectors.toSet());
   }
 }

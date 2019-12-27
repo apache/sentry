@@ -436,6 +436,47 @@ public class TestColumnEndToEnd extends AbstractTestWithStaticConfiguration {
     statement.execute("load data local inpath '" + dataFile.getPath() + "' into table db_1.tb1" );
     statement.execute("use " + DB2);
     statement.execute("CREATE TABLE tb2 (id int, num String)");
+    statement.execute("GRANT SELECT (num) ON TABLE tb2 TO ROLE user_role1");
+    statement.execute("GRANT SELECT  ON TABLE tb2 TO ROLE user_role2");
+    statement.execute("GRANT ROLE user_role1 TO GROUP " + USERGROUP1);
+    statement.execute("GRANT ROLE user_role2 TO GROUP " + USERGROUP2);
+    statement.execute("load data local inpath '" + dataFile.getPath() + "' into table db_2.tb2" );
+    statement.close();
+    connection.close();
+
+    connection =context.createConnection(USER1_1);
+    statement = context.createStatement(connection);
+    statement.execute("use " + DB1);
+    statement.execute("CREATE table db_1.t1 as select tb2.num from db_2.tb2");
+
+    // make sure the async processing is done before test clean up. Otherwise, the test may fail
+    Thread.sleep(1000);
+
+    statement.close();
+    connection.close();
+  }
+
+  @Test
+  public void testCrossDbTableOperations2() throws Exception {
+    //The privilege of user_role1 is used to test create table as select.
+    //The privilege of user_role2 is used to test create view as select.
+    Connection connection = context.createConnection(ADMIN1);
+    Statement statement = context.createStatement(connection);
+    statement.execute("CREATE database " + DB1);
+    statement.execute("CREATE database " + DB2);
+    statement.execute("use " + DB1);
+    statement.execute("CREATE ROLE user_role1");
+    statement.execute("CREATE ROLE user_role2");
+    statement.execute("CREATE TABLE tb1 (id int , name String)");
+    statement.execute("GRANT CREATE ON DATABASE db_1 TO ROLE user_role1");
+    statement.execute("GRANT CREATE ON DATABASE db_1 TO ROLE user_role2");
+    statement.execute("GRANT SELECT (id) ON TABLE tb1 TO ROLE user_role1");
+    statement.execute("GRANT SELECT  ON TABLE tb1 TO ROLE user_role2");
+    statement.execute("GRANT ROLE user_role1 TO GROUP " + USERGROUP1);
+    statement.execute("GRANT ROLE user_role2 TO GROUP " + USERGROUP2);
+    statement.execute("load data local inpath '" + dataFile.getPath() + "' into table db_1.tb1" );
+    statement.execute("use " + DB2);
+    statement.execute("CREATE TABLE tb2 (id int, num String)");
     statement.execute("CREATE TABLE tb3 (id int, val String)");
     statement.execute("GRANT SELECT (num) ON TABLE tb2 TO ROLE user_role1");
     statement.execute("GRANT SELECT (val) ON TABLE tb3 TO ROLE user_role1");
@@ -445,13 +486,6 @@ public class TestColumnEndToEnd extends AbstractTestWithStaticConfiguration {
     statement.execute("GRANT ROLE user_role2 TO GROUP " + USERGROUP2);
     statement.execute("load data local inpath '" + dataFile.getPath() + "' into table db_2.tb2" );
     statement.execute("load data local inpath '" + dataFile.getPath() + "' into table db_2.tb3" );
-    statement.close();
-    connection.close();
-
-    connection =context.createConnection(USER1_1);
-    statement = context.createStatement(connection);
-    statement.execute("use " + DB1);
-    statement.execute("CREATE table db_1.t1 as select tb1.id, tb2.num from db_1.tb1,db_2.tb2");
     statement.close();
     connection.close();
 

@@ -216,6 +216,7 @@ public class CommonPrivilege implements Privilege {
     return SentryConstants.AUTHORIZABLE_JOINER.join(parts);
   }
 
+  @Override
   public List<KeyValue> getParts() {
     return parts;
   }

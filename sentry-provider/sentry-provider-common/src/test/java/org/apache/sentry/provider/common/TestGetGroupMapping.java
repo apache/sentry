@@ -24,6 +24,7 @@ import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.exception.SentryConfigurationException;
 import org.apache.sentry.policy.common.PolicyEngine;
+import org.apache.sentry.policy.common.Privilege;
 import org.apache.sentry.policy.common.PrivilegeFactory;
 import org.junit.Test;
 
@@ -58,6 +59,13 @@ public class TestGetGroupMapping {
 
       @Override
       public ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet, Authorizable... authorizableHierarchy) {
+        return ImmutableSet.of();
+      }
+
+      @Override
+      public ImmutableSet<Privilege> getPrivilegeObjects(Set<String> groups, Set<String> users,
+          ActiveRoleSet roleSet, Authorizable... authorizableHierarchy)
+          throws SentryConfigurationException {
         return ImmutableSet.of();
       }
 

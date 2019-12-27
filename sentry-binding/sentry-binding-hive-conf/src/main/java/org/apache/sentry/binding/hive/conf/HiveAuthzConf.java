@@ -97,6 +97,7 @@ public class HiveAuthzConf extends Configuration {
         AUTHZ_PROVIDER_RESOURCE("sentry.hive.provider.resource", ""),
         AUTHZ_PROVIDER_BACKEND("sentry.hive.provider.backend", "org.apache.sentry.provider.file.SimpleFileProviderBackend"),
         AUTHZ_POLICY_ENGINE("sentry.hive.policy.engine", "org.apache.sentry.policy.engine.common.CommonPolicyEngine"),
+        AUTHZ_PRIVILEGE_CACHE("sentry.hive.privilege.cache", "org.apache.sentry.provider.cache.TreePrivilegeCache"),
         AUTHZ_POLICY_FILE_FORMATTER(
                 "sentry.hive.policy.file.formatter",
                 "org.apache.sentry.binding.hive.SentryIniPolicyFileFormatter"),

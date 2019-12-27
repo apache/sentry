@@ -217,6 +217,9 @@ public class TestCommonPrivilegeForHive {
         return null;
       }
 
+      @Override
+      public List<KeyValue> getParts() { return null; }
+
     };
     assertFalse(ROLE_SERVER_SERVER1_DB_ALL.implies(null, hivePrivilegeModel));
     assertFalse(ROLE_SERVER_SERVER1_DB_ALL.implies(p, hivePrivilegeModel));

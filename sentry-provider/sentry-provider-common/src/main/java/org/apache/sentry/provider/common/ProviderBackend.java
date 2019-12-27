@@ -26,6 +26,7 @@ import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.exception.SentryConfigurationException;
 
 import com.google.common.collect.ImmutableSet;
+import org.apache.sentry.policy.common.Privilege;
 
 /**
  * Interface for getting roles from a specific provider backend. Implementations
@@ -52,9 +53,17 @@ public interface ProviderBackend {
   ImmutableSet<String> getPrivileges(Set<String> groups, ActiveRoleSet roleSet, Authorizable... authorizableHierarchy);
 
   /**
-   * Get the privileges from the backend for users and groups.
+   * Get the privileges in string from the backend for users and groups.
    */
   ImmutableSet<String> getPrivileges(Set<String> groups, Set<String> users,
+      ActiveRoleSet roleSet, Authorizable... authorizableHierarchy);
+
+  /**
+   * Get the privilege objects from the backend for users, groups and authorizables.
+   * If the returned result is empty set, the caller should call getPrivileges() in case its
+   * cache does not support this function
+   */
+  ImmutableSet<Privilege> getPrivilegeObjects(Set<String> groups, Set<String> users,
       ActiveRoleSet roleSet, Authorizable... authorizableHierarchy);
 
   /**

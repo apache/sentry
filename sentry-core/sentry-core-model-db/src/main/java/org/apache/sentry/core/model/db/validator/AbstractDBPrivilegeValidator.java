@@ -47,5 +47,4 @@ public abstract class AbstractDBPrivilegeValidator implements PrivilegeValidator
     }
     return result;
   }
-
 }

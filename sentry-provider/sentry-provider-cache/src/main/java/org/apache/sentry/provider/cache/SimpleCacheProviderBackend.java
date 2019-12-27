@@ -23,6 +23,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.exception.SentryConfigurationException;
+import org.apache.sentry.policy.common.Privilege;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
 
@@ -72,8 +73,34 @@ public class SimpleCacheProviderBackend implements ProviderBackend {
       throw new IllegalStateException(
           "Backend has not been properly initialized");
     }
-    return ImmutableSet.copyOf(cacheHandle.listPrivileges(groups, users,
+
+    if (cacheHandle instanceof FilteredPrivilegeCache) {
+      FilteredPrivilegeCache filteredPrivilegeCache = (FilteredPrivilegeCache)cacheHandle;
+      return ImmutableSet.copyOf(filteredPrivilegeCache.listPrivileges(groups, users,
         roleSet, authorizableHierarchy));
+    }
+
+    return ImmutableSet.copyOf(cacheHandle.listPrivileges(groups,
+      roleSet));
+  }
+
+  @Override
+  public ImmutableSet<Privilege> getPrivilegeObjects(Set<String> groups, Set<String> users,
+      ActiveRoleSet roleSet, Authorizable... authorizableHierarchy) {
+    if (!initialized()) {
+      throw new IllegalStateException(
+          "Backend has not been properly initialized");
+    }
+
+    if (cacheHandle instanceof FilteredPrivilegeCache) {
+      FilteredPrivilegeCache filteredPrivilegeCache = (FilteredPrivilegeCache) cacheHandle;
+      return ImmutableSet.copyOf(filteredPrivilegeCache.listPrivilegeObjects(groups, users,
+        roleSet, authorizableHierarchy));
+    }
+
+    // cacheHandle does not support this function. The caller should call getPrivileges()
+    // to get privileges
+    return ImmutableSet.of();
   }
 
   @Override

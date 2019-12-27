@@ -230,6 +230,10 @@ public class SentryMetaStoreFilterHook implements MetaStoreFilterHook {
     } catch (Exception e) {
       LOG.warn("Error getting DB list ", e);
       return Collections.emptyList();
+    } finally {
+      // authzBinding.close() is called at end of this block. And privilege cache will be reset.
+      // Clear this field to make sure getting a new binding with cache for next filtering
+      hiveAuthzBinding = null;
     }
   }
 
@@ -266,6 +270,10 @@ public class SentryMetaStoreFilterHook implements MetaStoreFilterHook {
     } catch (Exception e) {
       LOG.warn("Error getting Table list ", e);
       return Collections.emptyList();
+    } finally {
+      // authzBinding.close() is called at end of this block. And privilege cache will be reset.
+      // Clear this field to make sure getting a new binding with cache for next filtering
+      hiveAuthzBinding = null;
     }
   }
 

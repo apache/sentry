@@ -80,7 +80,7 @@ public interface PolicyEngine {
       throws SentryConfigurationException;
 
   /**
-   * Get privileges associated with groups and users. Returns Strings which can be resolved by the
+   * Get privileges in string associated with groups and users. Returns Strings which can be resolved by the
    * caller. Strings are returned to separate the PolicyFile class from the type of privileges used
    * in a policy file. Additionally it is possible further processing of the privileges is needed
    * before resolving to a privilege object.
@@ -93,6 +93,20 @@ public interface PolicyEngine {
    */
   ImmutableSet<String> getPrivileges(Set<String> groups, Set<String> users, ActiveRoleSet roleSet,
       Authorizable... authorizableHierarchy) throws SentryConfigurationException;
+
+  /**
+   * Get privilege objects associated with groups and users. Returns Strings which can be resolved by the
+   * caller.
+   *
+   * @param groups
+   * @param users
+   * @param roleSet
+   * @param authorizableHierarchy
+   * @return
+   * @throws SentryConfigurationException
+   */
+  ImmutableSet<Privilege> getPrivilegeObjects(Set<String> groups, Set<String> users,
+      ActiveRoleSet roleSet, Authorizable... authorizableHierarchy) throws SentryConfigurationException;
 
   void close();
 
