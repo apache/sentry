@@ -870,6 +870,14 @@ public class  TestMetastoreEndToEnd extends
         Lists.newArrayList(new FieldSchema("col1", "int", "")));
     createMetastoreTable(client, dbName, tabName3,
         Lists.newArrayList(new FieldSchema("col1", "int", "")));
+
+    dropMetastoreDBIfExists(client, dbName2);
+    createMetastoreDB(client, dbName2);
+    createMetastoreTable(client, dbName2, tabName1,
+        Lists.newArrayList(new FieldSchema("col1", "int", "")));
+    createMetastoreTable(client, dbName2, tabName2,
+        Lists.newArrayList(new FieldSchema("col1", "int", "")));
+
     UserGroupInformation clientUgi = UserGroupInformation.createRemoteUser(ADMIN1);
     tableNames = clientUgi.doAs(new PrivilegedExceptionAction<List<String>>() {
       @Override
@@ -880,12 +888,6 @@ public class  TestMetastoreEndToEnd extends
     assertThat(tableNames).isNotNull();
     assertThat(tableNames.size()).isEqualTo(3);
 
-    dropMetastoreDBIfExists(client, dbName2);
-    createMetastoreDB(client, dbName2);
-    createMetastoreTable(client, dbName2, tabName1,
-        Lists.newArrayList(new FieldSchema("col1", "int", "")));
-    createMetastoreTable(client, dbName2, tabName2,
-        Lists.newArrayList(new FieldSchema("col1", "int", "")));
     tableNames = clientUgi.doAs(new PrivilegedExceptionAction<List<String>>() {
       @Override
       public List<String> run() throws Exception {
@@ -894,7 +896,6 @@ public class  TestMetastoreEndToEnd extends
     });
     assertThat(tableNames).isNotNull();
     assertThat(tableNames.size()).isEqualTo(2);
-    client.close();
 
     // Verify a user with ALL privileges on a database can get its name
     // and cannot get database name that has no privilege on
@@ -959,7 +960,6 @@ public class  TestMetastoreEndToEnd extends
     });
     assertThat(tableNames).isNotNull();
     assertThat(tableNames.size()).isEqualTo(0);
-    client.close();
 
     // USER4_1 ALL on dbName.tabName1 and dbName2
     final HiveMetaStoreClient  client_USER4_1 = context.getMetaStoreClient(USER4_1);
@@ -971,7 +971,7 @@ public class  TestMetastoreEndToEnd extends
       }
     });
     assertThat(tableNames).isNotNull();
-    assertThat(tableNames.size()).isEqualTo(1); // only has access to tabName1 and tabName2
+    assertThat(tableNames.size()).isEqualTo(1);
     assertThat(tableNames.get(0)).isEqualToIgnoringCase(tabName1);
     tableNames = clientUgi_USER4_1.doAs(new PrivilegedExceptionAction<List<String>>() {
       @Override
@@ -981,7 +981,6 @@ public class  TestMetastoreEndToEnd extends
     });
     assertThat(tableNames).isNotNull();
     assertThat(tableNames.size()).isEqualTo(2);
-    client.close();
 
     // USER5_1 CREATE on server
     final HiveMetaStoreClient  client_USER5_1 = context.getMetaStoreClient(USER5_1);
@@ -1002,6 +1001,12 @@ public class  TestMetastoreEndToEnd extends
     });
     assertThat(tableNames).isNotNull();
     assertThat(tableNames.size()).isEqualTo(2);
+
     client.close();
+    client_USER1_1.close();
+    client_USER2_1.close();
+    client_USER3_1.close();
+    client_USER4_1.close();
+    client_USER5_1.close();
   }
 }

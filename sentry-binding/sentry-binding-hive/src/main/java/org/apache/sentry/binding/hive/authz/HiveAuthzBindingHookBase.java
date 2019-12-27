@@ -53,6 +53,7 @@ import org.apache.sentry.binding.hive.SentryOnFailureHookContextImpl;
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivileges.HiveOperationScope;
 import org.apache.sentry.binding.hive.authz.HiveAuthzPrivileges.HiveOperationType;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
+import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.apache.sentry.core.common.Subject;
 import org.apache.sentry.core.common.exception.SentryGroupNotFoundException;
 import org.apache.sentry.core.common.utils.PathUtils;
@@ -63,13 +64,14 @@ import org.apache.sentry.core.model.db.DBModelAuthorizable;
 import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
 import org.apache.sentry.core.model.db.Database;
 import org.apache.sentry.core.model.db.Table;
+import org.apache.sentry.policy.common.PrivilegeFactory;
 import org.apache.sentry.provider.cache.PrivilegeCache;
-import org.apache.sentry.provider.cache.SimplePrivilegeCache;
 import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
+import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -87,7 +89,7 @@ public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerH
   private static final Logger LOG = LoggerFactory
       .getLogger(HiveAuthzBindingHookBase.class);
   protected final HiveAuthzBinding hiveAuthzBinding;
-  protected final HiveAuthzConf authzConf;
+  static HiveAuthzConf authzConf;
   protected Database currDB = Database.ALL;
   protected Table currTab;
   protected List<AccessURI> udfURIs;
@@ -849,13 +851,41 @@ public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerH
               hiveAuthzBinding.getActiveRoleSet(), hiveAuthzBinding.getAuthServer());
 
       // create PrivilegeCache using user's privileges
-      PrivilegeCache privilegeCache = new SimplePrivilegeCache(userPrivileges);
+      PrivilegeCache privilegeCache = getPrivilegeCache(userPrivileges, hiveAuthzBinding.getPrivilegeFactory());
+
       // create new instance of HiveAuthzBinding whose backend provider should be SimpleCacheProviderBackend
       return new HiveAuthzBinding(HiveAuthzBinding.HiveHook.HiveServer2, hiveAuthzBinding.getHiveConf(),
               hiveAuthzBinding.getAuthzConf(), privilegeCache);
     } catch (Exception e) {
       LOG.error("Can not create HiveAuthzBinding with privilege cache.");
       throw new SemanticException(e);
+    }
+  }
+
+  private static PrivilegeCache getPrivilegeCache(Set<String> userPrivileges, PrivilegeFactory inPrivilegeFactory) throws Exception {
+    String privilegeCacheName = authzConf.get(AuthzConfVars.AUTHZ_PRIVILEGE_CACHE.getVar(),
+      AuthzConfVars.AUTHZ_PRIVILEGE_CACHE.getDefault());
+
+    LOG.info("Using privilege cache " + privilegeCacheName);
+
+    try {
+      // load the privilege cache class that takes privilege factory as input
+      Constructor<?> cacheConstructor =
+        Class.forName(privilegeCacheName).getDeclaredConstructor(Set.class, PrivilegeFactory.class);
+      if (cacheConstructor != null) {
+        cacheConstructor.setAccessible(true);
+        return (PrivilegeCache) cacheConstructor.
+          newInstance(userPrivileges, inPrivilegeFactory);
+      }
+
+      // load the privilege cache class that does not use privilege factory
+      cacheConstructor = Class.forName(privilegeCacheName).getDeclaredConstructor(Set.class);
+      cacheConstructor.setAccessible(true);
+      return (PrivilegeCache) cacheConstructor.
+        newInstance(userPrivileges);
+    } catch (Exception ex) {
+      LOG.error("Exception at creating privilege cache", ex);
+      throw ex;
     }
   }
 

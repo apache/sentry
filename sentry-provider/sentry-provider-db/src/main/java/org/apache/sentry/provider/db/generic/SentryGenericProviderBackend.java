@@ -29,6 +29,7 @@ import org.apache.sentry.core.common.exception.SentryUserException;
 import org.apache.sentry.core.common.ActiveRoleSet;
 import org.apache.sentry.core.common.Authorizable;
 import org.apache.sentry.core.common.exception.SentryConfigurationException;
+import org.apache.sentry.policy.common.Privilege;
 import org.apache.sentry.provider.common.CacheProvider;
 import org.apache.sentry.provider.common.ProviderBackend;
 import org.apache.sentry.provider.common.ProviderBackendContext;
@@ -129,6 +130,20 @@ public class SentryGenericProviderBackend extends CacheProvider implements Provi
         LOGGER.error(msg, e);
       }
     }
+    return ImmutableSet.of();
+  }
+
+  @Override
+  public ImmutableSet<Privilege> getPrivilegeObjects(Set<String> groups, Set<String> users,
+    ActiveRoleSet roleSet, Authorizable... authorizableHierarchy) {
+    if (!initialized) {
+      throw new IllegalStateException("SentryGenericProviderBackend has not been properly initialized");
+    }
+    if (enableCaching) {
+      return super.getPrivilegeObjects(groups, users, roleSet, authorizableHierarchy);
+    }
+
+    // let caller call getPrivileges() then convert the privilege from string to object
     return ImmutableSet.of();
   }
 

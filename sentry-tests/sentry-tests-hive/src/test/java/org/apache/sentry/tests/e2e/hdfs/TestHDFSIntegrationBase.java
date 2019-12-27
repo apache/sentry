@@ -177,7 +177,7 @@ public abstract class TestHDFSIntegrationBase {
               ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS_DEFAULT * 2 + CACHE_REFRESH * 2;
 
   protected static long HMSFOLLOWER_INTERVAL_MILLS = 50;
-  protected static long WAIT_FOR_NOTIFICATION_PROCESSING = HMSFOLLOWER_INTERVAL_MILLS * 3;
+  protected static long WAIT_FOR_NOTIFICATION_PROCESSING = HMSFOLLOWER_INTERVAL_MILLS * 5;
 
   // Time to wait before running next tests. The unit is milliseconds.
   // Deleting HDFS may finish, but HDFS may not be ready for creating the same file again.

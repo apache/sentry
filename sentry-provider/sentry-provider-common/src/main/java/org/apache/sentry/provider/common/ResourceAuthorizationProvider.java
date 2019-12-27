@@ -160,6 +160,12 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
 
   private Iterable<Privilege> getPrivileges(Set<String> groups, Set<String> users,
       ActiveRoleSet roleSet, Authorizable[] authorizables) {
+    ImmutableSet<Privilege> privilegeObjects = policy.getPrivilegeObjects(groups, users, roleSet, authorizables);
+
+    if (privilegeObjects != null && privilegeObjects.size() > 0) {
+      return appendDefaultDBPrivObject(privilegeObjects, authorizables);
+    }
+
     ImmutableSet<String> privileges = policy.getPrivileges(groups, users, roleSet, authorizables);
     return Iterables.transform(appendDefaultDBPriv(privileges, authorizables),
         new Function<String, Privilege>() {
@@ -189,6 +195,28 @@ public abstract class ResourceAuthorizationProvider implements AuthorizationProv
     ArrayList<String> l = Lists.newArrayList(AUTHORIZABLE_SPLITTER.split(priv));
     if (l.size() == 1 && l.get(0).toLowerCase().startsWith("server")) {
       return l.get(0).toLowerCase().split("=")[1].endsWith("+");
+    }
+    return false;
+  }
+
+  private ImmutableSet<Privilege> appendDefaultDBPrivObject(ImmutableSet<Privilege> privileges, Authorizable[] authorizables) {
+    // Only for switch db
+    if (authorizables != null && authorizables.length == 4 && authorizables[2].getName().equals("+")
+        && privileges.size() == 1 && hasOnlyServerPrivilege(privileges.asList().get(0))) {
+      // Assuming authorizable[0] will always be the server
+      // This Code is only reachable when user fires a 'use default'
+      // and the user has a privilege on atleast 1 privilized Object
+      String defaultPrivString = "Server=" + authorizables[0].getName()
+          + "->Db=default->Table=*->Column=*->action=select";
+      Privilege defaultPriv = privilegeFactory.createPrivilege(defaultPrivString);
+      return ImmutableSet.of(defaultPriv);
+    }
+    return privileges;
+  }
+
+  private boolean hasOnlyServerPrivilege(Privilege privObj) {
+    if(privObj.getParts().size() == 1 && privObj.getParts().get(0).getKey().equalsIgnoreCase("server")) {
+      return privObj.getParts().get(0).getValue().endsWith("+");
     }
     return false;
   }

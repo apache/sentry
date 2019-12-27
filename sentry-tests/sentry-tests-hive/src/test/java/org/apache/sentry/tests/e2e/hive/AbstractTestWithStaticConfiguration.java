@@ -140,6 +140,7 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
   protected static boolean enableAuthorizingObjectStore = true;
   protected static boolean enableAuthorizeReadMetaData = false;
   protected static boolean enableFilter = false;
+  protected static int hmsFollowerIntervalInMilliseconds = 10000;
   // indicate if the database need to be clear for every test case in one test class
   protected static boolean clearDbPerTest = true;
 
@@ -500,6 +501,10 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
   private static void setupSentryService() throws Exception {
 
     sentryConf = new Configuration(true);
+    // HMS is not started in this class, and tests based on this class does not use HMS
+    // set the interval that HMS client contacts HMS to reduce connection exception in log
+    properties.put(ServerConfig.SENTRY_HMSFOLLOWER_INTERVAL_MILLS, String.valueOf(hmsFollowerIntervalInMilliseconds));
+
     properties.put(HiveServerFactory.AUTHZ_PROVIDER_BACKEND,
         SimpleDBProviderBackend.class.getName());
     properties.put(ConfVars.HIVE_AUTHORIZATION_TASK_FACTORY.varname,

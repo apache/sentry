@@ -28,6 +28,11 @@ public interface Privilege {
    **/
   boolean implies(Privilege p, Model model);
 
+  /**
+   * Return the list of parts of the privilege
+   * @return List of parts of the privilege
+   */
+  List<KeyValue> getParts();
 
   /**
    * Return the list of authorizeable of the privilege.

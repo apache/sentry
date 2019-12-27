@@ -18,6 +18,8 @@ import org.apache.sentry.core.common.Authorizable;
 
 import java.util.Map;
 import java.util.Set;
+import org.apache.sentry.policy.common.CommonPrivilege;
+import org.apache.sentry.policy.common.Privilege;
 
 public class CacheProvider {
   private TableCache cache;
@@ -48,6 +50,27 @@ public class CacheProvider {
     return resultBuilder.build();
   }
 
+  public ImmutableSet<Privilege> getPrivilegeObjects(Set<String> groups, Set<String> users,
+      ActiveRoleSet roleSet, Authorizable... authorizableHierarchy) {
+
+    if (!initialized) {
+      throw new IllegalStateException("CacheProvider has not been properly initialized");
+    }
+    ImmutableSet.Builder<Privilege> resultBuilder = ImmutableSet.builder();
+    for (String groupName : groups) {
+      for (Map.Entry<String, Set<String>> row : cache.getCache().row(groupName).entrySet()) {
+        if (roleSet.containsRole(row.getKey())) {
+          // TODO: SENTRY-1245: Filter by Authorizables, if provided
+          Set<String> privilegeStrings = row.getValue();
+          for (String privilegeString : privilegeStrings) {
+            resultBuilder.add(getPrivilegeObject(privilegeString));
+          }
+        }
+      }
+    }
+    return resultBuilder.build();
+  }
+
   public ImmutableSet<String> getRoles(Set<String> groups, ActiveRoleSet roleSet) {
     if (!initialized) {
       throw new IllegalStateException("CacheProvider has not been properly initialized");
@@ -64,5 +87,9 @@ public class CacheProvider {
       }
     }
     return resultBuilder.build();
+  }
+
+  private Privilege getPrivilegeObject(String priString) {
+    return new CommonPrivilege(priString);
   }
 }

@@ -144,6 +144,9 @@ public class TestKafkaWildcardPrivilege {
       public List<KeyValue> getAuthorizable() {
         return null;
       }
+
+      @Override
+      public List<KeyValue> getParts() { return null; }
     };
     Privilege topic1 = create(new KeyValue("HOST", "host"), new KeyValue("TOPIC", "topic1"));
     assertFalse(topic1.implies(null, kafkaPrivilegeModel));

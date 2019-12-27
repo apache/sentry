@@ -242,6 +242,9 @@ public class TestCommonPrivilegeForSolr {
       public List<KeyValue> getAuthorizable() {
         return null;
       }
+
+      @Override
+      public List<KeyValue> getParts() { return null; }
     };
     Privilege collection1 = create(new KeyValue("collection", "coll1"));
     assertFalse(collection1.implies(null, solrPrivilegeModel));

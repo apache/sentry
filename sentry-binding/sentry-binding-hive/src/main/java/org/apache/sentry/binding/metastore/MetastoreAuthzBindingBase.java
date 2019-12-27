@@ -19,6 +19,7 @@ package org.apache.sentry.binding.metastore;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import java.lang.reflect.Constructor;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -64,8 +65,8 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import org.apache.sentry.policy.common.PrivilegeFactory;
 import org.apache.sentry.provider.cache.PrivilegeCache;
-import org.apache.sentry.provider.cache.SimplePrivilegeCache;
 import org.apache.sentry.provider.common.AuthorizationProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -141,7 +142,7 @@ public abstract class MetastoreAuthzBindingBase extends MetaStorePreEventListene
 
   private static final Logger LOG = LoggerFactory
       .getLogger(MetastoreAuthzBindingBase.class);
-  private HiveAuthzConf authzConf;
+  private static HiveAuthzConf authzConf;
   private final Server authServer;
   private final HiveConf hiveConf;
   private final ImmutableSet<String> serviceUsers;
@@ -500,7 +501,7 @@ public abstract class MetastoreAuthzBindingBase extends MetaStorePreEventListene
               hiveAuthzBinding.getActiveRoleSet(), hiveAuthzBinding.getAuthServer());
 
       // create PrivilegeCache using user's privileges
-      PrivilegeCache privilegeCache = new SimplePrivilegeCache(userPrivileges);
+      PrivilegeCache privilegeCache = getPrivilegeCache(userPrivileges, hiveAuthzBinding.getPrivilegeFactory());
       // create new instance of HiveAuthzBinding whose backend provider should be SimpleCacheProviderBackend
       return new HiveAuthzBinding(HiveAuthzBinding.HiveHook.HiveMetaStore, hiveAuthzBinding.getHiveConf(),
           hiveAuthzBinding.getAuthzConf(), privilegeCache);
@@ -519,6 +520,34 @@ public abstract class MetastoreAuthzBindingBase extends MetaStorePreEventListene
       throw new MetaException("Failed to get username " + e.getMessage());
     }
   }
+
+  protected static PrivilegeCache getPrivilegeCache(Set<String> userPrivileges, PrivilegeFactory inPrivilegeFactory) throws Exception {
+    String privilegeCacheName = authzConf.get(AuthzConfVars.AUTHZ_PRIVILEGE_CACHE.getVar(),
+      AuthzConfVars.AUTHZ_PRIVILEGE_CACHE.getDefault());
+
+    LOG.info("Using privilege cache " + privilegeCacheName);
+
+    try {
+      // load the privilege cache class that takes privilege factory as input
+      Constructor<?> cacheConstructor =
+        Class.forName(privilegeCacheName).getDeclaredConstructor(Set.class, PrivilegeFactory.class);
+      if (cacheConstructor != null) {
+        cacheConstructor.setAccessible(true);
+        return (PrivilegeCache) cacheConstructor.
+          newInstance(userPrivileges, inPrivilegeFactory);
+      }
+
+      // load the privilege cache class that does not use privilege factory
+      cacheConstructor = Class.forName(privilegeCacheName).getDeclaredConstructor(Set.class);
+      cacheConstructor.setAccessible(true);
+      return (PrivilegeCache) cacheConstructor.
+        newInstance(userPrivileges);
+    } catch (Exception ex) {
+      LOG.error("Exception at creating privilege cache", ex);
+      throw ex;
+    }
+  }
+
 
   private String getSdLocation(StorageDescriptor sd) {
     if (sd == null) {

@@ -14,29 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.sentry.provider.cache;
 
 import java.util.Set;
-
 import org.apache.sentry.core.common.ActiveRoleSet;
+import org.apache.sentry.core.common.Authorizable;
+import org.apache.sentry.policy.common.Privilege;
 
-public interface PrivilegeCache {
+/**
+ * The cache returns privileges based on the input authorizable hierarchy. This filtering
+ * reduces the number of returned privileges for authorization check to improve performance
+ */
+public interface FilteredPrivilegeCache extends PrivilegeCache {
+
   /**
-   * Get the privileges for the give set of groups with the give active roles
-   * from the cache
+   * Get the privileges in string for the give set of groups and users with the give active
+   * roles and authorization hierarchy from the cache.
    */
-  Set<String> listPrivileges(Set<String> groups,
-      ActiveRoleSet roleSet);
+  Set<String> listPrivileges(Set<String> groups, Set<String> users, ActiveRoleSet roleSet,
+    Authorizable... authorizationhierarchy);
 
   /**
-   * Get the privileges for the give set of groups and users with the give active
-   * roles from the cache. For performance issue, it is recommended to use
-   * listPrivileges with authorization hierarchy
+   * Get the privilege objects for the give set of groups and users with the give active
+   * roles and authorization hierarchy from the cache.
    */
-  @Deprecated
-  Set<String> listPrivileges(Set<String> groups, Set<String> users,
-      ActiveRoleSet roleSet);
-
-  void close();
+  Set<Privilege> listPrivilegeObjects(Set<String> groups, Set<String> users, ActiveRoleSet roleSet,
+    Authorizable... authorizationhierarchy);
 }

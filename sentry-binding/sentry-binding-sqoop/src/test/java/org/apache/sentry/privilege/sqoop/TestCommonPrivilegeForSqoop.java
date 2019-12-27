@@ -152,6 +152,9 @@ public class TestCommonPrivilegeForSqoop {
       public List<KeyValue> getAuthorizable() {
         return null;
       }
+
+      @Override
+      public List<KeyValue> getParts() { return null; }
     };
     Privilege job1 = create(new KeyValue("SERVER", "server"), new KeyValue("JOB", "job1"));
     assertFalse(job1.implies(null, sqoopPrivilegeModel));
