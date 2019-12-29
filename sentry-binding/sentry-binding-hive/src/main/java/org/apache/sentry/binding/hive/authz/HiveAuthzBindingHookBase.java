@@ -872,17 +872,20 @@ public abstract class HiveAuthzBindingHookBase extends AbstractSemanticAnalyzerH
       // load the privilege cache class that takes privilege factory as input
       Constructor<?> cacheConstructor =
         Class.forName(privilegeCacheName).getDeclaredConstructor(Set.class, PrivilegeFactory.class);
-      if (cacheConstructor != null) {
-        cacheConstructor.setAccessible(true);
-        return (PrivilegeCache) cacheConstructor.
-          newInstance(userPrivileges, inPrivilegeFactory);
-      }
-
-      // load the privilege cache class that does not use privilege factory
-      cacheConstructor = Class.forName(privilegeCacheName).getDeclaredConstructor(Set.class);
       cacheConstructor.setAccessible(true);
       return (PrivilegeCache) cacheConstructor.
-        newInstance(userPrivileges);
+        newInstance(userPrivileges, inPrivilegeFactory);
+    } catch (NoSuchMethodException ex) {
+      try {
+        // load the privilege cache class that does not use privilege factory
+        Constructor<?> cacheConstructor = Class.forName(privilegeCacheName).getDeclaredConstructor(Set.class);
+        cacheConstructor.setAccessible(true);
+        return (PrivilegeCache) cacheConstructor.
+          newInstance(userPrivileges);
+      } catch (Exception ex2) {
+        LOG.error("Exception at creating privilege cache after second try", ex2);
+        throw ex;
+      }
     } catch (Exception ex) {
       LOG.error("Exception at creating privilege cache", ex);
       throw ex;

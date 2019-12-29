@@ -141,7 +141,7 @@ public class TestSimpleFilteredPrivilegeCache {
     }
     long end = System.currentTimeMillis();
 
-    System.out.println("SimplePrivilegeCache - total time on list string: " + (end - start) + " ms");
+    System.out.println("SimpleFilteredPrivilegeCache - total time on list string: " + (end - start) + " ms");
   }
 
   @Test
@@ -161,7 +161,7 @@ public class TestSimpleFilteredPrivilegeCache {
     }
     long end = System.currentTimeMillis();
 
-    System.out.println("SimplePrivilegeCache - total time on list obj: " + (end - start) + " ms");
+    System.out.println("SimpleFilteredPrivilegeCache - total time on list obj: " + (end - start) + " ms");
   }
 
   Set<String> generatePrivilegeStrings(int dbCount, int tableCount) {
