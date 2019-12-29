@@ -35,6 +35,7 @@ import java.util.HashSet;
 
 import com.google.common.collect.Sets;
 import org.apache.hive.hcatalog.listener.DbNotificationListener;
+import org.apache.sentry.binding.hive.conf.HiveAuthzConf;
 import org.apache.sentry.binding.hive.conf.HiveAuthzConf.AuthzConfVars;
 import org.apache.sentry.binding.metastore.messaging.json.SentryJSONMessageFactory;
 import org.apache.sentry.api.common.ApiConstants.ClientConfig;
@@ -147,6 +148,7 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
   protected static boolean showDbOnSelectOnly = false;
   protected static boolean showTableOnSelectOnly = false;
   protected static boolean restrictDefaultDatabase = false;
+  protected static String cacheClassName = HiveAuthzConf.AuthzConfVars.AUTHZ_PRIVILEGE_CACHE.getDefault();
 
   protected static File baseDir;
   protected static File logDir;
@@ -320,6 +322,7 @@ public abstract class AbstractTestWithStaticConfiguration extends RulesForE2ETes
     properties.put(AuthzConfVars.SHOWDATABASES_ON_SELECT_ONLY.getVar(), String.valueOf(showDbOnSelectOnly));
     properties.put(AuthzConfVars.SHOWTABLES_ON_SELECT_ONLY.getVar(), String.valueOf(showTableOnSelectOnly));
     properties.put(AuthzConfVars.AUTHZ_RESTRICT_DEFAULT_DB.getVar(), String.valueOf(restrictDefaultDatabase));
+    properties.put(AuthzConfVars.AUTHZ_PRIVILEGE_CACHE.getVar(), cacheClassName);
 
     if (useSentryService && (!startSentry)) {
       configureHiveAndMetastoreForSentry();
