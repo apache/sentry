@@ -1,61 +1,137 @@
 Release Notes - Sentry - Version 2.2.0
 
 ** Sub-task
+    * [SENTRY-2170] - Update the Sentry-HDFS thrift for user level privileges.
+    * [SENTRY-2171] - Permission full snapshot should include owner privileges
+    * [SENTRY-2172] - Owner privileges added should be persisted and sent in delta updates
+    * [SENTRY-2173] - Extend PrivilegeInfo to hold user privileges
+    * [SENTRY-2218] - Sentry-plug-in should have API's to handle grant/revoke privileges to users.
+    * [SENTRY-2229] - Update SentryPermissions with user permissions
+    * [SENTRY-2243] - Extend the thrift definition for policy service to learn owner information
+    * [SENTRY-2244] - Alter sentry role or user at granting privilege can avoid extra query to database
+    * [SENTRY-2245] - Remove privileges that do not associate with a role or a user
+    * [SENTRY-2255] - alter table set owner command can be executed only by user with proper privilege
+    * [SENTRY-2258] - Remove user when it is not associated with other objects
     * [SENTRY-2290] - Avoid storing the path information for partitions in default location
+    * [SENTRY-2291] - Notification Processor should update user privileges for path notification events
+    * [SENTRY-2313] - alter database set owner command can be executed only by user with proper privilege
+    * [SENTRY-2331] - Support grant option for DDL operation
+    * [SENTRY-2333] - Create index AUTHZ_PATH_FK_IDX at table AUTHZ_PATH for Postgres only when it does not exist
+    * [SENTRY-2382] - Create tag Release-2.1.0
+    * [SENTRY-2383] - create release 2.1.0
+    * [SENTRY-2384] - Close JIRA version for 2.1.0
+    * [SENTRY-2385] - Run vote on Release 2.1.0
+    * [SENTRY-2386] - Release artifacts for 2.1.0
+    * [SENTRY-2387] - Prepare release notes for 2.1.0 release
+    * [SENTRY-2388] - Preparing for 2.2.0-SNAPSHOT release
+    * [SENTRY-2389] - Update the Sentry website
+    * [SENTRY-2390] - Make an announcement for 2.1.0 release
+    * [SENTRY-2407] - SentrySchemaInfo and SQL scripts do not have the new 2.2.0 version
+    * [SENTRY-2419] - Log where sentry stands in the process of persisting the snpashot
     * [SENTRY-2423] - Increase the allocation size for auto-increment of id's for Snapshot tables.
+    * [SENTRY-2426] - Update the version in pom file at 2.1 branch
+    * [SENTRY-2438] - Persist HMS paths in batches.
     * [SENTRY-2448] - Ability read/write import/export file(s) from HDFS.
     * [SENTRY-2495] - Support Conjunctive Matching in Solr QueryDocAuthorizationComponent
     * [SENTRY-2496] - Support multi-field attribute based document level controls for Solr
+    * [SENTRY-2543] - Preparing branch 2.2.0 for release.
 
 
 ** Bug
+    * [SENTRY-1679] - HDFS tests configure MetastorePlugin which is gone
+    * [SENTRY-1797] - SentryKerberosContext should use periodic executor instead of managing periodic execution via run() method.
+    * [SENTRY-2141] - Sentry Privilege TimeStamp is not converted to grantTime in HivePrivilegeInfo correctly
+    * [SENTRY-2143] - Table renames should synchronize with Sentry
+    * [SENTRY-2144] -  Table Rename Cross Database should update permission correctly
+    * [SENTRY-2146] - Add better error handling to ResourceAuthorizationProvider and improve logging in related classes
+    * [SENTRY-2168] - Altering table will not update sentry permissions when HDFS sync is disabled
+    * [SENTRY-2187] - Sentry page is broken
     * [SENTRY-2205] - Improve Sentry NN Logging
+    * [SENTRY-2213] - Increase schema version from 2.0.0 to 2.1.0
+    * [SENTRY-2240] - User can DROP function under a database that he/she has no access
+    * [SENTRY-2259] - SQL CONSTRAINT name for user privilege is too long for Oracle 11.2
+    * [SENTRY-2276] - Sentry-Kafka integration does not support Kafka's Alter/DescribeConfigs and IdempotentWrite operations
+    * [SENTRY-2293] - Fix logging parameters on SentryHDFSServiceProcessor
+    * [SENTRY-2299] - NPE In Sentry HDFS Sync Plugin
+    * [SENTRY-2316] - Rename any 'entity' word for 'principal' to be consistent with Hive principal name and type
+    * [SENTRY-2332] - Load hadoop default configuration when starting sentry service
+    * [SENTRY-2373] - Incorrect WARN message when processing add partition messages
     * [SENTRY-2403] - Incorrect naming in RollingFileWithoutDeleteAppender
+    * [SENTRY-2406] - Make sure inputHierarchy and outputHierarchy have unique values
     * [SENTRY-2409] - ALTER TABLE SET OWNER does not allow to change the table if using only the table name
     * [SENTRY-2417] - LocalGroupMappingService class docs do not accurately reflect required INI format
     * [SENTRY-2425] - Add metric to track the time taken to update the owner privilege
     * [SENTRY-2428] - Skip null partitions or partitions with null sds entries
     * [SENTRY-2429] - Transfer database owner drops table owner
     * [SENTRY-2432] - The case of a username is ignored when determining object ownership
+    * [SENTRY-2433] - Dropping object privileges does not include update of dropping user privileges
+    * [SENTRY-2437] - When granting privileges a single transaction per grant causes long delays
     * [SENTRY-2441] - When MAuthzPathsMapping is deleted all associated MPaths should be deleted automatically.
+    * [SENTRY-2464] - Catch exception thrown on first reload for UpdatableCache
+    * [SENTRY-2469] - Fix bugs in RoleServlet
     * [SENTRY-2471] - Table rename should sync Sentry privilege even without location information
+    * [SENTRY-2477] - When requesting for deltas check if nn seq num is 1 more than latest sequence num
+    * [SENTRY-2480] - Change processDropDatabase to call removeAllPaths
+    * [SENTRY-2486] - Wrong user name when sentry HMSFollower gets full snapshot from HMS at insecure mode
+    * [SENTRY-2490] - When building a full perm update for each object we only build 1 privilege per role
+    * [SENTRY-2491] - Sentry High availability unit tests run into deadlock sometimes
+    * [SENTRY-2492] - Consecutive ALL grants get deleted when multiple roles have ALL grants on that object
     * [SENTRY-2493] - Sentry store api's for path mapping should handle empty/null paths.
+    * [SENTRY-2494] - Fix TestRollingFileWithoutDeleteAppender test case testFileNamePattern
     * [SENTRY-2497] - show grant role results in NPE when URI does not have scheme
     * [SENTRY-2498] - Exception while deleting paths that does't exist
     * [SENTRY-2500] - CREATE on server does not provide HMS server side read authorization for get_all_tables(database_name)
     * [SENTRY-2501] - Add cache for HMS server filtering hook
     * [SENTRY-2502] - Sentry NN plug-in stops fetching updates from sentry server
+    * [SENTRY-2503] - Failed to revoke the privilege from impala-shell if the privilege added from beeline cli
+    * [SENTRY-2528] - Format exception when fetching a full snapshot
+    * [SENTRY-2535] - SentryKafkaAuthorizer throws Exception when describing ACLs
     * [SENTRY-2538] - consecutiveUpdateFailuresCount is not reset
+    * [SENTRY-2545] - Rolling back Privilege Cache to SimplePrivilegeCache does not work
 
 
 
 ** New Feature
+    * [SENTRY-1242] - Enable getting all privileges on a hive object
+    * [SENTRY-2427] - Use Hadoop KerberosName class to derive shortName
     * [SENTRY-2445] - Implement backup and restore mechanism for sentry permissions.
     * [SENTRY-2481] - Filter HMS server-side objects based on HMS user authorization
     * [SENTRY-2533] - The UDF in_file should be blacked default
 
 ** Improvement
+    * [SENTRY-1944] - Optimize DelegateSentryStore.getGroupsByRoles() and update SentryGenericPolicyProcessor  to retrieve roles to group mapping in a single transaction
+    * [SENTRY-2019] - Improve logging in SentryPlugin
+    * [SENTRY-2176] - IllegalFormatConversionException while trying to convert AtomicLong to int
+    * [SENTRY-2194] - Upgrade Sentry hadoop-version dependency to 2.7.5
+    * [SENTRY-2210] - AUTHZ_PATH should have index on the foreign key AUTHZ_OBJ_ID
+    * [SENTRY-2219] - Create index AUTHZ_PATH_FK_IDX at table AUTHZ_PATH only when it does not exist for Oracle
     * [SENTRY-2249] - Enable batch insert of HMS paths in  Full Snapshot.
+    * [SENTRY-2324] - Allow sentry to fetch configurable notifications from HMS
     * [SENTRY-2329] - Integrate sentry with Hadoop 3.1.1
-    * [SENTRY-2371] - Add a new thrift API for getting all privileges a user has
+    * [SENTRY-2371] - Add a new thrift API for getting all privileges a user has 
     * [SENTRY-2372] - SentryStore should not implement grantOptionCheck
-    * [SENTRY-2411] - SHOW GRANT ON authorozable does no display any user privileges on a authorizable
     * [SENTRY-2413] - Provide a configuration option to permit specific DB privileges to be granted explicitly
     * [SENTRY-2431] - Update Solr permission mapping to include Metric history reading permission
     * [SENTRY-2440] - Add a new thrift API for checking if a user is in admin group
     * [SENTRY-2444] - SigUtils signal handler needs a way to unregister functions.
     * [SENTRY-2452] - Change the thrift interface to send the list of authorizable to sentry server
+    * [SENTRY-2453] - Sentry client should perform translation before sending export/import requests.
     * [SENTRY-2454] - Add new sentry store api to gather the privileges for a list of authorizables.
     * [SENTRY-2458] - Separate Web UI and service from service-server to prevent circular dependencies
     * [SENTRY-2460] - Export sentry permission information to HDFS location
-    * [SENTRY-2462] - Seperate Metrics into sub module in order to remove circular dependencies
-    * [SENTRY-2465] - Move SentryStore instatiation from SentryService to a utility and possibly own module
+    * [SENTRY-2466] - Create generic sentry store metrics
     * [SENTRY-2482] - Sentry Solr to support multi-attribute document level security
+    * [SENTRY-2483] - Implement HMS PreReadEvent support in MetastoreAuthzBinding
+    * [SENTRY-2488] - Add privilege cache to sentry hive bindings in DefaultAccessValidator
     * [SENTRY-2522] - Add a new thrift API for getting all privileges a user has for a given set of authorizable
+    * [SENTRY-2539] - PolicyEngine  should be able to return privilege directly
+    * [SENTRY-2540] - Only use SELECT action for filter SHOW DATABASES and SHOW TABLES command based on configuration
 
 ** Test
     * [SENTRY-2457] - Reuse connection objects on TestConcurrentClients#testConcurrentHS2Client
 
 
 ** Task
+    * [SENTRY-2377] - Sentry 2.1.0 release
     * [SENTRY-2436] - Add annotations for classes that are used in binding as public
+
