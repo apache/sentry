@@ -24,12 +24,19 @@ import static org.apache.sentry.core.common.utils.SentryConstants.COLUMN_NAME;
 import static org.apache.sentry.core.common.utils.SentryConstants.DB_NAME;
 import static org.apache.sentry.core.common.utils.SentryConstants.EMPTY_CHANGE_ID;
 import static org.apache.sentry.core.common.utils.SentryConstants.EMPTY_NOTIFICATION_ID;
-import static org.apache.sentry.core.common.utils.SentryConstants.EMPTY_PATHS_SNAPSHOT_ID;
 import static org.apache.sentry.core.common.utils.SentryConstants.EMPTY_PATHS_MAPPING_ID;
+import static org.apache.sentry.core.common.utils.SentryConstants.EMPTY_PATHS_SNAPSHOT_ID;
 import static org.apache.sentry.core.common.utils.SentryConstants.GRANT_OPTION;
 import static org.apache.sentry.core.common.utils.SentryConstants.INDEX_GROUP_ROLES_MAP;
 import static org.apache.sentry.core.common.utils.SentryConstants.INDEX_USER_ROLES_MAP;
 import static org.apache.sentry.core.common.utils.SentryConstants.KV_JOINER;
+import static org.apache.sentry.core.common.utils.SentryConstants.NULL_COL;
+import static org.apache.sentry.core.common.utils.SentryConstants.SERVER_NAME;
+import static org.apache.sentry.core.common.utils.SentryConstants.TABLE_NAME;
+import static org.apache.sentry.core.common.utils.SentryConstants.URI;
+import static org.apache.sentry.core.common.utils.SentryUtils.isNULL;
+import static org.apache.sentry.hdfs.Updateable.Update;
+import static org.apache.sentry.service.common.ServiceConstants.ServerConfig.SENTRY_STATEMENT_BATCH_LIMIT;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -53,6 +60,15 @@ import javax.jdo.Query;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sentry.SentryOwnerInfo;
+import org.apache.sentry.api.common.ApiConstants.PrivilegeScope;
+import org.apache.sentry.api.service.thrift.TSentryActiveRoleSet;
+import org.apache.sentry.api.service.thrift.TSentryAuthorizable;
+import org.apache.sentry.api.service.thrift.TSentryGrantOption;
+import org.apache.sentry.api.service.thrift.TSentryGroup;
+import org.apache.sentry.api.service.thrift.TSentryMappingData;
+import org.apache.sentry.api.service.thrift.TSentryPrivilege;
+import org.apache.sentry.api.service.thrift.TSentryPrivilegeMap;
+import org.apache.sentry.api.service.thrift.TSentryRole;
 import org.apache.sentry.core.common.exception.SentryAccessDeniedException;
 import org.apache.sentry.core.common.exception.SentryAlreadyExistsException;
 import org.apache.sentry.core.common.exception.SentryInvalidInputException;
@@ -65,31 +81,22 @@ import org.apache.sentry.core.model.db.DBModelAuthorizable.AuthorizableType;
 import org.apache.sentry.hdfs.PathsUpdate;
 import org.apache.sentry.hdfs.UniquePathsUpdate;
 import org.apache.sentry.hdfs.UpdateableAuthzPaths;
+import org.apache.sentry.hdfs.service.thrift.TPrivilegePrincipal;
 import org.apache.sentry.hdfs.service.thrift.TPrivilegePrincipalType;
 import org.apache.sentry.provider.db.service.model.MAuthzPathsMapping;
 import org.apache.sentry.provider.db.service.model.MAuthzPathsSnapshotId;
+import org.apache.sentry.provider.db.service.model.MPath;
 import org.apache.sentry.provider.db.service.model.MSentryChange;
+import org.apache.sentry.provider.db.service.model.MSentryGMPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryGroup;
 import org.apache.sentry.provider.db.service.model.MSentryHmsNotification;
 import org.apache.sentry.provider.db.service.model.MSentryPathChange;
 import org.apache.sentry.provider.db.service.model.MSentryPermChange;
 import org.apache.sentry.provider.db.service.model.MSentryPrivilege;
-import org.apache.sentry.provider.db.service.model.MSentryGMPrivilege;
 import org.apache.sentry.provider.db.service.model.MSentryRole;
 import org.apache.sentry.provider.db.service.model.MSentryUser;
-import org.apache.sentry.provider.db.service.model.MSentryVersion;
 import org.apache.sentry.provider.db.service.model.MSentryUtil;
-import org.apache.sentry.provider.db.service.model.MPath;
-import org.apache.sentry.hdfs.service.thrift.TPrivilegePrincipal;
-import org.apache.sentry.api.common.ApiConstants.PrivilegeScope;
-import org.apache.sentry.api.service.thrift.TSentryActiveRoleSet;
-import org.apache.sentry.api.service.thrift.TSentryAuthorizable;
-import org.apache.sentry.api.service.thrift.TSentryGrantOption;
-import org.apache.sentry.api.service.thrift.TSentryGroup;
-import org.apache.sentry.api.service.thrift.TSentryMappingData;
-import org.apache.sentry.api.service.thrift.TSentryPrivilege;
-import org.apache.sentry.api.service.thrift.TSentryPrivilegeMap;
-import org.apache.sentry.api.service.thrift.TSentryRole;
+import org.apache.sentry.provider.db.service.model.MSentryVersion;
 import org.apache.sentry.service.common.SentryOwnerPrivilegeType;
 import org.apache.sentry.service.common.ServiceConstants.SentryPrincipalType;
 import org.apache.sentry.service.common.ServiceConstants.ServerConfig;
@@ -107,14 +114,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-
-import static org.apache.sentry.core.common.utils.SentryConstants.NULL_COL;
-import static org.apache.sentry.core.common.utils.SentryConstants.SERVER_NAME;
-import static org.apache.sentry.core.common.utils.SentryConstants.TABLE_NAME;
-import static org.apache.sentry.core.common.utils.SentryConstants.URI;
-import static org.apache.sentry.core.common.utils.SentryUtils.isNULL;
-import static org.apache.sentry.hdfs.Updateable.Update;
-import static org.apache.sentry.service.common.ServiceConstants.ServerConfig.SENTRY_STATEMENT_BATCH_LIMIT;
 
 /**
  * SentryStore is the data access object for Sentry data. Strings
@@ -1904,7 +1903,7 @@ public class SentryStore implements SentryStoreInterface {
   }
 
   private List<MSentryPrivilege> getMSentryPrivileges(final SentryPrincipalType entityType, final Set<String> entityNames,
-      final TSentryAuthorizable authHierarchy)
+      final TSentryAuthorizable authHierarchy, boolean enableFetchPlan)
       throws Exception {
     if (entityNames == null || entityNames.isEmpty()) {
       return Collections.emptyList();
@@ -1957,14 +1956,16 @@ public class SentryStore implements SentryStoreInterface {
             }
           }
 
-          if (entityType == SentryPrincipalType.ROLE) {
-            FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchRoles");
-            grp.addMember("roles");
-            pm.getFetchPlan().addGroup("fetchRoles");
-          } else if(entityType == SentryPrincipalType.USER) {
-            FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchUsers");
-            grp.addMember("users");
-            pm.getFetchPlan().addGroup("fetchUsers");
+          if(enableFetchPlan) {
+              if (entityType == SentryPrincipalType.ROLE) {
+                  FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchRoles");
+                  grp.addMember("roles");
+                  pm.getFetchPlan().addGroup("fetchRoles");
+              } else if (entityType == SentryPrincipalType.USER) {
+                  FetchGroup grp = pm.getFetchGroup(MSentryPrivilege.class, "fetchUsers");
+                  grp.addMember("users");
+                  pm.getFetchPlan().addGroup("fetchUsers");
+              }
           }
 
           query.setFilter(paramBuilder.toString());
@@ -2253,7 +2254,7 @@ public class SentryStore implements SentryStoreInterface {
     if (authHierarchy.getUri() == null && authHierarchy.getDb() == null) {
       throw new SentryInvalidInputException("One of uri or dbName must not be null !!");
     }
-    return convertToTSentryPrivileges(getMSentryPrivileges(principalType, principalNames, authHierarchy));
+    return convertToTSentryPrivileges(getMSentryPrivileges(principalType, principalNames, authHierarchy, true));
   }
 
   /**
@@ -2452,8 +2453,8 @@ public class SentryStore implements SentryStoreInterface {
       TSentryActiveRoleSet roleSet, TSentryAuthorizable authHierarchy) throws Exception {
     Set<MSentryPrivilege> privilegeSet = Sets.newHashSet();
     Set<String> rolesToQuery = getRolesToQuery(groups, users, roleSet);
-    privilegeSet.addAll(getMSentryPrivileges(SentryPrincipalType.ROLE, rolesToQuery, authHierarchy));
-    privilegeSet.addAll(getMSentryPrivileges(SentryPrincipalType.USER, users, authHierarchy));
+    privilegeSet.addAll(getMSentryPrivileges(SentryPrincipalType.ROLE, rolesToQuery, authHierarchy, false));
+    privilegeSet.addAll(getMSentryPrivileges(SentryPrincipalType.USER, users, authHierarchy, false));
     return privilegeSet;
   }
 
