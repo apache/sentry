@@ -18,6 +18,7 @@
 
 package org.apache.sentry.provider.db.service.persistent;
 
+import com.codahale.metrics.Gauge;
 import java.io.File;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -2823,6 +2824,34 @@ public class TestSentryStore extends org.junit.Assert {
     long latestID = sentryStore.getLastProcessedNotificationID();
     assertEquals(notificationID, latestID);
   }
+
+  @Test
+  public void testPersistOnlyUniqueNotificationId() throws Exception {
+    long notificationID = 1;
+
+    // Persist the same ID twice should not cause any issues
+    sentryStore.persistLastProcessedNotificationID(notificationID);
+    sentryStore.persistLastProcessedNotificationID(notificationID);
+
+    // Retrieving number of entries, and only unique values are stored
+    Gauge<Long> notificationGage = sentryStore.getLastNotificationIdGauge();
+    assertEquals((long)1, notificationGage.getValue().longValue());
+  }
+
+  @Test
+  public void testPersistOnlyMaxUniqueNotificationId() throws Exception {
+    long notificationID = 1;
+
+    // Persist the larger ID first, then less value
+    sentryStore.persistLastProcessedNotificationID(notificationID + 2);
+    sentryStore.persistLastProcessedNotificationID(notificationID);
+    sentryStore.persistLastProcessedNotificationID(notificationID + 1);
+
+    // Retrieving latest peristed ID should match with the max persisted ID
+    long latestID = sentryStore.getLastProcessedNotificationID();
+    assertEquals(notificationID + 2, latestID);
+  }
+
 
   @Test
   public void testAddDeleteAuthzPathsMapping() throws Exception {

@@ -3341,7 +3341,7 @@ public class SentryStore implements SentryStoreInterface {
               pm.setDetachAllOnCommit(false); // No need to detach objects
               deleteNotificationsSince(pm, notificationID + 1);
               // persist the notification ID
-              pm.makePersistent(new MSentryHmsNotification(notificationID));
+              persistUniqueNotificationIDCore(pm, notificationID);
 
               // persist the full snapshot
               long snapshotID = getCurrentAuthzPathsSnapshotID(pm);
@@ -4470,6 +4470,21 @@ public class SentryStore implements SentryStoreInterface {
   }
 
   /**
+   * Make sure the persisted notification ID is unique. There is no entries of duplicated value
+   * @param pm
+   * @param notificationId
+   * @return
+   */
+  MSentryHmsNotification persistUniqueNotificationIDCore(PersistenceManager pm, Long notificationId) {
+    Long maxNotificationId = getMaxPersistedIDCore(pm, MSentryHmsNotification.class, "notificationId", EMPTY_NOTIFICATION_ID);
+    if (notificationId <= maxNotificationId) {
+      return new MSentryHmsNotification(maxNotificationId);
+    }
+
+    return pm.makePersistent(new MSentryHmsNotification(notificationId));
+  }
+
+  /**
    * Set the notification ID of last processed HMS notification and remove all
    * subsequent notifications stored.
    */
@@ -4478,7 +4493,7 @@ public class SentryStore implements SentryStoreInterface {
     tm.executeTransaction(
             pm -> {
               deleteNotificationsSince(pm, notificationId + 1);
-              return pm.makePersistent(new MSentryHmsNotification(notificationId));
+              return persistUniqueNotificationIDCore(pm, notificationId);
             });
   }
 
@@ -4488,7 +4503,7 @@ public class SentryStore implements SentryStoreInterface {
   public void persistLastProcessedNotificationID(final Long notificationId) throws Exception {
     LOGGER.debug("Persisting Last Processed Notification ID {}", notificationId);
     tm.executeTransaction(
-            pm -> pm.makePersistent(new MSentryHmsNotification(notificationId)));
+            pm -> persistUniqueNotificationIDCore(pm, notificationId));
   }
 
   /**
